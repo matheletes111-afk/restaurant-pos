@@ -1,0 +1,70 @@
+<style>
+/* Basic reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    overflow: hidden; /* Prevent scrolling while preloader is visible */
+    background-color: #000; /* Initial black background */
+    transition: background-color 0.5s ease; /* Smooth transition for background color */
+}
+
+/* Preloader styles */
+#preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #000; /* Black background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.loader {
+    text-align: center;
+}
+
+.loader img {
+    width: 250px; /* Adjust size as needed */
+    margin-bottom: 20px;
+}
+
+.fade-out {
+    opacity: 0; /* Target opacity */
+    visibility: hidden; /* Hides the preloader after fade-out */
+    transition: opacity 1s ease, visibility 1s ease; /* Smooth transition for fade-out */
+}
+
+
+/* Main content styles */
+#content {
+    display: none; /* Hide content initially */
+}
+    </style>
+
+    {{--     <div id="preloader">
+        <div class="loader">
+            <img src="{{asset('public/logo.png')}}" alt="Loading...">
+            
+        </div>
+    </div> --}}
+
+    {{--            <script>
+        // Preloader script with a 3-second delay
+        window.addEventListener('load', function () {
+            setTimeout(function() {
+                const preloader = document.getElementById('preloader');
+                preloader.classList.add('fade-out');// Hide preloader after 3 seconds
+                document.body.style.backgroundColor = '#fff'; // Change background color to white
+                document.getElementById('content').style.display = 'block'; // Show the content
+                document.body.style.overflow = 'auto'; // Re-enable scrolling
+            }, 2000); // 3000 milliseconds = 3 seconds
+        });
+    </script> --}}
