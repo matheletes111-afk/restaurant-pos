@@ -1,9 +1,9 @@
-<script src="{{asset('public/admin_template/js/plugins/popper.min.js')}}"></script>
-<script src="{{asset('public/admin_template/js/plugins/simplebar.min.js')}}"></script>
-<script src="{{asset('public/admin_template/js/plugins/bootstrap.min.js')}}"></script>
-<script src="{{asset('public/admin_template/js/fonts/custom-font.js')}}"></script>
-<script src="{{asset('public/admin_template/js/pcoded.js')}}"></script>
-<script src="{{asset('public/admin_template/js/plugins/feather.min.js')}}"></script>
+<script src="{{asset('admin_template/js/plugins/popper.min.js')}}"></script>
+<script src="{{asset('admin_template/js/plugins/simplebar.min.js')}}"></script>
+<script src="{{asset('admin_template/js/plugins/bootstrap.min.js')}}"></script>
+<script src="{{asset('admin_template/js/fonts/custom-font.js')}}"></script>
+<script src="{{asset('admin_template/js/pcoded.js')}}"></script>
+<script src="{{asset('admin_template/js/plugins/feather.min.js')}}"></script>
 <script defer src="https://use.fontawesome.com/releases/v5.15.4/js/all.js"
         integrity="sha384-rOA1PnstxnOBLzCLMcre8ybwbTmemjzdNlILg8O7z1lUkLXozs4DHonlDtnE7fpc"
         crossorigin="anonymous"></script>
