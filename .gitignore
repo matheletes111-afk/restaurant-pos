@@ -16,5 +16,5 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
-public/admin/
+public/admin_template/
 public/firebase/firebase-credentials.json
