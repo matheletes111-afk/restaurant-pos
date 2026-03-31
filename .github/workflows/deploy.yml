@@ -2,29 +2,101 @@ name: Deploy to VPS
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches: [ main ]
+  workflow_dispatch:  # Allows manual trigger
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.2.0
-        env:
-          DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          envs: DEPLOY_PATH
-          script: |
-            set -e
-            cd "$DEPLOY_PATH"
-            git fetch origin main
-            git reset --hard origin/main
-            composer install --no-dev --optimize-autoloader --no-interaction
-            php artisan migrate --force
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        extensions: mbstring, bcmath, ctype, json, pdo_mysql, tokenizer, xml, curl, zip, gd
+        tools: composer
+    
+    - name: Install dependencies
+      run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+    
+    - name: Prepare deployment package
+      run: |
+        # Create tar excluding unnecessary files
+        tar -czf deploy.tar.gz \
+          --exclude='.git' \
+          --exclude='deploy.tar.gz' \
+          --exclude='.env' \
+          --exclude='storage/logs/*' \
+          --exclude='storage/framework/sessions/*' \
+          --exclude='storage/framework/cache/*' \
+          --exclude='storage/framework/views/*' \
+          --exclude='.github' \
+          --exclude='tests' \
+          --exclude='node_modules' \
+          .
+    
+    - name: Deploy to VPS
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        VPS_HOST: ${{ secrets.VPS_HOST }}
+        VPS_USER: ${{ secrets.VPS_USER }}
+      run: |
+        # Setup SSH
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts
+        
+        # Copy deployment package to VPS
+        scp deploy.tar.gz $VPS_USER@$VPS_HOST:/tmp/
+        
+        # Execute deployment commands on VPS
+        ssh $VPS_USER@$VPS_HOST << 'ENDSSH'
+          cd /var/www/restaurant  # Change to your project directory
+          
+          # Backup current .env file
+          if [ -f .env ]; then
+            cp .env .env.backup
+          fi
+          
+          # Extract new code (excluding .env)
+          tar -xzf /tmp/deploy.tar.gz --exclude='.env' -C /var/www/restaurant/
+          
+          # Restore .env file if it was backed up
+          if [ -f .env.backup ]; then
+            mv .env.backup .env
+          fi
+          
+          # Install/update dependencies
+          composer install --no-interaction --optimize-autoloader --no-dev
+          
+          # Run migrations
+          php artisan migrate --force
+          
+          # Clear and cache configurations
+          php artisan optimize:clear
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          
+          # Set permissions
+          chmod -R 775 storage bootstrap/cache
+          chown -R www-data:www-data storage bootstrap/cache
+          
+          # Restart queue workers (if using supervisor)
+          sudo supervisorctl restart restaurant-worker:* || true
+          
+          # Restart PHP-FPM
+          sudo systemctl reload php8.1-fpm || sudo systemctl reload php7.4-fpm
+          
+          # Clean up
+          rm /tmp/deploy.tar.gz
+          
+          echo "Deployment completed successfully at $(date)"
+        ENDSSH
