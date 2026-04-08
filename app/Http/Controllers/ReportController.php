@@ -382,4 +382,56 @@ public function orderAnalysisReport(Request $request)
         'paymentStatus'
     ));
 }
+
+
+public function menuAvailability()
+{
+    // Get all subcategories (products) with their category relationship
+    $data = SubCategory::with('category')
+        ->where('restaurant_id', auth()->user()->restaurant_id)
+        ->where('status', '!=', 'D')
+        ->orderBy('created_at', 'desc')
+        ->get();
+    
+    return view('menu_availability', compact('data'));
+}
+
+public function toggleAvailability(Request $request)
+{
+    try {
+        $request->validate([
+            'id' => 'required'
+        ]);
+        
+        $product = SubCategory::find($request->id);
+        
+        if (!$product) {
+            return response()->json(['success' => false, 'message' => 'Product not found'], 404);
+        }
+        
+        // Toggle status: A (Active) <-> I (Inactive)
+        $newStatus = $product->status === 'A' ? 'I' : 'A';
+        $product->status = $newStatus;
+        $product->save();
+        
+        $statusText = $newStatus === 'A' ? 'Active' : 'Inactive';
+        $statusClass = $newStatus === 'A' ? 'active' : 'inactive';
+        
+        return response()->json([
+            'success' => true,
+            'message' => "Product has been marked as {$statusText}",
+            'status' => $newStatus,
+            'status_text' => $statusText,
+            'status_class' => $statusClass
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Something went wrong: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
 }

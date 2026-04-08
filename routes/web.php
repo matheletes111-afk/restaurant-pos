@@ -41,7 +41,7 @@ Route::post('/register-restaurant', [App\Http\Controllers\FrontendController::cl
 
 Auth::routes();
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+// Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 Route::post('/custom-login',[LoginController::class,'customLogin'])->name('custom.login');
 Route::get('logout',[LoginController::class, 'logout'])->name('logout.user');
 
@@ -348,6 +348,9 @@ Route::get('admin/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdmin
     Route::get('/check-stock/{productId}', [App\Http\Controllers\DebitNoteController::class, 'checkStock'])->name('debit-notes.check-stock');
     Route::get('/get-product/{id}', [App\Http\Controllers\DebitNoteController::class, 'getProduct'])->name('debit-notes.get-product');
 });
+
+    Route::get('/menu-availability', [App\Http\Controllers\ReportController::class, 'menuAvailability'])->name('menu.availability');
+    Route::post('/menu-availability/toggle', [App\Http\Controllers\ReportController::class, 'toggleAvailability'])->name('menu.availability.toggle');
     
 
 });

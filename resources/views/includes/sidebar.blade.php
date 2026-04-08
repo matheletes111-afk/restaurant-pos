@@ -52,6 +52,13 @@
   </a>
 </li>
 
+<li class="pc-item">
+  <a href="{{route('menu.availability')}}" class="pc-link @if(Request::segment(2)=="menu-availability") active_class @endif">
+    <span class="pc-micon"><i class="fas fa-clipboard-list"></i></span>
+    <span class="pc-mtext">Menu Avilability</span>
+  </a>
+</li>
+
 
 <li class="pc-item">
   <a href="{{route('table.manage')}}" class="pc-link @if(Request::segment(2)=="table-manage") active_class @endif">
