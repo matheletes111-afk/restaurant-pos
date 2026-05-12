@@ -5,9 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\RestaurantMaster;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class RestaurantController extends Controller
 {
+    /**
+     * Display list of restaurants
+     */
     public function index()
     {
         // Fetch restaurants with owner details
@@ -18,120 +23,210 @@ class RestaurantController extends Controller
         return view('restaurant.index', $data);
     }
 
+    /**
+     * Store new restaurant with owner
+     */
     public function store(Request $request)
     {
+        // Validate the request
         $request->validate([
-            'restaurant_name' => 'required',
-            'name' => 'required',
+            // Restaurant Information
+            'restaurant_name' => 'required|string|max:255',
+            'address' => 'required|string',
+            'pincode' => 'required|string|max:10',
+            
+            // Owner Information
+            'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'phone' => 'required',
-            'address' => 'required',
-            'pincode' => 'required',
-            'password' => 'required',
+            'phone' => 'required|string|max:15',
+            'password' => 'required|string|min:6',
+        ], [
+            'restaurant_name.required' => 'Restaurant name is required',
+            'address.required' => 'Address is required',
+            'pincode.required' => 'Pincode is required',
+            'name.required' => 'Owner name is required',
+            'email.required' => 'Email is required',
+            'email.unique' => 'This email is already registered',
+            'phone.required' => 'Phone number is required',
+            'password.required' => 'Password is required',
+            'password.min' => 'Password must be at least 6 characters',
         ]);
 
-        // 1. Create Owner User
-        $user = new User();
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->phone = $request->phone;
-        $user->password = \Hash::make($request->password);
-        $user->role = 'RES';
-        $user->role_type = 'ADMIN';
-        $user->status = 'A';
-        $user->save();
+        DB::beginTransaction();
+        
+        try {
+            // 1. Create Owner User
+            $user = new User();
+            $user->name = $request->name;
+            $user->email = $request->email;
+            $user->phone = $request->phone;
+            $user->password = Hash::make($request->password);
+            $user->role = 'RES'; // Restaurant role
+            $user->role_type = 'ADMIN';
+            $user->status = 'A';
+            $user->created_by = auth()->id();
+            $user->save();
 
-        // 2. Create Restaurant
-        $restaurant = new RestaurantMaster();
-        $restaurant->name = $request->restaurant_name;
-        $restaurant->address = $request->address;
-        $restaurant->pincode = $request->pincode;
-        $restaurant->owner_id = $user->id;
-        $restaurant->status = 'A';
-        $restaurant->created_by = auth()->id();
-        $restaurant->save();
+            // 2. Create Restaurant
+            $restaurant = new RestaurantMaster();
+            $restaurant->name = $request->restaurant_name;
+            $restaurant->address = $request->address;
+            $restaurant->pincode = $request->pincode;
+            $restaurant->owner_id = $user->id;
+            $restaurant->status = 'A';
+            $restaurant->created_by = auth()->id();
+            $restaurant->save();
 
-        User::where('id',$user->id)->update(['restaurant_id'=>$restaurant->id]);
+            // 3. Update user with restaurant_id
+            $user->restaurant_id = $restaurant->id;
+            $user->save();
 
-        return redirect()->back()->with('success', 'Restaurant added successfully.');
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Restaurant added successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Error adding restaurant: ' . $e->getMessage());
+        }
     }
 
+    /**
+     * Update restaurant and owner details
+     */
     public function update(Request $request)
     {
         $request->validate([
-            'id' => 'required',
-            'restaurant_name' => 'required',
-            'address' => 'required',
-            'pincode' => 'required',
-            'name' => 'required',
+            'id' => 'required|exists:restaurant_masters,id',
+            'owner_id' => 'required|exists:users,id',
+            'restaurant_name' => 'required|string|max:255',
+            'address' => 'required|string',
+            'pincode' => 'required|string|max:10',
+            'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $request->owner_id,
-            'phone' => 'required',
+            'phone' => 'required|string|max:15',
         ]);
 
-        $restaurant = RestaurantMaster::find($request->id);
-        if (!$restaurant) {
-            return back()->with('error', 'Restaurant not found.');
+        DB::beginTransaction();
+        
+        try {
+            // Update Restaurant
+            $restaurant = RestaurantMaster::find($request->id);
+            if (!$restaurant) {
+                return back()->with('error', 'Restaurant not found.');
+            }
+            
+            $restaurant->name = $request->restaurant_name;
+            $restaurant->address = $request->address;
+            $restaurant->pincode = $request->pincode;
+            $restaurant->updated_by = auth()->id();
+            $restaurant->save();
+
+            // Update Owner User
+            $user = User::find($restaurant->owner_id);
+            if ($user) {
+                $user->name = $request->name;
+                $user->email = $request->email;
+                $user->phone = $request->phone;
+                $user->save();
+            }
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Restaurant updated successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Error updating restaurant: ' . $e->getMessage());
         }
-
-        // Update Owner User
-        $user = User::find($restaurant->owner_id);
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->phone = $request->phone;
-        $user->save();
-
-        // Update Restaurant
-        $restaurant->name = $request->restaurant_name;
-        $restaurant->address = $request->address;
-        $restaurant->pincode = $request->pincode;
-        $restaurant->updated_by = auth()->id();
-        $restaurant->save();
-
-        return redirect()->back()->with('success', 'Restaurant updated successfully.');
     }
 
-    // -------------------------------------------------------------------------
-    // CHANGE STATUS (Active / Inactive)
-    // -------------------------------------------------------------------------
+    /**
+     * Change restaurant status (Active/Inactive)
+     */
     public function status($owner_id)
     {
         $user = User::find($owner_id);
 
         if ($user) {
-            $newStatus = $user->status === 'A' ? 'I' : 'A';
-            $user->status = $newStatus;
-            $user->save();
+            DB::beginTransaction();
+            try {
+                $newStatus = $user->status === 'A' ? 'I' : 'A';
+                $user->status = $newStatus;
+                $user->save();
 
-            // Update restaurant status also
-            RestaurantMaster::where('owner_id', $owner_id)->update([
-                'status' => $newStatus
-            ]);
+                // Update restaurant status also
+                RestaurantMaster::where('owner_id', $owner_id)->update([
+                    'status' => $newStatus,
+                    'updated_by' => auth()->id()
+                ]);
 
-            return back()->with('success', 'Status updated successfully.');
+                DB::commit();
+                return back()->with('success', 'Status updated successfully.');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return back()->with('error', 'Error updating status.');
+            }
         }
 
         return back()->with('error', 'Record not found.');
     }
 
-    // -------------------------------------------------------------------------
-    // DELETE OWNER + RESTAURANT (Soft delete = status D)
-    // -------------------------------------------------------------------------
-    public function delete($owner_id)
+    /**
+     * Delete restaurant (Soft delete - status 'D')
+     */
+    public function delete($id)
     {
-        $user = User::find($owner_id);
-
-        if ($user) {
-            $user->status = 'D';
-            $user->save();
-
-            // Delete restaurant also
-            RestaurantMaster::where('owner_id', $owner_id)->update([
-                'status' => 'D'
-            ]);
-
-            return back()->with('success', 'Restaurant deleted successfully.');
+        $restaurant = RestaurantMaster::find($id);
+        
+        if (!$restaurant) {
+            return back()->with('error', 'Restaurant not found.');
         }
 
-        return back()->with('error', 'Record not found.');
+        DB::beginTransaction();
+        
+        try {
+            // Update restaurant status to 'D' for soft delete
+            $restaurant->status = 'D';
+            $restaurant->updated_by = auth()->id();
+            $restaurant->save();
+
+            // Update owner status to 'D'
+            if ($restaurant->owner_id) {
+                User::where('id', $restaurant->owner_id)->update([
+                    'status' => 'D'
+                ]);
+            }
+
+            DB::commit();
+            return back()->with('success', 'Restaurant deleted successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error deleting restaurant: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Restaurant Analytics/Dashboard
+     */
+    public function analytics($id)
+    {
+        $restaurant = RestaurantMaster::with('owner')->find($id);
+        
+        if (!$restaurant) {
+            return redirect()->back()->with('error', 'Restaurant not found.');
+        }
+        
+        // You can add analytics data here
+        $data = [
+            'restaurant' => $restaurant,
+            'total_orders' => $restaurant->orders()->count(),
+            'total_revenue' => $restaurant->orders()->sum('grand_total'),
+            'total_customers' => $restaurant->orders()->distinct('customer_name')->count('customer_name'),
+        ];
+        
+        return view('restaurant.analytics', $data);
     }
 }

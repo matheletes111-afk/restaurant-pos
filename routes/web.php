@@ -325,7 +325,7 @@ Route::get('admin/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdmin
     Route::get('report-top-analysis', [App\Http\Controllers\ReportController::class, 'topAnalysisReport'])->name('order.report.top.analysis');
     Route::get('report-order-analysis', [App\Http\Controllers\ReportController::class, 'orderAnalysisReport'])->name('order.report.analysis');
     Route::get('report-order-management', [App\Http\Controllers\ReportController::class, 'orderManagementReport'])->name('order.report.management');
-
+    Route::get('item-gst-summary', [App\Http\Controllers\ReportController::class, 'itemGstSummary'])->name('report.item.gst.summary');
     // Expense Management Routes
     Route::prefix('expense')->group(function () {
         Route::get('/', [App\Http\Controllers\ExpenseController::class, 'index'])->name('expense.index');
@@ -351,7 +351,27 @@ Route::get('admin/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdmin
 
     Route::get('/menu-availability', [App\Http\Controllers\ReportController::class, 'menuAvailability'])->name('menu.availability');
     Route::post('/menu-availability/toggle', [App\Http\Controllers\ReportController::class, 'toggleAvailability'])->name('menu.availability.toggle');
-    
+    Route::post('/menu-discount/update', [App\Http\Controllers\ReportController::class, 'updateDiscount'])->name('menu.discount.update');   
+
+    // Enquiry Management Routes (Restaurant User)
+    Route::prefix('enquiry')->name('enquiry.')->group(function () {
+        Route::get('/', [App\Http\Controllers\EnquiryController::class, 'index'])->name('index');
+        Route::post('/store', [App\Http\Controllers\EnquiryController::class, 'store'])->name('store');
+        Route::delete('/delete/{id}', [App\Http\Controllers\EnquiryController::class, 'destroy'])->name('delete');
+        Route::get('/show/{id}', [App\Http\Controllers\EnquiryController::class, 'show'])->name('show');
+        Route::get('/new-count', [App\Http\Controllers\EnquiryController::class, 'getNewEnquiriesCount'])->name('new.count');
+    }); 
+
+    // Admin Enquiry Management Routes
+Route::prefix('admin-enquiry')->name('admin.enquiry.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\AdminEnquiryController::class, 'index'])->name('index');
+    Route::get('/show/{id}', [App\Http\Controllers\Admin\AdminEnquiryController::class, 'show'])->name('show');
+    Route::post('/reply/{id}', [App\Http\Controllers\Admin\AdminEnquiryController::class, 'reply'])->name('reply');
+    Route::delete('/delete/{id}', [App\Http\Controllers\Admin\AdminEnquiryController::class, 'destroy'])->name('delete');
+    Route::post('/bulk-action', [App\Http\Controllers\Admin\AdminEnquiryController::class, 'bulkAction'])->name('bulk.action');
+    Route::get('/export', [App\Http\Controllers\Admin\AdminEnquiryController::class, 'export'])->name('export');
+    Route::get('/stats', [App\Http\Controllers\Admin\AdminEnquiryController::class, 'getStats'])->name('stats');
+});
 
 });
 

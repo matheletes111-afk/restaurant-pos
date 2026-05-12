@@ -61,9 +61,8 @@
                       <th>Currency</th>
                       <th>Billing Cycle</th>
                       <th>Duration (Days)</th>
-                      <th>Default Free</th>
-                      <th>Default Paid</th>
-                      <th>Country ID</th>
+                      <th>Default Plan</th>
+                     
                       <th>Razorpay Plan ID</th>
                       <th>Actions</th>
                     </tr>
@@ -81,17 +80,8 @@
                         </span>
                       </td>
                       <td>{{ $plan->duration_days }}</td>
-                      <td>
-                        <span class="badge badge-{{ $plan->is_default_free == 'Y' ? 'success' : 'secondary' }}">
-                          {{ $plan->is_default_free }}
-                        </span>
-                      </td>
-                      <td>
-                        <span class="badge badge-{{ $plan->is_default_paid == 'Y' ? 'success' : 'secondary' }}">
-                          {{ $plan->is_default_paid }}
-                        </span>
-                      </td>
-                      <td>{{ $plan->country_id ?? 'N/A' }}</td>
+                      <td>@if(@$plan->is_default_plan=="Y") Yes @else No @endif</td>
+                     
                       <td>
                         <small class="text-muted">{{ Str::limit($plan->razorpay_plan_id, 20) }}</small>
                       </td>

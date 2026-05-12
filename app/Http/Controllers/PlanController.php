@@ -163,8 +163,10 @@ public function store(Request $request)
         $plan->total_number_of_dishes = $request->total_number_of_dishes;
         $plan->total_number_of_table = $request->total_number_of_table;
         $plan->inventory_checkbox = $request->inventory_checkbox;
+        $plan->is_default_plan = $request->is_default_plan;
 
         $plan->save();
+        
 
         /* =====================================================
            PLAN HISTORY
@@ -328,6 +330,7 @@ public function store(Request $request)
             $newUpdatedPlan->total_number_of_dishes = $request->total_number_of_dishes;
             $newUpdatedPlan->total_number_of_table = $request->total_number_of_table;
             $newUpdatedPlan->inventory_checkbox = $request->inventory_checkbox;
+            $newUpdatedPlan->is_default_plan = $request->is_default_plan;
             $newUpdatedPlan->save();
 
             // Update old plan end date

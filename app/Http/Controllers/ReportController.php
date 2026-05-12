@@ -280,108 +280,95 @@ public function orderAnalysisReport(Request $request)
     ));
  }
 
- public function orderManagementReport(Request $request)
-{
-    // Get filter parameters
-    $fromDate = $request->from_date ? Carbon::parse($request->from_date)->startOfDay() : Carbon::now()->subDays(30)->startOfDay();
-    $toDate = $request->to_date ? Carbon::parse($request->to_date)->endOfDay() : Carbon::now()->endOfDay();
-    $orderType = $request->order_type;
-    $paymentMethod = $request->payment_method;
-    $paymentStatus = $request->payment_status;
+    public function orderManagementReport(Request $request)
+    {
+        // Get filter parameters
+        $fromDate = $request->from_date ? Carbon::parse($request->from_date)->startOfDay() : Carbon::now()->subDays(30)->startOfDay();
+        $toDate = $request->to_date ? Carbon::parse($request->to_date)->endOfDay() : Carbon::now()->endOfDay();
+        $orderType = $request->order_type;
+        $paymentMethod = $request->payment_method;
+        $paymentStatus = $request->payment_status;
 
-    $restaurantId = auth()->user()->restaurant_id;
+        $restaurantId = auth()->user()->restaurant_id;
 
-    // Base query
-    $query = DB::table('orders')
-        ->leftJoin('table_management', 'orders.table_id', '=', 'table_management.id')
-        ->where('orders.restaurant_id', $restaurantId)
-        ->whereBetween('orders.created_at', [$fromDate, $toDate]);
+        // Base query
+        $query = OrderManage::with('table')
+            ->where('restaurant_id', $restaurantId)
+            ->whereBetween('created_at', [$fromDate, $toDate]);
 
-    // Apply filters
-    if ($orderType && $orderType != 'all') {
-        $query->where('orders.order_type', $orderType);
-    }
+        // Apply filters
+        if ($orderType && $orderType != 'all') {
+            $query->where('order_type', $orderType);
+        }
 
-    if ($paymentMethod && $paymentMethod != 'all') {
-        $query->where('orders.payment_method', $paymentMethod);
-    }
+        if ($paymentMethod && $paymentMethod != 'all') {
+            $query->where('payment_method', $paymentMethod);
+        }
 
-    if ($paymentStatus && $paymentStatus != 'all') {
-        $query->where('orders.payment_status', $paymentStatus);
-    }
+        if ($paymentStatus && $paymentStatus != 'all') {
+            $query->where('payment_status', $paymentStatus);
+        }
 
-    // Get orders with pagination
-    $orders = $query->select(
-            'orders.id',
-            'orders.order_id',
-            'orders.customer_name',
-            'orders.customer_phone',
-            'orders.order_type',
-            'orders.total_amount',
-            'orders.gst_amount',
-            'orders.grand_total',
-            'orders.amount_paid',
-            'orders.payment_method',
-            'orders.payment_status',
-            'orders.created_at',
-            'table_management.name as table_name'
-        )
-        ->orderBy('orders.created_at', 'desc')
-        ->paginate(50);
+        // Get orders with pagination
+        $orders = $query->orderBy('created_at', 'desc')->paginate(50);
 
-    // Summary statistics
-    $summary = [
-        'total_orders' => $orders->total(),
-        'total_revenue' => $orders->sum('grand_total'),
-        'total_collected' => $orders->sum('amount_paid'),
-        'pending_amount' => $orders->sum('grand_total') - $orders->sum('amount_paid'),
+        // Calculate summary statistics
+        $summaryQuery = clone $query;
+        $allOrders = $summaryQuery->get();
         
-        // Count by order type
-        'dine_in_count' => $query->clone()->where('order_type', 'DINE_IN')->count(),
-        'takeaway_count' => $query->clone()->where('order_type', 'TAKEAWAY')->count(),
-        
-        // Count by payment status
-        'paid_count' => $query->clone()->where('payment_status', 'PAID')->count(),
-        'pending_count' => $query->clone()->where('payment_status', 'PENDING')->count(),
-        'miscorder_count' => $query->clone()->where('payment_status', 'MISCORDER')->count(),
-    ];
+        $summary = [
+            'total_orders' => $orders->total(),
+            'total_revenue' => $allOrders->sum('grand_total'),
+            'total_collected' => $allOrders->sum('amount_paid'),
+            'pending_amount' => $allOrders->sum('grand_total') - $allOrders->sum('amount_paid'),
+            
+            // Count by order type
+            'dine_in_count' => $allOrders->where('order_type', 'DINE_IN')->count(),
+            'takeaway_count' => $allOrders->where('order_type', 'TAKEAWAY')->count(),
+            
+            // Count by payment status
+            'paid_count' => $allOrders->where('payment_status', 'PAID')->count(),
+            'pending_count' => $allOrders->where('payment_status', 'PENDING')->count(),
+            'miscorder_count' => $allOrders->where('payment_status', 'MISCORDER')->count(),
+        ];
 
-    // Get distinct values for dropdowns
-    $orderTypes = DB::table('orders')
-        ->where('restaurant_id', $restaurantId)
-        ->distinct()
-        ->pluck('order_type')
-        ->filter()
-        ->toArray();
+        // Get distinct values for dropdowns
+        $orderTypes = OrderManage::where('restaurant_id', $restaurantId)
+            ->distinct()
+            ->pluck('order_type')
+            ->filter()
+            ->values()
+            ->toArray();
 
-    $paymentMethods = DB::table('orders')
-        ->where('restaurant_id', $restaurantId)
-        ->whereNotNull('payment_method')
-        ->distinct()
-        ->pluck('payment_method')
-        ->filter()
-        ->toArray();
+        $paymentMethods = OrderManage::where('restaurant_id', $restaurantId)
+            ->whereNotNull('payment_method')
+            ->distinct()
+            ->pluck('payment_method')
+            ->filter()
+            ->values()
+            ->toArray();
 
-    $paymentStatuses = DB::table('orders')
-        ->where('restaurant_id', $restaurantId)
-        ->distinct()
-        ->pluck('payment_status')
-        ->filter()
-        ->toArray();
+        $paymentStatuses = OrderManage::where('restaurant_id', $restaurantId)
+            ->distinct()
+            ->pluck('payment_status')
+            ->filter()
+            ->values()
+            ->toArray();
 
-    return view('report.order-management', compact(
-        'orders',
-        'summary',
-        'orderTypes',
-        'paymentMethods',
-        'paymentStatuses',
-        'fromDate',
-        'toDate',
-        'orderType',
-        'paymentMethod',
-        'paymentStatus'
-    ));
-}
+        return view('report.order-management', compact(
+            'orders',
+            'summary',
+            'orderTypes',
+            'paymentMethods',
+            'paymentStatuses',
+            'fromDate',
+            'toDate',
+            'orderType',
+            'paymentMethod',
+            'paymentStatus'
+        ));
+    }
+
 
 
 public function menuAvailability()
@@ -433,5 +420,101 @@ public function toggleAvailability(Request $request)
     }
 }
 
+
+public function updateDiscount(Request $request)
+{
+    try {
+        
+        $product = SubCategory::find($request->id);
+        
+        if (!$product) {
+            return response()->json(['success' => false, 'message' => 'Product not found'], 404);
+        }
+        
+        $discount = $request->discount_percentage ?? 0;
+        $product->discount_percentage = $discount;
+        $product->save();
+        
+        return response()->json([
+            'success' => true,
+            'message' => "Discount updated to {$discount}% successfully",
+            'discount_percentage' => $discount
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Something went wrong: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+/**
+ * Item GST Summary Report
+ */
+public function itemGstSummary(Request $request)
+{
+    $fromDate = $request->from_date ? Carbon::parse($request->from_date)->startOfDay() : Carbon::now()->startOfMonth()->startOfDay();
+    $toDate = $request->to_date ? Carbon::parse($request->to_date)->endOfDay() : Carbon::now()->endOfDay();
+    
+    $restaurantId = auth()->user()->restaurant_id;
+    
+    // Query to get order items with details
+    $query = OrderItems::with(['order', 'subcategory'])
+        ->where('restaurant_id', $restaurantId)
+        ->whereHas('order', function($q) use ($fromDate, $toDate) {
+            $q->whereBetween('created_at', [$fromDate, $toDate])
+              ->where('payment_status', 'PAID'); // Only show paid orders
+        });
+    
+    // Get all items
+    $items = $query->get();
+    
+    // Calculate totals
+    $totals = [
+        'total_taxable' => 0,
+        'total_discount' => 0,
+        'total_gst' => 0,
+        'total_amount' => 0,
+    ];
+    
+    $reportData = [];
+    foreach ($items as $item) {
+        $itemDiscount = $item->item_discount_percentage ?? 0;
+        $originalPrice = $item->price;
+        $quantity = $item->quantity;
+        
+        // Calculate discounted price
+        $discountedPrice = $originalPrice - ($originalPrice * $itemDiscount / 100);
+        $taxableAmount = $discountedPrice * $quantity;
+        $gstAmount = $item->gst_amount ?? (($taxableAmount * ($item->gst_rate ?? 0)) / 100);
+        $totalAmount = $taxableAmount + $gstAmount;
+        $discountAmount = ($originalPrice * $quantity) - $taxableAmount;
+        
+        $reportData[] = [
+            'id' => $item->id,
+            'invoice_no' => $item->order->order_id ?? 'N/A',
+            'item_name' => $item->subcategory->name ?? 'N/A',
+            'category' => $item->subcategory->category->name ?? 'N/A',
+            'quantity' => $quantity,
+            'original_price' => $originalPrice,
+            'discount_percentage' => $itemDiscount,
+            'taxable_amount' => $taxableAmount,
+            'discount_amount' => $discountAmount,
+            'gst_rate' => $item->gst_rate ?? 0,
+            'gst_amount' => $gstAmount,
+            'total_amount' => $totalAmount,
+            'order_date' => $item->order->created_at ?? null,
+        ];
+        
+        $totals['total_taxable'] += $taxableAmount;
+        $totals['total_discount'] += $discountAmount;
+        $totals['total_gst'] += $gstAmount;
+        $totals['total_amount'] += $totalAmount;
+    }
+    
+    return view('report.item-gst-summary', compact('reportData', 'totals', 'fromDate', 'toDate'));
+}
 
 }

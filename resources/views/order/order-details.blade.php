@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Order Details</title>
+    <title>Order Details | #{{ $order->order_id ?? $order->id }}</title>
     @include('includes.style')
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
@@ -14,492 +14,550 @@
             --danger: #e74c3c;
             --warning: #f39c12;
             --info: #17a2b8;
-            --light: #ecf0f1;
-            --dark: #2c3e50;
-            --gray: #95a5a6;
+            --purple: #8b5cf6;
+            --pink: #ec489a;
+            --orange: #f97316;
+            --light: #f8f9fa;
+            --dark: #1e293b;
+            --gray: #64748b;
         }
 
         body {
-            background-color: #f5f7fb;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fb 0%, #eef2f8 100%);
+            font-family: 'Inter', 'Segoe UI', sans-serif;
         }
 
-        .page-header {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-            margin-bottom: 25px;
+        /* Page Header */
+        .page-header-custom {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-radius: 20px;
+            padding: 24px 30px;
+            margin-bottom: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .page-header-custom::before {
+            content: '';
+            position: absolute;
+            top: -30%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(52,152,219,0.15), transparent);
+            border-radius: 50%;
         }
 
-        .page-header h3 {
-            color: var(--primary);
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        /* Card Styling */
-        .card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            margin-bottom: 25px;
-            transition: transform 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-2px);
-        }
-
-        .card-header {
-            background: linear-gradient(135deg, var(--primary), #34495e);
+        .page-header-custom h3 {
             color: white;
-            border-bottom: none;
-            padding: 15px 20px;
-            border-radius: 12px 12px 0 0 !important;
+            font-weight: 700;
+            margin-bottom: 5px;
         }
 
-        .card-header h5 {
+        .page-header-custom .order-badge {
+            background: rgba(255,255,255,0.15);
+            padding: 6px 15px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            color: #a5f3fc;
+        }
+
+        /* Cards */
+        .card-modern {
+            background: white;
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .card-modern:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        .card-header-modern {
+            background: white;
+            border-bottom: 2px solid #eef2f8;
+            padding: 18px 24px;
+        }
+
+        .card-header-modern h5 {
             margin: 0;
-            font-weight: 600;
+            font-weight: 700;
+            color: var(--dark);
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .card-header h5 i {
-            font-size: 1.1rem;
+        .card-header-modern h5 i {
+            color: var(--secondary);
+            font-size: 1.2rem;
         }
 
-        /* Order Info Badges */
-        .info-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
+        /* Info Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 14px;
+            transition: all 0.3s;
+        }
+
+        .info-item:hover {
+            background: #f1f5f9;
+            transform: translateX(3px);
+        }
+
+        .info-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--secondary), #2980b9);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .info-content {
+            flex: 1;
+        }
+
+        .info-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gray);
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-weight: 700;
+            color: var(--dark);
+            font-size: 1rem;
+        }
+
+        /* Status Badges */
+        .badge-status {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
         }
 
-        .status-paid { background: #d1fae5; color: #065f46; }
-        .status-pending { background: #fef3c7; color: #92400e; }
-        .status-miscorder { background: #fce7f3; color: #9d174d; }
-
-        /* Table Styling */
-        .info-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-
-        .info-table th {
-            background: linear-gradient(135deg, var(--secondary), #2980b9);
-            color: white;
-            font-weight: 500;
-            padding: 12px 15px;
-            text-align: left;
-            width: 30%;
-        }
-
-        .info-table td {
-            background: white;
-            padding: 12px 15px;
-            border-bottom: 1px solid #e0e6ed;
-        }
-
-        .info-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .info-table tr:hover td {
-            background: #f8f9fa;
-        }
+        .badge-paid { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .badge-pending { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+        .badge-misc { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
+        .badge-dinein { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+        .badge-takeaway { background: linear-gradient(135deg, #10b981, #059669); color: white; }
 
         /* Items Table */
         .items-table {
             width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-collapse: collapse;
         }
 
-        .items-table thead {
-            background: linear-gradient(135deg, var(--primary), #34495e);
+        .items-table thead th {
+            background: #f1f5f9;
+            padding: 14px 16px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--dark);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .items-table th {
-            color: white;
-            font-weight: 500;
-            padding: 12px 15px;
-            text-align: left;
-        }
-
-        .items-table tbody tr {
-            transition: background 0.3s;
+        .items-table tbody td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #eef2f8;
+            vertical-align: middle;
         }
 
         .items-table tbody tr:hover {
-            background: #f8f9fa;
+            background: #f8fafc;
         }
 
-        .items-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #e0e6ed;
+        .item-name {
+            font-weight: 600;
+            color: var(--dark);
         }
 
-        .items-table tr:last-child td {
-            border-bottom: none;
+        .item-category {
+            font-size: 0.7rem;
+            color: var(--gray);
         }
 
-        /* Summary Box */
-        .summary-box {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            margin-top: 10px;
-            border-top: 4px solid var(--secondary);
+        /* Summary Section */
+        .summary-container {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 20px;
+            padding: 20px;
         }
 
-        .summary-item {
+        .summary-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 12px 0;
-            border-bottom: 1px solid #e0e6ed;
+            border-bottom: 1px solid #e2e8f0;
         }
 
-        .summary-item:last-child {
+        .summary-row:last-child {
             border-bottom: none;
         }
 
         .summary-label {
             color: var(--gray);
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
         .summary-value {
-            color: var(--primary);
             font-weight: 600;
-            font-size: 1.05rem;
+            color: var(--dark);
         }
 
         .summary-total {
             background: linear-gradient(135deg, var(--primary), #34495e);
+            border-radius: 16px;
+            padding: 18px;
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .summary-total .label {
             color: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .total-label {
-            font-size: 1.1rem;
-        }
-
-        .total-value {
-            font-size: 1.4rem;
-            font-weight: 700;
-        }
-
-        .payment-section {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 15px;
-            border-left: 4px solid var(--success);
-        }
-
-        .payment-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-        }
-
-        .payment-label {
-            color: var(--primary);
-            font-weight: 500;
-        }
-
-        .payment-value {
-            color: var(--success);
             font-weight: 600;
-            font-size: 1.1rem;
         }
 
-        /* Back Button */
-        .back-btn {
-            background: linear-gradient(135deg, var(--secondary), #2980b9);
+        .summary-total .value {
             color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 20px;
-            font-weight: 500;
+            font-weight: 800;
+            font-size: 1.3rem;
+        }
+
+        .final-total {
+            background: linear-gradient(135deg, var(--success), #059669);
+        }
+
+        /* Payment Card */
+        .payment-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid var(--success);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-weight: 600;
             transition: all 0.3s;
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            text-decoration: none;
         }
 
-        .back-btn:hover {
+        .btn-action:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2);
-            color: white;
-            text-decoration: none;
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .card-header h5 {
-                font-size: 1rem;
+            .info-grid {
+                grid-template-columns: 1fr;
             }
             
-            .info-table, .items-table {
-                display: block;
-                overflow-x: auto;
-            }
-            
-            .summary-box {
+            .page-header-custom {
                 padding: 20px;
             }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn-action {
+                justify-content: center;
+            }
         }
 
-        /* Customer Info Card */
-        .customer-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-left: 4px solid var(--info);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .customer-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
+        .card-modern {
+            animation: fadeInUp 0.5s ease-out;
         }
 
-        .customer-icon {
-            width: 40px;
-            height: 40px;
-            background: rgba(23, 162, 184, 0.1);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--info);
+        /* Discount Badge */
+        .discount-badge {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
         }
     </style>
 </head>
 
-<body data-pc-theme="light">
+<body>
 @include('includes.sidebar')
 
 <div class="pc-container">
     <div class="pc-content">
         <!-- Page Header -->
-        <div class="page-header">
-            <div class="d-flex justify-content-between align-items-center">
+        <div class="page-header-custom">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
-                    <h3>Order Details</h3>
-                    <p class="text-muted mb-0">Order #{{ $order->order_id ?? $order->id }}</p>
+                    <h3><i class="fas fa-receipt me-2"></i>Order Details</h3>
+                    <div class="order-badge mt-2">
+                        <i class="fas fa-hashtag me-1"></i> {{ $order->order_id ?? $order->id }}
+                    </div>
                 </div>
-               
+                <div>
+                    <span class="badge-status {{ $order->payment_status == 'PAID' ? 'badge-paid' : ($order->payment_status == 'PENDING' ? 'badge-pending' : 'badge-misc') }}">
+                        <i class="fas {{ $order->payment_status == 'PAID' ? 'fa-check-circle' : ($order->payment_status == 'PENDING' ? 'fa-clock' : 'fa-exclamation-triangle') }}"></i>
+                        {{ ucfirst($order->payment_status) }}
+                    </span>
+                </div>
             </div>
         </div>
 
-        <div class="row">
-            <!-- Left Column: Order Info & Customer -->
+        <div class="row g-4">
+            <!-- Left Column -->
             <div class="col-lg-4">
-                <!-- Order Information -->
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-info-circle me-2"></i>Order Information</h5>
+                <!-- Order Info Card -->
+                <div class="card-modern">
+                    <div class="card-header-modern">
+                        <h5><i class="fas fa-info-circle"></i> Order Information</h5>
                     </div>
-                    <div class="card-body">
-                        <table class="info-table">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-icon"><i class="fas fa-calendar-alt"></i></div>
+                            <div class="info-content">
+                                <div class="info-label">Order Date</div>
+                                <div class="info-value">{{ $order->created_at->format('d M Y, h:i A') }}</div>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon"><i class="fas fa-utensils"></i></div>
+                            <div class="info-content">
+                                <div class="info-label">Order Type</div>
+                                <div class="info-value">
+                                    <span class="badge-status {{ $order->order_type == 'DINE_IN' ? 'badge-dinein' : 'badge-takeaway' }}" style="padding: 3px 10px; font-size: 0.7rem;">
+                                        <i class="fas {{ $order->order_type == 'DINE_IN' ? 'fa-table' : 'fa-box' }}"></i>
+                                        {{ $order->order_type == 'DINE_IN' ? 'Dine In' : 'Takeaway' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        @if($order->table)
+                        <div class="info-item">
+                            <div class="info-icon"><i class="fas fa-table"></i></div>
+                            <div class="info-content">
+                                <div class="info-label">Table</div>
+                                <div class="info-value">{{ $order->table->name }}</div>
+                            </div>
+                        </div>
+                        @endif
+                        <div class="info-item">
+                            <div class="info-icon"><i class="fas fa-credit-card"></i></div>
+                            <div class="info-content">
+                                <div class="info-label">Payment Method</div>
+                                <div class="info-value">{{ $order->payment_method ?? 'Not specified' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Info Card -->
+                <div class="card-modern">
+                    <div class="card-header-modern">
+                        <h5><i class="fas fa-user-circle"></i> Customer Details</h5>
+                    </div>
+                    <div class="info-grid" style="grid-template-columns: 1fr;">
+                        <div class="info-item">
+                            <div class="info-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Customer Name</div>
+                                <div class="info-value">{{ $order->customer_name ?? 'Walk-in Customer' }}</div>
+                            </div>
+                        </div>
+                        @if($order->customer_phone)
+                        <div class="info-item">
+                            <div class="info-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                                <i class="fas fa-phone-alt"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Phone Number</div>
+                                <div class="info-value">{{ $order->customer_phone }}</div>
+                            </div>
+                        </div>
+                        @endif
+                        <div class="info-item">
+                            <div class="info-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Order Taken By</div>
+                                <div class="info-value">{{ $order->user ? $order->user->name : 'System' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Remarks Card -->
+                @if($order->remarks)
+                <div class="card-modern">
+                    <div class="card-header-modern">
+                        <h5><i class="fas fa-sticky-note"></i> Remarks</h5>
+                    </div>
+                    <div class="p-4">
+                        <p class="mb-0 text-muted"><i class="fas fa-quote-left me-2"></i> {{ $order->remarks }}</p>
+                    </div>
+                </div>
+                @endif
+            </div>
+
+            <!-- Right Column -->
+            <div class="col-lg-8">
+                <!-- Order Items Card -->
+                <div class="card-modern">
+                    <div class="card-header-modern">
+                        <h5><i class="fas fa-list-ul"></i> Order Items <span class="badge bg-secondary ms-2">{{ count($order->items) }} Items</span></h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="items-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Item</th>
+                                    <th>Qty</th>
+                                    <th>Price</th>
+                                    <th>Discount</th>
+                                    <th>GST</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
                             <tbody>
+                                @php 
+                                    $subtotal = 0;
+                                    $gstTotal = 0;
+                                    $discountTotal = 0;
+                                @endphp
+                                @foreach ($order->items as $index => $item)
+                                @php
+                                    $itemDiscount = $item->item_discount_percentage ?? 0;
+                                    $discountedPrice = $item->price - ($item->price * $itemDiscount / 100);
+                                    $itemSubtotal = $discountedPrice * $item->quantity;
+                                    $itemGst = ($itemSubtotal * ($item->gst_rate ?? 0)) / 100;
+                                    $itemTotal = $itemSubtotal + $itemGst;
+                                    $subtotal += $item->price * $item->quantity;
+                                    $gstTotal += $itemGst;
+                                    $discountTotal += ($item->price * $item->quantity) - $itemSubtotal;
+                                @endphp
                                 <tr>
-                                    <th>Order ID</th>
-                                    <td>#{{ $order->order_id }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Order Date</th>
-                                    <td>{{ $order->created_at->format('d M Y, h:i A') }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Table</th>
+                                    <td>{{ $index + 1 }}</td>
                                     <td>
-                                        @if($order->table)
-                                            <span class="info-badge" style="background: var(--secondary); color: white;">
-                                                <i class="fas fa-table"></i>
-                                                {{ $order->table->name }}
-                                            </span>
-                                        @else
-                                            <span class="info-badge" style="background: var(--success); color: white;">
-                                                <i class="fas fa-takeout-box"></i>
-                                                Takeaway
-                                            </span>
-                                        @endif
+                                        <div class="item-name">{{ $item->subcategory->name ?? 'N/A' }}</div>
+                                        <div class="item-category">{{ $item->subcategory->category->name ?? '' }}</div>
+                                    </div>
                                     </td>
-                                </tr>
-                                <tr>
-                                    <th>Status</th>
+                                    <td>{{ $item->quantity }}</div>
                                     <td>
-                                        @if($order->payment_status == 'PAID')
-                                            <span class="info-badge status-paid">
-                                                <i class="fas fa-check-circle"></i> PAID
-                                            </span>
-                                        @elseif($order->payment_status == 'PENDING')
-                                            <span class="info-badge status-pending">
-                                                <i class="fas fa-clock"></i> PENDING
-                                            </span>
-                                        @elseif($order->payment_status == 'MISCORDER')
-                                            <span class="info-badge status-miscorder">
-                                                <i class="fas fa-exclamation-circle"></i> MISCORDER
-                                            </span>
+                                        @if($itemDiscount > 0)
+                                            <del class="text-muted">₹{{ number_format($item->price, 2) }}</del><br>
+                                            <span class="text-success">₹{{ number_format($discountedPrice, 2) }}</span>
                                         @else
-                                            <span class="info-badge" style="background: #e0e6ed; color: #4a5568;">
-                                                {{ $order->payment_status }}
-                                            </span>
+                                            ₹{{ number_format($item->price, 2) }}
                                         @endif
-                                    </td>
+                                    </div>
+                                    <td>
+                                        @if($itemDiscount > 0)
+                                            <span class="discount-badge">{{ $itemDiscount }}% OFF</span>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </div>
+                                    <td>{{ $item->gst_rate ?? 0 }}%</div>
+                                    <td>
+                                        <strong class="text-primary">₹{{ number_format($itemTotal, 2) }}</strong>
+                                    </div>
                                 </tr>
-                                <tr>
-                                    <th>Payment Method</th>
-                                    <td>{{ $order->payment_method ?? 'Not specified' }}</td>
-                                </tr>
+                                @endforeach
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- Customer Information -->
-                <div class="customer-card">
-                    <h5 class="mb-3"><i class="fas fa-user me-2"></i>Customer Details</h5>
-                    <div class="customer-item">
-                        <div class="customer-icon">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div>
-                            <h6 class="mb-0">{{ $order->customer_name }}</h6>
-                            <small class="text-muted">Customer Name</small>
-                        </div>
-                    </div>
-                    @if($order->customer_phone)
-                    <div class="customer-item">
-                        <div class="customer-icon">
-                            <i class="fas fa-phone"></i>
-                        </div>
-                        <div>
-                            <h6 class="mb-0">{{ $order->customer_phone }}</h6>
-                            <small class="text-muted">Phone Number</small>
-                        </div>
-                    </div>
-                    @endif
-                    <div class="customer-item">
-                        <div class="customer-icon">
-                            <i class="fas fa-user-tag"></i>
-                        </div>
-                        <div>
-                            <h6 class="mb-0">{{ $order->user ? $order->user->name : 'Walk-in Customer' }}</h6>
-                            <small class="text-muted">Order By</small>
-                        </div>
-                    </div>
-                    @if($order->remarks)
-                    <div class="customer-item">
-                        <div class="customer-icon">
-                            <i class="fas fa-sticky-note"></i>
-                        </div>
-                        <div>
-                            <h6 class="mb-0">{{ $order->remarks }}</h6>
-                            <small class="text-muted">Remarks</small>
-                        </div>
-                    </div>
-                    @endif
-                </div>
-            </div>
-
-            <!-- Right Column: Items & Summary -->
-            <div class="col-lg-8">
-                <!-- Order Items -->
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-list-alt me-2"></i>Order Items ({{ count($order->items) }})</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="items-table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Item Name</th>
-                                        <th>Qty</th>
-                                        <th>Rate</th>
-                                        <th>GST</th>
-                                        <th>Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @php 
-                                        $subtotal = 0;
-                                        $gstTotal = 0;
-                                    @endphp
-                                    @foreach ($order->items as $index => $item)
-                                    @php
-                                        $itemSubtotal = $item->price * $item->quantity;
-                                        $itemGst = ($itemSubtotal * $item->gst_rate) / 100;
-                                        $itemTotal = $itemSubtotal + $itemGst;
-                                        $subtotal += $itemSubtotal;
-                                        $gstTotal += $itemGst;
-                                    @endphp
-                                    <tr>
-                                        <td>{{ $index + 1 }}</td>
-                                        <td>
-                                            <strong>{{ $item->subcategory->name ?? 'N/A' }}</strong>
-                                        </td>
-                                        <td>{{ $item->quantity }}</td>
-                                        <td>₹{{ number_format($item->price, 2) }}</td>
-                                        <td>{{ $item->gst_rate }}%</td>
-                                        <td><strong>₹{{ number_format($itemTotal, 2) }}</strong></td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Billing Summary -->
-                <div class="summary-box">
-                    <h5 class="mb-3"><i class="fas fa-receipt me-2"></i>Billing Summary</h5>
-                    
-                    <div class="summary-item">
-                        <span class="summary-label">Subtotal:</span>
+                <div class="summary-container">
+                    <div class="summary-row">
+                        <span class="summary-label">Original Subtotal</span>
                         <span class="summary-value">₹{{ number_format($subtotal, 2) }}</span>
                     </div>
                     
-                    <div class="summary-item">
-                        <span class="summary-label">GST Total:</span>
+                    @if($discountTotal > 0)
+                    <div class="summary-row">
+                        <span class="summary-label">Item Discount</span>
+                        <span class="summary-value text-success">- ₹{{ number_format($discountTotal, 2) }}</span>
+                    </div>
+                    @endif
+                    
+                    <div class="summary-row">
+                        <span class="summary-label">Taxable Amount</span>
+                        <span class="summary-value">₹{{ number_format($subtotal - $discountTotal, 2) }}</span>
+                    </div>
+                    
+                    <div class="summary-row">
+                        <span class="summary-label">GST Total</span>
                         <span class="summary-value">₹{{ number_format($gstTotal, 2) }}</span>
                     </div>
                     
-                    <div class="summary-item">
-                        <span class="summary-label">Discount:</span>
+                    @if($order->discount_percentage > 0)
+                    <div class="summary-row">
+                        <span class="summary-label">Order Discount ({{ $order->discount_percentage }}%)</span>
                         <span class="summary-value text-success">- ₹{{ number_format($order->discount, 2) }}</span>
                     </div>
+                    @endif
                     
                     @php
                         $grandTotal = $order->grand_total;
@@ -507,88 +565,70 @@
                         $roundOff = $finalAmount - $grandTotal;
                     @endphp
 
+                    @if(abs($roundOff) > 0)
+                    <div class="summary-row">
+                        <span class="summary-label">Round Off</span>
+                        <span class="summary-value">₹{{ number_format($roundOff, 2) }}</span>
+                    </div>
+                    @endif
+                    
                     <div class="summary-total">
-                        <span class="total-label">Grand Total:</span>
-                        <span class="total-value">₹{{ number_format($grandTotal, 2) }}</span>
+                        <span class="label"><i class="fas fa-rupee-sign me-1"></i> Grand Total</span>
+                        <span class="value">₹{{ number_format($grandTotal, 2) }}</span>
                     </div>
-
-                    <div class="summary-total">
-                        <span class="total-label">Round Off:</span>
-                        <span class="total-value">₹{{ number_format($roundOff, 2) }}</span>
+                    
+                    <div class="summary-total final-total mt-3">
+                        <span class="label"><i class="fas fa-check-circle me-1"></i> Final Bill Amount</span>
+                        <span class="value">₹{{ number_format($finalAmount, 2) }}</span>
                     </div>
-
-                    <div class="summary-total final">
-                        <span class="total-label"><strong>Final Bill Amount:</strong></span>
-                        <span class="total-value"><strong>₹{{ number_format($finalAmount, 2) }}</strong></span>
-                    </div>
-
 
                     <!-- Payment Details -->
-                    <div class="payment-section">
-                        <h6 class="mb-3"><i class="fas fa-credit-card me-2"></i>Payment Details</h6>
+                    <div class="payment-card">
+                        <h6 class="mb-3"><i class="fas fa-credit-card me-2"></i>Payment Summary</h6>
                         
-                        @if($order->payment_status == 'PAID')
-                        <div class="payment-item">
-                            <span class="payment-label">Amount Paid:</span>
-                            <span class="payment-value">₹{{ number_format($order->grand_total, 2) }}</span>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-muted">Amount Paid:</span>
+                            <span class="fw-bold text-success">₹{{ number_format($order->amount_paid ?? 0, 2) }}</span>
                         </div>
-                        <div class="payment-item">
-                            <span class="payment-label">Balance:</span>
-                            <span class="payment-value">₹0.00</span>
-                        </div>
-                        @elseif($order->payment_status == 'MISCORDER')
-                        <div class="payment-item">
-                            <span class="payment-label">Amount Paid:</span>
-                            <span class="payment-value">₹{{ number_format($order->amount_paid ?? 0, 2) }}</span>
-                        </div>
-                        <div class="payment-item">
-                            <span class="payment-label">Balance:</span>
-                            <span class="payment-value">
-                                ₹{{ number_format($order->grand_total - ($order->amount_paid ?? 0), 2) }}
-                            </span>
-                        </div>
-                        @else
-                        <div class="payment-item">
-                            <span class="payment-label">Amount Paid:</span>
-                            <span class="payment-value">₹{{ number_format($order->grand_total, 2) }}</span>
+                        
+                        @php
+                            $balance = $finalAmount - ($order->amount_paid ?? 0);
+                        @endphp
+                        
+                        @if($balance > 0)
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-muted">Balance Due:</span>
+                            <span class="fw-bold text-danger">₹{{ number_format($balance, 2) }}</span>
                         </div>
                         @endif
                         
-                        <div class="payment-item">
-                            <span class="payment-label">Payment Method:</span>
-                            <span>{{ $order->payment_method ?? 'Not specified' }}</span>
+                        <div class="alert {{ $order->payment_status == 'PAID' ? 'alert-success' : ($order->payment_status == 'MISCORDER' ? 'alert-warning' : 'alert-info') }} mt-2 mb-0">
+                            <i class="fas {{ $order->payment_status == 'PAID' ? 'fa-check-circle' : ($order->payment_status == 'MISCORDER' ? 'fa-exclamation-triangle' : 'fa-clock') }} me-2"></i>
+                            @if($order->payment_status == 'PAID')
+                                <strong>Payment Completed:</strong> This order has been fully paid.
+                            @elseif($order->payment_status == 'MISCORDER')
+                                <strong>Miscorder Status:</strong> Customer ate but payment not completed.
+                            @else
+                                <strong>Payment Pending:</strong> This order requires payment.
+                            @endif
                         </div>
-                        
-                        @if($order->payment_status == 'PAID')
-                        <div class="alert alert-success mt-3 mb-0">
-                            <i class="fas fa-check-circle me-2"></i>
-                            <strong>Payment Completed:</strong> This order has been fully paid.
-                        </div>
-                        @elseif($order->payment_status == 'MISCORDER')
-                        <div class="alert alert-warning mt-3 mb-0">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>Miscorder Status:</strong> Customer ate but payment not completed.
-                        </div>
-                        @else
-                        <div class="alert alert-info mt-3 mb-0">
-                            <i class="fas fa-clock me-2"></i>
-                            <strong>Payment Pending:</strong> This order requires payment.
-                        </div>
-                        @endif
                     </div>
                 </div>
 
-                <!-- Print & Actions -->
-                <div class="d-flex gap-2 mt-3">
-                    <a href="{{route('order.report')}}" class="btn btn-primary text-white">
-                        <i class="fas fa-print me-2"></i>Back
+                <!-- Action Buttons -->
+                <div class="action-buttons mt-4">
+                    <a href="{{ route('order.report.management') }}" class="btn btn-secondary btn-action">
+                        <i class="fas fa-arrow-left"></i> Back to Reports
                     </a>
-                    <a href="{{ route('order.invoice', $order->id) }}" class="btn btn-success" target="_blank">
-                        <i class="fas fa-file-pdf me-2"></i>Download PDF
+                    <a href="{{ route('order.invoice', $order->id) }}" class="btn btn-success btn-action" target="_blank">
+                        <i class="fas fa-print"></i> Print Invoice
                     </a>
                     @if($order->payment_status == 'PENDING')
-                    <a href="{{ route('order.edit', $order->id) }}" class="btn btn-warning">
-                        <i class="fas fa-edit me-2"></i>Edit Order
+                    <a href="{{ route('order.edit', $order->id) }}" class="btn btn-warning btn-action">
+                        <i class="fas fa-edit"></i> Edit Order
+                    </a>
+                    <a href="{{ route('order.payment', $order->id) }}" class="btn btn-info btn-action">
+                        <i class="fas fa-cash-register"></i> Add Payment
                     </a>
                     @endif
                 </div>
@@ -598,29 +638,51 @@
 </div>
 
 @include('includes.script')
+
 <script>
-    // Print styling
-    @media print {
-        body * {
-            visibility: hidden;
-        }
-        .pc-content, .pc-content * {
-            visibility: visible;
-        }
-        .pc-content {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-        }
-        .back-btn, .btn {
-            display: none !important;
-        }
-        .card {
-            box-shadow: none !important;
-            border: 1px solid #ddd !important;
-        }
-    }
+// Smooth page load animation
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.card-modern');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = (index * 0.1) + 's';
+    });
+});
 </script>
+
+<style>
+    /* Additional styles */
+    .text-purple {
+        color: #8b5cf6;
+    }
+    
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, var(--primary), #34495e);
+    }
+    
+    .table-responsive::-webkit-scrollbar {
+        height: 6px;
+    }
+    
+    .table-responsive::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: var(--secondary);
+        border-radius: 10px;
+    }
+    
+    .final-total {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.01); }
+        100% { transform: scale(1); }
+    }
+</style>
+
 </body>
 </html>

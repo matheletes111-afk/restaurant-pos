@@ -44,24 +44,27 @@
             <div class="card-header">
               <h5>Plan Information</h5>
             </div>
+
             <div class="card-body">
               @include('includes.message')
-              
+
               <form method="POST" action="{{ route('plans.store') }}">
                 @csrf
-                
+
                 <div class="row">
                   <div class="col-md-6">
                     <div class="form-group">
                       <label for="name">Plan Name *</label>
-                      <input type="text" class="form-control" id="name" name="name" value="{{ old('name') }}" required>
+                      <input type="text" class="form-control" id="name" name="name"
+                             value="{{ old('name') }}" required>
                     </div>
                   </div>
-                  
+
                   <div class="col-md-6">
                     <div class="form-group">
                       <label for="price">Price *</label>
-                      <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" value="{{ old('price') }}" required>
+                      <input type="number" class="form-control" id="price" name="price"
+                             step="0.01" min="0" value="{{ old('price') }}" required>
                     </div>
                   </div>
                 </div>
@@ -70,10 +73,11 @@
                   <div class="col-md-6">
                     <div class="form-group">
                       <label for="country_id">Country ID</label>
-                      <input type="number" class="form-control" id="country_id" name="country_id" value="{{ old('country_id') }}">
+                      <input type="number" class="form-control" id="country_id" name="country_id"
+                             value="{{ old('country_id') }}">
                     </div>
                   </div>
-                  
+
                   <div class="col-md-6">
                     <div class="form-group">
                       <label for="currency">Currency</label>
@@ -98,11 +102,12 @@
                       </select>
                     </div>
                   </div>
-                  
+
                   <div class="col-md-6">
                     <div class="form-group">
                       <label for="duration_days">Duration (Days) *</label>
-                      <input type="number" class="form-control" id="duration_days" name="duration_days" min="1" value="{{ old('duration_days', 30) }}" required>
+                      <input type="number" class="form-control" id="duration_days" name="duration_days"
+                             min="1" value="{{ old('duration_days', 30) }}" required>
                     </div>
                   </div>
                 </div>
@@ -117,7 +122,7 @@
                       </select>
                     </div>
                   </div>
-                  
+
                   <div class="col-md-6">
                     <div class="form-group">
                       <label for="is_default_paid">Default Paid Plan *</label>
@@ -129,16 +134,43 @@
                   </div>
                 </div>
 
+                <!-- NEW DEFAULT PLAN CHECKBOX -->
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group">
+    <label>Set as Default Plan</label>
+
+    <div class="custom-control custom-checkbox mt-2">
+        <input type="checkbox"
+               class="custom-control-input"
+               id="is_default_plan">
+
+        <label class="custom-control-label" for="is_default_plan">
+            Set as Default
+        </label>
+    </div>
+
+    <!-- Actual value sent to backend -->
+    <input type="hidden"
+           name="is_default_plan"
+           id="is_default_plan_value"
+           value="N">
+</div>
+                  </div>
+                </div>
+
                 <div class="form-group">
                   <label for="description">Description</label>
-                  <textarea class="form-control" id="description" name="description" rows="3">{{ old('description') }}</textarea>
+                  <textarea class="form-control" id="description" name="description"
+                            rows="3">{{ old('description') }}</textarea>
                 </div>
 
                 <div class="row">
                   <div class="col-md-6">
                     <div class="form-group">
                       <label for="category_number">Category Number</label>
-                      <input type="number" class="form-control" id="category_number" name="category_number"
+                      <input type="number" class="form-control" id="category_number"
+                             name="category_number"
                              value="{{ old('category_number') }}" min="0">
                     </div>
                   </div>
@@ -146,7 +178,8 @@
                   <div class="col-md-6">
                     <div class="form-group">
                       <label for="total_number_of_dishes">Total Number of Dishes</label>
-                      <input type="number" class="form-control" id="total_number_of_dishes" name="total_number_of_dishes"
+                      <input type="number" class="form-control" id="total_number_of_dishes"
+                             name="total_number_of_dishes"
                              value="{{ old('total_number_of_dishes') }}" min="0">
                     </div>
                   </div>
@@ -156,7 +189,8 @@
                   <div class="col-md-6">
                     <div class="form-group">
                       <label for="total_number_of_table">Total Number of Tables</label>
-                      <input type="number" class="form-control" id="total_number_of_table" name="total_number_of_table"
+                      <input type="number" class="form-control" id="total_number_of_table"
+                             name="total_number_of_table"
                              value="{{ old('total_number_of_table') }}" min="0">
                     </div>
                   </div>
@@ -176,6 +210,7 @@
                   <button type="submit" class="btn btn-primary">Create Plan</button>
                   <a href="{{ route('plans.index') }}" class="btn btn-secondary">Cancel</a>
                 </div>
+
               </form>
             </div>
           </div>
@@ -188,34 +223,58 @@
   <!-- JS -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
   @include('includes.script')
 
   <script>
-    $(document).ready(function() {
+    $(document).ready(function () {
+
       // Auto set duration based on billing cycle
-      $('#billing_cycle').on('change', function() {
+      $('#billing_cycle').on('change', function () {
+
         var cycle = $(this).val();
         var days = 30;
-        
-        switch(cycle) {
+
+        switch (cycle) {
           case 'monthly':
             days = 30;
             break;
+
           case 'quarterly':
             days = 90;
             break;
+
           case 'half-yearly':
             days = 180;
             break;
+
           case 'yearly':
             days = 365;
             break;
         }
-        
+
         $('#duration_days').val(days);
       });
+
     });
   </script>
+
+  <script>
+$(document).ready(function () {
+
+    // Checkbox Y/N value set
+    $('#is_default_plan').on('change', function () {
+
+        if ($(this).is(':checked')) {
+            $('#is_default_plan_value').val('Y');
+        } else {
+            $('#is_default_plan_value').val('N');
+        }
+
+    });
+
+});
+</script>
 
 </body>
 </html>

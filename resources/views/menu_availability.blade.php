@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Menu Availability | Manage Product Status</title>
+    <title>Menu Availability | Manage Product Status & Discounts</title>
     @include('includes.style')
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
@@ -143,6 +143,7 @@
         .filter-buttons {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
         
         .filter-btn {
@@ -292,11 +293,87 @@
             overflow: hidden;
         }
         
+        /* Price & Discount Section */
+        .price-section {
+            margin-bottom: 12px;
+        }
+        
+        .original-price {
+            font-size: 0.75rem;
+            color: var(--gray);
+            text-decoration: line-through;
+            margin-right: 8px;
+        }
+        
         .product-price {
             font-size: 1.2rem;
             font-weight: 700;
             color: var(--success);
+            display: inline-block;
+        }
+        
+        .discount-badge {
+            background: #FF6B35;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-left: 8px;
+            display: inline-block;
+        }
+        
+        /* Discount Input */
+        .discount-control {
             margin-bottom: 12px;
+        }
+        
+        .discount-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--gray);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .discount-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .discount-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #E2E8F0;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            background: #f8fafc;
+        }
+        
+        .discount-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(255,107,53,0.1);
+        }
+        
+        .discount-input.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .discount-symbol {
+            font-weight: 700;
+            color: var(--primary);
+            background: rgba(255,107,53,0.1);
+            padding: 8px 12px;
+            border-radius: 30px;
+            font-size: 0.8rem;
         }
         
         /* Toggle Switch - Capsule Design */
@@ -377,7 +454,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 1rem;
+            margin-top: 0.5rem;
             padding-top: 0.75rem;
             border-top: 1px solid #E2E8F0;
         }
@@ -406,6 +483,16 @@
         
         .toast-notification.error {
             border-left-color: var(--danger);
+        }
+        
+        /* Discount Update Indicator */
+        .discount-updated {
+            animation: discountPulse 0.4s ease;
+        }
+        
+        @keyframes discountPulse {
+            0% { background-color: rgba(46,158,79,0.2); }
+            100% { background-color: #f8fafc; }
         }
         
         /* Responsive */
@@ -471,6 +558,12 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        /* Tooltip */
+        .discount-tooltip {
+            cursor: help;
+            border-bottom: 1px dashed var(--gray);
+        }
     </style>
 </head>
 
@@ -488,9 +581,9 @@
             <div class="page-header-custom">
                 <h5>
                     <i class="fas fa-toggle-on"></i> 
-                    Menu Availability
+                    Menu Availability & Discounts
                 </h5>
-                <p>Manage your menu items visibility. Toggle ON/OFF to show/hide items from customers.</p>
+                <p>Manage your menu items visibility and set discount percentages. Discounts update in real-time.</p>
             </div>
             
             <!-- Stats Row -->
@@ -533,6 +626,7 @@
                     <button class="filter-btn" data-filter="inactive">Unavialable</button>
                     <button class="filter-btn" data-filter="veg">Veg</button>
                     <button class="filter-btn" data-filter="nonveg">Non-Veg</button>
+                    <button class="filter-btn" data-filter="discounted">Discounted</button>
                 </div>
             </div>
             
@@ -543,7 +637,9 @@
                      data-name="{{ strtolower($product->name) }}" 
                      data-category="{{ strtolower($product->category->name ?? '') }}"
                      data-status="{{ $product->status }}"
-                     data-foodtype="{{ $product->food_type }}">
+                     data-foodtype="{{ $product->food_type }}"
+                     data-discount="{{ $product->discount_percentage ?? 0 }}"
+                     data-price="{{ $product->price }}">
                     <div class="product-card">
                         <!-- Food Type Badge -->
                         <div class="food-type-badge {{ $product->food_type == 'VEG' ? 'veg' : 'non-veg' }}">
@@ -572,9 +668,41 @@
                                 <i class="fa fa-folder"></i> {{ $product->category->name ?? 'Uncategorized' }}
                             </div>
                             <h6 class="product-card-title">{{ $product->name }}</h6>
-                            <div class="product-price">
-                                ₹{{ number_format($product->price, 2) }}
-                                <small class="text-muted">GST {{ $product->gst_rate }}%</small>
+                            
+                            <!-- Price Section with Discount -->
+                            <div class="price-section">
+                                @php
+                                    $discountPercent = $product->discount_percentage ?? 0;
+                                    $originalPrice = $product->price;
+                                    $discountedPrice = $originalPrice - ($originalPrice * $discountPercent / 100);
+                                @endphp
+                                @if($discountPercent > 0)
+                                    <span class="original-price">₹{{ number_format($originalPrice, 2) }}</span>
+                                    <span class="product-price">₹{{ number_format($discountedPrice, 2) }}</span>
+                                    <span class="discount-badge">{{ $discountPercent }}% OFF</span>
+                                @else
+                                    <span class="product-price">₹{{ number_format($originalPrice, 2) }}</span>
+                                @endif
+                            </div>
+                            
+                            <!-- Discount Input Field -->
+                            <div class="discount-control">
+                                <div class="discount-label">
+                                    <i class="fas fa-tag"></i> 
+                                    <span class="discount-tooltip" title="Set discount percentage (0-100)">Discount %</span>
+                                </div>
+                                <div class="discount-input-group">
+                                    <input type="number" 
+                                           class="discount-input" 
+                                           id="discount_{{ $product->id }}"
+                                           data-id="{{ $product->id }}"
+                                           value="{{ $product->discount_percentage ?? 0 }}"
+                                           min="0"
+                                           max="100"
+                                           step="1"
+                                           placeholder="0">
+                                    <span class="discount-symbol">%</span>
+                                </div>
                             </div>
                             
                             <!-- Toggle & Status -->
@@ -600,7 +728,7 @@
                 <div class="col-12">
                     <div class="empty-state">
                         <i class="fa fa-utensils"></i>
-                        <p>No products found. Add some products to manage availability.</p>
+                        <p>No products found. Add some products to manage availability and discounts.</p>
                     </div>
                 </div>
                 @endforelse
@@ -666,7 +794,143 @@
                 }, 3000);
             }
             
-            // Toggle Status via AJAX
+            // Update Discount Display in UI
+            function updateDiscountDisplay(card, discountPercent, originalPrice) {
+                let priceSection = card.find('.price-section');
+                let discount = parseFloat(discountPercent) || 0;
+                let discountedPrice = originalPrice - (originalPrice * discount / 100);
+                
+                if (discount > 0) {
+                    let html = `<span class="original-price">₹${originalPrice.toFixed(2)}</span>
+                                <span class="product-price">₹${discountedPrice.toFixed(2)}</span>
+                                <span class="discount-badge">${discount}% OFF</span>`;
+                    priceSection.html(html);
+                } else {
+                    priceSection.html(`<span class="product-price">₹${originalPrice.toFixed(2)}</span>`);
+                }
+                
+                // Update data attribute
+                card.attr('data-discount', discount);
+            }
+            
+            // Handle Discount Update via AJAX (on keypress/change)
+            let discountTimeout;
+            $('.discount-input').on('input', function() {
+                let input = $(this);
+                let id = input.data('id');
+                let newDiscount = parseFloat(input.val());
+                let card = input.closest('.product-grid-item');
+                let originalPrice = parseFloat(card.data('price'));
+                
+                // Validate
+                if (isNaN(newDiscount)) newDiscount = 0;
+                if (newDiscount < 0) newDiscount = 0;
+                if (newDiscount > 100) newDiscount = 100;
+                
+                if (input.val() != newDiscount) {
+                    input.val(newDiscount);
+                }
+                
+                // Visual feedback - loading state
+                input.addClass('loading');
+                
+                // Clear previous timeout
+                if (discountTimeout) clearTimeout(discountTimeout);
+                
+                // Debounce update (wait for user to stop typing)
+                discountTimeout = setTimeout(function() {
+                    $.ajax({
+                        url: '{{ route("menu.discount.update") }}',
+                        type: 'POST',
+                        data: { 
+                            id: id, 
+                            discount_percentage: newDiscount 
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                // Update UI with new discount
+                                updateDiscountDisplay(card, newDiscount, originalPrice);
+                                
+                                // Add highlight animation
+                                input.addClass('discount-updated');
+                                setTimeout(() => input.removeClass('discount-updated'), 400);
+                                
+                                showToast(response.message);
+                            } else {
+                                // Revert to previous value from data
+                                let oldDiscount = card.data('discount');
+                                input.val(oldDiscount);
+                                showToast(response.message || 'Failed to update discount', true);
+                            }
+                        },
+                        error: function(xhr) {
+                            // Revert to original discount value
+                            let oldDiscount = card.data('discount');
+                            input.val(oldDiscount);
+                            let errorMsg = xhr.responseJSON?.message || 'Network error. Please try again.';
+                            showToast(errorMsg, true);
+                        },
+                        complete: function() {
+                            input.removeClass('loading');
+                        }
+                    });
+                }, 500); // 500ms debounce
+            });
+            
+            // Also update on blur (when focus leaves input)
+            $('.discount-input').on('blur', function() {
+                let input = $(this);
+                let id = input.data('id');
+                let newDiscount = parseFloat(input.val());
+                
+                if (isNaN(newDiscount)) newDiscount = 0;
+                if (newDiscount < 0) newDiscount = 0;
+                if (newDiscount > 100) newDiscount = 100;
+                
+                if (input.val() != newDiscount) {
+                    input.val(newDiscount);
+                }
+                
+                // Trigger immediate update if value changed
+                let card = input.closest('.product-grid-item');
+                let originalPrice = parseFloat(card.data('price'));
+                let oldDiscount = parseFloat(card.data('discount'));
+                
+                if (newDiscount !== oldDiscount) {
+                    // Clear timeout to avoid double update
+                    if (discountTimeout) clearTimeout(discountTimeout);
+                    
+                    input.addClass('loading');
+                    $.ajax({
+                        url: '{{ route("menu.discount.update") }}',
+                        type: 'POST',
+                        data: { 
+                            id: id, 
+                            discount_percentage: newDiscount 
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                updateDiscountDisplay(card, newDiscount, originalPrice);
+                                showToast(response.message);
+                            } else {
+                                input.val(oldDiscount);
+                                showToast(response.message || 'Failed to update discount', true);
+                            }
+                        },
+                        error: function(xhr) {
+                            input.val(oldDiscount);
+                            showToast('Network error. Please try again.', true);
+                        },
+                        complete: function() {
+                            input.removeClass('loading');
+                        }
+                    });
+                }
+            });
+            
+            // Toggle Status via AJAX (same as before)
             $('.status-toggle').on('change', function() {
                 let toggle = $(this);
                 let id = toggle.data('id');
@@ -674,7 +938,6 @@
                 let card = toggle.closest('.product-grid-item');
                 let statusBadge = $('#statusText_' + id);
                 
-                // Show loading
                 $('#loadingOverlay').addClass('active');
                 toggle.prop('disabled', true);
                 
@@ -685,10 +948,8 @@
                     dataType: 'json',
                     success: function(response) {
                         if (response.success) {
-                            // Update data-status attribute
                             card.attr('data-status', response.status);
                             
-                            // Update status badge
                             if (response.status === 'A') {
                                 statusBadge.html('<i class="fa fa-check-circle"></i> Available');
                                 statusBadge.removeClass('inactive').addClass('active');
@@ -697,23 +958,17 @@
                                 statusBadge.removeClass('active').addClass('inactive');
                             }
                             
-                            // Update stats
                             updateStats();
-                            
-                            // Show success toast
                             showToast(response.message);
                             
-                            // Re-apply current filter if active
                             let activeFilter = $('.filter-btn.active').data('filter');
                             applyFilter(activeFilter);
                         } else {
-                            // Revert toggle if failed
                             toggle.prop('checked', !isChecked);
                             showToast(response.message || 'Something went wrong', true);
                         }
                     },
                     error: function(xhr) {
-                        // Revert toggle on error
                         toggle.prop('checked', !isChecked);
                         let errorMsg = xhr.responseJSON?.message || 'Network error. Please try again.';
                         showToast(errorMsg, true);
@@ -735,6 +990,7 @@
                     let category = item.data('category');
                     let status = item.data('status');
                     let foodType = item.data('foodtype');
+                    let discount = parseFloat(item.data('discount') || 0);
                     
                     let matchesSearch = (name.includes(searchTerm) || category.includes(searchTerm));
                     let matchesFilter = true;
@@ -752,6 +1008,9 @@
                         case 'nonveg':
                             matchesFilter = (foodType === 'NON-VEG');
                             break;
+                        case 'discounted':
+                            matchesFilter = (discount > 0);
+                            break;
                         default:
                             matchesFilter = true;
                     }
@@ -763,8 +1022,6 @@
                     }
                 });
                 
-                // Update stats based on visible items? Or keep original? Keep original stats from DB
-                // But we can update counts for filtered view if needed
                 let visibleCount = $('.product-grid-item:visible').length;
                 if (visibleCount === 0) {
                     if ($('.product-grid .empty-message').length === 0) {
@@ -775,13 +1032,11 @@
                 }
             }
             
-            // Search input handler
             $('#searchInput').on('keyup', function() {
                 let activeFilter = $('.filter-btn.active').data('filter');
                 applyFilter(activeFilter);
             });
             
-            // Filter button handler
             $('.filter-btn').on('click', function() {
                 $('.filter-btn').removeClass('active');
                 $(this).addClass('active');
@@ -789,7 +1044,6 @@
                 applyFilter(filter);
             });
             
-            // Initial stats
             updateStats();
         });
     </script>

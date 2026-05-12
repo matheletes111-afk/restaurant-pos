@@ -26,6 +26,13 @@
             <span class="pc-mtext">Restaurant Master</span>
           </a>
         </li>
+
+        <li class="pc-item">
+          <a href="{{route('plans.index')}}" class="pc-link @if(Request::segment(2)=="plans") active_class @endif">
+            <span class="pc-micon"><i class="fas fa-layer-group"></i></span>
+            <span class="pc-mtext">Plan Master</span>
+          </a>
+        </li>
         @endif
 
 
@@ -223,11 +230,20 @@
     </li>
 
     <li class="pc-item">
+    <a href="{{ route('report.item.gst.summary') }}" class="pc-link">
+      <span class="pc-micon">
+        <i class="fas fa-file-invoice-dollar"></i>
+      </span>
+      <span class="pc-mtext">Item-Wise (GST)</span>
+    </a>
+  </li>
+
+    <li class="pc-item">
       <a href="{{ route('order.report.top.analysis') }}" class="pc-link">
         <span class="pc-micon">
           <i class="ti ti-trophy"></i>
         </span>
-        <span class="pc-mtext">Top Customer / Dish</span>
+        <span class="pc-mtext">Top Cust. / Dish</span>
       </a>
     </li>
 

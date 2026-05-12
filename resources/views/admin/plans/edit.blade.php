@@ -134,6 +134,38 @@
                   </div>
                 </div>
 
+                                <!-- NEW DEFAULT PLAN CHECKBOX -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group">
+
+            <label>Set as Default Plan</label>
+
+            <div class="custom-control custom-checkbox mt-2">
+
+                <input type="checkbox"
+                       class="custom-control-input"
+                       id="is_default_plan"
+                       {{ old('is_default_plan', $plan->is_default_plan) == 'Y' ? 'checked' : '' }}>
+
+                <label class="custom-control-label" for="is_default_plan">
+                    Set as Default
+                </label>
+
+            </div>
+
+            <!-- Actual value sent to backend -->
+            <input type="hidden"
+                   name="is_default_plan"
+                   id="is_default_plan_value"
+                   value="{{ old('is_default_plan', $plan->is_default_plan ?? 'N') }}">
+
+        </div>
+    </div>
+</div>
+
+
+
                 <div class="form-group">
                   <label for="description">Description</label>
                   <textarea class="form-control" id="description" name="description" rows="3">{{ old('description', $plan->description) }}</textarea>
@@ -205,6 +237,28 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
   @include('includes.script')
+  <script>
+$(document).ready(function () {
 
+    // Set initial value on page load
+    if ($('#is_default_plan').is(':checked')) {
+        $('#is_default_plan_value').val('Y');
+    } else {
+        $('#is_default_plan_value').val('N');
+    }
+
+    // Change value on checkbox toggle
+    $('#is_default_plan').on('change', function () {
+
+        if ($(this).is(':checked')) {
+            $('#is_default_plan_value').val('Y');
+        } else {
+            $('#is_default_plan_value').val('N');
+        }
+
+    });
+
+});
+</script>
 </body>
 </html>
