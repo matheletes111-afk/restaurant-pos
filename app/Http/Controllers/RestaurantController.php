@@ -7,7 +7,8 @@ use App\Models\User;
 use App\Models\RestaurantMaster;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Mail;
+use App\Mail\RestaurantRegistrationMail;
 class RestaurantController extends Controller
 {
     /**
@@ -55,6 +56,9 @@ class RestaurantController extends Controller
         DB::beginTransaction();
         
         try {
+            // Store plain password for email
+            $plainPassword = $request->password;
+            
             // 1. Create Owner User
             $user = new User();
             $user->name = $request->name;
@@ -81,9 +85,17 @@ class RestaurantController extends Controller
             $user->restaurant_id = $restaurant->id;
             $user->save();
 
+            // 4. Send Welcome Email with credentials
+            try {
+                Mail::to($user->email)->send(new RestaurantRegistrationMail($user, $plainPassword, $restaurant));
+            } catch (\Exception $mailError) {
+                // Log email error but don't rollback the transaction
+                \Log::error('Failed to send registration email: ' . $mailError->getMessage());
+            }
+
             DB::commit();
 
-            return redirect()->back()->with('success', 'Restaurant added successfully.');
+            return redirect()->back()->with('success', 'Restaurant added successfully. Login credentials have been sent to ' . $user->email);
 
         } catch (\Exception $e) {
             DB::rollBack();

@@ -373,6 +373,26 @@ Route::prefix('admin-enquiry')->name('admin.enquiry.')->group(function () {
     Route::get('/stats', [App\Http\Controllers\Admin\AdminEnquiryController::class, 'getStats'])->name('stats');
 });
 
+
+// Restaurant Support Routes
+Route::prefix('restaurant/support')->name('restaurant.support.')->group(function () {
+    Route::get('/create', [App\Http\Controllers\SupportController::class, 'createTicket'])->name('create');
+    Route::post('/store', [App\Http\Controllers\SupportController::class, 'storeTicket'])->name('store');
+    Route::get('/tickets', [App\Http\Controllers\SupportController::class, 'restaurantTickets'])->name('tickets');
+    Route::get('/ticket/{id}', [App\Http\Controllers\SupportController::class, 'viewTicket'])->name('ticket.view');
+    Route::post('/ticket/{id}/comment', [App\Http\Controllers\SupportController::class, 'addComment'])->name('comment.add');
+    Route::post('/ticket/{id}/resolve', [App\Http\Controllers\SupportController::class, 'markResolved'])->name('ticket.resolve');
+});
+
+// Admin Support Routes
+Route::prefix('admin-support')->name('admin.support.')->group(function () {
+    Route::get('/tickets', [App\Http\Controllers\SupportController::class, 'adminTickets'])->name('tickets');
+    Route::get('/ticket/{id}', [App\Http\Controllers\SupportController::class, 'adminViewTicket'])->name('ticket.view');
+    Route::post('/ticket/{id}/comment', [App\Http\Controllers\SupportController::class, 'adminAddComment'])->name('comment.add');
+    Route::post('/ticket/{id}/status', [App\Http\Controllers\SupportController::class, 'updateStatus'])->name('status.update');
+    Route::post('/ticket/{id}/assign', [App\Http\Controllers\SupportController::class, 'assignTicket'])->name('ticket.assign');
+});
+
 });
 
 });
