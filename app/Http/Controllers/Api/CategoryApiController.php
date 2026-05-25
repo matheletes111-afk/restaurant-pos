@@ -60,7 +60,7 @@ class CategoryApiController extends Controller
             if ($request->hasFile('image')) {
                 $image = $request->file('image');
                 $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
-                $image->move(storage_path('app/public/category'), $filename);
+                $image->move("storage/app/public/category",$filename);
                 $new->image = $filename;
             }
             
@@ -141,7 +141,7 @@ class CategoryApiController extends Controller
                 
                 $image = $request->file('image');
                 $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
-                $image->move(storage_path('app/public/category'), $filename);
+                $image->move("storage/app/public/category",$filename);
                 $upd['image'] = $filename;
             }
             
@@ -192,4 +192,6 @@ class CategoryApiController extends Controller
             return Response::json($response, 500);
         }
     }
+
+
 }

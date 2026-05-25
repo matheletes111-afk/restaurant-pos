@@ -8,13 +8,13 @@
 <nav class="pc-sidebar">
   <div class="navbar-wrapper">
     <div class="m-header">
-      {{-- <a href="../dashboard/index.html" class="b-brand text-primary">
+      <a href="#" class="b-brand text-primary">
         
-        <img src="../assets/images/logo-dark.svg" class="img-fluid logo-lg" alt="logo">
-      </a> --}}
+        <img src="{{asset('logo.png')}}" class="img-fluid logo-lg mt-3" alt="logo">
+      </a>
     </div>
     <div class="navbar-content">
-      <ul class="pc-navbar">
+      <ul class="pc-navbar mt-3">
         
 
         
@@ -31,6 +31,15 @@
           <a href="{{route('plans.index')}}" class="pc-link @if(Request::segment(2)=="plans") active_class @endif">
             <span class="pc-micon"><i class="fas fa-layer-group"></i></span>
             <span class="pc-mtext">Plan Master</span>
+          </a>
+        </li>
+
+         <li class="pc-item">
+          <a href="{{route('admin.payment.history')}}" class="pc-link @if(Request::segment(2)=="payment-history") active_class @endif">
+            <span class="pc-micon">
+              <i class="fas fa-receipt"></i>
+            </span>
+            <span class="pc-mtext">Payment History</span>
           </a>
         </li>
         @endif
@@ -118,6 +127,16 @@
       <i class="fas fa-robot"></i>
     </span>
     <span class="pc-mtext">Restro AI</span>
+  </a>
+</li>
+
+<li class="pc-item">
+  <a href="{{ route('admin.subscriptions.index') }}" 
+     class="pc-link @if(Request::segment(2) == 'subscriptions') active_class @endif">
+    <span class="pc-micon">
+      <i class="fas fa-credit-card"></i>
+    </span>
+    <span class="pc-mtext">Billing & Subscription</span>
   </a>
 </li>
 
@@ -431,7 +450,7 @@
       </div>
     </li>
     <li class="dropdown pc-h-item header-user-profile">
-     {{--  <a
+      <a
         class="pc-head-link dropdown-toggle arrow-none me-0"
         data-bs-toggle="dropdown"
         href="#"
@@ -440,96 +459,24 @@
         data-bs-auto-close="outside"
         aria-expanded="false"
       >
-        <img src="../assets/images/user/avatar-2.jpg" alt="user-image" class="user-avtar"> --}}
-        <span>Welcome , Admin</span>
+        
+        <span>Welcome , {{auth()->user()->name}}</span>
       </a>
       <div class="dropdown-menu dropdown-user-profile dropdown-menu-end pc-h-dropdown">
         <div class="dropdown-header">
           <div class="d-flex mb-1">
-            <div class="flex-shrink-0">
-              <img src="../assets/images/user/avatar-2.jpg" alt="user-image" class="user-avtar wid-35">
-            </div>
+            
             <div class="flex-grow-1 ms-3">
-              <h6 class="mb-1">Stebin Ben</h6>
-              <span>UI/UX Designer</span>
+              <a href="{{route('restaurant.profile.index')}}">
+              <h6 class="mb-1">{{auth()->user()->restaurant->name}}</h6>
+              <span style="color:orange;"><i class="fas fa-user me-2"></i>View Profile</span>
+            </a>
+            
             </div>
-            <a href="#!" class="pc-head-link bg-transparent"><i class="ti ti-power text-danger"></i></a>
+            <a href="{{route('logout')}}" class="pc-head-link bg-transparent"><i class="ti ti-power text-danger"></i></a>
           </div>
         </div>
-        <ul class="nav drp-tabs nav-fill nav-tabs" id="mydrpTab" role="tablist">
-          <li class="nav-item" role="presentation">
-            <button
-              class="nav-link active"
-              id="drp-t1"
-              data-bs-toggle="tab"
-              data-bs-target="#drp-tab-1"
-              type="button"
-              role="tab"
-              aria-controls="drp-tab-1"
-              aria-selected="true"
-              ><i class="ti ti-user"></i> Profile</button
-            >
-          </li>
-          <li class="nav-item" role="presentation">
-            <button
-              class="nav-link"
-              id="drp-t2"
-              data-bs-toggle="tab"
-              data-bs-target="#drp-tab-2"
-              type="button"
-              role="tab"
-              aria-controls="drp-tab-2"
-              aria-selected="false"
-              ><i class="ti ti-settings"></i> Setting</button
-            >
-          </li>
-        </ul>
-        <div class="tab-content" id="mysrpTabContent">
-          <div class="tab-pane fade show active" id="drp-tab-1" role="tabpanel" aria-labelledby="drp-t1" tabindex="0">
-            <a href="#!" class="dropdown-item">
-              <i class="ti ti-edit-circle"></i>
-              <span>Edit Profile</span>
-            </a>
-            <a href="#!" class="dropdown-item">
-              <i class="ti ti-user"></i>
-              <span>View Profile</span>
-            </a>
-            <a href="#!" class="dropdown-item">
-              <i class="ti ti-clipboard-list"></i>
-              <span>Social Profile</span>
-            </a>
-            <a href="#!" class="dropdown-item">
-              <i class="ti ti-wallet"></i>
-              <span>Billing</span>
-            </a>
-            <a href="#!" class="dropdown-item">
-              <i class="ti ti-power"></i>
-              <span>Logout</span>
-            </a>
-          </div>
-          <div class="tab-pane fade" id="drp-tab-2" role="tabpanel" aria-labelledby="drp-t2" tabindex="0">
-            <a href="#!" class="dropdown-item">
-              <i class="ti ti-help"></i>
-              <span>Support</span>
-            </a>
-            <a href="#!" class="dropdown-item">
-              <i class="ti ti-user"></i>
-              <span>Account Settings</span>
-            </a>
-            <a href="#!" class="dropdown-item">
-              <i class="ti ti-lock"></i>
-              <span>Privacy Center</span>
-            </a>
-            <a href="#!" class="dropdown-item">
-              <i class="ti ti-messages"></i>
-              <span>Feedback</span>
-            </a>
-            <a href="#!" class="dropdown-item">
-              <i class="ti ti-list"></i>
-              <span>History</span>
-            </a>
-          </div>
-        </div>
+        
       </div>
     </li>
   </ul>

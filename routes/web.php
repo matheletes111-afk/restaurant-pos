@@ -97,6 +97,12 @@ Route::post('manage-restaurant/insert', [RestaurantController::class, 'store'])-
 Route::post('manage-restaurant/update', [RestaurantController::class, 'update'])->name('manage.restaurant.update');
 Route::get('manage-restaurant/status/{id}', [RestaurantController::class, 'status'])->name('manage.restaurant.status');
 Route::get('manage-restaurant/delete/{id}', [RestaurantController::class, 'delete'])->name('manage.restaurant.delete');
+// Restaurant Custom Plan Assignment Routes
+Route::get('manage-restaurant/plans/{id}', [RestaurantController::class, 'showPlans'])->name('manage.restaurant.show.plans');
+Route::post('manage-restaurant/save-plans', [RestaurantController::class, 'savePlans'])->name('manage.restaurant.save.plans');
+
+
+
 
 // manage-menu-category
 Route::get('manage-menu-category',[App\Http\Controllers\Category\CategoryController::class,'index'])->name('manage.category');
@@ -248,6 +254,14 @@ Route::get('admin/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdmin
     Route::get('plans/{id}/history', [\App\Http\Controllers\PlanController::class, 'history'])->name('admin.plans.history');
 
 
+    // Payment History Routes
+    
+        Route::get('/payment-history', [App\Http\Controllers\PaymentHistoryController::class, 'index'])->name('admin.payment.history');
+        Route::get('/payment-history/{id}', [App\Http\Controllers\PaymentHistoryController::class, 'show'])->name('admin.payment.history.show');
+   
+
+
+
     // Subscription routes
     Route::get('subscriptions', [\App\Http\Controllers\SubscriptionController::class, 'index'])->name('admin.subscriptions.index');
     Route::get('plans/{plan}/subscribe', [\App\Http\Controllers\SubscriptionController::class, 'create'])->name('admin.subscriptions.create');
@@ -260,6 +274,8 @@ Route::get('admin/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdmin
     Route::delete('subscriptions/{id}/cancel', [\App\Http\Controllers\SubscriptionController::class, 'cancel'])->name('admin.subscriptions.cancel');
     Route::post('razorpay/webhook', [\App\Http\Controllers\Admin\WebhookController::class, 'handle']);
     
+    // Restaurant Plans View
+    Route::get('restaurant/plans', [App\Http\Controllers\RestaurantPlanController::class, 'showPlans'])->name('restaurant.plans');
     
     // unit master
     Route::get('manage-units', [App\Http\Controllers\UnitMasterController::class, 'index'])->name('manage.units');
@@ -391,6 +407,13 @@ Route::prefix('admin-support')->name('admin.support.')->group(function () {
     Route::post('/ticket/{id}/comment', [App\Http\Controllers\SupportController::class, 'adminAddComment'])->name('comment.add');
     Route::post('/ticket/{id}/status', [App\Http\Controllers\SupportController::class, 'updateStatus'])->name('status.update');
     Route::post('/ticket/{id}/assign', [App\Http\Controllers\SupportController::class, 'assignTicket'])->name('ticket.assign');
+});
+
+// Restaurant Profile Routes
+Route::prefix('restaurant/profile')->name('restaurant.profile.')->group(function () {
+    Route::get('/', [App\Http\Controllers\RestaurantProfileController::class, 'showProfile'])->name('index');
+    Route::post('/update', [App\Http\Controllers\RestaurantProfileController::class, 'updateProfile'])->name('update');
+    Route::post('/update-password', [App\Http\Controllers\RestaurantProfileController::class, 'updatePassword'])->name('password.update');
 });
 
 });

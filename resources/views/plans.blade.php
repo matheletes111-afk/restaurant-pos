@@ -3,542 +3,497 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Plans - RestoPOS</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Your Plans - RestoPOS</title>
+    @include('includes.style')
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
         :root {
-            --primary: #1a237e;
-            --primary-light: #534bae;
-            --primary-dark: #000051;
-            --secondary: #ff6f00;
-            --secondary-light: #ffa040;
-            --secondary-dark: #c43e00;
-            --accent: #00b0ff;
-            --light: #f8f9ff;
-            --dark: #121212;
-            --gray: #8a8d93;
-            --success: #4caf50;
-            --shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-            --shadow-hover: 0 30px 60px rgba(0, 0, 0, 0.12);
+            --gold: #C9A84C;
+            --gold-light: #E8C97A;
+            --gold-dim: rgba(201,168,76,0.15);
+            --obsidian: #0A0A0B;
+            --deep: #111114;
+            --surface: #17171C;
+            --surface-2: #1E1E25;
+            --surface-3: #26262F;
+            --rim: rgba(255,255,255,0.07);
+            --rim-strong: rgba(255,255,255,0.12);
+            --text-primary: #F2EEE6;
+            --text-secondary: rgba(242,238,230,0.55);
+            --text-muted: rgba(242,238,230,0.3);
+            --success: #3DD68C;
+            --danger: #FF6B6B;
+            --radius-xl: 24px;
+            --radius-lg: 18px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --glow: 0 0 40px rgba(201,168,76,0.12);
         }
-        
+
         body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
-            color: var(--dark);
+            background-color: var(--obsidian);
+            background-image:
+                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201,168,76,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 100%, rgba(201,168,76,0.05) 0%, transparent 50%);
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text-primary);
             min-height: 100vh;
-            overflow-x: hidden;
+            padding-bottom: 80px;
         }
-        
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.6;
+        }
+
         .plans-container {
-            padding: 40px 0 80px 0;
+            max-width: 1380px;
+            margin: 0 auto;
+            padding: 40px 20px;
             position: relative;
-        }
-        
-        /* Background decorative elements */
-        .bg-decoration {
-            position: absolute;
-            z-index: -1;
-        }
-        
-        .bg-circle-1 {
-            width: 300px;
-            height: 300px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, rgba(26, 35, 126, 0.05) 0%, rgba(255, 111, 0, 0.05) 100%);
-            top: -150px;
-            right: -150px;
-        }
-        
-        .bg-circle-2 {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, rgba(0, 176, 255, 0.05) 0%, rgba(76, 175, 80, 0.05) 100%);
-            bottom: -100px;
-            left: -100px;
-        }
-        
-        .page-header {
-            text-align: center;
-            margin-bottom: 50px;
-            position: relative;
-            padding-top: 20px;
-        }
-        
-        .page-header h1 {
-            color: var(--primary);
-            font-weight: 800;
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            position: relative;
-            display: inline-block;
-        }
-        
-        .page-header h1:after {
-            content: '';
-            position: absolute;
-            width: 60%;
-            height: 4px;
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            bottom: -10px;
-            left: 20%;
-            border-radius: 2px;
-        }
-        
-        .page-header .subtitle {
-            color: var(--gray);
-            font-size: 1.1rem;
-            max-width: 700px;
-            margin: 25px auto 0;
-            line-height: 1.6;
-        }
-        
-        .user-welcome {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            padding: 12px 20px;
-            border-radius: 10px;
-            display: inline-block;
-            margin-top: 20px;
-            box-shadow: 0 8px 16px rgba(26, 35, 126, 0.15);
-            font-size: 0.95rem;
-        }
-        
-        .user-welcome i {
-            color: var(--secondary-light);
-            margin-right: 8px;
-        }
-        
-        /* Plan cards */
-        .plan-card {
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: var(--shadow);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            height: 100%;
-            position: relative;
-            border: none;
-            margin-bottom: 30px;
-        }
-        
-        .plan-card:hover {
-            transform: translateY(-10px);
-            box-shadow: var(--shadow-hover);
-        }
-        
-        .plan-card.popular {
-            border: 2px solid var(--secondary);
-            z-index: 10;
-        }
-        
-        .popular-badge {
-            position: absolute;
-            top: 15px;
-            right: -10px;
-            background: linear-gradient(135deg, var(--secondary), var(--secondary-dark));
-            color: white;
-            padding: 6px 20px;
-            border-radius: 20px 5px 5px 20px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 12px rgba(255, 111, 0, 0.3);
-            z-index: 20;
-        }
-        
-        .popular-badge:before {
-            content: '';
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 0;
-            height: 0;
-            border-left: 10px solid var(--secondary-dark);
-            border-top: 8px solid transparent;
-        }
-        
-        .plan-header {
-            padding: 30px 20px 25px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .plan-header:before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
             z-index: 1;
         }
-        
-        .plan-header-content {
+
+        /* Page Header */
+        .page-header-custom {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-radius: var(--radius-xl);
+            padding: 48px 40px;
+            margin-bottom: 48px;
             position: relative;
-            z-index: 2;
-        }
-        
-        .plan-name {
-            font-weight: 700;
-            font-size: 1.5rem;
-            color: white;
-            margin-bottom: 10px;
-        }
-        
-        .plan-price {
-            font-size: 2.8rem;
-            font-weight: 800;
-            color: white;
-            margin: 8px 0;
-            line-height: 1;
-        }
-        
-        .plan-price sup {
-            font-size: 1.2rem;
-            font-weight: 600;
-            top: -1.2rem;
-        }
-        
-        .plan-duration {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.95rem;
-            margin-top: 5px;
-        }
-        
-        .plan-body {
-            padding: 30px 20px;
+            overflow: hidden;
             text-align: center;
         }
-        
+
+        .page-header-custom::before {
+            content: '';
+            position: absolute;
+            top: -30%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(201,168,76,0.15), transparent);
+            border-radius: 50%;
+        }
+
+        .page-header-custom h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 700;
+            font-size: 2.8rem;
+            color: white;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-header-custom p {
+            color: rgba(255,255,255,0.7);
+            font-size: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .user-welcome {
+            background: rgba(255,255,255,0.15);
+            border-radius: 50px;
+            padding: 8px 20px;
+            display: inline-block;
+            margin-top: 20px;
+            font-size: 0.85rem;
+        }
+
+        /* Plan Cards */
+        .plan-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            border: 1px solid var(--rim);
+            transition: transform 0.35s cubic-bezier(.22,.68,0,1.2), box-shadow 0.35s ease, border-color 0.25s;
+            position: relative;
+            height: 100%;
+            animation: fadeUp 0.5s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .plan-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.2);
+            border-color: rgba(201,168,76,0.25);
+        }
+
+        .plan-card.default-plan {
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 30px rgba(201,168,76,0.2);
+        }
+
+        .default-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: var(--obsidian);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            z-index: 10;
+            letter-spacing: 0.05em;
+        }
+
+        .assigned-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        .plan-header {
+            padding: 30px 24px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--rim);
+        }
+
+        .plan-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 700;
+            font-size: 1.6rem;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .plan-price {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gold-light);
+            margin: 15px 0;
+        }
+
+        .plan-price small {
+            font-size: 0.8rem;
+            font-weight: normal;
+            color: var(--text-muted);
+        }
+
+        .plan-duration {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .plan-body {
+            padding: 24px;
+        }
+
         .plan-description {
-            color: var(--gray);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
             line-height: 1.6;
-            margin-bottom: 25px;
-            min-height: 60px;
-            font-size: 0.95rem;
+            margin-bottom: 20px;
+            min-height: 70px;
         }
-        
-        /* Plan color variations */
-        .plan-basic .plan-header:before {
-            background: linear-gradient(135deg, #607d8b, #455a64);
+
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
         }
-        
-        .plan-premium .plan-header:before {
-            background: linear-gradient(135deg, var(--secondary), var(--secondary-dark));
+
+        .plan-features li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--rim);
         }
-        
-        .plan-enterprise .plan-header:before {
-            background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+
+        .plan-features li:last-child {
+            border-bottom: none;
         }
-        
+
+        .plan-features i {
+            width: 20px;
+            color: var(--gold);
+            font-size: 0.8rem;
+        }
+
         /* Buttons */
+        .btn-current {
+            background: var(--surface-2);
+            border: 1px solid var(--rim-strong);
+            color: var(--text-secondary);
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            width: 100%;
+            cursor: not-allowed;
+        }
+
         .btn-select {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            padding: 14px 25px;
-            border-radius: 12px;
-            font-weight: 600;
+            background: linear-gradient(to right, #FF6A00, #FF8C42);
+            color: var(--obsidian);
             border: none;
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
             width: 100%;
-            max-width: 280px;
             transition: all 0.3s;
-            letter-spacing: 0.5px;
-            box-shadow: 0 8px 20px rgba(26, 35, 126, 0.2);
-            display: block;
-            margin: 0 auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        
+
         .btn-select:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 25px rgba(26, 35, 126, 0.3);
-            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255,106,0,0.35);
+            color: var(--obsidian);
         }
-        
-        .btn-secondary {
-            background: #e9ecef;
-            color: #6c757d;
-            padding: 14px 25px;
-            border-radius: 12px;
-            font-weight: 600;
-            width: 100%;
-            max-width: 280px;
-            border: none;
-            display: block;
-            margin: 0 auto;
+
+        .btn-select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
         }
-        
-        .btn-warning {
-            background: linear-gradient(135deg, #ffc107, #ff9800);
-            color: #212529;
-            padding: 14px 25px;
-            border-radius: 12px;
-            font-weight: 600;
-            width: 100%;
-            max-width: 280px;
-            border: none;
-            display: block;
-            margin: 0 auto;
-        }
-        
-        /* Success alert */
-        .alert-success {
-            background: linear-gradient(135deg, #d4edda, #c3e6cb);
-            border: none;
-            border-radius: 15px;
-            border-left: 5px solid var(--success);
-            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.1);
+
+        /* Alert */
+        .alert-custom {
+            background: var(--surface);
+            border: 1px solid var(--rim-strong);
+            border-radius: var(--radius-lg);
+            padding: 20px;
             margin-bottom: 30px;
+            text-align: center;
         }
-        
+
+        .alert-custom.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .alert-custom i {
+            margin-right: 10px;
+        }
+
+        /* Grid */
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
         /* Back link */
         .back-link {
             text-align: center;
             margin-top: 50px;
         }
-        
+
         .back-link a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 600;
-            padding: 12px 30px;
-            border-radius: 50px;
-            border: 2px solid var(--primary);
-            transition: all 0.3s;
             display: inline-flex;
             align-items: center;
-            font-size: 0.95rem;
+            gap: 8px;
+            background: var(--surface-2);
+            border: 1px solid var(--rim-strong);
+            color: var(--text-secondary);
+            padding: 12px 30px;
+            border-radius: 50px;
+            transition: all 0.3s;
         }
-        
+
         .back-link a:hover {
-            background: var(--primary);
-            color: white;
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(26, 35, 126, 0.2);
+            background: var(--surface-3);
+            border-color: rgba(201,168,76,0.4);
+            color: var(--gold-light);
+            transform: translateY(-2px);
         }
-        
-        .back-link a i {
-            margin-right: 8px;
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--rim);
         }
-        
-        a {
-            text-decoration: none;
+
+        .empty-state i {
+            font-size: 48px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
         }
-        
-        /* Animation for cards */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+
+        .empty-state h5 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
         }
-        
-        .plan-card {
-            animation: fadeInUp 0.6s ease forwards;
-            opacity: 0;
+
+        .empty-state p {
+            color: var(--text-muted);
         }
-        
-        .plan-card:nth-child(1) { animation-delay: 0.1s; }
-        .plan-card:nth-child(2) { animation-delay: 0.2s; }
-        .plan-card:nth-child(3) { animation-delay: 0.3s; }
-        
-        /* Responsive adjustments */
+
+        /* Responsive */
         @media (max-width: 768px) {
-            .plans-container {
-                padding: 30px 0 60px 0;
-            }
-            
-            .page-header h1 {
-                font-size: 2rem;
-            }
-            
-            .page-header .subtitle {
-                font-size: 1rem;
-                padding: 0 15px;
-            }
-            
-            .user-welcome {
-                font-size: 0.9rem;
-                padding: 10px 16px;
-            }
-            
-            .plan-header {
-                padding: 25px 15px 20px;
-            }
-            
-            .plan-body {
-                padding: 25px 15px;
-            }
-            
-            .plan-name {
-                font-size: 1.3rem;
-            }
-            
-            .plan-price {
-                font-size: 2rem;
-            }
-            
-            .btn-select, .btn-secondary, .btn-warning {
-                padding: 12px 20px;
-                font-size: 0.9rem;
-                max-width: 100%;
-            }
+            .plans-container { padding: 20px 15px; }
+            .page-header-custom { padding: 30px 20px; }
+            .page-header-custom h1 { font-size: 2rem; }
+            .plans-grid { grid-template-columns: 1fr; }
+            .plan-name { font-size: 1.3rem; }
+            .plan-price { font-size: 1.5rem; }
         }
-        
-        @media (max-width: 576px) {
-            .page-header h1 {
-                font-size: 1.8rem;
-            }
-            
-            .plan-price {
-                font-size: 1.8rem;
-            }
-            
-            .plan-description {
-                font-size: 0.9rem;
-            }
-            
-            .back-link a {
-                padding: 10px 20px;
-                font-size: 0.9rem;
-            }
-            
-            .container {
-                padding-left: 15px;
-                padding-right: 15px;
-            }
-        }
+
+        /* Animation delays */
+        .plan-card:nth-child(1) { animation-delay: 0.05s; }
+        .plan-card:nth-child(2) { animation-delay: 0.10s; }
+        .plan-card:nth-child(3) { animation-delay: 0.15s; }
     </style>
 </head>
+
 <body>
-    @auth
-    <div class="plans-container">
-        <!-- Background decorations -->
-        <div class="bg-decoration bg-circle-1 d-none d-lg-block"></div>
-        <div class="bg-decoration bg-circle-2 d-none d-md-block"></div>
-        
-        <div class="container">
-            <div class="page-header">
-                <h1><i class="fas fa-gem me-3"></i>Premium Plans</h1>
-                <p class="subtitle">Elevate your restaurant management with our premium plans. Choose the perfect solution tailored for your business needs.</p>
-                
-                <div class="user-welcome">
-                    <i class="fas fa-user-check"></i> Welcome, {{ Auth::user()->name }}! Restaurant: {{ Auth::user()->restaurant->name ?? 'Your Restaurant' }}
-                </div>
-            </div>
-            
-            @if(session('success'))
-                <div class="alert alert-success text-center">
-                    <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
-                </div>
-            @endif
-            
-            <div class="row justify-content-center">
-                @foreach($plans as $plan)
-                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 mb-4">
-                    <div class="plan-card {{ $loop->index == 1 ? 'popular' : '' }} plan-{{ $plan->name == 'Premium' ? 'premium' : ($plan->name == 'Enterprise' ? 'enterprise' : 'basic') }}">
-                        @if($loop->index == 1)
-                            {{-- <div class="popular-badge">RECOMMENDED</div> --}}
+<div class="plans-container">
+    <!-- Page Header -->
+    <div class="page-header-custom">
+        <h1><i class="fas fa-gem me-2"></i>Your Plans</h1>
+        <p>Here are the plans available for your restaurant</p>
+        <div class="user-welcome">
+            <i class="fas fa-store"></i> {{ Auth::user()->restaurant->name ?? 'Your Restaurant' }}
+        </div>
+    </div>
+
+    @if(session('success'))
+        <div class="alert-custom success">
+            <i class="fas fa-check-circle" style="color: var(--success);"></i> {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert-custom" style="border-left-color: var(--danger);">
+            <i class="fas fa-exclamation-circle" style="color: var(--danger);"></i> {{ session('error') }}
+        </div>
+    @endif
+
+@if($plans->count() > 0)
+<div class="row justify-content-center">
+    @foreach($plans as $plan)
+        @php
+            $isDefault = ($defaultPlan && $defaultPlan->id == $plan->id);
+            $isAssigned = in_array($plan->id, $assignedPlanIds);
+            // Only show "Currently Active" if the plan is specifically assigned (not just default)
+            $isCurrentlyActive = $isAssigned;
+            // For default plan, show subscribe option instead
+            $showSubscribe = !$isAssigned;
+        @endphp
+        <div class="col-md-4 col-lg-4 mb-4">
+            <div class="plan-card {{ $isDefault ? 'default-plan' : '' }}">
+                @if($isDefault)
+                    <div class="default-badge">
+                        <i class="fas fa-star"></i> Default Plan
+                    </div>
+                @endif
+                @if($isAssigned)
+                    <div class="assigned-badge">
+                        <i class="fas fa-check-circle"></i> Assigned to You
+                    </div>
+                @endif
+
+                <div class="plan-header">
+                    <h3 class="plan-name">{{ $plan->name }}</h3>
+                    <div class="plan-price">
+                        @if($plan->price == 0)
+                            FREE
+                        @else
+                            ₹{{ number_format($plan->price, 2) }}
+                            <small>/ {{ ucfirst($plan->billing_cycle) }}</small>
                         @endif
-                        
-                        <div class="plan-header">
-                            <div class="plan-header-content">
-                                <h3 class="plan-name">{{ $plan->name }}</h3>
-                                <div class="plan-price">₹ {{ $plan->price }}</div>
-                                <div class="plan-duration">Per {{ $plan->duration_days }} days</div>
-                            </div>
-                        </div>
-                        
-                        <div class="plan-body">
-                            <div class="plan-description">
-                                {{ $plan->description }}
-                            </div>
-                            
-                            <?php
-                                $user = auth()->user();
-                                $hasFreeTrial = \App\Models\Subscription::where('user_id', $user->id)
-                                    ->whereHas('plan', function($query) {
-                                        $query->where('price', 0);
-                                    })
-                                    ->exists();
-                                
-                                $isActive = \App\Models\Subscription::where('user_id', $user->id)
-                                    ->where('plan_id', $plan->id)
-                                    ->where('status', 'active')
-                                    ->exists();
-                            ?>
-                            
-                            @if($isActive)
-                                <button class="btn btn-secondary" disabled>
-                                    <i class="fas fa-check-circle me-2"></i> Current Plan
-                                </button>
-                            @elseif($plan->price == 0 && $hasFreeTrial)
-                                <button class="btn btn-warning" disabled title="You have already used your free trial">
-                                    <i class="fas fa-ban me-2"></i> Trial Already Used
-                                </button>
-                            @else
-                                <a href="{{ route('admin.subscriptions.create', $plan->id) }}" 
-                                   class="btn btn-select">
-                                    <i class="fas fa-shopping-cart me-2"></i> 
-                                    {{ $plan->price == 0 ? 'Start Free Trial' : 'Subscribe Now' }}
-                                </a>
-                            @endif
-                        </div>
+                    </div>
+                    <div class="plan-duration">
+                        <i class="fas fa-calendar-alt me-1"></i> {{ $plan->duration_days }} days validity
                     </div>
                 </div>
-                @endforeach
-            </div>
-            
-            <div class="back-link">
-                <a href="{{ route('logout') }}"><i class="fas fa-arrow-left me-2"></i> Logout</a>
-            </div>
-        </div>
-    </div>
-    @else
-    <div class="container text-center py-5">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="alert alert-danger" style="border-radius: 15px; padding: 30px;">
-                    <h4><i class="fas fa-exclamation-triangle me-2"></i> Authentication Required</h4>
-                    <p>Please log in to view our premium plans.</p>
-                    <a href="{{ route('login') }}" class="btn btn-primary mt-3">Login to Continue</a>
+
+                <div class="plan-body">
+                    <div class="plan-description">
+                        {{ $plan->description ?? 'Perfect plan for your restaurant needs' }}
+                    </div>
+
+                    <ul class="plan-features">
+                        <li><i class="fas fa-folder"></i> {{ $plan->category_number == 0 ? 'Unlimited' : $plan->category_number }} Categories</li>
+                        <li><i class="fas fa-utensils"></i> {{ $plan->total_number_of_dishes == 0 ? 'Unlimited' : $plan->total_number_of_dishes }} Dishes</li>
+                        <li><i class="fas fa-table"></i> {{ $plan->total_number_of_table == 0 ? 'Unlimited' : $plan->total_number_of_table }} Tables</li>
+                        <li><i class="fas fa-boxes"></i> Inventory {{ $plan->inventory_checkbox == 'Y' ? 'Enabled' : 'Disabled' }}</li>
+                    </ul>
+
+                    @if($isAssigned)
+                        <button class="btn-current" disabled>
+                            <i class="fas fa-check-circle me-2"></i> Currently Active
+                        </button>
+                    @else
+                        <a href="{{ route('admin.subscriptions.create', $plan->id) }}" class="btn-select">
+                            <i class="fas fa-shopping-cart me-2"></i>
+                            {{ $plan->price == 0 ? 'Start Free Trial' : 'Subscribe Now' }}
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
+    @endforeach
+</div>
+@else
+<div class="row">
+    <div class="col-md-12">
+        <div class="empty-state">
+            <i class="fas fa-box-open"></i>
+            <h5>No Plans Available</h5>
+            <p>No plans have been assigned to your restaurant yet.<br>Please contact the administrator.</p>
+            <a href="{{ route('logout') }}" class="btn-select" style="display: inline-block; width: auto; margin-top: 20px; padding: 10px 30px;">
+                <i class="fas fa-arrow-left me-2"></i> Go Back
+            </a>
+        </div>
     </div>
-    @endauth
+</div>
+@endif
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        // Enhanced animation for plan cards
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add hover effect to cards
-            const planCards = document.querySelectorAll('.plan-card');
-            planCards.forEach(card => {
-                card.addEventListener('mouseenter', function() {
-                    this.style.zIndex = '100';
-                });
-                
-                card.addEventListener('mouseleave', function() {
-                    this.style.zIndex = '1';
-                });
+    <div class="back-link">
+        <a href="{{ route('logout') }}">
+            <i class="fas fa-arrow-left"></i> Logout
+        </a>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+@include('includes.script')
+
+<script>
+    // Add hover effect animation
+    document.addEventListener('DOMContentLoaded', function() {
+        const planCards = document.querySelectorAll('.plan-card');
+        planCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.zIndex = '10';
+            });
+            card.addEventListener('mouseleave', function() {
+                this.style.zIndex = '1';
             });
         });
-    </script>
+    });
+</script>
+
 </body>
 </html>

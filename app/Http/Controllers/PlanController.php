@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Plan;
+use App\Models\RestaurantToCustomPlan;
 use App\Models\PlanHistory;
 use Razorpay\Api\Api;
 
@@ -13,6 +14,9 @@ class PlanController extends Controller
 {
     public function index()
     {
+        if (auth()->user()->role!="SA") {
+            return redirect()->route('restaurant.plans');
+        }
         $plans = Plan::where('is_delete', 'N')
                     ->orderBy('id', 'desc')
                     ->get();
@@ -20,14 +24,35 @@ class PlanController extends Controller
         return view('admin.plans.index', compact('plans'));
     }
 
-    public function selectPlan()
-    {
-        $plans = Plan::where('is_delete', 'N')
-                    ->orderBy('id', 'desc')
-                    ->get();
-        
-        return view('plans', compact('plans'));
-    }
+public function selectPlan()
+{
+    // Get restaurant ID from authenticated user
+    $restaurantId = auth()->user()->restaurant_id;
+    
+    // Get assigned plan IDs for this restaurant from custom assignments
+    $assignedPlanIds = RestaurantToCustomPlan::where('restaurant_id', $restaurantId)
+        ->pluck('plan_id')
+        ->toArray();
+    
+    // Get default plan (free plan or plan marked as default)
+    $defaultPlan = Plan::where(function($q) {
+            $q->where('is_default_plan', 'Y')
+              ->orWhere('price', 0);
+        })
+        ->where('is_delete', 'N')
+        ->first();
+    
+    // Merge default plan ID with assigned plan IDs (remove duplicates)
+    $planIdsToShow = array_unique(array_merge($assignedPlanIds, $defaultPlan ? [$defaultPlan->id] : []));
+    
+    // Get ONLY the plans that are assigned to this restaurant OR the default plan
+    $plans = Plan::whereIn('id', $planIdsToShow)
+                ->where('is_delete', 'N')
+                ->orderByRaw("FIELD(id, " . implode(',', $planIdsToShow) . ")")
+                ->get();
+    
+    return view('plans', compact('plans', 'assignedPlanIds', 'defaultPlan'));
+}
 
     public function create()
     {

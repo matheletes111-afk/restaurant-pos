@@ -120,6 +120,24 @@
             padding-top: 6px;
         }
         
+        /* GST Info Box */
+        .gst-info {
+            background: #f0fdf4;
+            padding: 5px;
+            margin: 5px 0;
+            text-align: center;
+            font-size: 8px;
+            border: 1px solid #bbf7d0;
+        }
+        .non-gst-info {
+            background: #fef3c7;
+            padding: 5px;
+            margin: 5px 0;
+            text-align: center;
+            font-size: 8px;
+            border: 1px solid #fde68a;
+        }
+        
         /* Payment Section */
         .payment-info {
             margin: 6px 0;
@@ -159,8 +177,8 @@
                 @if(!empty($restaurant_details->phone))
                 Tel: {{ $restaurant_details->phone }}<br>
                 @endif
-                @if(!empty($restaurant_details->gst_no))
-                GST: {{ $restaurant_details->gst_no }}
+                @if(!empty($restaurant_details->gstin))
+                GSTIN: {{ $restaurant_details->gstin }}
                 @endif
             </div>
         </div>
@@ -201,6 +219,17 @@
             <span>{{ ucfirst($order->order_status) }}</span>
         </div>
         
+        <!-- GST Info Box -->
+        @if(isset($order->is_gst_bill) && $order->is_gst_bill == 'YES')
+        <div class="gst-info">
+            <i class="fas fa-file-invoice-dollar"></i> GST Bill ({{ $order->restaurant_gst_percentage ?? 0 }}% GST)
+        </div>
+        @else
+        <div class="non-gst-info">
+            <i class="fas fa-receipt"></i> Non-GST Bill
+        </div>
+        @endif
+        
         <div class="line-dotted"></div>
         
         <!-- Items Header -->
@@ -216,6 +245,8 @@
             <tbody>
                 @php
                     $displaySubtotal = 0;
+                    $isGstBill = isset($order->is_gst_bill) && $order->is_gst_bill == 'YES';
+                    $restaurantGstPercentage = $order->restaurant_gst_percentage ?? 0;
                 @endphp
                 @foreach($order->orderItems as $item)
                 @php
@@ -224,7 +255,10 @@
                     $discountedPrice = $item->discounted_price ?? ($originalPrice - ($originalPrice * $itemDiscount / 100));
                     $quantity = $item->quantity;
                     $taxableAmount = $item->taxable_amount ?? ($discountedPrice * $quantity);
-                    $gstAmount = $item->gst_amount ?? (($taxableAmount * ($item->gst_rate ?? 0)) / 100);
+                    
+                    // Use restaurant GST percentage if GST bill, otherwise 0
+                    $gstRate = $isGstBill ? $restaurantGstPercentage : 0;
+                    $gstAmount = $item->gst_amount ?? (($taxableAmount * $gstRate) / 100);
                     $itemTotal = $taxableAmount + $gstAmount;
                     $displaySubtotal += $originalPrice * $quantity;
                 @endphp
@@ -246,10 +280,10 @@
                     </td>
                     <td class="right">{{ number_format($itemTotal, 2) }}</td>
                 </tr>
-                @if($item->gst_rate > 0)
+                @if($isGstBill && $gstRate > 0)
                 <tr class="gst-note">
                     <td colspan="4" class="right">
-                        (GST {{ number_format($item->gst_rate, 2) }}%: {{ number_format($gstAmount, 2) }})
+                        (GST {{ number_format($gstRate, 2) }}%: {{ number_format($gstAmount, 2) }})
                     </td>
                 </tr>
                 @endif
@@ -293,10 +327,12 @@
                 <td>{{ number_format($totalTaxableAmount, 2) }}</td>
             </tr>
             
+            @if($isGstBill && $totalGstAmount > 0)
             <tr>
-                <td>GST Total:</td>
+                <td>GST Total ({{ $restaurantGstPercentage }}%):</td>
                 <td>{{ number_format($totalGstAmount, 2) }}</td>
             </tr>
+            @endif
             
             @if($orderDiscountPercent > 0)
             <tr>
@@ -348,6 +384,14 @@
             </div>
             @endif
             @endif
+        </div>
+        <div class="line-dotted"></div>
+        @endif
+        
+        <!-- GST Summary for Non-GST Bill -->
+        @if(!$isGstBill)
+        <div class="non-gst-info" style="margin-top: 5px;">
+            <strong>Note:</strong> This is a Non-GST bill. No tax applicable.
         </div>
         <div class="line-dotted"></div>
         @endif

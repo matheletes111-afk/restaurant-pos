@@ -734,7 +734,7 @@ public function paymentSuccess(Request $request)
     {
         try {
             $subscription = Subscription::where('id', $id)
-                ->where('user_id', auth()->id())
+                ->where('user_id', auth()->user()->restaurant_id)
                 ->where('status', 'active')
                 ->firstOrFail();
 

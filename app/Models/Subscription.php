@@ -30,9 +30,10 @@ class Subscription extends Model
         'refund_amount' => 'decimal:2',
     ];
 
-    public function user()
+    
+    public function restaurant_details()
     {
-        return $this->belongsTo(User::class);
+        return $this->hasOne('App\Models\RestaurantMaster','id','user_id');
     }
 
     public function plan()

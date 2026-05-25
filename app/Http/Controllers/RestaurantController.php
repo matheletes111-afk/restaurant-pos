@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\RestaurantRegistrationMail;
+use App\Models\Plan;
+use App\Models\RestaurantToCustomPlan;
 class RestaurantController extends Controller
 {
     /**
@@ -240,5 +242,62 @@ class RestaurantController extends Controller
         ];
         
         return view('restaurant.analytics', $data);
+    }
+
+        /**
+     * Show plan assignment page for specific restaurant
+     */
+    public function showPlans($id)
+    {
+        // Get restaurant details
+        $restaurant = RestaurantMaster::with('owner')->findOrFail($id);
+        
+        // Get all custom plans (where is_default_free = 'N')
+        $plans = Plan::where('is_delete', 'N')
+            ->where('is_default_free', 'N')
+            ->orderBy('name', 'asc')
+            ->get();
+        
+        // Get already assigned plan IDs for this restaurant
+        $assignedPlanIds = RestaurantToCustomPlan::where('restaurant_id', $id)
+            ->pluck('plan_id')
+            ->toArray();
+        
+        return view('restaurant.assign-plans', compact('restaurant', 'plans', 'assignedPlanIds'));
+    }
+    
+    /**
+     * Save assigned plans for restaurant
+     */
+    public function savePlans(Request $request)
+    {
+      
+        
+        try {
+            DB::beginTransaction();
+            
+            // Delete all existing assignments
+            RestaurantToCustomPlan::where('restaurant_id', $request->restaurant_id)->delete();
+            
+            // Add new assignments
+            if ($request->has('plan_ids') && is_array($request->plan_ids)) {
+                foreach ($request->plan_ids as $planId) {
+                    RestaurantToCustomPlan::create([
+                        'restaurant_id' => $request->restaurant_id,
+                        'plan_id' => $planId,
+                        'created_by' => auth()->id()
+                    ]);
+                }
+            }
+            
+            DB::commit();
+            
+            return redirect()->route('manage.restaurant.show.plans', $request->restaurant_id)
+                ->with('success', 'Plans assigned successfully');
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
+        }
     }
 }

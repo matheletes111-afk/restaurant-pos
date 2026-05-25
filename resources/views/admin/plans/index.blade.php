@@ -75,7 +75,7 @@
                       <td>{{ number_format($plan->price, 2) }}</td>
                       <td>{{ $plan->currency }}</td>
                       <td>
-                        <span class="badge badge-{{ $plan->billing_cycle == 'monthly' ? 'primary' : ($plan->billing_cycle == 'yearly' ? 'success' : 'info') }}">
+                        <span class="btn btn-{{ $plan->billing_cycle == 'monthly' ? 'primary' : ($plan->billing_cycle == 'yearly' ? 'success' : 'info') }}">
                           {{ ucfirst($plan->billing_cycle) }}
                         </span>
                       </td>
@@ -106,19 +106,19 @@
 
                             <?php
         $user = auth()->user();
-        $hasFreeTrial = \App\Models\Subscription::where('user_id', $user->id)
+        $hasFreeTrial = \App\Models\Subscription::where('user_id', $user->restaurant_id)
             ->whereHas('plan', function($query) {
                 $query->where('price', 0);
             })
             ->exists();
         
-        $isActive = \App\Models\Subscription::where('user_id', $user->id)
+        $isActive = \App\Models\Subscription::where('user_id', $user->restaurant_id)
             ->where('plan_id', $plan->id)
             ->where('status', 'active')
             ->exists();
     ?>
     
-{{--     @if($isActive)
+    @if($isActive)
         <button class="btn btn-secondary btn-sm" disabled>
             <i class="fa fa-check"></i> Subscribed
         </button>
@@ -133,7 +133,7 @@
             {{ $plan->price == 0 ? 'Start Free Trial' : 'Subscribe' }}
         </a>
     @endif
-                --}}       </td>
+                      </td>
                     </tr>
                     @endforeach
                   </tbody>

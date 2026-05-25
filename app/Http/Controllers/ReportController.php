@@ -280,94 +280,99 @@ public function orderAnalysisReport(Request $request)
     ));
  }
 
-    public function orderManagementReport(Request $request)
-    {
-        // Get filter parameters
-        $fromDate = $request->from_date ? Carbon::parse($request->from_date)->startOfDay() : Carbon::now()->subDays(30)->startOfDay();
-        $toDate = $request->to_date ? Carbon::parse($request->to_date)->endOfDay() : Carbon::now()->endOfDay();
-        $orderType = $request->order_type;
-        $paymentMethod = $request->payment_method;
-        $paymentStatus = $request->payment_status;
+public function orderManagementReport(Request $request)
+{
+    // Get filter parameters
+    $fromDate = $request->from_date ? Carbon::parse($request->from_date)->startOfDay() : Carbon::now()->subDays(30)->startOfDay();
+    $toDate = $request->to_date ? Carbon::parse($request->to_date)->endOfDay() : Carbon::now()->endOfDay();
+    $orderType = $request->order_type;
+    $paymentStatus = $request->payment_status;
 
-        $restaurantId = auth()->user()->restaurant_id;
+    $restaurantId = auth()->user()->restaurant_id;
 
-        // Base query
-        $query = OrderManage::with('table')
-            ->where('restaurant_id', $restaurantId)
-            ->whereBetween('created_at', [$fromDate, $toDate]);
+    // Base query
+    $query = OrderManage::with('table')
+        ->where('restaurant_id', $restaurantId)
+        ->whereBetween('created_at', [$fromDate, $toDate]);
 
-        // Apply filters
-        if ($orderType && $orderType != 'all') {
-            $query->where('order_type', $orderType);
-        }
-
-        if ($paymentMethod && $paymentMethod != 'all') {
-            $query->where('payment_method', $paymentMethod);
-        }
-
-        if ($paymentStatus && $paymentStatus != 'all') {
-            $query->where('payment_status', $paymentStatus);
-        }
-
-        // Get orders with pagination
-        $orders = $query->orderBy('created_at', 'desc')->paginate(50);
-
-        // Calculate summary statistics
-        $summaryQuery = clone $query;
-        $allOrders = $summaryQuery->get();
-        
-        $summary = [
-            'total_orders' => $orders->total(),
-            'total_revenue' => $allOrders->sum('grand_total'),
-            'total_collected' => $allOrders->sum('amount_paid'),
-            'pending_amount' => $allOrders->sum('grand_total') - $allOrders->sum('amount_paid'),
-            
-            // Count by order type
-            'dine_in_count' => $allOrders->where('order_type', 'DINE_IN')->count(),
-            'takeaway_count' => $allOrders->where('order_type', 'TAKEAWAY')->count(),
-            
-            // Count by payment status
-            'paid_count' => $allOrders->where('payment_status', 'PAID')->count(),
-            'pending_count' => $allOrders->where('payment_status', 'PENDING')->count(),
-            'miscorder_count' => $allOrders->where('payment_status', 'MISCORDER')->count(),
-        ];
-
-        // Get distinct values for dropdowns
-        $orderTypes = OrderManage::where('restaurant_id', $restaurantId)
-            ->distinct()
-            ->pluck('order_type')
-            ->filter()
-            ->values()
-            ->toArray();
-
-        $paymentMethods = OrderManage::where('restaurant_id', $restaurantId)
-            ->whereNotNull('payment_method')
-            ->distinct()
-            ->pluck('payment_method')
-            ->filter()
-            ->values()
-            ->toArray();
-
-        $paymentStatuses = OrderManage::where('restaurant_id', $restaurantId)
-            ->distinct()
-            ->pluck('payment_status')
-            ->filter()
-            ->values()
-            ->toArray();
-
-        return view('report.order-management', compact(
-            'orders',
-            'summary',
-            'orderTypes',
-            'paymentMethods',
-            'paymentStatuses',
-            'fromDate',
-            'toDate',
-            'orderType',
-            'paymentMethod',
-            'paymentStatus'
-        ));
+    // Apply filters
+    if ($orderType && $orderType != 'all') {
+        $query->where('order_type', $orderType);
     }
+
+    if ($paymentStatus && $paymentStatus != 'all') {
+        $query->where('payment_status', $paymentStatus);
+    }
+
+    // Get orders with pagination
+    $orders = $query->orderBy('created_at', 'desc')->paginate(50);
+
+    // Calculate summary statistics
+    $summaryQuery = clone $query;
+    $allOrders = $summaryQuery->get();
+    
+    $summary = [
+        'total_orders' => $orders->total(),
+        'total_revenue' => $allOrders->sum('grand_total'),
+        'total_collected' => $allOrders->sum('amount_paid'),
+        'pending_amount' => $allOrders->sum('grand_total') - $allOrders->sum('amount_paid'),
+        
+        // Count by order type
+        'dine_in_count' => $allOrders->where('order_type', 'DINE_IN')->count(),
+        'takeaway_count' => $allOrders->where('order_type', 'TAKEAWAY')->count(),
+        
+        // Count by payment status
+        'paid_count' => $allOrders->where('payment_status', 'PAID')->count(),
+        'pending_count' => $allOrders->where('payment_status', 'PENDING')->count(),
+        'miscorder_count' => $allOrders->where('payment_status', 'MISCORDER')->count(),
+        
+        // GST Summary
+        'gst_bills_count' => $allOrders->where('is_gst_bill', 'YES')->count(),
+        'non_gst_bills_count' => $allOrders->where('is_gst_bill', 'NO')->count(),
+        
+        // GST Amount Summary
+        'total_gst_amount' => $allOrders->sum('gst_amount'),
+        'total_taxable_amount' => $allOrders->sum('taxable_amount'),
+        
+        // Discount Summary
+        'total_discount_amount' => $allOrders->sum('discount'),
+        // Add to your summary array in the controller
+'total_item_discount' => $allOrders->sum(function($order) {
+    $total = 0;
+    foreach ($order->orderItems as $item) {
+        $total += ($item->price * $item->quantity) - $item->taxable_amount;
+    }
+    return $total;
+}),
+'total_order_discount' => $allOrders->sum('discount'),
+    ];
+
+    // Get distinct values for dropdowns
+    $orderTypes = OrderManage::where('restaurant_id', $restaurantId)
+        ->distinct()
+        ->pluck('order_type')
+        ->filter()
+        ->values()
+        ->toArray();
+
+    $paymentStatuses = OrderManage::where('restaurant_id', $restaurantId)
+        ->distinct()
+        ->pluck('payment_status')
+        ->filter()
+        ->values()
+        ->toArray();
+
+    return view('report.order-management', compact(
+        'orders',
+        'summary',
+        'orderTypes',
+        'paymentStatuses',
+        'fromDate',
+        'toDate',
+        'orderType',
+        'paymentStatus'
+    ));
+}
 
 
 

@@ -57,19 +57,8 @@
     .badge-misc { background: #8b5cf6; color: white; }
     .badge-dinein { background: #3b82f6; color: white; }
     .badge-takeaway { background: #10b981; color: white; }
-    
-    .payment-method-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 8px;
-    }
-    .icon-cash { background: #10b98120; color: #10b981; }
-    .icon-upi { background: #3b82f620; color: #3b82f6; }
-    .icon-card { background: #8b5cf620; color: #8b5cf6; }
+    .badge-gst { background: #8b5cf6; color: white; }
+    .badge-non-gst { background: #64748b; color: white; }
     
     .amount-cell {
       font-weight: 600;
@@ -117,6 +106,25 @@
     .btn-sm {
       padding: 5px 12px;
       font-size: 0.8rem;
+    }
+    
+    .gst-bill-badge {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.65rem;
+      font-weight: 500;
+      display: inline-block;
+    }
+    .non-gst-bill-badge {
+      background: #64748b;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.65rem;
+      font-weight: 500;
+      display: inline-block;
     }
   </style>
 </head>
@@ -178,17 +186,6 @@
                     </select>
                   </div>
                   <div class="col-md-2">
-                    <label class="form-label text-white">Payment Method</label>
-                    <select name="payment_method" class="form-control">
-                      <option value="all" {{ ($paymentMethod == 'all' || !$paymentMethod) ? 'selected' : '' }}>All Methods</option>
-                      @foreach($paymentMethods as $method)
-                        <option value="{{ $method }}" {{ $paymentMethod == $method ? 'selected' : '' }}>
-                          {{ ucfirst($method) }}
-                        </option>
-                      @endforeach
-                    </select>
-                  </div>
-                  <div class="col-md-2">
                     <label class="form-label text-white">Payment Status</label>
                     <select name="payment_status" class="form-control">
                       <option value="all" {{ ($paymentStatus == 'all' || !$paymentStatus) ? 'selected' : '' }}>All Status</option>
@@ -199,7 +196,7 @@
                       @endforeach
                     </select>
                   </div>
-                  <div class="col-md-2">
+                  <div class="col-md-4">
                     <button type="submit" class="btn btn-light w-100">
                       <i class="bi bi-funnel me-1"></i> Filter
                     </button>
@@ -249,6 +246,46 @@
                 </div>
               </div>
 
+              <!-- GST & Discount Summary Stats -->
+              <div class="row mb-4">
+                <div class="col-md-3">
+                  <div class="summary-card" style="border-top-color: #8b5cf6;">
+                    <div class="summary-value text-purple">{{ $summary['gst_bills_count'] ?? 0 }}</div>
+                    <div class="summary-label">GST Bills</div>
+                    <div class="mt-2">
+                      <small class="text-muted">{{ $summary['non_gst_bills_count'] ?? 0 }} Non-GST Bills</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="summary-card" style="border-top-color: #f59e0b;">
+                    <div class="summary-value text-warning">₹{{ number_format($summary['total_gst_amount'] ?? 0, 2) }}</div>
+                    <div class="summary-label">Total GST Collected</div>
+                    <div class="mt-2">
+                      <small class="text-muted">Taxable: ₹{{ number_format($summary['total_taxable_amount'] ?? 0, 2) }}</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="summary-card" style="border-top-color: #10b981;">
+                    <div class="summary-value text-success">₹{{ number_format($summary['total_item_discount'] ?? 0, 2) }}</div>
+                    <div class="summary-label">Item Discount</div>
+                    <div class="mt-2">
+                      <small class="text-muted">From order items</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="summary-card" style="border-top-color: #ef4444;">
+                    <div class="summary-value text-danger">₹{{ number_format($summary['total_order_discount'] ?? 0, 2) }}</div>
+                    <div class="summary-label">Order Discount</div>
+                    <div class="mt-2">
+                      <small class="text-muted">From orders table</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <!-- Orders Table -->
               <div class="table-responsive">
                 <table id="ordersTable" class="table table-hover table-striped">
@@ -259,10 +296,15 @@
                       <th>Customer</th>
                       <th>Phone</th>
                       <th>Type</th>
+                      <th>Subtotal</th>
+                      <th>Item Disc</th>
+                      <th>Order Disc</th>
+                      <th>Taxable</th>
+                      <th>GST</th>
                       <th>Grand Total</th>
                       <th>Paid</th>
                       <th>Balance</th>
-                      <th>Payment Method</th>
+                      <th>Bill Type</th>
                       <th>Status</th>
                       <th>Date</th>
                       <th>Actions</th>
@@ -273,14 +315,26 @@
                       @php
                         $balance = round($order->grand_total, 2) - ($order->amount_paid ?? 0);
                         $isFullyPaid = $balance <= 0;
+                        $isGstBill = ($order->is_gst_bill ?? 'NO') == 'YES';
+                        $gstPercentage = $order->restaurant_gst_percentage ?? 0;
+                        
+                        // Calculate total item discount from order items
+                        $totalItemDiscount = 0;
+                        foreach ($order->orderItems as $item) {
+                            $itemDiscountAmount = ($item->price * $item->quantity) - $item->taxable_amount;
+                            $totalItemDiscount += $itemDiscountAmount;
+                        }
+                        
+                        $orderDiscountAmount = $order->discount ?? 0;
+                        $totalDiscount = $totalItemDiscount + $orderDiscountAmount;
                       @endphp
                       <tr>
-                        <td>{{ ($orders->currentPage() - 1) * $orders->perPage() + $key + 1 }}</td>
+                        <td>{{ ($orders->currentPage() - 1) * $orders->perPage() + $key + 1 }}</div>
                         <td>
                           <span class="fw-bold text-primary">{{ $order->order_id }}</span>
-                        </td>
-                        <td>{{ $order->customer_name ?? 'Walk-in Customer' }}</td>
-                        <td>{{ $order->customer_phone ?? '-' }}</td>
+                         </div>
+                        <td>{{ $order->customer_name ?? 'Walk-in Customer' }}</div>
+                        <td>{{ $order->customer_phone ?? '-' }}</div>
                         <td>
                           @if($order->order_type == 'DINE_IN')
                             <span class="status-badge badge-dinein">
@@ -294,35 +348,42 @@
                               <i class="bi bi-box"></i> Takeaway
                             </span>
                           @endif
-                        </td>
+                         </div>
+                        <td class="amount-cell">₹{{ number_format($order->total_amount ?? 0, 2) }}</div>
+                        <td class="amount-cell text-success">- ₹{{ number_format($totalItemDiscount, 2) }}</div>
+                        <td class="amount-cell text-danger">- ₹{{ number_format($orderDiscountAmount, 2) }}</div>
+                        <td class="amount-cell">₹{{ number_format($order->taxable_amount ?? 0, 2) }}</div>
+                        <td class="amount-cell">
+                          @if($isGstBill)
+                            ₹{{ number_format($order->gst_amount ?? 0, 2) }}
+                            <br><small class="text-muted">({{ $gstPercentage }}%)</small>
+                          @else
+                            <span class="text-muted">-</span>
+                          @endif
+                         </div>
                         <td class="amount-cell">
                           <strong>₹{{ number_format($order->grand_total, 2) }}</strong>
-                        </td>
+                         </div>
                         <td class="amount-cell amount-paid">
                           ₹{{ number_format($order->amount_paid ?? 0, 2) }}
-                        </td>
+                         </div>
                         <td class="amount-cell {{ $isFullyPaid ? 'amount-paid' : 'amount-pending' }}">
                           ₹{{ number_format($balance, 2) }}
                           @if(!$isFullyPaid)
                             <br><small class="text-danger"><i class="bi bi-exclamation-circle"></i> Due</small>
                           @endif
-                        </td>
+                         </div>
                         <td>
-                          @if($order->payment_method)
-                            <div class="d-flex align-items-center">
-                              @php
-                                $method = strtolower($order->payment_method);
-                              @endphp
-                              <span class="payment-method-icon 
-                                {{ str_contains($method, 'cash') ? 'icon-cash' : (str_contains($method, 'upi') ? 'icon-upi' : (str_contains($method, 'card') ? 'icon-card' : '')) }}">
-                                <i class="bi bi-{{ str_contains($method, 'cash') ? 'cash' : (str_contains($method, 'upi') ? 'phone' : (str_contains($method, 'card') ? 'credit-card' : 'wallet')) }}"></i>
-                              </span>
-                              <span>{{ ucfirst($order->payment_method) }}</span>
-                            </div>
+                          @if($isGstBill)
+                            <span class="gst-bill-badge">
+                              <i class="bi bi-file-text"></i> GST Bill
+                            </span>
                           @else
-                            <span class="text-muted">-</span>
+                            <span class="non-gst-bill-badge">
+                              <i class="bi bi-receipt"></i> Non-GST
+                            </span>
                           @endif
-                        </td>
+                         </div>
                         <td>
                           @if($order->payment_status == 'PAID')
                             <span class="status-badge badge-paid">
@@ -339,11 +400,11 @@
                           @else
                             <span class="text-muted">{{ $order->payment_status }}</span>
                           @endif
-                        </td>
+                         </div>
                         <td>
                           <div>{{ $order->created_at->format('d M Y') }}</div>
                           <small class="text-muted">{{ $order->created_at->format('h:i A') }}</small>
-                        </td>
+                         </div>
                         <td>
                           <div class="action-buttons">
                             <a href="{{ route('order.invoice', $order->id) }}" 
@@ -365,17 +426,17 @@
                               </a>
                             @endif
                           </div>
-                        </td>
+                         </div>
                       </tr>
                     @empty
                       <tr>
-                        <td colspan="12" class="text-center py-5">
+                        <td colspan="17" class="text-center py-5">
                           <div class="empty-state">
                             <i class="bi bi-inbox" style="font-size: 48px; color: #cbd5e1;"></i>
                             <h5 class="mt-3">No Orders Found</h5>
                             <p class="text-muted">No orders match your filter criteria.</p>
                           </div>
-                        </td>
+                         </div>
                       </tr>
                     @endforelse
                   </tbody>
@@ -394,17 +455,21 @@
                 <div class="col-md-12">
                   <div class="alert alert-info bg-light border">
                     <div class="row align-items-center">
-                      <div class="col-md-4">
+                      <div class="col-md-3">
                         <strong><i class="bi bi-calendar-range"></i> Date Range:</strong><br>
                         {{ $fromDate->format('d M Y') }} - {{ $toDate->format('d M Y') }}
                       </div>
-                      <div class="col-md-4">
+                      <div class="col-md-3">
                         <strong><i class="bi bi-funnel"></i> Applied Filters:</strong><br>
                         <span class="badge bg-secondary me-1">Type: {{ $orderType == 'all' || !$orderType ? 'All' : ucfirst(strtolower($orderType)) }}</span>
-                        <span class="badge bg-secondary me-1">Method: {{ $paymentMethod == 'all' || !$paymentMethod ? 'All' : ucfirst($paymentMethod) }}</span>
                         <span class="badge bg-secondary">Status: {{ $paymentStatus == 'all' || !$paymentStatus ? 'All' : ucfirst($paymentStatus) }}</span>
                       </div>
-                      <div class="col-md-4 text-md-end">
+                      <div class="col-md-3">
+                        <strong><i class="bi bi-calculator"></i> Discount Summary:</strong><br>
+                        <span class="badge bg-success me-1">Item Disc: ₹{{ number_format($summary['total_item_discount'] ?? 0, 2) }}</span>
+                        <span class="badge bg-danger">Order Disc: ₹{{ number_format($summary['total_order_discount'] ?? 0, 2) }}</span>
+                      </div>
+                      <div class="col-md-3 text-md-end">
                         <strong><i class="bi bi-table"></i> Showing:</strong><br>
                         {{ $orders->firstItem() ?? 0 }} - {{ $orders->lastItem() ?? 0 }} of {{ $orders->total() }} orders
                       </div>
@@ -450,10 +515,9 @@
           className: 'btn btn-success btn-sm',
           title: 'Order_Management_Report_{{ date('Y-m-d') }}',
           exportOptions: {
-            columns: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            columns: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
             format: {
               body: function(data, row, column, node) {
-                // Clean HTML for export
                 let $node = $(node);
                 if (column === 1) {
                   return $node.find('.fw-bold').text().trim();
@@ -461,17 +525,17 @@
                 if (column === 4) {
                   return $node.text().replace(/\s+/g, ' ').trim();
                 }
-                if (column === 5 || column === 6 || column === 7) {
+                if (column >= 5 && column <= 12) {
                   let val = $node.find('strong').text() || $node.text();
                   return val.replace('₹', '').trim();
                 }
-                if (column === 8) {
-                  return $node.find('span:last').text().trim() || '-';
+                if (column === 13) {
+                  return $node.text().trim();
                 }
-                if (column === 9) {
+                if (column === 14) {
                   return $node.text().replace(/\s+/g, ' ').trim();
                 }
-                if (column === 10) {
+                if (column === 15) {
                   let date = $node.find('div').text().trim();
                   let time = $node.find('small').text().trim();
                   return `${date} ${time}`;
@@ -493,7 +557,6 @@
               'font-size': '18px'
             });
             
-            // Add summary info to print
             $(win.document.body).prepend(`
               <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
                 <div class="row">
@@ -540,6 +603,10 @@
     }
     .text-purple {
       color: #8b5cf6;
+    }
+    .bg-purple {
+      background-color: #8b5cf6;
+      color: white;
     }
     .empty-state {
       text-align: center;

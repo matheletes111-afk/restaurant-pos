@@ -167,6 +167,8 @@
         .badge-misc { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
         .badge-dinein { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
         .badge-takeaway { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .badge-gst { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
+        .badge-non-gst { background: #64748b; color: white; }
 
         /* Items Table */
         .items-table {
@@ -202,6 +204,22 @@
         .item-category {
             font-size: 0.7rem;
             color: var(--gray);
+        }
+
+        /* GST Info Box */
+        .gst-info-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+        }
+        .non-gst-info-box {
+            background: #fef3c7;
+            border: 1px solid #fde68a;
+            border-radius: 12px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
         }
 
         /* Summary Section */
@@ -455,6 +473,40 @@
                     </div>
                 </div>
                 @endif
+
+                <!-- GST Info Box -->
+                @php
+                    $isGstBill = ($order->is_gst_bill ?? 'NO') == 'YES';
+                    $gstPercentage = $order->restaurant_gst_percentage ?? 0;
+                @endphp
+                @if($isGstBill)
+                <div class="gst-info-box">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-file-invoice-dollar text-success fa-lg"></i>
+                            <strong class="ml-2">GST Bill</strong>
+                        </div>
+                        <div>
+                            @if($order->restaurant_gstin)
+                            <span class="badge badge-success">GSTIN: {{ $order->restaurant_gstin }}</span>
+                            @endif
+                            <span class="badge badge-info ml-1">GST: {{ $gstPercentage }}%</span>
+                        </div>
+                    </div>
+                </div>
+                @else
+                <div class="non-gst-info-box">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-receipt text-muted fa-lg"></i>
+                            <strong class="ml-2">Non-GST Bill</strong>
+                        </div>
+                        <div>
+                            <span class="badge badge-secondary">No GST Applicable</span>
+                        </div>
+                    </div>
+                </div>
+                @endif
             </div>
 
             <!-- Right Column -->
@@ -473,7 +525,9 @@
                                     <th>Qty</th>
                                     <th>Price</th>
                                     <th>Discount</th>
+                                    @if($isGstBill)
                                     <th>GST</th>
+                                    @endif
                                     <th>Total</th>
                                 </tr>
                             </thead>
@@ -486,28 +540,33 @@
                                 @foreach ($order->items as $index => $item)
                                 @php
                                     $itemDiscount = $item->item_discount_percentage ?? 0;
-                                    $discountedPrice = $item->price - ($item->price * $itemDiscount / 100);
-                                    $itemSubtotal = $discountedPrice * $item->quantity;
-                                    $itemGst = ($itemSubtotal * ($item->gst_rate ?? 0)) / 100;
-                                    $itemTotal = $itemSubtotal + $itemGst;
-                                    $subtotal += $item->price * $item->quantity;
+                                    $originalPrice = $item->price;
+                                    $discountedPrice = $item->discounted_price ?? ($originalPrice - ($originalPrice * $itemDiscount / 100));
+                                    $quantity = $item->quantity;
+                                    $taxableAmount = $item->taxable_amount ?? ($discountedPrice * $quantity);
+                                    
+                                    // Use stored GST amount or calculate
+                                    $itemGst = $item->gst_amount ?? 0;
+                                    $gstRate = $item->gst_rate ?? 0;
+                                    $itemTotal = $taxableAmount + $itemGst;
+                                    
+                                    $subtotal += $originalPrice * $quantity;
                                     $gstTotal += $itemGst;
-                                    $discountTotal += ($item->price * $item->quantity) - $itemSubtotal;
+                                    $discountTotal += ($originalPrice * $quantity) - $taxableAmount;
                                 @endphp
                                 <tr>
-                                    <td>{{ $index + 1 }}</td>
+                                    <td>{{ $index + 1 }}</div>
                                     <td>
                                         <div class="item-name">{{ $item->subcategory->name ?? 'N/A' }}</div>
                                         <div class="item-category">{{ $item->subcategory->category->name ?? '' }}</div>
                                     </div>
-                                    </td>
-                                    <td>{{ $item->quantity }}</div>
+                                    <td>{{ $quantity }}</div>
                                     <td>
                                         @if($itemDiscount > 0)
-                                            <del class="text-muted">₹{{ number_format($item->price, 2) }}</del><br>
+                                            <del class="text-muted">₹{{ number_format($originalPrice, 2) }}</del><br>
                                             <span class="text-success">₹{{ number_format($discountedPrice, 2) }}</span>
                                         @else
-                                            ₹{{ number_format($item->price, 2) }}
+                                            ₹{{ number_format($originalPrice, 2) }}
                                         @endif
                                     </div>
                                     <td>
@@ -517,8 +576,13 @@
                                             <span class="text-muted">-</span>
                                         @endif
                                     </div>
-                                    <td>{{ $item->gst_rate ?? 0 }}%</div>
-                                    <td>
+                                    @if($isGstBill)
+                                    <td class="text-center">
+                                        {{ $gstRate }}%
+                                        <br><small class="text-muted">₹{{ number_format($itemGst, 2) }}</small>
+                                    </div>
+                                    @endif
+                                    <td class="text-end">
                                         <strong class="text-primary">₹{{ number_format($itemTotal, 2) }}</strong>
                                     </div>
                                 </tr>
@@ -547,10 +611,12 @@
                         <span class="summary-value">₹{{ number_format($subtotal - $discountTotal, 2) }}</span>
                     </div>
                     
+                    @if($isGstBill)
                     <div class="summary-row">
-                        <span class="summary-label">GST Total</span>
+                        <span class="summary-label">GST Total ({{ $gstPercentage }}%)</span>
                         <span class="summary-value">₹{{ number_format($gstTotal, 2) }}</span>
                     </div>
+                    @endif
                     
                     @if($order->discount_percentage > 0)
                     <div class="summary-row">
@@ -681,6 +747,10 @@ document.addEventListener('DOMContentLoaded', function() {
         0% { transform: scale(1); }
         50% { transform: scale(1.01); }
         100% { transform: scale(1); }
+    }
+    
+    .gst-info-box, .non-gst-info-box {
+        margin-top: 15px;
     }
 </style>
 

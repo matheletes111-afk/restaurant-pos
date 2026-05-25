@@ -145,7 +145,7 @@
     .plan-icon {
         width: 65px;
         height: 65px;
-        background: var(--gold-dim);
+        background: rgb(255 198 46);
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -341,7 +341,7 @@
                     <h2><i class="fas fa-gem me-2"></i> Available Plans</h2>
                     <p>Explore our premium plans and enhance your restaurant management experience</p>
                 </div>
-                <div class="user-welcome">
+                <div class="user-welcome text-white">
                     <i class="fas fa-store"></i> {{ Auth::user()->restaurant->name ?? 'Your Restaurant' }}
                 </div>
             </div>

@@ -254,6 +254,10 @@
                                         <i class="fa fa-handshake"></i>
                                     </a>
 
+                                    <a href="{{ route('manage.restaurant.show.plans', $rest->id) }}" class="btn btn-sm btn-info" title="Assign Plans">
+                                        <i class="fas fa-tags"></i> Plans
+                                    </a>
+
                                     <a href="{{ route('manage.restaurant.delete', $rest->id) }}"
                                        onclick="return confirm('Delete this restaurant?')"
                                        class="btn btn-sm btn-danger">

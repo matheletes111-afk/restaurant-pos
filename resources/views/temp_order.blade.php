@@ -1,643 +1,814 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Customer Order | Premium Dining</title>
+  <title>Customer Order | {{ $restaurant_details->name ?? 'Premium Dining' }}</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
     :root {
-      --primary: #2563eb;
-      --primary-dark: #1d4ed8;
-      --secondary: #64748b;
-      --success: #10b981;
-      --light-bg: #f8fafc;
-      --card-bg: #ffffff;
-      --border: #e2e8f0;
-      --text-primary: #1e293b;
-      --text-secondary: #64748b;
-      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-      --radius-lg: 20px;
-      --radius-md: 16px;
-      --radius-sm: 10px;
-      --radius-xs: 6px;
+      --gold: #C9A84C;
+      --gold-light: #E8C97A;
+      --gold-dim: rgba(201,168,76,0.15);
+      --obsidian: #0A0A0B;
+      --deep: #111114;
+      --surface: #17171C;
+      --surface-2: #1E1E25;
+      --surface-3: #26262F;
+      --rim: rgba(255,255,255,0.07);
+      --rim-strong: rgba(255,255,255,0.12);
+      --text-primary: #F2EEE6;
+      --text-secondary: rgba(242,238,230,0.55);
+      --text-muted: rgba(242,238,230,0.3);
+      --success: #3DD68C;
+      --danger: #FF6B6B;
+      --veg: #4ADE80;
+      --nonveg: #F87171;
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --glow: 0 0 40px rgba(201,168,76,0.12);
     }
+
+    *, *::before, *::after { box-sizing: border-box; }
 
     body {
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-      font-family: 'Inter', 'Poppins', sans-serif;
+      background-color: var(--obsidian);
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201,168,76,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(201,168,76,0.05) 0%, transparent 50%);
+      font-family: 'DM Sans', sans-serif;
       color: var(--text-primary);
       min-height: 100vh;
-      padding-bottom: 40px;
+      padding-bottom: 80px;
     }
 
-    .container {
-      max-width: 1400px;
-      padding-top: 30px;
+    /* Noise texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.6;
     }
 
-    /* Header */
+    .container { max-width: 1380px; padding-top: 40px; position: relative; z-index: 1; }
+
+    .gold-text { color: var(--gold); }
+
+    /* Restaurant Header */
     .restaurant-header {
-      text-align: center;
-      margin-bottom: 40px;
-      padding: 30px;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-      border-radius: var(--radius-lg);
-      color: white;
-      box-shadow: var(--shadow);
       position: relative;
+      text-align: center;
+      padding: 64px 40px 52px;
+      margin-bottom: 48px;
+      border-radius: var(--radius-xl);
+      background: var(--surface);
+      border: 1px solid var(--rim-strong);
       overflow: hidden;
+      box-shadow: var(--glow), 0 32px 80px rgba(0,0,0,0.5);
     }
 
     .restaurant-header::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
-      opacity: 0.3;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 60% at 50% 0%, rgba(201,168,76,0.14) 0%, transparent 65%),
+        linear-gradient(180deg, rgba(201,168,76,0.04) 0%, transparent 100%);
+      pointer-events: none;
     }
 
+    .header-corner {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-color: var(--gold);
+      border-style: solid;
+      opacity: 0.35;
+    }
+    .header-corner.tl { top: 20px; left: 20px; border-width: 1px 0 0 1px; border-radius: 4px 0 0 0; }
+    .header-corner.tr { top: 20px; right: 20px; border-width: 1px 1px 0 0; border-radius: 0 4px 0 0; }
+    .header-corner.bl { bottom: 20px; left: 20px; border-width: 0 0 1px 1px; border-radius: 0 0 0 4px; }
+    .header-corner.br { bottom: 20px; right: 20px; border-width: 0 1px 1px 0; border-radius: 0 0 4px 0; }
+
+    .header-icon-ring {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 1;
+      box-shadow: 0 0 0 12px rgba(201,168,76,0.1), 0 0 0 24px rgba(201,168,76,0.05);
+    }
+
+    .header-icon-ring i { font-size: 1.6rem; color: var(--obsidian); }
+
     .restaurant-header h1 {
+      font-family: 'Cormorant Garamond', serif;
       font-weight: 700;
-      font-size: 2.8rem;
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      letter-spacing: 0.02em;
+      color: var(--text-primary);
       margin-bottom: 10px;
       position: relative;
       z-index: 1;
+      line-height: 1.1;
     }
 
-    .restaurant-header p {
-      font-size: 1.1rem;
-      opacity: 0.9;
+    .header-tagline {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 300;
+      position: relative;
+      z-index: 1;
+      margin-bottom: 24px;
+    }
+
+    .gst-info-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--gold-dim);
+      border: 1px solid rgba(201,168,76,0.3);
+      color: var(--gold-light);
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
       position: relative;
       z-index: 1;
     }
 
-    /* Customer Info Card */
+    /* Customer Card */
     .customer-card {
-      background: var(--card-bg);
-      border-radius: var(--radius-lg);
-      padding: 30px;
+      background: var(--surface);
+      border-radius: var(--radius-xl);
+      padding: 36px;
       margin-bottom: 40px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
+      border: 1px solid var(--rim-strong);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.3);
     }
 
-    .customer-card h5 {
-      font-weight: 600;
-      color: var(--primary);
-      margin-bottom: 25px;
+    .section-label {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      margin-bottom: 28px;
     }
 
-    .customer-card h5 i {
+    .section-label-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--gold-dim);
+      border: 1px solid rgba(201,168,76,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .section-label-icon i { color: var(--gold); font-size: 0.85rem; }
+
+    .section-label h5 {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 600;
       font-size: 1.3rem;
+      color: var(--text-primary);
+      margin: 0;
+      letter-spacing: 0.03em;
+    }
+
+    .form-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
     }
 
     .form-control {
-      border: 2px solid #e2e8f0;
-      border-radius: var(--radius-sm);
-      padding: 12px 16px;
-      font-size: 15px;
-      transition: all 0.3s;
+      background: var(--surface-2);
+      border: 1px solid var(--rim-strong);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      padding: 14px 18px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      transition: border-color 0.25s, box-shadow 0.25s;
+      height: auto;
     }
 
+    .form-control::placeholder { color: var(--text-muted); }
+
     .form-control:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      background: var(--surface-2);
+      color: var(--text-primary);
+      border-color: rgba(201,168,76,0.5);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
+      outline: none;
     }
 
     /* Search & Filter */
+    .controls-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+
     .search-container {
       position: relative;
-      max-width: 400px;
+      flex: 1;
+      max-width: 380px;
+      min-width: 200px;
     }
 
     .search-container i {
       position: absolute;
-      left: 16px;
+      left: 18px;
       top: 50%;
       transform: translateY(-50%);
-      color: var(--secondary);
+      color: var(--text-muted);
       z-index: 10;
+      font-size: 0.85rem;
     }
 
     .search-container input {
-      padding-left: 46px;
+      padding-left: 48px;
       border-radius: 50px;
-      height: 48px;
-      border: 2px solid var(--border);
+      height: 50px;
     }
 
     .filter-container {
       display: flex;
-      gap: 12px;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
     .filter-btn {
-      padding: 10px 24px;
+      padding: 10px 22px;
       border-radius: 50px;
-      border: 2px solid var(--border);
-      background: white;
+      border: 1px solid var(--rim-strong);
+      background: var(--surface-2);
       color: var(--text-secondary);
       font-weight: 500;
-      transition: all 0.3s;
+      font-size: 0.85rem;
+      transition: all 0.25s;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
+      cursor: pointer;
+      letter-spacing: 0.02em;
     }
+
+    .filter-btn:hover { border-color: rgba(201,168,76,0.4); color: var(--gold-light); }
 
     .filter-btn.active {
-      background: var(--primary);
+      background: linear-gradient(to right, #FF6A00, #FF8C42);
       color: white;
-      border-color: var(--primary);
-    }
-
-    .filter-btn.veg.active {
-      background: #10b981;
-      border-color: #10b981;
-    }
-
-    .filter-btn.nonveg.active {
-      background: #ef4444;
-      border-color: #ef4444;
+      border-color: transparent;
+      font-weight: 600;
+      box-shadow: 0 4px 16px rgba(255,106,0,0.3);
     }
 
     /* Category Tabs */
-    .category-tabs {
-      border-bottom: 2px solid var(--border);
-      margin-bottom: 40px;
+    .category-tabs-wrapper {
+      position: relative;
+      margin-bottom: 36px;
     }
 
-    .category-tabs .nav-link {
+    .category-tabs {
       border: none;
-      background: transparent;
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      padding-bottom: 0;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .category-tabs::-webkit-scrollbar { display: none; }
+
+    .category-tabs .nav-item { flex-shrink: 0; }
+
+    .category-tabs .nav-link {
+      border: 1px solid var(--rim);
+      background: var(--surface-2);
       color: var(--text-secondary);
       font-weight: 500;
-      padding: 14px 24px;
-      margin-right: 5px;
-      border-radius: var(--radius-md) var(--radius-md) 0 0;
-      transition: all 0.3s;
-      position: relative;
+      font-size: 0.85rem;
+      padding: 10px 22px;
+      border-radius: 50px;
+      transition: all 0.25s;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
     }
 
     .category-tabs .nav-link:hover {
-      color: var(--primary);
-      background: rgba(37, 99, 235, 0.05);
+      color: var(--gold-light);
+      border-color: rgba(201,168,76,0.35);
+      background: var(--surface-3);
     }
 
     .category-tabs .nav-link.active {
-      color: var(--primary);
+      background: var(--gold-dim);
+      border-color: rgba(201,168,76,0.45);
+      color: var(--gold-light);
       font-weight: 600;
-      background: rgba(37, 99, 235, 0.08);
+      box-shadow: 0 0 20px rgba(201,168,76,0.1);
     }
 
-    .category-tabs .nav-link.active::after {
-      content: '';
-      position: absolute;
-      bottom: -2px;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: var(--primary);
-      border-radius: 3px 3px 0 0;
+    .tabs-fade-line {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--rim-strong), transparent);
+      margin-top: 16px;
     }
 
-    /* Food Cards - Updated for mobile 2-column layout */
-    .food-card-wrapper {
-      margin-bottom: 25px;
+    /* Food Cards */
+    .food-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      align-items: start;
     }
+
+    @media (max-width: 1200px) { .food-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 900px)  { .food-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 540px)  { .food-grid { grid-template-columns: 1fr; } }
+
+    .food-card-wrapper { display: contents; }
 
     .food-card {
-      background: var(--card-bg);
-      border-radius: var(--radius-md);
+      background: var(--surface);
+      border-radius: var(--radius-lg);
       overflow: hidden;
-      border: 1px solid var(--border);
-      transition: all 0.3s ease;
-      height: 100%;
+      border: 1px solid var(--rim);
+      transition: transform 0.35s cubic-bezier(.22,.68,0,1.2), box-shadow 0.35s ease, border-color 0.25s;
       display: flex;
       flex-direction: column;
-      box-shadow: var(--shadow);
+      position: relative;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     .food-card:hover {
-      transform: translateY(-8px);
-      box-shadow: var(--shadow-hover);
-      border-color: var(--primary);
+      transform: translateY(-6px) scale(1.01);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.2);
+      border-color: rgba(201,168,76,0.25);
     }
 
-    /* Updated Image Container */
     .food-image-container {
-      height: 220px;
+      height: 200px;
       overflow: hidden;
       position: relative;
-      width: 100%;
+      background: var(--surface-2);
     }
 
-    /* Enhanced Image Styling */
     .food-image {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 0.5s ease;
-      border-radius: var(--radius-md) var(--radius-md) 0 0;
+      transition: transform 0.6s ease;
+      filter: brightness(0.85) saturate(0.9);
     }
 
     .food-card:hover .food-image {
-      transform: scale(1.08);
+      transform: scale(1.07);
+      filter: brightness(0.95) saturate(1.0);
+    }
+
+    .food-image-container::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60%;
+      background: linear-gradient(to top, rgba(10,10,11,0.8) 0%, transparent 100%);
+      pointer-events: none;
     }
 
     .food-badge {
       position: absolute;
-      top: 15px;
-      right: 15px;
+      top: 12px;
+      right: 12px;
       width: 28px;
       height: 28px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
-      font-size: 12px;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+      font-size: 11px;
       z-index: 2;
+      border: 1.5px solid rgba(255,255,255,0.2);
     }
 
-    .veg-badge {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    }
+    .veg-badge { background: rgba(16,185,129,0.85); color: white; }
+    .nonveg-badge { background: rgba(239,68,68,0.85); color: white; }
 
-    .nonveg-badge {
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    .discount-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+      color: var(--obsidian);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      z-index: 2;
+      letter-spacing: 0.04em;
     }
 
     .food-details {
-      padding: 22px;
+      padding: 20px;
       flex-grow: 1;
       display: flex;
       flex-direction: column;
     }
 
     .food-title {
+      font-family: 'Cormorant Garamond', serif;
       font-weight: 600;
       font-size: 1.15rem;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
       color: var(--text-primary);
+      letter-spacing: 0.01em;
       line-height: 1.3;
     }
 
     .food-description {
-      color: var(--text-secondary);
-      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
       margin-bottom: 18px;
       flex-grow: 1;
-      line-height: 1.5;
+      line-height: 1.55;
+      font-weight: 300;
     }
 
-    .food-price {
-      font-weight: 700;
-      font-size: 1.35rem;
-      color: var(--primary);
-      margin-bottom: 4px;
-    }
-
-    .food-gst {
-      color: var(--text-secondary);
-      font-size: 0.85rem;
-      margin-bottom: 20px;
-    }
-
-    .add-to-cart-btn {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-      color: white;
-      border: none;
-      border-radius: var(--radius-sm);
-      padding: 13px;
-      font-weight: 600;
+    .food-footer {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all 0.3s;
-      width: 100%;
-      font-size: 0.95rem;
-    }
-
-    .add-to-cart-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(37, 99, 235, 0.2);
-    }
-
-    .add-to-cart-btn.added {
-      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-    }
-
-    /* Order Summary */
-    .order-summary-card {
-      background: var(--card-bg);
-      border-radius: var(--radius-lg);
-      padding: 30px;
-      margin-top: 40px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
-    }
-
-    .order-summary-card h5 {
-      font-weight: 600;
-      color: var(--primary);
-      margin-bottom: 25px;
-      display: flex;
+      justify-content: space-between;
       align-items: center;
       gap: 10px;
     }
 
+    .food-price {
+      font-weight: 600;
+      font-size: 1.2rem;
+      color: var(--gold-light);
+      letter-spacing: 0.01em;
+    }
+
+    .food-price del {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 400;
+      display: block;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+
+    .food-price .discounted-price { color: var(--gold-light); }
+
+    .gst-hint {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      margin-top: 3px;
+    }
+
+    /* Add to Cart Button */
+    .add-to-cart-btn {
+      background: linear-gradient(to right, #FF6A00, #FF8C42);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 10px 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: all 0.25s;
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .add-to-cart-btn:hover {
+      background: linear-gradient(to right, #FF8C42, #FF6A00);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255,106,0,0.35);
+    }
+
+    .add-to-cart-btn.added {
+      background: linear-gradient(to right, #10b981, #059669);
+      box-shadow: 0 6px 20px rgba(16,185,129,0.3);
+    }
+
+    /* Order Summary - RESPONSIVE TABLE */
+    .order-summary-card {
+      background: var(--surface);
+      border-radius: var(--radius-xl);
+      padding: 36px;
+      margin-top: 48px;
+      border: 1px solid var(--rim-strong);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+    }
+
+    .order-table-wrapper {
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      overflow-y: visible;
+      -webkit-overflow-scrolling: touch;
+    }
+
     .order-table {
       width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
+      min-width: 700px;
+      border-collapse: collapse;
     }
 
     .order-table thead th {
-      background: #f8fafc;
-      color: var(--text-secondary);
-      font-weight: 600;
-      padding: 16px 20px;
-      border-bottom: 2px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 0.72rem;
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--rim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
     }
 
     .order-table tbody td {
-      padding: 20px;
-      border-bottom: 1px solid var(--border);
+      padding: 16px 12px;
+      border-bottom: 1px solid var(--rim);
       vertical-align: middle;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
     }
 
-    .order-table tbody tr:last-child td {
-      border-bottom: none;
-    }
+    .order-table tbody tr:last-child td { border-bottom: none; }
 
-    .item-name {
-      font-weight: 500;
+    .order-table tbody tr { transition: background 0.2s; }
+    .order-table tbody tr:hover { background: var(--surface-2); }
+
+    /* Make first column (item name) wrap on mobile */
+    .item-name-cell {
+      min-width: 160px;
+    }
+    .item-name-cell strong {
+      display: block;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1rem;
+      font-weight: 600;
       color: var(--text-primary);
+      letter-spacing: 0.01em;
+      white-space: normal;
+      word-break: break-word;
     }
 
     .quantity-controls {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
+      white-space: nowrap;
     }
 
     .qty-btn {
-      width: 36px;
-      height: 36px;
+      width: 28px;
+      height: 28px;
       border-radius: var(--radius-sm);
-      border: 2px solid var(--border);
-      background: white;
-      color: var(--text-primary);
+      border: 1px solid var(--rim-strong);
+      background: var(--surface-3);
+      color: var(--text-secondary);
       font-weight: 600;
+      font-size: 0.9rem;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: all 0.2s;
+      cursor: pointer;
+      line-height: 1;
     }
 
     .qty-btn:hover {
-      background: var(--light-bg);
-      border-color: var(--primary);
+      background: var(--gold-dim);
+      border-color: rgba(201,168,76,0.4);
+      color: var(--gold-light);
     }
 
     .qty-value {
-      min-width: 40px;
+      min-width: 24px;
       text-align: center;
       font-weight: 600;
-      font-size: 1.1rem;
+      color: var(--text-primary);
     }
 
     .remove-btn {
-      background: #fee2e2;
-      color: #dc2626;
-      border: none;
+      background: rgba(239,68,68,0.1);
+      color: var(--danger);
+      border: 1px solid rgba(239,68,68,0.2);
       border-radius: var(--radius-sm);
-      width: 36px;
-      height: 36px;
+      width: 30px;
+      height: 30px;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: all 0.2s;
+      cursor: pointer;
+      font-size: 0.7rem;
     }
 
     .remove-btn:hover {
-      background: #fecaca;
+      background: rgba(239,68,68,0.25);
+      border-color: rgba(239,68,68,0.5);
+      transform: scale(1.05);
     }
 
+    /* Totals */
     .totals-section {
-      background: #f8fafc;
-      border-radius: var(--radius-md);
-      padding: 24px;
-      margin-top: 30px;
+      background: var(--surface-2);
+      border-radius: var(--radius-lg);
+      padding: 28px 32px;
+      margin-top: 28px;
+      border: 1px solid var(--rim);
     }
 
     .total-row {
       display: flex;
       justify-content: space-between;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .total-row:last-child {
-      border-bottom: none;
-    }
-
-    .total-row.final {
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: var(--primary);
-      padding-top: 16px;
-    }
-
-    /* Place Order Button */
-    .place-order-btn {
-      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-      color: white;
-      border: none;
-      border-radius: 50px;
-      padding: 18px 50px;
-      font-size: 1.2rem;
-      font-weight: 600;
-      display: inline-flex;
       align-items: center;
-      gap: 12px;
-      transition: all 0.3s;
-      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
-      margin-top: 40px;
-    }
-
-    .place-order-btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 15px 30px rgba(16, 185, 129, 0.4);
-    }
-
-    .place-order-btn:disabled {
-      background: #94a3b8;
-      transform: none;
-      box-shadow: none;
-      cursor: not-allowed;
-    }
-
-    /* Empty State */
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--rim);
+      font-size: 0.9rem;
       color: var(--text-secondary);
     }
 
-    .empty-state i {
-      font-size: 4rem;
+    .total-row:last-child { border-bottom: none; }
+
+    .total-row.final {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--gold-light);
+      padding-top: 18px;
+      margin-top: 4px;
+    }
+
+    .total-row.final .total-label { color: var(--text-primary); }
+
+    .discount-value { color: var(--success) !important; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--surface-2);
+      border: 1px solid var(--rim-strong);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       margin-bottom: 20px;
-      color: #cbd5e1;
+      font-size: 1.8rem;
+      color: var(--text-muted);
     }
 
-    .empty-state h4 {
-      font-weight: 600;
-      margin-bottom: 10px;
+    .empty-state h5 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.4rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
     }
 
-    /* Responsive Grid System */
-    /* Desktop: 4 columns, Tablet: 3 columns, Mobile: 2 columns */
-    @media (min-width: 992px) {
-      .food-card-wrapper {
-        flex: 0 0 25%;
-        max-width: 25%;
-      }
+    .empty-state p {
+      font-size: 0.85rem;
+      font-weight: 300;
+      color: var(--text-muted);
     }
 
-    @media (max-width: 991px) and (min-width: 768px) {
-      .food-card-wrapper {
-        flex: 0 0 33.333%;
-        max-width: 33.333%;
-      }
+    /* Place Order Button */
+    .order-action-area {
+      text-align: center;
+      padding-top: 48px;
     }
 
-    @media (max-width: 767px) and (min-width: 576px) {
-      .food-card-wrapper {
-        flex: 0 0 50%;
-        max-width: 50%;
-      }
-      
-      .food-image-container {
-        height: 180px;
-      }
-      
-      .food-details {
-        padding: 18px;
-      }
+    .place-order-btn {
+      background: linear-gradient(to right, #FF6A00, #FF8C42);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 20px 64px;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.3s ease;
+      box-shadow: 0 12px 40px rgba(255,106,0,0.35);
+      cursor: pointer;
     }
 
-    @media (max-width: 575px) {
-      .food-card-wrapper {
-        flex: 0 0 50%;
-        max-width: 50%;
-      }
-      
-      .food-image-container {
-        height: 160px;
-      }
-      
-      .food-details {
-        padding: 16px;
-      }
-      
-      .food-title {
-        font-size: 1.05rem;
-      }
-      
-      .food-price {
-        font-size: 1.2rem;
-      }
-      
-      .add-to-cart-btn {
-        padding: 10px;
-        font-size: 0.9rem;
-      }
+    .place-order-btn:hover {
+      background: linear-gradient(to right, #FF8C42, #FF6A00);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 60px rgba(255,106,0,0.45);
     }
 
-    /* Extra small mobile optimization */
-    @media (max-width: 380px) {
-      .food-card-wrapper {
-        flex: 0 0 100%;
-        max-width: 100%;
-      }
-      
-      .food-image-container {
-        height: 180px;
-      }
+    .place-order-btn:active { transform: translateY(-1px); }
+
+    .place-order-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
     }
 
-    /* Other Responsive Styles */
-    @media (max-width: 992px) {
-      .restaurant-header h1 {
-        font-size: 2.2rem;
-      }
-      
-      .search-container {
-        max-width: 100%;
-        margin-bottom: 20px;
-      }
-      
-      .filter-container {
-        justify-content: center;
-      }
-    }
-
+    /* Responsive */
     @media (max-width: 768px) {
-      .container {
-        padding-top: 15px;
-      }
+      .restaurant-header { padding: 40px 24px 36px; }
+      .customer-card, .order-summary-card { padding: 24px; }
+      .totals-section { padding: 20px; }
+      .place-order-btn { padding: 16px 40px; font-size: 0.9rem; }
+      .controls-bar { flex-direction: column; align-items: stretch; }
+      .search-container { max-width: 100%; }
+      .filter-container { justify-content: flex-start; }
       
-      .restaurant-header {
-        padding: 20px;
-        margin-bottom: 30px;
-      }
-      
-      .customer-card, .order-summary-card {
-        padding: 20px;
-      }
-      
-      .category-tabs .nav-link {
-        padding: 10px 16px;
-        font-size: 0.9rem;
-      }
-      
-      .order-table {
-        display: block;
-        overflow-x: auto;
-      }
-      
-      .place-order-btn {
-        width: 100%;
-        justify-content: center;
-        padding: 16px 20px;
-      }
+      /* Make table cells less padding on mobile */
+      .order-table thead th { padding: 10px 8px; font-size: 0.65rem; }
+      .order-table tbody td { padding: 12px 8px; font-size: 0.8rem; }
+      .item-name-cell { min-width: 120px; }
     }
 
-    @media (max-width: 576px) {
-      .filter-container {
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      
-      .filter-btn {
-        padding: 8px 16px;
-        font-size: 0.9rem;
-      }
+    /* Small mobile optimization */
+    @media (max-width: 480px) {
+      .order-table thead th { padding: 8px 6px; font-size: 0.6rem; }
+      .order-table tbody td { padding: 10px 6px; font-size: 0.75rem; }
+      .qty-btn { width: 24px; height: 24px; font-size: 0.8rem; }
+      .remove-btn { width: 26px; height: 26px; }
+      .total-row.final { font-size: 1.2rem; }
+      .place-order-btn { padding: 12px 30px; font-size: 0.85rem; }
     }
+
+    /* Custom scrollbar */
+    .order-table-wrapper::-webkit-scrollbar {
+      height: 6px;
+    }
+    .order-table-wrapper::-webkit-scrollbar-track {
+      background: var(--surface-2);
+      border-radius: 3px;
+    }
+    .order-table-wrapper::-webkit-scrollbar-thumb {
+      background: var(--surface-3);
+      border-radius: 3px;
+    }
+    .order-table-wrapper::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,106,0,0.5);
+    }
+
+    /* Stagger animation for food cards */
+    .food-grid .food-card:nth-child(1) { animation-delay: 0.05s; }
+    .food-grid .food-card:nth-child(2) { animation-delay: 0.10s; }
+    .food-grid .food-card:nth-child(3) { animation-delay: 0.15s; }
+    .food-grid .food-card:nth-child(4) { animation-delay: 0.20s; }
+    .food-grid .food-card:nth-child(n+5) { animation-delay: 0.25s; }
   </style>
 </head>
 
@@ -646,108 +817,134 @@
 
   <!-- Restaurant Header -->
   <div class="restaurant-header">
-    <h1><i class="fas fa-utensils"></i> {{@$restaurant_details->name}}</h1>
-    <p class="mb-0">Select your favorite dishes from our premium menu</p>
+    <div class="header-corner tl"></div>
+    <div class="header-corner tr"></div>
+    <div class="header-corner bl"></div>
+    <div class="header-corner br"></div>
+
+    <div class="header-icon-ring">
+      <i class="fas fa-utensils"></i>
+    </div>
+    <h1>{{ $restaurant_details->name ?? 'Premium Dining' }}</h1>
+    <p class="header-tagline">Curated dishes from our premium menu</p>
+
+    @if($restaurant_details->gstin)
+    <div class="gst-info-badge">
+      <i class="fas fa-file-invoice-dollar"></i>
+      GST Bill &nbsp;·&nbsp; GSTIN: {{ $restaurant_details->gstin }} &nbsp;·&nbsp; GST: {{ $restaurant_details->gst_percentage ?? 0 }}%
+    </div>
+    @else
+    <div class="gst-info-badge">
+      <i class="fas fa-receipt"></i> Non-GST Bill
+    </div>
+    @endif
   </div>
 
-  <!-- Customer Info -->
+  <!-- Customer Details -->
   <div class="customer-card">
-    <h5><i class="fas fa-user-circle"></i> Customer Details</h5>
+    <div class="section-label">
+      <div class="section-label-icon"><i class="fas fa-user"></i></div>
+      <h5>Guest Details</h5>
+    </div>
     <div class="row">
       <div class="col-lg-6 mb-3">
-        <label class="form-label">Your Name</label>
-        <input type="text" id="customer_name" name="customer_name" class="form-control" placeholder="Enter your full name">
+        <label class="form-label">Your Name <span style="color:var(--gold)">*</span></label>
+        <input type="text" id="customer_name" class="form-control" placeholder="Enter your full name">
       </div>
       <div class="col-lg-6 mb-3">
-        <label class="form-label">Phone Number</label>
-        <input type="text" id="phone" name="customer_phone" class="form-control" placeholder="Enter your contact number">
+        <label class="form-label">Phone Number <span style="color:var(--gold)">*</span></label>
+        <input type="text" id="phone" class="form-control" placeholder="Enter your contact number">
       </div>
     </div>
     <input type="hidden" id="table_id" value="{{ $table_id }}">
     <input type="hidden" id="restaurant_id" value="{{ $restaurant_id }}">
+    <input type="hidden" id="is_gst_registered" value="{{ $restaurant_details->gstin ? 'true' : 'false' }}">
+    <input type="hidden" id="gst_percentage" value="{{ $restaurant_details->gst_percentage ?? 0 }}">
   </div>
 
   <!-- Search & Filter -->
-  <div class="d-lg-flex justify-content-between align-items-center mb-4">
-    <div class="search-container mb-3 mb-lg-0">
+  <div class="controls-bar">
+    <div class="search-container">
       <i class="fas fa-search"></i>
-      <input type="text" id="searchBox" class="form-control" placeholder="Search for dishes...">
+      <input type="text" id="searchBox" class="form-control" placeholder="Search dishes…">
     </div>
-    
     <div class="filter-container">
       <button class="filter-btn active" data-type="">All Items</button>
-      <button class="filter-btn veg" data-type="veg">
-        <i class="fas fa-leaf"></i> Veg
-      </button>
-      <button class="filter-btn nonveg" data-type="non-veg">
-        <i class="fas fa-drumstick-bite"></i> Non-Veg
-      </button>
+      <button class="filter-btn" data-type="veg"><i class="fas fa-leaf"></i> Veg</button>
+      <button class="filter-btn" data-type="non-veg"><i class="fas fa-drumstick-bite"></i> Non-Veg</button>
     </div>
   </div>
 
   <!-- Category Tabs -->
-  <ul class="nav category-tabs" role="tablist">
-    @foreach($categories as $key => $cat)
-    <li class="nav-item">
-      <a class="nav-link {{ $key==0?'active':'' }}" data-toggle="tab" href="#cat{{ $cat->id }}">
-        {{ $cat->name }}
-      </a>
-    </li>
-    @endforeach
-  </ul>
+  <div class="category-tabs-wrapper">
+    <ul class="nav category-tabs" role="tablist">
+      @foreach($categories as $key => $cat)
+      <li class="nav-item">
+        <a class="nav-link {{ $key==0?'active':'' }}" data-toggle="tab" href="#cat{{ $cat->id }}">
+          {{ $cat->name }}
+        </a>
+      </li>
+      @endforeach
+    </ul>
+    <div class="tabs-fade-line"></div>
+  </div>
 
   <!-- Category Content -->
-  <div class="tab-content mt-1">
+  <div class="tab-content">
     @foreach($categories as $key => $cat)
     <div class="tab-pane fade {{ $key==0?'show active':'' }}" id="cat{{ $cat->id }}">
-      <div class="row">
+      <div class="food-grid">
         @foreach($cat->subcategories as $item)
-        <div class="col-xl-3 col-lg-4 col-md-6 food-card-wrapper"
+        <div class="food-card-wrapper"
              data-name="{{ strtolower($item->name) }}"
              data-type="{{ strtolower($item->food_type) }}">
-          
           <div class="food-card">
             <div class="food-image-container">
               @if($item->image)
-                <img src="{{ URL::to('storage/app/public/category') }}/{{ @$item->image }}" 
-                     alt="{{ $item->name }}" 
-                     class="food-image"
-                     onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'">
+                <img src="{{ URL::to('storage/app/public/category') }}/{{ $item->image }}"
+                     alt="{{ $item->name }}" class="food-image"
+                     onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop'">
               @else
-                <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" 
-                     alt="{{ $item->name }}" 
-                     class="food-image">
+                <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
+                     alt="{{ $item->name }}" class="food-image">
               @endif
-              
+
               <div class="food-badge {{ strtolower($item->food_type) == 'veg' ? 'veg-badge' : 'nonveg-badge' }}">
                 <i class="fas {{ strtolower($item->food_type) == 'veg' ? 'fa-leaf' : 'fa-drumstick-bite' }}"></i>
               </div>
+              @if(($item->discount_percentage ?? 0) > 0)
+              <div class="discount-badge">{{ $item->discount_percentage }}% OFF</div>
+              @endif
             </div>
-            
+
             <div class="food-details">
               <h5 class="food-title">{{ $item->name }}</h5>
-              <p class="food-description">
-                {{ $item->description ?? 'Delicious dish prepared with premium ingredients' }}
-              </p>
-              
-              <div class="d-flex justify-content-between align-items-end">
+              <p class="food-description">{{ $item->description ?? 'Delicious dish prepared with premium ingredients.' }}</p>
+
+              <div class="food-footer">
                 <div>
-                  <div class="food-price">₹{{ $item->price }}</div>
-                  <div class="food-gst">Includes {{ $item->gst_rate }}% GST</div>
+                  <div class="food-price">
+                    @if(($item->discount_percentage ?? 0) > 0)
+                      <del>₹{{ number_format($item->price, 2) }}</del>
+                      <span class="discounted-price">₹{{ number_format($item->price - ($item->price * $item->discount_percentage / 100), 2) }}</span>
+                    @else
+                      ₹{{ number_format($item->price, 2) }}
+                    @endif
+                  </div>
+                  @if($restaurant_details->gstin)
+                  <div class="gst-hint">+ {{ $restaurant_details->gst_percentage ?? 0 }}% GST</div>
+                  @endif
                 </div>
-                
                 <button class="add-to-cart-btn addItemBtn"
                         data-id="{{ $item->id }}"
                         data-name="{{ $item->name }}"
                         data-price="{{ $item->price }}"
-                        data-gst="{{ $item->gst_rate }}"
-                        data-type="{{ strtolower($item->food_type) }}">
+                        data-discount="{{ $item->discount_percentage ?? 0 }}">
                   <i class="fas fa-plus"></i> Add
                 </button>
               </div>
             </div>
           </div>
-          
         </div>
         @endforeach
       </div>
@@ -757,242 +954,253 @@
 
   <!-- Order Summary -->
   <div class="order-summary-card">
-    <h5><i class="fas fa-receipt"></i> Order Summary</h5>
-    
+    <div class="section-label mb-4">
+      <div class="section-label-icon"><i class="fas fa-receipt"></i></div>
+      <h5>Your Order</h5>
+    </div>
+
     <div id="orderItemsContainer">
-      <div class="table-responsive">
+      <div class="order-table-wrapper table-responsive" style="display:none;">
         <table class="order-table">
           <thead>
             <tr>
               <th>Item</th>
-              <th>Price</th>
-              <th>Quantity</th>
+              <th>Qty</th>
+              <th>Unit Price</th>
+              <th>Discount</th>
+              <th>Taxable</th>
+              @if($restaurant_details->gstin)
               <th>GST</th>
+              @endif
               <th>Total</th>
-              <th>Action</th>
+              <th></th>
             </tr>
           </thead>
-          <tbody id="orderItemsBody">
-            <!-- Items will be inserted here -->
-          </tbody>
+          <tbody id="orderItemsBody"></tbody>
         </table>
       </div>
-      
-      <!-- Empty State -->
-      <div id="emptyOrderState" class="empty-state">
-        <i class="fas fa-shopping-cart"></i>
-        <h4>Your cart is empty</h4>
-        <p>Add delicious items from the menu to get started</p>
+
+      <div id="emptyOrderState" class="empty-state" style="display: block;">
+        <div class="empty-state-icon">
+          <i class="fas fa-utensils"></i>
+        </div>
+        <h5>Your table is empty</h5>
+        <p>Browse our menu and add your favourite dishes to begin</p>
       </div>
     </div>
-    
-    <!-- Totals -->
+
     <div class="totals-section">
       <div class="total-row">
-        <span>Subtotal</span>
-        <span>₹<span id="subtotal">0.00</span></span>
+        <span>Original Subtotal</span>
+        <span>₹<span id="original_subtotal">0.00</span></span>
       </div>
       <div class="total-row">
-        <span>GST Total</span>
-        <span>₹<span id="gst_total">0.00</span></span>
+        <span>Item Discount</span>
+        <span class="discount-value">− ₹<span id="item_discount">0.00</span></span>
       </div>
+      <div class="total-row">
+        <span>Taxable Amount</span>
+        <span>₹<span id="taxable_amount">0.00</span></span>
+      </div>
+      @if($restaurant_details->gstin)
+      <div class="total-row">
+        <span>GST ({{ $restaurant_details->gst_percentage ?? 0 }}%)</span>
+        <span>₹<span id="gst_amount">0.00</span></span>
+      </div>
+      @endif
       <div class="total-row final">
-        <span>Final Total</span>
+        <span class="total-label">Grand Total</span>
         <span>₹<span id="final_total">0.00</span></span>
       </div>
     </div>
   </div>
 
   <!-- Place Order -->
-  <div class="text-center">
+  <div class="order-action-area">
     <button class="place-order-btn" id="placeOrderBtn">
-      <i class="fas fa-paper-plane"></i> Place Your Order
+      <i class="fas fa-paper-plane"></i> Confirm Order
     </button>
   </div>
 
-</div>
+</div><!-- /container -->
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
 let cart = [];
+let isGstRegistered = $('#is_gst_registered').val() === 'true';
+let gstPercentage = parseFloat($('#gst_percentage').val());
+
+function calculateItemDetails(originalPrice, qty, discountPercent = 0) {
+    let discountedPrice = originalPrice - (originalPrice * discountPercent / 100);
+    let taxableAmount = discountedPrice * qty;
+    let gstAmount = isGstRegistered ? (taxableAmount * gstPercentage) / 100 : 0;
+    let totalAmount = taxableAmount + gstAmount;
+    return {
+        discountedPrice: discountedPrice,
+        taxableAmount: taxableAmount,
+        gstAmount: gstAmount,
+        totalAmount: totalAmount,
+        discountAmount: (originalPrice * qty) - taxableAmount
+    };
+}
 
 function updateEmptyState() {
-  if (cart.length === 0) {
-    $('#emptyOrderState').show();
-    $('#orderItemsBody').closest('.table-responsive').hide();
-    $('#placeOrderBtn').prop('disabled', true);
-  } else {
-    $('#emptyOrderState').hide();
-    $('#orderItemsBody').closest('.table-responsive').show();
-    $('#placeOrderBtn').prop('disabled', false);
-  }
+    if (cart.length === 0) {
+        $('#emptyOrderState').show();
+        $('.order-table-wrapper').hide();
+        $('#placeOrderBtn').prop('disabled', true);
+    } else {
+        $('#emptyOrderState').hide();
+        $('.order-table-wrapper').show();
+        $('#placeOrderBtn').prop('disabled', false);
+    }
 }
 
 function refreshTable() {
-  let tbody = $('#orderItemsBody');
-  tbody.html('');
+    let tbody = $('#orderItemsBody');
+    tbody.html('');
+    let originalSubtotal = 0, totalTaxable = 0, totalGst = 0, totalDiscount = 0;
 
-  let subtotal = 0, gstTotal = 0;
+    cart.forEach((item, i) => {
+        let details = calculateItemDetails(item.price, item.qty, item.discount);
+        originalSubtotal += item.price * item.qty;
+        totalTaxable    += details.taxableAmount;
+        totalGst        += details.gstAmount;
+        totalDiscount   += details.discountAmount;
 
-  cart.forEach((item, i) => {
-    let gstAmt = (item.price * item.qty * item.gst) / 100;
-    let total = (item.price * item.qty) + gstAmt;
+        let row = `
+            <tr>
+                <td class="item-name-cell">
+                    <strong>${item.name}</strong>
+                </td>
+                <td>
+                    <div class="quantity-controls">
+                        <button class="qty-btn decreaseQty" data-index="${i}">−</button>
+                        <span class="qty-value">${item.qty}</span>
+                        <button class="qty-btn increaseQty" data-index="${i}">+</button>
+                    </div>
+                </td>
+                <td>
+                    ${item.discount > 0 ? `<del style="display:block;color:var(--text-muted);font-size:0.78rem;">₹${item.price.toFixed(2)}</del>` : ''}
+                    ₹${details.discountedPrice.toFixed(2)}
+                </td>
+                <td style="color:var(--success)">
+                    ${item.discount > 0 ? `− ₹${details.discountAmount.toFixed(2)}` : '<span style="color:var(--text-muted)">—</span>'}
+                </td>
+                <td>₹${details.taxableAmount.toFixed(2)}</td>`;
 
-    subtotal += item.price * item.qty;
-    gstTotal += gstAmt;
+        if (isGstRegistered) {
+            row += `<td>₹${details.gstAmount.toFixed(2)}</td>`;
+        }
 
-    tbody.append(`
-      <tr>
-        <td class="item-name">${item.name}</td>
-        <td>₹${item.price.toFixed(2)}</td>
-        <td>
-          <div class="quantity-controls">
-            <button class="qty-btn decreaseQty" data-index="${i}">
-              <i class="fas fa-minus"></i>
-            </button>
-            <span class="qty-value">${item.qty}</span>
-            <button class="qty-btn increaseQty" data-index="${i}">
-              <i class="fas fa-plus"></i>
-            </button>
-          </div>
-        </td>
-        <td>${item.gst}%</td>
-        <td><strong>₹${total.toFixed(2)}</strong></td>
-        <td>
-          <button class="remove-btn removeItem" data-index="${i}" title="Remove item">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `);
-  });
+        row += `<td style="color:var(--gold-light);font-weight:600;">₹${details.totalAmount.toFixed(2)}</td>
+                <td>
+                    <button class="remove-btn removeItem" data-index="${i}" title="Remove">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            </tr>`;
+        tbody.append(row);
+    });
 
-  $('#subtotal').text(subtotal.toFixed(2));
-  $('#gst_total').text(gstTotal.toFixed(2));
-  $('#final_total').text((subtotal + gstTotal).toFixed(2));
-  
-  updateEmptyState();
+    $('#original_subtotal').text(originalSubtotal.toFixed(2));
+    $('#item_discount').text(totalDiscount.toFixed(2));
+    $('#taxable_amount').text(totalTaxable.toFixed(2));
+    if (isGstRegistered) $('#gst_amount').text(totalGst.toFixed(2));
+    $('#final_total').text((totalTaxable + totalGst).toFixed(2));
+    updateEmptyState();
 }
 
-// Add item to cart
+/* Add to cart */
 $(document).on('click', '.addItemBtn', function() {
-  let item = {
-    id: $(this).data('id'),
-    name: $(this).data('name'),
-    price: parseFloat($(this).data('price')),
-    gst: parseFloat($(this).data('gst')),
-    qty: 1
-  };
-
-  let exists = cart.find(i => i.id == item.id);
-  if (exists) {
-    exists.qty++;
-  } else {
-    cart.push(item);
-  }
-
-  // Visual feedback
-  $(this).addClass('added');
-  $(this).html('<i class="fas fa-check"></i> Added');
-  
-  setTimeout(() => {
-    $(this).removeClass('added');
-    $(this).html('<i class="fas fa-plus"></i> Add');
-  }, 1000);
-
-  refreshTable();
-});
-
-// Quantity controls
-$(document).on('click', '.increaseQty', function() {
-  cart[$(this).data('index')].qty++;
-  refreshTable();
-});
-
-$(document).on('click', '.decreaseQty', function() {
-  let index = $(this).data('index');
-  if (cart[index].qty > 1) {
-    cart[index].qty--;
-    refreshTable();
-  }
-});
-
-$(document).on('click', '.removeItem', function() {
-  cart.splice($(this).data('index'), 1);
-  refreshTable();
-});
-
-// Search functionality
-$('#searchBox').on('input', function() {
-  let val = $(this).val().toLowerCase();
-  $('.food-card-wrapper').each(function() {
-    $(this).toggle($(this).data('name').includes(val));
-  });
-});
-
-// Filter functionality
-$('.filter-btn').click(function() {
-  $('.filter-btn').removeClass('active');
-  $(this).addClass('active');
-
-  let type = $(this).data('type');
-  $('.food-card-wrapper').each(function() {
-    $(this).toggle(type === '' || $(this).data('type') === type);
-  });
-});
-
-// Submit Order
-$('#placeOrderBtn').click(function() {
-  if (cart.length === 0) {
-    alert('Please add items to your order');
-    return;
-  }
-  
-  if (!$('#customer_name').val()) {
-    alert('Please enter your name');
-    $('#customer_name').focus();
-    return;
-  }
-  
-  if (!$('#phone').val()) {
-    alert('Please enter your phone number');
-    $('#phone').focus();
-    return;
-  }
-
-  // Show loading state
-  $(this).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
-  $(this).prop('disabled', true);
-
-  $.post("{{ route('temp.order.store') }}", {
-    _token: "{{ csrf_token() }}",
-    customer_name: $('#customer_name').val(),
-    customer_phone: $('#phone').val(),
-    table_id: $('#table_id').val(),
-    restaurant_id: $('#restaurant_id').val(),
-    order_items: cart
-  }, function(res) {
-    if (res.status) {
-      window.location.href = res.redirect;
+    let itemId   = $(this).data('id');
+    let existing = cart.find(i => i.id === itemId);
+    if (existing) {
+        existing.qty++;
     } else {
-      alert('Something went wrong. Please try again.');
-      $('#placeOrderBtn').html('<i class="fas fa-paper-plane"></i> Place Your Order');
-      $('#placeOrderBtn').prop('disabled', false);
+        cart.push({
+            id:       itemId,
+            name:     $(this).data('name'),
+            price:    parseFloat($(this).data('price')),
+            qty:      1,
+            discount: parseFloat($(this).data('discount')) || 0
+        });
     }
-  }).fail(function() {
-    alert('Network error. Please check your connection and try again.');
-    $('#placeOrderBtn').html('<i class="fas fa-paper-plane"></i> Place Your Order');
-    $('#placeOrderBtn').prop('disabled', false);
-  });
+    let btn = $(this);
+    btn.addClass('added').html('<i class="fas fa-check"></i> Added');
+    setTimeout(() => { btn.removeClass('added').html('<i class="fas fa-plus"></i> Add'); }, 1000);
+    refreshTable();
 });
 
-// Initialize empty state on load
-$(document).ready(function() {
-  updateEmptyState();
+/* Qty controls */
+$(document).on('click', '.increaseQty', function() {
+    cart[$(this).data('index')].qty++;
+    refreshTable();
 });
+$(document).on('click', '.decreaseQty', function() {
+    let idx = $(this).data('index');
+    if (cart[idx].qty > 1) { cart[idx].qty--; refreshTable(); }
+});
+$(document).on('click', '.removeItem', function() {
+    cart.splice($(this).data('index'), 1);
+    refreshTable();
+});
+
+/* Search */
+$('#searchBox').on('input', function() {
+    let val = $(this).val().toLowerCase();
+    $('.food-card-wrapper').each(function() {
+        $(this).toggle($(this).data('name').includes(val));
+    });
+});
+
+/* Filter */
+$('.filter-btn').click(function() {
+    $('.filter-btn').removeClass('active');
+    $(this).addClass('active');
+    let type = $(this).data('type');
+    $('.food-card-wrapper').each(function() {
+        $(this).toggle(type === '' || $(this).data('type') === type);
+    });
+});
+
+/* Place Order */
+$('#placeOrderBtn').click(function() {
+    if (cart.length === 0) { alert('Please add items to your order'); return; }
+    let name  = $('#customer_name').val().trim();
+    let phone = $('#phone').val().trim();
+    if (!name)  { alert('Please enter your name'); $('#customer_name').focus(); return; }
+    if (!phone) { alert('Please enter your phone number'); $('#phone').focus(); return; }
+
+    let orderItems = cart.map(item => ({
+        id: item.id, name: item.name, price: item.price, qty: item.qty, item_discount: item.discount
+    }));
+
+    $(this).html('<i class="fas fa-spinner fa-spin"></i> Processing…').prop('disabled', true);
+
+    $.post("{{ route('temp.order.store') }}", {
+        _token:          "{{ csrf_token() }}",
+        customer_name:   name,
+        customer_phone:  phone,
+        table_id:        $('#table_id').val(),
+        restaurant_id:   $('#restaurant_id').val(),
+        order_items:     orderItems
+    }, function(res) {
+        if (res.status) {
+            window.location.href = res.redirect;
+        } else {
+            alert('Something went wrong. Please try again.');
+            $('#placeOrderBtn').html('<i class="fas fa-paper-plane"></i> Confirm Order').prop('disabled', false);
+        }
+    }).fail(function() {
+        alert('Network error. Please check your connection and try again.');
+        $('#placeOrderBtn').html('<i class="fas fa-paper-plane"></i> Confirm Order').prop('disabled', false);
+    });
+});
+
+$(document).ready(function() { updateEmptyState(); });
 </script>
-
 </body>
 </html>

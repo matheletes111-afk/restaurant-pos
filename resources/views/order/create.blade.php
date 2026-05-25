@@ -455,6 +455,22 @@
       color: #27ae60 !important;
     }
 
+    .gst-info-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 12px 15px;
+      margin-bottom: 15px;
+    }
+
+    .non-gst-info-box {
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 12px 15px;
+      margin-bottom: 15px;
+    }
+
     del {
       font-size: 0.7rem;
     }
@@ -583,9 +599,11 @@
                         {{ $item->discount_percentage }}% OFF
                       </span>
                       @endif
+                      @if(isset($restaurant_gstin) && $restaurant_gstin)
                       <span class="food-badge gst-badge">
-                        GST: {{ $item->gst_rate }}%
+                        GST: {{ $restaurant_gst_percentage ?? 0 }}%
                       </span>
+                      @endif
                       <h6>{{ $item->name }}</h6>
                       <div class="price">
                         @if(($item->discount_percentage ?? 0) > 0)
@@ -599,7 +617,6 @@
                             data-id="{{ $item->id }}"
                             data-name="{{ $item->name }}"
                             data-price="{{ $item->price }}"
-                            data-gst="{{ $item->gst_rate }}"
                             data-discount="{{ $item->discount_percentage ?? 0 }}">
                         <i class="fas fa-plus me-2"></i>Add to Order
                       </button>
@@ -626,8 +643,10 @@
                   <th>Qty</th>
                   <th>Disc Price (₹)</th>
                   <th>Taxable (₹)</th>
+                  @if(isset($restaurant_gstin) && $restaurant_gstin)
                   <th>GST (%)</th>
                   <th>GST Amt (₹)</th>
+                  @endif
                   <th>Total (₹)</th>
                   <th>Action</th>
                 </tr>
@@ -646,6 +665,34 @@
       </div>
 
       <div class="col-lg-4">
+        <!-- GST Info Box -->
+        @if(isset($restaurant_gstin) && $restaurant_gstin)
+        <div class="gst-info-box">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <i class="fas fa-file-invoice-dollar text-success fa-lg"></i>
+              <strong class="ml-2">GST Bill</strong>
+            </div>
+            <div>
+              <span class="badge badge-success">GSTIN: {{ $restaurant_gstin }}</span>
+              <span class="badge badge-info ml-1">GST: {{ $restaurant_gst_percentage ?? 0 }}%</span>
+            </div>
+          </div>
+        </div>
+        @else
+        <div class="non-gst-info-box">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <i class="fas fa-receipt text-muted fa-lg"></i>
+              <strong class="ml-2">Non-GST Bill</strong>
+            </div>
+            <div>
+              <span class="badge badge-secondary">No GST Applicable</span>
+            </div>
+          </div>
+        </div>
+        @endif
+
         <!-- Order Summary -->
         <div class="summary-box">
           <h5 class="mb-3"><i class="fas fa-receipt me-2"></i>Order Summary</h5>
@@ -665,12 +712,17 @@
             <span class="summary-value">₹<span id="total_taxable">0.00</span></span>
           </div>
           
+          @if(isset($restaurant_gstin) && $restaurant_gstin)
           <div class="summary-item">
-            <span class="summary-label">GST Total:</span>
+            <span class="summary-label">GST Total ({{ $restaurant_gst_percentage ?? 0 }}%):</span>
             <span class="summary-value">₹<span id="total_gst">0.00</span></span>
           </div>
+          @endif
           
-          
+          <div class="summary-item">
+            <span class="summary-label">Order Discount:</span>
+            <span class="summary-value text-success">- ₹<span id="order_discount_amount">0.00</span></span>
+          </div>
           
           <div class="summary-item hidden" id="round_off_item">
             <span class="summary-label">Round Off:</span>
@@ -682,7 +734,13 @@
             <span class="total-value">₹<span id="final_total">0.00</span></span>
           </div>
 
-          
+          <div class="mt-3">
+            <label class="form-label">Order Discount (%)</label>
+            <input type="number" class="form-control discount-input" id="order_discount" value="0" min="0" max="100" step="1">
+            <div class="discount-note">
+              <i class="fas fa-info-circle"></i> Discount applies to (Taxable Value + GST)
+            </div>
+          </div>
         </div>
 
         @if(!isset($table) || !$table)
@@ -742,8 +800,10 @@
 @include('includes.script')
 
 <script>
-// Global variable to store order items
+// Global variables
 let orderItems = [];
+let isGstRegistered = {{ isset($restaurant_gstin) && $restaurant_gstin ? 'true' : 'false' }};
+let restaurantGstPercentage = {{ $restaurant_gst_percentage ?? 0 }};
 
 function showToast(message, isError = false) {
     let toast = $('#toastNotification');
@@ -763,15 +823,20 @@ function showToast(message, isError = false) {
     }, 3000);
 }
 
-function calculateItemDetails(originalPrice, qty, gstRate, discountPercent = 0) {
+function calculateItemDetails(originalPrice, qty, discountPercent = 0) {
     // Calculate discounted price per item
     let discountedPricePerItem = originalPrice - (originalPrice * discountPercent / 100);
     
     // Calculate taxable amount (after discount)
     let taxableAmount = discountedPricePerItem * qty;
     
-    // Calculate GST on discounted price
-    let gstAmount = (taxableAmount * gstRate) / 100;
+    // Calculate GST on discounted price (only if GST registered)
+    let gstAmount = 0;
+    let gstRate = 0;
+    if (isGstRegistered) {
+        gstRate = restaurantGstPercentage;
+        gstAmount = (taxableAmount * gstRate) / 100;
+    }
     
     // Calculate total amount
     let totalAmount = taxableAmount + gstAmount;
@@ -780,6 +845,7 @@ function calculateItemDetails(originalPrice, qty, gstRate, discountPercent = 0) 
         discountedPricePerItem: discountedPricePerItem,
         taxableAmount: taxableAmount,
         gstAmount: gstAmount,
+        gstRate: gstRate,
         totalAmount: totalAmount,
         itemDiscountAmount: (originalPrice * qty) - taxableAmount
     };
@@ -793,7 +859,7 @@ function updateSummary() {
     
     orderItems.forEach(item => {
         let originalAmount = item.price * item.qty;
-        let details = calculateItemDetails(item.price, item.qty, item.gst, item.itemDiscount || 0);
+        let details = calculateItemDetails(item.price, item.qty, item.itemDiscount || 0);
         
         originalSubtotal += originalAmount;
         totalTaxable += details.taxableAmount;
@@ -811,7 +877,9 @@ function updateSummary() {
     $('#original_subtotal').text(originalSubtotal.toFixed(2));
     $('#item_discount_total').text(totalItemDiscount.toFixed(2));
     $('#total_taxable').text(totalTaxable.toFixed(2));
-    $('#total_gst').text(totalGst.toFixed(2));
+    if (isGstRegistered) {
+        $('#total_gst').text(totalGst.toFixed(2));
+    }
     $('#order_discount_amount').text(orderDiscountAmount.toFixed(2));
     
     if (Math.abs(roundOff) > 0.01) {
@@ -849,9 +917,9 @@ function renderOrderTable() {
     
     emptyState.addClass('hidden');
     
-    // Build HTML for each item
+    // Build HTML for each item based on GST status
     orderItems.forEach((item, index) => {
-        let details = calculateItemDetails(item.price, item.qty, item.gst, item.itemDiscount || 0);
+        let details = calculateItemDetails(item.price, item.qty, item.itemDiscount || 0);
         
         let row = `
             <tr data-index="${index}">
@@ -874,17 +942,20 @@ function renderOrderTable() {
                     </div>
                 </td>
                 <td class="text-end">₹${details.discountedPricePerItem.toFixed(2)}</td>
-                <td class="text-end">₹${details.taxableAmount.toFixed(2)}</td>
-                <td class="text-center">${item.gst}%</td>
-                <td class="text-end">₹${details.gstAmount.toFixed(2)}</td>
-                <td class="text-end fw-bold">₹${details.totalAmount.toFixed(2)}</td>
+                <td class="text-end">₹${details.taxableAmount.toFixed(2)}`;
+        
+        if (isGstRegistered) {
+            row += `<td class="text-center">${details.gstRate}%
+                    <td class="text-end">₹${details.gstAmount.toFixed(2)}`;
+        }
+        
+        row += `<td class="text-end fw-bold">₹${details.totalAmount.toFixed(2)}
                 <td class="text-center">
                     <button class="btn btn-sm btn-danger remove-btn" data-index="${index}">
                         <i class="fas fa-trash-alt"></i>
                     </button>
                 </td>
-             </tr>
-        `;
+              </tr>`;
         tbody.append(row);
     });
     
@@ -893,6 +964,8 @@ function renderOrderTable() {
 
 $(document).ready(function() {
     console.log('Document ready');
+    console.log('GST Registered:', isGstRegistered);
+    console.log('GST Percentage:', restaurantGstPercentage);
     
     // Add item button click
     $(document).on('click', '.add-item-btn', function(e) {
@@ -901,7 +974,6 @@ $(document).ready(function() {
         let itemId = $(this).data('id');
         let itemName = $(this).data('name');
         let itemPrice = parseFloat($(this).data('price'));
-        let itemGst = parseFloat($(this).data('gst'));
         let itemDiscount = parseFloat($(this).data('discount')) || 0;
         
         let existingItem = orderItems.find(i => i.id === itemId);
@@ -914,7 +986,6 @@ $(document).ready(function() {
                 id: itemId,
                 name: itemName,
                 price: itemPrice,
-                gst: itemGst,
                 qty: 1,
                 itemDiscount: itemDiscount
             });
@@ -1008,89 +1079,87 @@ $(document).ready(function() {
         }
     });
     
-// Save Order
-$('#saveOrderBtn').click(function() {
-    let customer_name = $('#customer_name').val().trim();
-    let customer_phone = $('#customer_phone').val().trim();
-    let table_id = $('#table_id').val();
-    let orderDiscount = $('#order_discount').val() || 0;
-    let payment_status = $('#payment_status').length ? $('#payment_status').val() : null;
-    let payment_method = $('#payment_method').length ? $('#payment_method').val() : null;
-    let remarks = $('#remarks').val() || null;
-    
-    if (orderItems.length === 0) {
-        showToast('Please add items to the order first', true);
-        return;
-    }
-    
-    if (customer_name === '') {
-        showToast('Please enter customer name', true);
-        $('#customer_name').focus();
-        return;
-    }
-    
-    if (payment_status === 'PAID' && (!payment_method || payment_method === '')) {
-        showToast('Please select payment method', true);
-        return;
-    }
-    
-    let orderItemsData = orderItems.map(item => ({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        qty: item.qty,
-        gst: item.gst,
-        item_discount: item.itemDiscount || 0
-    }));
-    
-    $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Saving...');
-    
-    $.ajax({
-        url: "{{ route('order.save') }}",
-        method: 'POST',
-        data: {
-            _token: "{{ csrf_token() }}",
-            customer_name: customer_name,
-            customer_phone: customer_phone,
-            table_id: table_id,
-            discount: orderDiscount,
-            order_items: orderItemsData,
-            payment_status: payment_status,
-            payment_method: payment_method,
-            remarks: remarks
-        },
-        success: function(response) {
-            if (response.success) {
-                showToast('Order saved successfully!', false);
-                
-                // Use the redirect_url from response
-                if (response.redirect_url) {
-                    setTimeout(() => {
-                        window.location.href = response.redirect_url;
-                    }, 1000);
-                } else if (response.invoice_url) {
-                    // Fallback for TAKEAWAY orders
-                    setTimeout(() => {
-                        window.location.href = response.invoice_url;
-                    }, 1000);
+    // Save Order
+    $('#saveOrderBtn').click(function() {
+        let customer_name = $('#customer_name').val().trim();
+        let customer_phone = $('#customer_phone').val().trim();
+        let table_id = $('#table_id').val();
+        let orderDiscount = $('#order_discount').val() || 0;
+        let payment_status = $('#payment_status').length ? $('#payment_status').val() : null;
+        let payment_method = $('#payment_method').length ? $('#payment_method').val() : null;
+        let remarks = $('#remarks').val() || null;
+        
+        if (orderItems.length === 0) {
+            showToast('Please add items to the order first', true);
+            return;
+        }
+        
+        if (customer_name === '') {
+            showToast('Please enter customer name', true);
+            $('#customer_name').focus();
+            return;
+        }
+        
+        if (payment_status === 'PAID' && (!payment_method || payment_method === '')) {
+            showToast('Please select payment method', true);
+            return;
+        }
+        
+        let orderItemsData = orderItems.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            qty: item.qty,
+            item_discount: item.itemDiscount || 0
+        }));
+        
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Saving...');
+        
+        $.ajax({
+            url: "{{ route('order.save') }}",
+            method: 'POST',
+            data: {
+                _token: "{{ csrf_token() }}",
+                customer_name: customer_name,
+                customer_phone: customer_phone,
+                table_id: table_id,
+                discount: orderDiscount,
+                order_items: orderItemsData,
+                payment_status: payment_status,
+                payment_method: payment_method,
+                remarks: remarks,
+                is_gst_registered: isGstRegistered,
+                gst_percentage: restaurantGstPercentage
+            },
+            success: function(response) {
+                if (response.success) {
+                    showToast('Order saved successfully!', false);
+                    
+                    if (response.redirect_url) {
+                        setTimeout(() => {
+                            window.location.href = response.redirect_url;
+                        }, 1000);
+                    } else if (response.invoice_url) {
+                        setTimeout(() => {
+                            window.location.href = response.invoice_url;
+                        }, 1000);
+                    } else {
+                        setTimeout(() => {
+                            window.location.href = "{{ route('order.management.dashboard') }}";
+                        }, 1000);
+                    }
                 } else {
-                    // Fallback for DINE_IN orders
-                    setTimeout(() => {
-                        window.location.href = "{{ route('order.management.dashboard') }}";
-                    }, 1000);
+                    showToast(response.message || 'Error saving order', true);
+                    $('#saveOrderBtn').prop('disabled', false).html('<i class="fas fa-check-circle"></i> Save Order');
                 }
-            } else {
-                showToast(response.message || 'Error saving order', true);
+            },
+            error: function(xhr) {
+                let errorMsg = xhr.responseJSON?.message || 'An error occurred while saving';
+                showToast(errorMsg, true);
                 $('#saveOrderBtn').prop('disabled', false).html('<i class="fas fa-check-circle"></i> Save Order');
             }
-        },
-        error: function(xhr) {
-            let errorMsg = xhr.responseJSON?.message || 'An error occurred while saving';
-            showToast(errorMsg, true);
-            $('#saveOrderBtn').prop('disabled', false).html('<i class="fas fa-check-circle"></i> Save Order');
-        }
+        });
     });
-});
     
     // Filters
     $('#vegFilter, #nameFilter').on('input change', function() {

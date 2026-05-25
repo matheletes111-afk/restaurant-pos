@@ -54,7 +54,6 @@
       color: var(--gray);
     }
 
-    /* Card Styling */
     .card {
       border: none;
       border-radius: 12px;
@@ -466,6 +465,22 @@
       margin-top: 8px;
     }
 
+    .gst-info-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 12px 15px;
+      margin-bottom: 15px;
+    }
+
+    .non-gst-info-box {
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 12px 15px;
+      margin-bottom: 15px;
+    }
+
     .badge-info {
       background: #17a2b8;
       color: white;
@@ -501,7 +516,7 @@
       <div class="page-block">
         <div class="row align-items-center">
           <div class="col-md-12">
-            <h5>Edit Order #{{ $order->id }}</h5>
+            <h5>Edit Order #{{ $order->order_id ?? $order->id }}</h5>
             <ul class="breadcrumb">
               <li class="breadcrumb-item"><a href="{{ route('order.management.dashboard') }}">Order Management</a></li>
               <li class="breadcrumb-item active" aria-current="page">Edit Order</li>
@@ -617,9 +632,11 @@
                         {{ $item->discount_percentage }}% OFF
                       </span>
                       @endif
+                      @if(isset($restaurant_gstin) && $restaurant_gstin)
                       <span class="food-badge gst-badge">
-                        GST: {{ $item->gst_rate }}%
+                        GST: {{ $restaurant_gst_percentage ?? 0 }}%
                       </span>
+                      @endif
                       <h6>{{ $item->name }}</h6>
                       <div class="price">
                         @if(($item->discount_percentage ?? 0) > 0)
@@ -633,7 +650,6 @@
                               data-id="{{ $item->id }}"
                               data-name="{{ $item->name }}"
                               data-price="{{ $item->price }}"
-                              data-gst="{{ $item->gst_rate }}"
                               data-discount="{{ $item->discount_percentage ?? 0 }}">
                         <i class="fas fa-plus me-2"></i>Add to Order
                       </button>
@@ -660,8 +676,10 @@
                   <th>Qty</th>
                   <th>Disc Price (₹)</th>
                   <th>Taxable (₹)</th>
+                  @if(isset($restaurant_gstin) && $restaurant_gstin)
                   <th>GST (%)</th>
                   <th>GST Amt (₹)</th>
+                  @endif
                   <th>Total (₹)</th>
                   @if($order->order_status == 'PENDING')
                   <th>Action</th>
@@ -684,8 +702,10 @@
                   <td class="text-center">{{ $item->quantity }}</td>
                   <td class="text-end">₹{{ number_format($discountedPrice, 2) }}</td>
                   <td class="text-end">₹{{ number_format($taxableAmount, 2) }}</td>
+                  @if(isset($restaurant_gstin) && $restaurant_gstin)
                   <td class="text-center">{{ $item->gst_rate ?? 0 }}%</td>
                   <td class="text-end">₹{{ number_format($gstAmount, 2) }}</td>
+                  @endif
                   <td class="text-end fw-bold">₹{{ number_format($itemTotal, 2) }}</td>
                   @if($order->order_status == 'PENDING')
                   <td class="text-center">
@@ -693,9 +713,9 @@
                             data-id="{{ $item->id }}">
                       <i class="fas fa-trash"></i>
                     </button>
-                  </td>
+                   </td>
                   @endif
-                </tr>
+                 </tr>
                 @endforeach
               </tbody>
             </table>
@@ -722,8 +742,10 @@
                   <th>Qty</th>
                   <th>Disc Price (₹)</th>
                   <th>Taxable (₹)</th>
+                  @if(isset($restaurant_gstin) && $restaurant_gstin)
                   <th>GST (%)</th>
                   <th>GST Amt (₹)</th>
+                  @endif
                   <th>Total (₹)</th>
                   <th>Action</th>
                 </tr>
@@ -742,6 +764,34 @@
       </div>
 
       <div class="col-lg-4">
+        <!-- GST Info Box -->
+        @if(isset($restaurant_gstin) && $restaurant_gstin)
+        <div class="gst-info-box">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <i class="fas fa-file-invoice-dollar text-success fa-lg"></i>
+              <strong class="ml-2">GST Bill</strong>
+            </div>
+            <div>
+              <span class="badge badge-success">GSTIN: {{ $restaurant_gstin }}</span>
+              <span class="badge badge-info ml-1">GST: {{ $restaurant_gst_percentage ?? 0 }}%</span>
+            </div>
+          </div>
+        </div>
+        @else
+        <div class="non-gst-info-box">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <i class="fas fa-receipt text-muted fa-lg"></i>
+              <strong class="ml-2">Non-GST Bill</strong>
+            </div>
+            <div>
+              <span class="badge badge-secondary">No GST Applicable</span>
+            </div>
+          </div>
+        </div>
+        @endif
+
         <!-- Order Summary -->
         <div class="summary-box">
           <h5 class="mb-3"><i class="fas fa-receipt me-2"></i>Order Summary</h5>
@@ -761,10 +811,12 @@
             <span class="summary-value">₹<span id="total_taxable">{{ number_format($total_taxable, 2) }}</span></span>
           </div>
           
+          @if(isset($restaurant_gstin) && $restaurant_gstin)
           <div class="summary-item">
-            <span class="summary-label">GST Total:</span>
+            <span class="summary-label">GST Total ({{ $restaurant_gst_percentage ?? 0 }}%):</span>
             <span class="summary-value">₹<span id="total_gst">{{ number_format($total_gst, 2) }}</span></span>
           </div>
+          @endif
           
           <div class="summary-item">
             <span class="summary-label">Order Discount:</span>
@@ -781,14 +833,14 @@
             <span class="total-value">₹<span id="final_total">{{ number_format($final_total, 2) }}</span></span>
           </div>
 
-          <div class="mt-4">
+          {{-- <div class="mt-4">
             <label class="form-label mb-2">Order Discount (%)</label>
             <input type="number" class="form-control discount-input" id="order_discount" 
                    value="{{ $discount_percent }}" min="0" max="100" step="1">
             <div class="discount-note">
               <i class="fas fa-info-circle"></i> Discount applies to (Taxable Value + GST)
             </div>
-          </div>
+          </div> --}}
         </div>
 
         @if(in_array(auth()->user()->role_type, ["Manager", "Cashier", "ADMIN"]))
@@ -855,6 +907,8 @@
 // Global variables
 let newOrderItems = [];
 let existingItemsData = [];
+let isGstRegistered = {{ isset($restaurant_gstin) && $restaurant_gstin ? 'true' : 'false' }};
+let restaurantGstPercentage = {{ $restaurant_gst_percentage ?? 0 }};
 
 // Store existing items data from PHP
 @php
@@ -901,16 +955,24 @@ function showToast(message, isError = false) {
     }, 3000);
 }
 
-function calculateItemDetails(originalPrice, qty, gstRate, discountPercent = 0) {
+function calculateItemDetails(originalPrice, qty, discountPercent = 0) {
     let discountedPricePerItem = originalPrice - (originalPrice * discountPercent / 100);
     let taxableAmount = discountedPricePerItem * qty;
-    let gstAmount = (taxableAmount * gstRate) / 100;
+    let gstAmount = 0;
+    let gstRate = 0;
+    
+    if (isGstRegistered) {
+        gstRate = restaurantGstPercentage;
+        gstAmount = (taxableAmount * gstRate) / 100;
+    }
+    
     let totalAmount = taxableAmount + gstAmount;
     
     return {
         discountedPricePerItem: discountedPricePerItem,
         taxableAmount: taxableAmount,
         gstAmount: gstAmount,
+        gstRate: gstRate,
         totalAmount: totalAmount,
         itemDiscountAmount: (originalPrice * qty) - taxableAmount
     };
@@ -924,7 +986,7 @@ function updateSummary() {
     let newItemDiscount = 0;
     
     newOrderItems.forEach(item => {
-        let details = calculateItemDetails(item.price, item.qty, item.gst, item.itemDiscount || 0);
+        let details = calculateItemDetails(item.price, item.qty, item.itemDiscount || 0);
         newOriginalSubtotal += item.price * item.qty;
         newTaxable += details.taxableAmount;
         newGst += details.gstAmount;
@@ -947,7 +1009,9 @@ function updateSummary() {
     $('#original_subtotal').text(totalOriginalSubtotal.toFixed(2));
     $('#item_discount_total').text(totalItemDiscount.toFixed(2));
     $('#total_taxable').text(totalTaxable.toFixed(2));
-    $('#total_gst').text(totalGst.toFixed(2));
+    if (isGstRegistered) {
+        $('#total_gst').text(totalGst.toFixed(2));
+    }
     $('#order_discount_amount').text(orderDiscountAmount.toFixed(2));
     
     if (Math.abs(roundOff) > 0.01) {
@@ -980,7 +1044,7 @@ function updateNewItemsTable() {
     tbody.empty();
     
     newOrderItems.forEach((item, index) => {
-        let details = calculateItemDetails(item.price, item.qty, item.gst, item.itemDiscount || 0);
+        let details = calculateItemDetails(item.price, item.qty, item.itemDiscount || 0);
         
         let row = `
             <tr data-index="${index}">
@@ -1000,17 +1064,20 @@ function updateNewItemsTable() {
                     </div>
                 </td>
                 <td class="text-end">₹${details.discountedPricePerItem.toFixed(2)}</td>
-                <td class="text-end">₹${details.taxableAmount.toFixed(2)}</td>
-                <td class="text-center">${item.gst}%</td>
-                <td class="text-end">₹${details.gstAmount.toFixed(2)}</td>
-                <td class="text-end fw-bold">₹${details.totalAmount.toFixed(2)}</td>
+                <td class="text-end">₹${details.taxableAmount.toFixed(2)}`;
+        
+        if (isGstRegistered) {
+            row += `<td class="text-center">${details.gstRate}%
+                    <td class="text-end">₹${details.gstAmount.toFixed(2)}`;
+        }
+        
+        row += `<td class="text-end fw-bold">₹${details.totalAmount.toFixed(2)}
                 <td class="text-center">
                     <button class="btn btn-sm btn-danger remove-btn delete-new" data-index="${index}">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
-            </tr>
-        `;
+              </tr>`;
         tbody.append(row);
     });
     
@@ -1028,6 +1095,10 @@ function escapeHtml(str) {
 }
 
 $(document).ready(function() {
+    console.log('Edit Order Page Loaded');
+    console.log('GST Registered:', isGstRegistered);
+    console.log('GST Percentage:', restaurantGstPercentage);
+    
     // Add new item button click
     $(document).on('click', '.add-item-btn', function(e) {
         e.preventDefault();
@@ -1035,7 +1106,6 @@ $(document).ready(function() {
         let itemId = $(this).data('id');
         let itemName = $(this).data('name');
         let itemPrice = parseFloat($(this).data('price'));
-        let itemGst = parseFloat($(this).data('gst'));
         let itemDiscount = parseFloat($(this).data('discount')) || 0;
         
         let existingItem = newOrderItems.find(i => i.id === itemId);
@@ -1048,7 +1118,6 @@ $(document).ready(function() {
                 id: itemId,
                 name: itemName,
                 price: itemPrice,
-                gst: itemGst,
                 qty: 1,
                 itemDiscount: itemDiscount
             });
@@ -1213,7 +1282,9 @@ $(document).ready(function() {
             payment_method: payment_method,
             amount_paid: amount_paid,
             customer_phone: customer_phone,
-            remarks: remarks
+            remarks: remarks,
+            is_gst_registered: isGstRegistered,
+            gst_percentage: restaurantGstPercentage
         };
         
         if (newOrderItems.length > 0) {
@@ -1222,7 +1293,6 @@ $(document).ready(function() {
                 name: item.name,
                 price: item.price,
                 qty: item.qty,
-                gst: item.gst,
                 item_discount: item.itemDiscount || 0
             }));
         }

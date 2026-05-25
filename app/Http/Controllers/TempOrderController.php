@@ -23,70 +23,132 @@ class TempOrderController extends Controller
         return view('temp_order', compact('categories', 'table_id', 'restaurant_id','restaurant_details'));
     }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'customer_name' => 'required|string',
-            'customer_phone' => 'required|string',
-            'order_items' => 'required|array|min:1',
-        ]);
+public function store(Request $request)
+{
+    $request->validate([
+        'customer_name' => 'required|string',
+        'customer_phone' => 'required|string',
+        'order_items' => 'required|array|min:1',
+    ]);
 
-        $subtotal = 0;
-        $gstTotal = 0;
+    // Get restaurant GST info
+    $restaurant = RestaurantMaster::find($request->restaurant_id);
+    $restaurantGstin = $restaurant->gstin ?? null;
+    $restaurantGstPercentage = $restaurant->gst_percentage ?? 0;
+    $isGstRegistered = !empty($restaurantGstin);
 
-        foreach ($request->order_items as $item) {
-            $subtotal += $item['price'] * $item['qty'];
-            $gstTotal += ($item['price'] * $item['qty'] * $item['gst']) / 100;
-        }
+    $originalSubtotal = 0;
+    $totalTaxable = 0;
+    $totalGst = 0;
+    $totalCgst = 0;
+    $totalSgst = 0;
+    $totalIgst = 0;
+    $totalItemDiscount = 0;
 
-        $discountAmount = (($subtotal + $gstTotal) * ($request->discount ?? 0)) / 100;
-        $grandTotal = $subtotal + $gstTotal - $discountAmount;
+    $calculatedItems = [];
 
-        $restaurantId = $request->restaurant_id;
-        $today = Carbon::now()->format('Ymd');
+    foreach ($request->order_items as $item) {
+        $itemDiscount = isset($item['item_discount']) ? floatval($item['item_discount']) : 0;
+        $originalPrice = floatval($item['price']);
+        $quantity = intval($item['qty']);
+        
+        // Calculate discounted price
+        $discountedPrice = $originalPrice - ($originalPrice * $itemDiscount / 100);
+        $taxableAmount = $discountedPrice * $quantity;
+        
+        // Calculate GST on discounted price
+        $gstRate = $isGstRegistered ? $restaurantGstPercentage : 0;
+        $gstAmount = ($taxableAmount * $gstRate) / 100;
+        
+        // Split GST
+        $halfGstRate = $gstRate / 2;
+        $cgstAmount = ($taxableAmount * $halfGstRate) / 100;
+        $sgstAmount = ($taxableAmount * $halfGstRate) / 100;
+        $totalAmount = $taxableAmount + $gstAmount;
+        
+        $originalSubtotal += $originalPrice * $quantity;
+        $totalTaxable += $taxableAmount;
+        $totalGst += $gstAmount;
+        $totalCgst += $cgstAmount;
+        $totalSgst += $sgstAmount;
+        $totalItemDiscount += ($originalPrice * $quantity) - $taxableAmount;
+        
+        $calculatedItems[] = [
+            'subcategory_id' => $item['id'],
+            'quantity' => $quantity,
+            'price' => $originalPrice,
+            'discounted_price' => $discountedPrice,
+            'item_discount_percentage' => $itemDiscount,
+            'taxable_amount' => $taxableAmount,
+            'gst_rate' => $gstRate,
+            'gst_amount' => $gstAmount,
+            'cgst_amount' => $cgstAmount,
+            'sgst_amount' => $sgstAmount,
+            'igst_amount' => 0,
+            'total_amount' => $totalAmount,
+        ];
+    }
 
-        // count today's orders for this restaurant
-        $todayCount = OrderManage::where('restaurant_id', $restaurantId)
-            ->whereDate('created_at', Carbon::today())
-            ->count() + 1;
+    // Generate order number
+    $restaurantId = $request->restaurant_id;
+    $today = Carbon::now()->format('Ymd');
+    $todayCount = OrderManage::where('restaurant_id', $restaurantId)
+        ->whereDate('created_at', Carbon::today())
+        ->count() + 1;
+    $sequence = str_pad($todayCount, 4, '0', STR_PAD_LEFT);
+    $orderNo = "ORD-{$restaurantId}-{$today}-{$sequence}";
 
-        // pad sequence number (0001, 0002…)
-        $sequence = str_pad($todayCount, 4, '0', STR_PAD_LEFT);
+    $tempOrder = TempOrder::create([
+        'table_id' => $request->table_id,
+        'order_id' => $orderNo,
+        'restaurant_id' => $request->restaurant_id,
+        'customer_name' => $request->customer_name,
+        'customer_phone' => $request->customer_phone,
+        'order_type' => 'DINE_IN',
+        'total_amount' => $originalSubtotal,
+        'taxable_amount' => $totalTaxable,
+        'gst_amount' => $totalGst,
+        'cgst_amount' => $totalCgst,
+        'sgst_amount' => $totalSgst,
+        'igst_amount' => $totalIgst,
+        'discount' => $totalItemDiscount,
+        'discount_percentage' => 0,
+        'grand_total' => $totalTaxable + $totalGst,
+        'round_off' => 0,
+        'is_gst_bill' => $isGstRegistered ? 'YES' : 'NO',
+        'restaurant_gst_percentage' => $restaurantGstPercentage,
+        'restaurant_gstin' => $restaurantGstin,
+        'remarks' => $request->remarks ?? null,
+        'order_status' => 'PENDING',
+        'payment_status' => 'PENDING',
+        'user_id' => null,
+    ]);
 
-        // final order number
-        $orderNo = "ORD-{$restaurantId}-{$today}-{$sequence}";
-
-        $tempOrder = TempOrder::create([
-            'table_id' => $request->table_id,
-            'order_id' => $orderNo,
+    foreach ($calculatedItems as $item) {
+        TempOrderItem::create([
+            'temp_order_id' => $tempOrder->id,
+            'subcategory_id' => $item['subcategory_id'],
+            'quantity' => $item['quantity'],
+            'price' => $item['price'],
+            'discounted_price' => $item['discounted_price'],
+            'item_discount_percentage' => $item['item_discount_percentage'],
+            'taxable_amount' => $item['taxable_amount'],
+            'gst_rate' => $item['gst_rate'],
+            'gst_amount' => $item['gst_amount'],
+            'cgst_amount' => $item['cgst_amount'],
+            'sgst_amount' => $item['sgst_amount'],
+            'igst_amount' => $item['igst_amount'],
+            'total_amount' => $item['total_amount'],
+            'order_status' => 'PENDING',
             'restaurant_id' => $request->restaurant_id,
-            'customer_name' => $request->customer_name,
-            'customer_phone' => $request->customer_phone,
-            'order_type' => 'DINE_IN',
-            'total_amount' => $subtotal,
-            'gst_amount' => $gstTotal,
-            'grand_total' => $grandTotal,
-            'discount' => $request->discount ?? 0,
-            'remarks' => $request->remarks ?? null,
-        ]);
-
-        foreach ($request->order_items as $item) {
-            TempOrderItem::create([
-                'temp_order_id' => $tempOrder->id,
-                'subcategory_id' => $item['id'],
-                'quantity' => $item['qty'],
-                'price' => $item['price'],
-                'gst_rate' => $item['gst'],
-                'total_amount' => ($item['price'] * $item['qty']) + (($item['price'] * $item['qty'] * $item['gst']) / 100),
-                'restaurant_id' => $request->restaurant_id,
-            ]);
-        }
-
-        return response()->json([
-            'status' => true,
-            'redirect' => route('order.success', $tempOrder->id)
         ]);
     }
+
+    return response()->json([
+        'status' => true,
+        'redirect' => route('order.success', $tempOrder->id)
+    ]);
+}
 
     public function success($id)
     {

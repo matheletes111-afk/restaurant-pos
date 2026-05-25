@@ -40,9 +40,9 @@
                 <div class="col-sm-12">
                     <div class="card">
                         <div class="card-header">
-                            <a href="{{ route('plans.index') }}" class="btn btn-primary" style="float: right;">
-                                <i class="fa fa-plus"></i> View Plans
-                            </a>
+                            <a href="{{ route('restaurant.plans') }}" class="btn btn-primary" style="float: right;">
+                                        <i class="fa fa-plus"></i> View Plans
+                                    </a>
                         </div>
                         <div class="card-body">
                             @include('includes.message')
@@ -69,7 +69,7 @@
                                             <td>{{ $subscription->plan->name ?? 'N/A' }}</td>
                                             <td>{{ number_format($subscription->plan->price ?? 0, 2) }}</td>
                                             <td>
-                                                <span class="badge badge-{{ 
+                                                <span class="btn btn-{{ 
                                                     $subscription->status == 'active' ? 'success' : 
                                                     ($subscription->status == 'cancelled' ? 'danger' : 
                                                     ($subscription->status == 'expired' ? 'warning' : 'secondary')) 
@@ -81,7 +81,7 @@
                                             <td>{{ $subscription->end_date->format('Y-m-d') }}</td>
                                             <td>{{ $subscription->renewal_date ? $subscription->renewal_date->format('Y-m-d') : 'N/A' }}</td>
                                             <td>
-                                                <span class="badge badge-{{ $subscription->auto_renew ? 'success' : 'secondary' }}">
+                                                <span class="btn btn-{{ $subscription->auto_renew ? 'success' : 'secondary' }}">
                                                     {{ $subscription->auto_renew ? 'Yes' : 'No' }}
                                                 </span>
                                             </td>
