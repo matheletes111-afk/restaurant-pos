@@ -9,6 +9,7 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Payment;
 use App\Models\RazorpayCustomer;
+use App\Models\RestaurantMaster;
 use App\Models\User;
 use Razorpay\Api\Api;
 use Carbon\Carbon;
@@ -242,6 +243,7 @@ class SubscriptionController extends Controller
             $payment->plan_id = $plan->id;
             $payment->razorpay_order_id = $subscription->id;
             $payment->amount = $plan->price;
+            $payment->gst_percentage ='18';
             $payment->currency = 'INR';
             $payment->status = 'pending';
             $payment->description = isset($existingSubscription) 
@@ -359,6 +361,9 @@ public function paymentSuccess(Request $request)
             throw new \Exception('Plan or User not found');
         }
 
+        // Get restaurant details
+        $restaurant = RestaurantMaster::where('owner_id', $user->id)->first();
+        
         // Verify payment signature for subscription payment
         if ($request->razorpay_payment_id && $request->razorpay_signature) {
             try {
@@ -423,7 +428,7 @@ public function paymentSuccess(Request $request)
             [
                 'plan_id' => $plan->id,
                 'razorpay_plan_id' => $plan->razorpay_plan_id,
-                'status' => $razorpaySubscription->status, // Use actual Razorpay status
+                'status' => $razorpaySubscription->status,
                 'start_date' => date('Y-m-d', $razorpaySubscription->start_at),
                 'end_date' => date('Y-m-d', $razorpaySubscription->end_at),
                 'renewal_date' => date('Y-m-d', $razorpaySubscription->charge_at),
@@ -438,7 +443,16 @@ public function paymentSuccess(Request $request)
 
         DB::commit();
 
-        // 5. Handle upgrade scenario - Process refund asynchronously
+        // 5. Send email notification (continue even if email fails)
+        try {
+            \Mail::to($user->email)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $subscription, $payment, $restaurant));
+            Log::info('Subscription success email sent to: ' . $user->email);
+        } catch (\Exception $e) {
+            Log::error('Failed to send subscription success email: ' . $e->getMessage());
+            // Continue execution - don't throw exception
+        }
+
+        // 6. Handle upgrade scenario - Process refund asynchronously
         $existingSubscriptionId = session('existing_subscription_id') ?? $request->existing_subscription_id;
         $creditAmount = session('credit_amount') ?? $request->credit_amount ?? 0;
         
@@ -451,7 +465,7 @@ public function paymentSuccess(Request $request)
             $successMessage = 'Subscription activated successfully!';
         }
 
-        // 6. Clear session data
+        // 7. Clear session data
         session()->forget([
             'razorpay_subscription_id',
             'plan_id',

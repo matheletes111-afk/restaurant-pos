@@ -92,9 +92,9 @@
           <div class="row mt-3">
             <div class="col-6">
               <div class="d-grid">
-                <button type="button" class="btn mt-2 btn-light-primary bg-light text-muted forgot-link" data-toggle="modal" data-target="#forgotModal">
+                <a href="{{route('forget.password.portal')}}" class="btn mt-2 btn-light-primary bg-light text-muted forgot-link">
                   <i class="fas fa-key me-2"></i> Forgot Password
-                </button>
+                </a>
               </div>
             </div>
             <div class="col-6">

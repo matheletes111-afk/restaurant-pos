@@ -20,6 +20,7 @@ class Payment extends Model
         'refund_amount',
         'currency',
         'status',
+        'gst_percentage',
         'description',
         'payment_method',
         'razorpay_response'

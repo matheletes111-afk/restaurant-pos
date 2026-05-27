@@ -413,19 +413,25 @@
                 @endif
 
                 <div class="plan-header">
-                    <h3 class="plan-name">{{ $plan->name }}</h3>
-                    <div class="plan-price">
-                        @if($plan->price == 0)
-                            FREE
-                        @else
-                            ₹{{ number_format($plan->price, 2) }}
-                            <small>/ {{ ucfirst($plan->billing_cycle) }}</small>
-                        @endif
-                    </div>
-                    <div class="plan-duration">
-                        <i class="fas fa-calendar-alt me-1"></i> {{ $plan->duration_days }} days validity
-                    </div>
-                </div>
+    <h3 class="plan-name">{{ $plan->name }}</h3>
+    <div class="plan-price">
+        @if($plan->price == 0)
+            FREE
+        @else
+            @php
+                $gstPercentage = $plan->gst_percentage ?? 18;
+                $taxableAmount = $plan->taxable_amount ?? ($plan->price / (1 + ($gstPercentage / 100)));
+            @endphp
+            <div>₹{{ number_format($plan->price, 2) }}{{--  <small>/ {{ ucfirst($plan->billing_cycle) }}</small> --}}</div>
+            {{-- <div class="small text-muted mt-1">
+                <i class="fas fa-info-circle"></i> ₹{{ number_format($taxableAmount, 2) }} + {{ $gstPercentage }}% GST
+            </div> --}}
+        @endif
+    </div>
+    <div class="plan-duration">
+        <i class="fas fa-calendar-alt me-1"></i> {{ $plan->duration_days }} days validity
+    </div>
+</div>
 
                 <div class="plan-body">
                     <div class="plan-description">
@@ -439,16 +445,14 @@
                         <li><i class="fas fa-boxes"></i> Inventory {{ $plan->inventory_checkbox == 'Y' ? 'Enabled' : 'Disabled' }}</li>
                     </ul>
 
-                    @if($isAssigned)
-                        <button class="btn-current" disabled>
-                            <i class="fas fa-check-circle me-2"></i> Currently Active
-                        </button>
-                    @else
+                   
+                       
+                   
                         <a href="{{ route('admin.subscriptions.create', $plan->id) }}" class="btn-select">
                             <i class="fas fa-shopping-cart me-2"></i>
                             {{ $plan->price == 0 ? 'Start Free Trial' : 'Subscribe Now' }}
                         </a>
-                    @endif
+                 
                 </div>
             </div>
         </div>

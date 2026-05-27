@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\TableManageApiController;
 use App\Http\Controllers\Api\RestaurantStaffApiController;
 use App\Http\Controllers\Api\RestaurantProfileApiController;
 use App\Http\Controllers\Api\SupportTicketApiController;
+use App\Http\Controllers\Api\PasswordResetApiController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -23,6 +24,12 @@ use App\Http\Controllers\Api\SupportTicketApiController;
 
 // Public route - no authentication needed
 Route::post('/login', [AuthController::class, 'login']);
+// Password Reset API Routes (Public - No Authentication)
+Route::prefix('password')->group(function () {
+    Route::post('/forgot', [PasswordResetApiController::class, 'forgotPassword']);      // Request reset link
+    Route::post('/verify-otp', [PasswordResetApiController::class, 'verifyOtp']);       // Verify OTP
+    Route::post('/reset', [PasswordResetApiController::class, 'resetPassword']);        // Reset password
+});
 
 Route::middleware('auth:api')->group(function () {
 
@@ -99,6 +106,8 @@ Route::prefix('support')->group(function () {
     Route::post('/tickets/{id}/resolve', [SupportTicketApiController::class, 'markResolved']); // Mark resolved
     Route::delete('/tickets/{id}', [SupportTicketApiController::class, 'destroy']); // Delete ticket
 });
+
+
 
 
 });

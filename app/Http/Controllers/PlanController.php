@@ -34,22 +34,30 @@ public function selectPlan()
         ->pluck('plan_id')
         ->toArray();
     
-    // Get default plan (free plan or plan marked as default)
+    // Get default plan (free plan or plan marked as default) - only latest version
     $defaultPlan = Plan::where(function($q) {
             $q->where('is_default_plan', 'Y')
               ->orWhere('price', 0);
         })
         ->where('is_delete', 'N')
+        ->whereNull('plan_parent_id') // Only get parent plans (latest versions)
         ->first();
     
-    // Merge default plan ID with assigned plan IDs (remove duplicates)
-    $planIdsToShow = array_unique(array_merge($assignedPlanIds, $defaultPlan ? [$defaultPlan->id] : []));
+    // Get assigned plan IDs that are parent plans (latest versions)
+    $assignedParentPlans = Plan::whereIn('id', $assignedPlanIds)
+        ->whereNull('plan_parent_id')
+        ->pluck('id')
+        ->toArray();
     
-    // Get ONLY the plans that are assigned to this restaurant OR the default plan
+    // Merge default plan ID with assigned plan IDs
+    $planIdsToShow = array_unique(array_merge($assignedParentPlans, $defaultPlan ? [$defaultPlan->id] : []));
+    
+    // Get ONLY the parent plans (latest versions)
     $plans = Plan::whereIn('id', $planIdsToShow)
-                ->where('is_delete', 'N')
-                ->orderByRaw("FIELD(id, " . implode(',', $planIdsToShow) . ")")
-                ->get();
+        ->where('is_delete', 'N')
+        ->whereNull('plan_parent_id') // Only parent plans
+        ->orderByRaw("FIELD(id, " . implode(',', $planIdsToShow) . ")")
+        ->get();
     
     return view('plans', compact('plans', 'assignedPlanIds', 'defaultPlan'));
 }
@@ -66,13 +74,19 @@ public function store(Request $request)
     $validator = Validator::make($request->all(), [
         'name' => 'required|string|max:255',
         'price' => 'required|numeric|min:0',
+        'gst_percentage' => 'nullable|numeric|min:0|max:100',
         'country_id' => 'nullable|integer',
         'currency' => 'nullable|string|max:10',
         'billing_cycle' => 'required|in:monthly,quarterly,half-yearly,yearly',
         'duration_days' => 'required|integer|min:1',
         'description' => 'nullable|string',
         'is_default_free' => 'required|in:Y,N',
-        'is_default_paid' => 'required|in:Y,N'
+        'is_default_paid' => 'required|in:Y,N',
+        'category_number' => 'nullable|integer|min:0',
+        'total_number_of_dishes' => 'nullable|integer|min:0',
+        'total_number_of_table' => 'nullable|integer|min:0',
+        'inventory_checkbox' => 'nullable|in:Y,N',
+        'is_default_plan' => 'nullable|in:Y,N'
     ]);
 
     if ($validator->fails()) {
@@ -80,6 +94,18 @@ public function store(Request $request)
             ->withErrors($validator)
             ->withInput();
     }
+
+    // Set default GST percentage (18% if not provided)
+    $gstPercentage = $request->gst_percentage ?? 18.00;
+    
+    // Calculate taxable amount and GST amount (for database storage only)
+    $priceIncludingGst = $request->price;
+    $taxableAmount = $priceIncludingGst / (1 + ($gstPercentage / 100));
+    $gstAmount = $priceIncludingGst - $taxableAmount;
+
+    // Round to 2 decimal places
+    $taxableAmount = round($taxableAmount, 2);
+    $gstAmount = round($gstAmount, 2);
 
     // Check if plan already exists
     $planChk = Plan::where('name', $request->name)
@@ -125,10 +151,17 @@ public function store(Request $request)
         }
     }
 
+    // Check if this is being set as default plan
+    if ($request->is_default_plan === "Y") {
+        // Remove default flag from other plans
+        Plan::where('is_default_plan', 'Y')->update(['is_default_plan' => 'N']);
+    }
+
     try {
 
         /* =====================================================
            RAZORPAY PLAN (ONLY FOR PAID PLANS)
+           Using FULL amount including GST
         ====================================================== */
 
         $razorpayPlanId = null;
@@ -151,18 +184,26 @@ public function store(Request $request)
                 $period = 'yearly';
             }
 
+            // Use FULL amount including GST (customer pays this)
+            // Razorpay settles this FULL amount to your bank account
+            $razorpayAmountInPaise = max($request->price * 100, 100);
+            
             $razorpayPlan = $api->plan->create([
                 'period' => $period,
                 'interval' => $interval,
                 'item' => [
                     'name' => $request->name,
-                    'amount' => $request->price * 100, // Razorpay requires min ₹1
+                    'amount' => round($razorpayAmountInPaise),
                     'currency' => $request->currency ?? 'INR',
                     'description' => $request->description ?? ''
                 ],
                 'notes' => [
                     'duration_days' => $request->duration_days,
-                    'plan_type' => 'PAID'
+                    'plan_type' => 'PAID',
+                    'gst_percentage' => $gstPercentage,
+                    'taxable_amount' => $taxableAmount,
+                    'gst_amount' => $gstAmount,
+                    'total_amount_with_gst' => $request->price
                 ]
             ]);
 
@@ -170,12 +211,15 @@ public function store(Request $request)
         }
 
         /* =====================================================
-           SAVE PLAN
+           SAVE PLAN (with GST details for records)
         ====================================================== */
 
         $plan = new Plan();
         $plan->name = $request->name;
-        $plan->price = $request->price;
+        $plan->price = $request->price; // Price including GST
+        $plan->gst_percentage = $gstPercentage;
+        $plan->taxable_amount = $taxableAmount;
+        $plan->gst_amount = $gstAmount;
         $plan->country_id = $request->country_id;
         $plan->currency = $request->currency ?? 'INR';
         $plan->billing_cycle = $request->billing_cycle;
@@ -183,18 +227,19 @@ public function store(Request $request)
         $plan->description = $request->description;
         $plan->is_default_free = $request->is_default_free;
         $plan->is_default_paid = $request->is_default_paid;
-        $plan->razorpay_plan_id = $razorpayPlanId; // NULL for free plans
-        $plan->category_number = $request->category_number;
-        $plan->total_number_of_dishes = $request->total_number_of_dishes;
-        $plan->total_number_of_table = $request->total_number_of_table;
-        $plan->inventory_checkbox = $request->inventory_checkbox;
-        $plan->is_default_plan = $request->is_default_plan;
+        $plan->razorpay_plan_id = $razorpayPlanId;
+        $plan->category_number = $request->category_number ?? 0;
+        $plan->total_number_of_dishes = $request->total_number_of_dishes ?? 0;
+        $plan->total_number_of_table = $request->total_number_of_table ?? 0;
+        $plan->inventory_checkbox = $request->inventory_checkbox ?? 'N';
+        $plan->is_default_plan = $request->is_default_plan ?? 'N';
+        $plan->is_delete = 'N';
 
         $plan->save();
         
 
         /* =====================================================
-           PLAN HISTORY
+           PLAN HISTORY (for audit trail)
         ====================================================== */
 
         $history = new PlanHistory();
@@ -203,6 +248,9 @@ public function store(Request $request)
         $history->razorpay_plan_id = $razorpayPlanId;
         $history->status = "C";
         $history->price = $request->price;
+        $history->gst_percentage = $gstPercentage;
+        $history->taxable_amount = $taxableAmount;
+        $history->gst_amount = $gstAmount;
         $history->country_id = $request->country_id;
         $history->currency = $request->currency ?? 'INR';
         $history->billing_cycle = $request->billing_cycle;
@@ -210,10 +258,10 @@ public function store(Request $request)
         $history->description = $request->description;
         $history->is_default_free = $request->is_default_free;
         $history->is_default_paid = $request->is_default_paid;
-        $history->category_number = $request->category_number;
-        $history->total_number_of_dishes = $request->total_number_of_dishes;
-        $history->total_number_of_table = $request->total_number_of_table;
-        $history->inventory_checkbox = $request->inventory_checkbox;
+        $history->category_number = $request->category_number ?? 0;
+        $history->total_number_of_dishes = $request->total_number_of_dishes ?? 0;
+        $history->total_number_of_table = $request->total_number_of_table ?? 0;
+        $history->inventory_checkbox = $request->inventory_checkbox ?? 'N';
         $history->save();
 
         return redirect()->route('plans.index')
@@ -237,160 +285,193 @@ public function store(Request $request)
         return view('admin.plans.edit', compact('plan'));
     }
 
-    public function update(Request $request, $id)
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric',
-            'country_id' => 'nullable|integer',
-            'currency' => 'nullable|string|max:10',
-            'billing_cycle' => 'required|in:monthly,quarterly,half-yearly,yearly',
-            'duration_days' => 'required|integer|min:1',
-            'description' => 'nullable|string',
-            'is_default_free' => 'required|in:Y,N',
-            'is_default_paid' => 'required|in:Y,N'
-        ]);
+public function update(Request $request, $id)
+{
+    $validator = Validator::make($request->all(), [
+        'name' => 'required|string|max:255',
+        'price' => 'required|numeric',
+        'gst_percentage' => 'nullable|numeric|min:0|max:100',
+        'country_id' => 'nullable|integer',
+        'currency' => 'nullable|string|max:10',
+        'billing_cycle' => 'required|in:monthly,quarterly,half-yearly,yearly',
+        'duration_days' => 'required|integer|min:1',
+        'description' => 'nullable|string',
+        'is_default_free' => 'required|in:Y,N',
+        'is_default_paid' => 'required|in:Y,N'
+    ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
+    if ($validator->fails()) {
+        return redirect()->back()
+            ->withErrors($validator)
+            ->withInput();
+    }
 
-        $plan = Plan::where('id', $id)
-                    ->where('is_delete', 'N')
-                    ->firstOrFail();
+    $plan = Plan::where('id', $id)
+                ->where('is_delete', 'N')
+                ->firstOrFail();
 
-        // Check if plan already exists with different ID
-        $planChk = Plan::where('name', $request->name)
-            ->where('price', $request->price)
-            ->where('id', '!=', $id)
+    // Set default GST percentage (18% if not provided)
+    $gstPercentage = $request->gst_percentage ?? 18.00;
+    
+    // Calculate taxable amount and GST amount (for database storage only)
+    $priceIncludingGst = $request->price;
+    $taxableAmount = $priceIncludingGst / (1 + ($gstPercentage / 100));
+    $gstAmount = $priceIncludingGst - $taxableAmount;
+    
+    // Round to 2 decimal places
+    $taxableAmount = round($taxableAmount, 2);
+    $gstAmount = round($gstAmount, 2);
+
+    // Check if plan already exists with different ID
+    $planChk = Plan::where('name', $request->name)
+        ->where('price', $request->price)
+        ->where('id', '!=', $id)
+        ->where('is_delete', 'N')
+        ->where('country_id', $request->country_id)
+        ->where('duration_days', $request->duration_days)
+        ->first();
+
+    if ($planChk) {
+        return redirect()->back()
+            ->with('error', 'This Plan Already Exists')
+            ->withInput();
+    }
+
+    // Check default free plan
+    if ($request->is_default_free == "Y" && $request->price == 0) {
+        $planChk = Plan::where('is_default_free', 'Y')
+            ->where('price', 0)
             ->where('is_delete', 'N')
+            ->where('id', '!=', $id)
             ->where('country_id', $request->country_id)
-            ->where('duration_days', $request->duration_days)
             ->first();
 
         if ($planChk) {
             return redirect()->back()
-                ->with('error', 'This Plan Already Exists')
-                ->withInput();
-        }
-
-        // Check default free plan
-        if ($request->is_default_free == "Y" && $request->price < 1) {
-            $planChk = Plan::where('is_default_free', 'Y')
-                ->where('price', 0)
-                ->where('is_delete', 'N')
-                ->where('id', '!=', $id)
-                ->where('country_id', $request->country_id)
-                ->first();
-
-            if ($planChk) {
-                return redirect()->back()
-                    ->with('error', 'Free default Plan For That Country Already Exists')
-                    ->withInput();
-            }
-        }
-
-        // Check default paid plan
-        if ($request->is_default_paid == "Y" && $request->price > 0) {
-            $planChk = Plan::where('is_default_paid', 'Y')
-                ->where('id', '!=', $id)
-                ->where('price', '!=', 0)
-                ->where('is_delete', 'N')
-                ->where('country_id', $request->country_id)
-                ->first();
-
-            if ($planChk) {
-                return redirect()->back()
-                    ->with('error', 'Paid default Plan For That Country Already Exists')
-                    ->withInput();
-            }
-        }
-
-        try {
-            $api = new Api(env('RAZORPAY_KEY_ID'), env('RAZORPAY_KEY_SECRET'));
-
-            $billingCycle = $request->billing_cycle;
-            $period = 'monthly';
-            $interval = 1;
-
-            if ($billingCycle == 'quarterly') {
-                $interval = 3;
-            } elseif ($billingCycle == 'half-yearly') {
-                $interval = 6;
-            } elseif ($billingCycle == 'yearly') {
-                $period = 'yearly';
-            }
-
-            // Create new Razorpay plan
-            $razorpayPlan = $api->plan->create([
-                'period' => $period,
-                'interval' => $interval,
-                'item' => [
-                    'name' => $request->name,
-                    'amount' => $request->price * 100,
-                    'currency' => $request->currency ?? 'INR',
-                    'description' => $request->description ?? '',
-                ],
-                'notes' => [
-                    'duration_days' => $request->duration_days
-                ]
-            ]);
-
-            // Create new plan entry (like Razorpay)
-            $newUpdatedPlan = new Plan();
-            $newUpdatedPlan->name = $request->name;
-            $newUpdatedPlan->plan_parent_id = $plan->id;
-            $newUpdatedPlan->price = $request->price;
-            $newUpdatedPlan->country_id = $request->country_id;
-            $newUpdatedPlan->currency = $request->currency ?? 'INR';
-            $newUpdatedPlan->billing_cycle = $request->billing_cycle;
-            $newUpdatedPlan->duration_days = $request->duration_days;
-            $newUpdatedPlan->description = $request->description;
-            $newUpdatedPlan->is_default_free = $request->is_default_free;
-            $newUpdatedPlan->is_default_paid = $request->is_default_paid;
-            $newUpdatedPlan->razorpay_plan_id = $razorpayPlan->id;
-            $newUpdatedPlan->category_number = $request->category_number;
-            $newUpdatedPlan->total_number_of_dishes = $request->total_number_of_dishes;
-            $newUpdatedPlan->total_number_of_table = $request->total_number_of_table;
-            $newUpdatedPlan->inventory_checkbox = $request->inventory_checkbox;
-            $newUpdatedPlan->is_default_plan = $request->is_default_plan;
-            $newUpdatedPlan->save();
-
-            // Update old plan end date
-            $plan->end_date = now();
-            $plan->save();
-
-            // Create plan history
-            $insHis = new PlanHistory();
-            $insHis->plan_id = $newUpdatedPlan->id;
-            $insHis->name = $request->name;
-            $insHis->razorpay_plan_id = $razorpayPlan->id;
-            $insHis->status = "U";
-            $insHis->price = $request->price;
-            $insHis->country_id = $request->country_id;
-            $insHis->currency = $request->currency ?? 'INR';
-            $insHis->billing_cycle = $request->billing_cycle;
-            $insHis->duration_days = $request->duration_days;
-            $insHis->description = $request->description;
-            $insHis->is_default_free = $request->is_default_free;
-            $insHis->is_default_paid = $request->is_default_paid;
-            $insHis->category_number = $request->category_number;
-            $insHis->total_number_of_dishes = $request->total_number_of_dishes;
-            $insHis->total_number_of_table = $request->total_number_of_table;
-            $insHis->inventory_checkbox = $request->inventory_checkbox;
-            $insHis->save();
-
-            return redirect()->route('plans.index')
-                ->with('success', 'Plan updated successfully');
-
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Error updating plan: ' . $e->getMessage())
+                ->with('error', 'Free default Plan For That Country Already Exists')
                 ->withInput();
         }
     }
+
+    // Check default paid plan
+    if ($request->is_default_paid == "Y" && $request->price > 0) {
+        $planChk = Plan::where('is_default_paid', 'Y')
+            ->where('id', '!=', $id)
+            ->where('price', '>', 0)
+            ->where('is_delete', 'N')
+            ->where('country_id', $request->country_id)
+            ->first();
+
+        if ($planChk) {
+            return redirect()->back()
+                ->with('error', 'Paid default Plan For That Country Already Exists')
+                ->withInput();
+        }
+    }
+
+    // Check if this is being set as default plan
+    if ($request->is_default_plan === "Y") {
+        // Remove default flag from other plans
+        Plan::where('is_default_plan', 'Y')->where('id', '!=', $id)->update(['is_default_plan' => 'N']);
+    }
+
+    try {
+        $api = new Api(env('RAZORPAY_KEY_ID'), env('RAZORPAY_KEY_SECRET'));
+
+        $billingCycle = $request->billing_cycle;
+        $period = 'monthly';
+        $interval = 1;
+
+        if ($billingCycle == 'quarterly') {
+            $interval = 3;
+        } elseif ($billingCycle == 'half-yearly') {
+            $interval = 6;
+        } elseif ($billingCycle == 'yearly') {
+            $period = 'yearly';
+        }
+
+        // Use FULL amount including GST for Razorpay
+        $razorpayAmountInPaise = max($request->price * 100, 100);
+
+        // Create new Razorpay plan
+        $razorpayPlan = $api->plan->create([
+            'period' => $period,
+            'interval' => $interval,
+            'item' => [
+                'name' => $request->name,
+                'amount' => round($razorpayAmountInPaise),
+                'currency' => $request->currency ?? 'INR',
+                'description' => $request->description ?? '',
+            ],
+            'notes' => [
+                'duration_days' => $request->duration_days,
+                'plan_type' => 'PAID',
+                'gst_percentage' => $gstPercentage,
+                'taxable_amount' => $taxableAmount,
+                'gst_amount' => $gstAmount,
+                'total_amount_with_gst' => $request->price
+            ]
+        ]);
+
+        // Create new plan entry (like Razorpay)
+        $newUpdatedPlan = new Plan();
+        $newUpdatedPlan->name = $request->name;
+        $newUpdatedPlan->plan_parent_id = $plan->id;
+        $newUpdatedPlan->price = $request->price;
+        $newUpdatedPlan->gst_percentage = $gstPercentage;
+        $newUpdatedPlan->taxable_amount = $taxableAmount;
+        $newUpdatedPlan->gst_amount = $gstAmount;
+        $newUpdatedPlan->country_id = $request->country_id;
+        $newUpdatedPlan->currency = $request->currency ?? 'INR';
+        $newUpdatedPlan->billing_cycle = $request->billing_cycle;
+        $newUpdatedPlan->duration_days = $request->duration_days;
+        $newUpdatedPlan->description = $request->description;
+        $newUpdatedPlan->is_default_free = $request->is_default_free;
+        $newUpdatedPlan->is_default_paid = $request->is_default_paid;
+        $newUpdatedPlan->razorpay_plan_id = $razorpayPlan->id;
+        $newUpdatedPlan->category_number = $request->category_number;
+        $newUpdatedPlan->total_number_of_dishes = $request->total_number_of_dishes;
+        $newUpdatedPlan->total_number_of_table = $request->total_number_of_table;
+        $newUpdatedPlan->inventory_checkbox = $request->inventory_checkbox;
+        $newUpdatedPlan->is_default_plan = $request->is_default_plan;
+        $newUpdatedPlan->save();
+
+        // Update old plan end date
+        $plan->end_date = now();
+        $plan->save();
+
+        // Create plan history
+        $insHis = new PlanHistory();
+        $insHis->plan_id = $newUpdatedPlan->id;
+        $insHis->name = $request->name;
+        $insHis->razorpay_plan_id = $razorpayPlan->id;
+        $insHis->status = "U";
+        $insHis->price = $request->price;
+        $insHis->gst_percentage = $gstPercentage;
+        $insHis->taxable_amount = $taxableAmount;
+        $insHis->gst_amount = $gstAmount;
+        $insHis->country_id = $request->country_id;
+        $insHis->currency = $request->currency ?? 'INR';
+        $insHis->billing_cycle = $request->billing_cycle;
+        $insHis->duration_days = $request->duration_days;
+        $insHis->description = $request->description;
+        $insHis->is_default_free = $request->is_default_free;
+        $insHis->is_default_paid = $request->is_default_paid;
+        $insHis->category_number = $request->category_number;
+        $insHis->total_number_of_dishes = $request->total_number_of_dishes;
+        $insHis->total_number_of_table = $request->total_number_of_table;
+        $insHis->inventory_checkbox = $request->inventory_checkbox;
+        $insHis->save();
+
+        return redirect()->route('plans.index')
+            ->with('success', 'Plan updated successfully');
+
+    } catch (\Exception $e) {
+        return redirect()->back()
+            ->with('error', 'Error updating plan: ' . $e->getMessage())
+            ->withInput();
+    }
+}
 
     public function destroy($id)
     {

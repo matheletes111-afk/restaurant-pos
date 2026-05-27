@@ -33,6 +33,11 @@ Route::get('/clear-cache', function() {
     // return what you want
 });
 
+Route::get('forget-password-user',[LoginController::class, 'forgetPassword'])->name('forget.password.portal');
+Route::post('forget-password-user/send-forget-password-mail',[LoginController::class, 'forgetPasswordSubmit'])->name('forget.password.portal.forget.password.submit');
+Route::get('forget-password-user/verify-email/{id}',[LoginController::class, 'forgetPasswordMailVerify'])->name('forget.password.portal.forget.password.mail.verify');
+Route::post('forget-password-user/enter-new-password',[LoginController::class, 'enterNewPassword'])->name('forget.password.portal.forget.password.enter.new.password');
+
 
 Route::get('/', [App\Http\Controllers\FrontendController::class, 'index'])->name('home');
 // Registration routes
@@ -391,7 +396,7 @@ Route::prefix('admin-enquiry')->name('admin.enquiry.')->group(function () {
 
 
 // Restaurant Support Routes
-Route::prefix('restaurant/support')->name('restaurant.support.')->group(function () {
+Route::prefix('restaurant-support')->name('restaurant.support.')->group(function () {
     Route::get('/create', [App\Http\Controllers\SupportController::class, 'createTicket'])->name('create');
     Route::post('/store', [App\Http\Controllers\SupportController::class, 'storeTicket'])->name('store');
     Route::get('/tickets', [App\Http\Controllers\SupportController::class, 'restaurantTickets'])->name('tickets');

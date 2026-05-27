@@ -42,6 +42,19 @@
             <span class="pc-mtext">Payment History</span>
           </a>
         </li>
+
+        <li class="pc-item">
+        <a href="{{ route('admin.support.tickets') }}" 
+           class="pc-link @if(Request::segment(2) == 'subscriptions') active_class @endif">
+          <span class="pc-micon">
+            <i class="fas fa-headset"></i>
+          </span>
+          <span class="pc-mtext">Customer Support</span>
+        </a>
+      </li>
+
+
+
         @endif
 
 
@@ -137,6 +150,16 @@
       <i class="fas fa-credit-card"></i>
     </span>
     <span class="pc-mtext">Billing & Subscription</span>
+  </a>
+</li>
+
+<li class="pc-item">
+  <a href="{{ route('restaurant.support.tickets') }}" 
+     class="pc-link @if(Request::segment(2) == 'restaurant-support') active_class @endif">
+    <span class="pc-micon">
+      <i class="fas fa-headset"></i>
+    </span>
+    <span class="pc-mtext">Customer Support</span>
   </a>
 </li>
 
@@ -253,7 +276,7 @@
       <span class="pc-micon">
         <i class="fas fa-file-invoice-dollar"></i>
       </span>
-      <span class="pc-mtext">Item-Wise (GST)</span>
+      <span class="pc-mtext">Item-Wise</span>
     </a>
   </li>
 
@@ -450,6 +473,7 @@
       </div>
     </li>
     <li class="dropdown pc-h-item header-user-profile">
+      @if(auth()->user()->role=="RES")
       <a
         class="pc-head-link dropdown-toggle arrow-none me-0"
         data-bs-toggle="dropdown"
@@ -459,6 +483,7 @@
         data-bs-auto-close="outside"
         aria-expanded="false"
       >
+      @endif
         
         <span>Welcome , {{auth()->user()->name}}</span>
       </a>
@@ -468,7 +493,7 @@
             
             <div class="flex-grow-1 ms-3">
               <a href="{{route('restaurant.profile.index')}}">
-              <h6 class="mb-1">{{auth()->user()->restaurant->name}}</h6>
+              <h6 class="mb-1">@if(auth()->user()->role=="RES"){{auth()->user()->restaurant->name}} @endif</h6>
               <span style="color:orange;"><i class="fas fa-user me-2"></i>View Profile</span>
             </a>
             

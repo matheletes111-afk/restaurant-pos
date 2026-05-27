@@ -33,30 +33,48 @@ class SupportController extends Controller
         return view('support.restaurant.create');
     }
     
-    /**
-     * Restaurant - Store Ticket
-     */
-    public function storeTicket(Request $request)
-    {
+/**
+ * Restaurant - Store Ticket
+ */
+public function storeTicket(Request $request)
+{
+    $request->validate([
+        'subject' => 'required|string|max:255',
+        'message' => 'required|string|min:10',
+        'priority' => 'required|in:LOW,MEDIUM,HIGH,URGENT'
+    ]);
+    
+    try {
+        $ticket = new SupportTicket();
+        $ticket->ticket_no = $this->generateTicketNumber();
+        $ticket->restaurant_id = auth()->user()->restaurant_id;
+        $ticket->subject = $request->subject;
+        $ticket->message = $request->message;
+        $ticket->priority = $request->priority;
+        $ticket->status = SupportTicket::STATUS_NEW;
+        $ticket->created_by = auth()->id();
+        $ticket->save();
         
+        // Get restaurant details and user
+        $restaurant = \App\Models\RestaurantMaster::find(auth()->user()->restaurant_id);
+        $user = auth()->user();
         
+        // Send email to admin
         try {
-            $ticket = new SupportTicket();
-            $ticket->ticket_no = $this->generateTicketNumber();
-            $ticket->restaurant_id = auth()->user()->restaurant_id;
-            $ticket->subject = $request->subject;
-            $ticket->message = $request->message;
-            $ticket->priority = $request->priority;
-            $ticket->status = SupportTicket::STATUS_NEW;
-            $ticket->created_by = auth()->id();
-            $ticket->save();
-            
-            return redirect()->route('restaurant.support.tickets')->with('success', 'Ticket #' . $ticket->ticket_no . ' created successfully');
-
+            $adminEmail = 'developersayan2001@gmail.com';
+            \Mail::to($adminEmail)->send(new \App\Mail\NewSupportTicketMail($ticket, $restaurant, $user));
+            \Log::info('Admin notification email sent for ticket: ' . $ticket->ticket_no);
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
+            \Log::error('Failed to send admin notification email: ' . $e->getMessage());
+            // Continue execution - don't throw exception
         }
+        
+        return redirect()->route('restaurant.support.tickets')->with('success', 'Ticket #' . $ticket->ticket_no . ' created successfully');
+
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
     }
+}
     
     /**
      * Restaurant - List Tickets

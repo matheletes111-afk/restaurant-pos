@@ -93,7 +93,7 @@
         <div class="restaurant-info">
             <div class="d-flex justify-content-between align-items-center flex-wrap">
                 <div>
-                    <h4><i class="fas fa-store me-2"></i>{{ $restaurant->name }}</h4>
+                    <h4 class="text-white"><i class="fas fa-store me-2"></i>{{ $restaurant->name }}</h4>
                     <p class="mb-0 text-white-50">
                         <i class="fas fa-user me-1"></i> Owner: {{ $restaurant->owner->name ?? 'N/A' }} |
                         <i class="fas fa-envelope me-1"></i> {{ $restaurant->owner->email ?? 'N/A' }} |
