@@ -73,7 +73,8 @@
     .action-buttons {
       display: flex;
       gap: 5px;
-      justify-content: center;
+      justify-content: flex-start;
+      flex-wrap: wrap;
     }
     
     .table-responsive {
@@ -291,7 +292,8 @@
                 <table id="ordersTable" class="table table-hover table-striped">
                   <thead class="thead-light">
                     <tr>
-                      <th>#</th>
+                      <th class="text-center" style="width: 50px;">#</th>
+                      <th>Actions</th>
                       <th>Order ID</th>
                       <th>Customer</th>
                       <th>Phone</th>
@@ -307,7 +309,6 @@
                       <th>Bill Type</th>
                       <th>Status</th>
                       <th>Date</th>
-                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -329,83 +330,8 @@
                         $totalDiscount = $totalItemDiscount + $orderDiscountAmount;
                       @endphp
                       <tr>
-                        <td>{{ ($orders->currentPage() - 1) * $orders->perPage() + $key + 1 }}</div>
-                        <td>
-                          <span class="fw-bold text-primary">{{ $order->order_id }}</span>
-                         </div>
-                        <td>{{ $order->customer_name ?? 'Walk-in Customer' }}</div>
-                        <td>{{ $order->customer_phone ?? '-' }}</div>
-                        <td>
-                          @if($order->order_type == 'DINE_IN')
-                            <span class="status-badge badge-dinein">
-                              <i class="bi bi-table"></i> Dine-in
-                            </span>
-                            @if($order->table)
-                              <br><small class="text-muted">{{ $order->table->name }}</small>
-                            @endif
-                          @else
-                            <span class="status-badge badge-takeaway">
-                              <i class="bi bi-box"></i> Takeaway
-                            </span>
-                          @endif
-                         </div>
-                        <td class="amount-cell">₹{{ number_format($order->total_amount ?? 0, 2) }}</div>
-                        <td class="amount-cell text-success">- ₹{{ number_format($totalItemDiscount, 2) }}</div>
-                        <td class="amount-cell text-danger">- ₹{{ number_format($orderDiscountAmount, 2) }}</div>
-                        <td class="amount-cell">₹{{ number_format($order->taxable_amount ?? 0, 2) }}</div>
-                        <td class="amount-cell">
-                          @if($isGstBill)
-                            ₹{{ number_format($order->gst_amount ?? 0, 2) }}
-                            <br><small class="text-muted">({{ $gstPercentage }}%)</small>
-                          @else
-                            <span class="text-muted">-</span>
-                          @endif
-                         </div>
-                        <td class="amount-cell">
-                          <strong>₹{{ number_format($order->grand_total, 2) }}</strong>
-                         </div>
-                        <td class="amount-cell amount-paid">
-                          ₹{{ number_format($order->amount_paid ?? 0, 2) }}
-                         </div>
-                        <td class="amount-cell {{ $isFullyPaid ? 'amount-paid' : 'amount-pending' }}">
-                          ₹{{ number_format($balance, 2) }}
-                          @if(!$isFullyPaid)
-                            <br><small class="text-danger"><i class="bi bi-exclamation-circle"></i> Due</small>
-                          @endif
-                         </div>
-                        <td>
-                          @if($isGstBill)
-                            <span class="gst-bill-badge">
-                              <i class="bi bi-file-text"></i> GST Bill
-                            </span>
-                          @else
-                            <span class="non-gst-bill-badge">
-                              <i class="bi bi-receipt"></i> Non-GST
-                            </span>
-                          @endif
-                         </div>
-                        <td>
-                          @if($order->payment_status == 'PAID')
-                            <span class="status-badge badge-paid">
-                              <i class="bi bi-check-circle"></i> Paid
-                            </span>
-                          @elseif($order->payment_status == 'PENDING')
-                            <span class="status-badge badge-pending">
-                              <i class="bi bi-clock"></i> Pending
-                            </span>
-                          @elseif($order->payment_status == 'MISCORDER')
-                            <span class="status-badge badge-misc">
-                              <i class="bi bi-receipt"></i> Misc
-                            </span>
-                          @else
-                            <span class="text-muted">{{ $order->payment_status }}</span>
-                          @endif
-                         </div>
-                        <td>
-                          <div>{{ $order->created_at->format('d M Y') }}</div>
-                          <small class="text-muted">{{ $order->created_at->format('h:i A') }}</small>
-                         </div>
-                        <td>
+                        <td class="text-center">{{ ($orders->currentPage() - 1) * $orders->perPage() + $key + 1 }}</td>
+                        <td class="text-start">
                           <div class="action-buttons">
                             <a href="{{ route('order.invoice', $order->id) }}" 
                                class="btn btn-sm btn-outline-primary" 
@@ -426,7 +352,82 @@
                               </a>
                             @endif
                           </div>
-                         </div>
+                        </td>
+                        <td>
+                          <span class="fw-bold text-primary">{{ $order->order_id }}</span>
+                        </td>
+                        <td>{{ $order->customer_name ?? 'Walk-in Customer' }}</td>
+                        <td>{{ $order->customer_phone ?? '-' }}</td>
+                        <td>
+                          @if($order->order_type == 'DINE_IN')
+                            <span class="status-badge badge-dinein">
+                              <i class="bi bi-table"></i> Dine-in
+                            </span>
+                            @if($order->table)
+                              <br><small class="text-muted">{{ $order->table->name }}</small>
+                            @endif
+                          @else
+                            <span class="status-badge badge-takeaway">
+                              <i class="bi bi-box"></i> Takeaway
+                            </span>
+                          @endif
+                        </td>
+                        <td class="amount-cell text-end">₹{{ number_format($order->total_amount ?? 0, 2) }}</td>
+                        <td class="amount-cell text-end text-success">- ₹{{ number_format($totalItemDiscount, 2) }}</td>
+                        <td class="amount-cell text-end text-danger">- ₹{{ number_format($orderDiscountAmount, 2) }}</td>
+                        <td class="amount-cell text-end">₹{{ number_format($order->taxable_amount ?? 0, 2) }}</td>
+                        <td class="amount-cell text-end">
+                          @if($isGstBill)
+                            ₹{{ number_format($order->gst_amount ?? 0, 2) }}
+                            <br><small class="text-muted">({{ $gstPercentage }}%)</small>
+                          @else
+                            <span class="text-muted">-</span>
+                          @endif
+                        </td>
+                        <td class="amount-cell text-end">
+                          <strong>₹{{ number_format($order->grand_total, 2) }}</strong>
+                        </td>
+                        <td class="amount-cell text-end amount-paid">
+                          ₹{{ number_format($order->amount_paid ?? 0, 2) }}
+                        </td>
+                        <td class="amount-cell text-end {{ $isFullyPaid ? 'amount-paid' : 'amount-pending' }}">
+                          ₹{{ number_format($balance, 2) }}
+                          @if(!$isFullyPaid)
+                            <br><small class="text-danger"><i class="bi bi-exclamation-circle"></i> Due</small>
+                          @endif
+                        </td>
+                        <td class="text-center">
+                          @if($isGstBill)
+                            <span class="gst-bill-badge">
+                              <i class="bi bi-file-text"></i> GST Bill
+                            </span>
+                          @else
+                            <span class="non-gst-bill-badge">
+                              <i class="bi bi-receipt"></i> Non-GST
+                            </span>
+                          @endif
+                        </td>
+                        <td>
+                          @if($order->payment_status == 'PAID')
+                            <span class="status-badge badge-paid">
+                              <i class="bi bi-check-circle"></i> Paid
+                            </span>
+                          @elseif($order->payment_status == 'PENDING')
+                            <span class="status-badge badge-pending">
+                              <i class="bi bi-clock"></i> Pending
+                            </span>
+                          @elseif($order->payment_status == 'MISCORDER')
+                            <span class="status-badge badge-misc">
+                              <i class="bi bi-receipt"></i> Misc
+                            </span>
+                          @else
+                            <span class="text-muted">{{ $order->payment_status }}</span>
+                          @endif
+                        </td>
+                        <td>
+                          <div>{{ $order->created_at->format('d M Y') }}</div>
+                          <small class="text-muted">{{ $order->created_at->format('h:i A') }}</small>
+                        </td>
                       </tr>
                     @empty
                       <tr>
@@ -436,7 +437,7 @@
                             <h5 class="mt-3">No Orders Found</h5>
                             <p class="text-muted">No orders match your filter criteria.</p>
                           </div>
-                         </div>
+                        </td>
                       </tr>
                     @endforelse
                   </tbody>
@@ -508,6 +509,9 @@
       "info": false,
       "responsive": true,
       "dom": '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dt-search"f>>rt<"row"<"col-sm-12"i>>',
+      "columnDefs": [
+        { "orderable": false, "targets": [1] } // Disable sorting on Actions column
+      ],
       "buttons": [
         {
           extend: 'excelHtml5',
@@ -515,27 +519,37 @@
           className: 'btn btn-success btn-sm',
           title: 'Order_Management_Report_{{ date('Y-m-d') }}',
           exportOptions: {
-            columns: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            columns: [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], // Exclude Actions column (index 1)
             format: {
               body: function(data, row, column, node) {
                 let $node = $(node);
-                if (column === 1) {
-                  return $node.find('.fw-bold').text().trim();
-                }
-                if (column === 4) {
-                  return $node.text().replace(/\s+/g, ' ').trim();
-                }
-                if (column >= 5 && column <= 12) {
-                  let val = $node.find('strong').text() || $node.text();
-                  return val.replace('₹', '').trim();
-                }
-                if (column === 13) {
+                // For column 0 (Index/S.No)
+                if (column === 0) {
                   return $node.text().trim();
                 }
-                if (column === 14) {
+                // For Order ID column
+                if (column === 2) {
+                  return $node.find('.fw-bold').text().trim();
+                }
+                // For Type column
+                if (column === 5) {
                   return $node.text().replace(/\s+/g, ' ').trim();
                 }
+                // For amount columns
+                if (column >= 6 && column <= 13) {
+                  let val = $node.find('strong').text() || $node.text();
+                  return val.replace('₹', '').replace(/\s+/g, ' ').trim();
+                }
+                // For Bill Type column
+                if (column === 14) {
+                  return $node.text().trim();
+                }
+                // For Status column
                 if (column === 15) {
+                  return $node.text().replace(/\s+/g, ' ').trim();
+                }
+                // For Date column
+                if (column === 16) {
                   let date = $node.find('div').text().trim();
                   let time = $node.find('small').text().trim();
                   return `${date} ${time}`;
@@ -550,6 +564,39 @@
           text: '<i class="bi bi-printer me-1"></i> Print',
           className: 'btn btn-primary btn-sm',
           title: 'Order Management Report',
+          exportOptions: {
+            columns: [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], // Exclude Actions column
+            format: {
+              body: function(data, row, column, node) {
+                let $node = $(node);
+                if (column === 0) {
+                  return $node.text().trim();
+                }
+                if (column === 2) {
+                  return $node.find('.fw-bold').text().trim();
+                }
+                if (column === 5) {
+                  return $node.text().replace(/\s+/g, ' ').trim();
+                }
+                if (column >= 6 && column <= 13) {
+                  let val = $node.find('strong').text() || $node.text();
+                  return val.replace('₹', '').trim();
+                }
+                if (column === 14) {
+                  return $node.text().trim();
+                }
+                if (column === 15) {
+                  return $node.text().replace(/\s+/g, ' ').trim();
+                }
+                if (column === 16) {
+                  let date = $node.find('div').text().trim();
+                  let time = $node.find('small').text().trim();
+                  return `${date} ${time}`;
+                }
+                return $node.text().trim();
+              }
+            }
+          },
           customize: function(win) {
             $(win.document.body).find('table').addClass('table table-bordered');
             $(win.document.body).find('h1').css({
@@ -614,6 +661,9 @@
     }
     .table td {
       vertical-align: middle;
+    }
+    .action-buttons .btn {
+      padding: 4px 8px;
     }
   </style>
 

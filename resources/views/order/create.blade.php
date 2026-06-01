@@ -508,7 +508,7 @@
         <!-- Customer & Table -->
         <div class="card">
           <div class="card-header">
-            <h5><i class="fas fa-user me-2"></i>Customer & Table Details</h5>
+            <h5 class="text-white"><i class="fas fa-user me-2"></i>Customer & Table Details</h5>
           </div>
           <div class="card-body">
             <div class="row">
@@ -734,54 +734,33 @@
             <span class="total-value">₹<span id="final_total">0.00</span></span>
           </div>
 
-          <div class="mt-3">
+          {{-- <div class="mt-3">
             <label class="form-label">Order Discount (%)</label>
             <input type="number" class="form-control discount-input" id="order_discount" value="0" min="0" max="100" step="1">
             <div class="discount-note">
               <i class="fas fa-info-circle"></i> Discount applies to (Taxable Value + GST)
             </div>
-          </div>
+          </div> --}}
         </div>
 
-        @if(!isset($table) || !$table)
+        {{-- @if(!isset($table) || !$table)
         <div class="payment-section">
           <h5 class="mb-3"><i class="fas fa-credit-card me-2"></i>Payment Details</h5>
           
           <div class="mb-3">
-            <label class="form-label">Payment Status</label>
-            <select class="form-control" id="payment_status">
+            <label class="form-label">Order Complete ?</label>
+            <select class="form-control" id="order_complete">
               <option value="PENDING">Pending</option>
-              <option value="PAID">Paid</option>
+              <option value="DONE">Done & Checkout</option>
             </select>
           </div>
-
-          <div class="mb-3 hidden" id="paymentMethodDiv">
-            <label class="form-label">Payment Method</label>
-            <select class="form-control" id="payment_method">
-              <option value="">-- Select Method --</option>
-              @if(isset($payment_methods))
-                @foreach($payment_methods as $method)
-                  <option value="{{ $method }}">{{ $method }}</option>
-                @endforeach
-              @else
-                <option value="Cash">Cash</option>
-                <option value="UPI">UPI</option>
-                <option value="Card">Card</option>
-              @endif
-            </select>
           </div>
-
-          <div class="mb-3">
-            <label class="form-label">Remarks</label>
-            <textarea class="form-control" id="remarks" rows="2" placeholder="Any special instructions..."></textarea>
-          </div>
-        </div>
-        @endif
+        @endif --}}
 
         <div class="d-grid gap-2 mt-4">
           <button class="btn save-btn" id="saveOrderBtn">
             <i class="fas fa-check-circle"></i>
-            Save Order
+            @if(!isset($table) || !$table) Checkout @else Save Order @endif
           </button>
         </div>
       </div>
@@ -1085,7 +1064,7 @@ $(document).ready(function() {
         let customer_phone = $('#customer_phone').val().trim();
         let table_id = $('#table_id').val();
         let orderDiscount = $('#order_discount').val() || 0;
-        let payment_status = $('#payment_status').length ? $('#payment_status').val() : null;
+        let order_complete = $('#order_complete').length ? $('#order_complete').val() : null;
         let payment_method = $('#payment_method').length ? $('#payment_method').val() : null;
         let remarks = $('#remarks').val() || null;
         
@@ -1100,10 +1079,7 @@ $(document).ready(function() {
             return;
         }
         
-        if (payment_status === 'PAID' && (!payment_method || payment_method === '')) {
-            showToast('Please select payment method', true);
-            return;
-        }
+       
         
         let orderItemsData = orderItems.map(item => ({
             id: item.id,
@@ -1125,7 +1101,7 @@ $(document).ready(function() {
                 table_id: table_id,
                 discount: orderDiscount,
                 order_items: orderItemsData,
-                payment_status: payment_status,
+                order_complete: order_complete,
                 payment_method: payment_method,
                 remarks: remarks,
                 is_gst_registered: isGstRegistered,

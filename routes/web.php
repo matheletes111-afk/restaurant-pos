@@ -40,6 +40,7 @@ Route::post('forget-password-user/enter-new-password',[LoginController::class, '
 
 
 Route::get('/', [App\Http\Controllers\FrontendController::class, 'index'])->name('home');
+Route::post('/book-demo', [App\Http\Controllers\FrontendController::class, 'bookDemo'])->name('book.demo');
 // Registration routes
 Route::get('/register-restaurant', [App\Http\Controllers\FrontendController::class, 'create'])->name('restaurant.register.form');
 Route::post('/register-restaurant', [App\Http\Controllers\FrontendController::class, 'store'])->name('restaurant.register');
@@ -96,6 +97,15 @@ Route::prefix('admin')->group(function () {
 
     Route::post('/fcm/register', [FcmController::class, 'registerToken']);
     Route::post('/fcm/unregister', [FcmController::class, 'unregisterToken']);
+
+    // Admin CRM Lead Management
+    Route::get('crm', [App\Http\Controllers\Admin\AdminCrmController::class, 'index'])->name('admin.crm.index');
+    Route::post('crm/update-status/{id}', [App\Http\Controllers\Admin\AdminCrmController::class, 'updateStatus'])->name('admin.crm.update-status');
+    Route::post('crm/update-followup/{id}', [App\Http\Controllers\Admin\AdminCrmController::class, 'updateFollowup'])->name('admin.crm.update-followup');
+    Route::get('crm/{id}', [App\Http\Controllers\Admin\AdminCrmController::class, 'show'])->name('admin.crm.show');
+    Route::post('crm/{id}/log-note', [App\Http\Controllers\Admin\AdminCrmController::class, 'logNote'])->name('admin.crm.log-note');
+    Route::post('crm/{id}/add-task', [App\Http\Controllers\Admin\AdminCrmController::class, 'addTask'])->name('admin.crm.add-task');
+    Route::post('crm/tasks/{taskId}/toggle', [App\Http\Controllers\Admin\AdminCrmController::class, 'toggleTask'])->name('admin.crm.toggle-task');
 
 Route::get('manage-restaurant', [RestaurantController::class, 'index'])->name('manage.restaurant');
 Route::post('manage-restaurant/insert', [RestaurantController::class, 'store'])->name('manage.restaurant.insert');
@@ -175,6 +185,10 @@ Route::post('order/{order}/payment', [App\Http\Controllers\OrderManagementContro
 Route::post('order-item-delete/{id}', [App\Http\Controllers\OrderManagementController::class, 'deleteOrderItem'])
     ->name('order.item.delete');
 
+// Make sure these routes exist
+Route::get('order/{order_id}/get-payments', [OrderManagementController::class, 'getPayments'])->name('order.get.payments');
+Route::post('order/{order_id}/add-payment', [OrderManagementController::class, 'addPayment'])->name('order.add.payment');
+Route::delete('order/delete-payment/{payment_id}', [OrderManagementController::class, 'deletePayment'])->name('order.delete.payment');
 
 // order-report
 Route::get('order-report',[App\Http\Controllers\OrderFilterController::class,'index'])->name('order.report');    

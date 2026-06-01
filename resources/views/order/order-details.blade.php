@@ -6,6 +6,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <style>
         :root {
             --primary: #2c3e50;
@@ -206,6 +207,21 @@
             color: var(--gray);
         }
 
+        /* Payment Table */
+        .payment-method-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        .method-cash { background: #10b98120; color: #10b981; }
+        .method-upi { background: #3b82f620; color: #3b82f6; }
+        .method-card { background: #8b5cf620; color: #8b5cf6; }
+        .method-bank { background: #f59e0b20; color: #f59e0b; }
+        .method-other { background: #64748b20; color: #64748b; }
+
         /* GST Info Box */
         .gst-info-box {
             background: #f0fdf4;
@@ -305,6 +321,110 @@
 
         .btn-action:hover {
             transform: translateY(-2px);
+        }
+        
+        .btn-add-payment {
+            background: linear-gradient(135deg, #FF6A00, #FF8C42);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        
+        .btn-add-payment:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255,106,0,0.3);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1050;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        
+        .modal.show {
+            display: block;
+        }
+        
+        .modal-dialog {
+            position: relative;
+            width: auto;
+            margin: 1.75rem auto;
+            max-width: 500px;
+        }
+        
+        .modal-content {
+            position: relative;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .toast-success {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .toast-error {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ef4444;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
         /* Responsive */
@@ -585,9 +705,69 @@
                                     <td class="text-end">
                                         <strong class="text-primary">₹{{ number_format($itemTotal, 2) }}</strong>
                                     </div>
-                                </tr>
+                                </td>
                                 @endforeach
                             </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Payment History Section -->
+                <div class="card-modern">
+                    <div class="card-header-modern">
+                        <h5><i class="fas fa-history"></i> Payment History</h5>
+                        
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="paymentTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Date</th>
+                                    <th>Amount (₹)</th>
+                                    <th>Payment Method</th>
+                                    <th>Transaction No</th>
+                                    <th>Remarks</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentTableBody">
+                                @forelse($payments as $index => $payment)
+                                <tr>
+                                    <td>{{ $index + 1 }}</div>
+                                    <td>{{ $payment->payment_date->format('d M Y, h:i A') }}</div>
+                                    <td><strong>₹{{ number_format($payment->amount, 2) }}</strong></div>
+                                    <td>
+                                        <span class="payment-method-badge method-{{ strtolower(str_replace(' ', '_', $payment->payment_method)) }}">
+                                            {{ $payment->payment_method }}
+                                        </span>
+                                    </div>
+                                    <td>{{ $payment->transaction_no ?? '-' }}</div>
+                                    <td>{{ $payment->remarks ?? '-' }}</div>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger delete-payment" 
+                                                data-id="{{ $payment->id }}"
+                                                data-amount="{{ $payment->amount }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </tr>
+                                @empty
+                                <tr id="noPaymentsRow">
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="fas fa-credit-card fa-2x text-muted mb-2 d-block"></i>
+                                        No payments recorded yet
+                                    </div>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                            <tfoot class="thead-light">
+                                <tr>
+                                    <th colspan="2" class="text-end">Total:</th>
+                                    <th><strong id="totalPaidFooter">₹{{ number_format($totalPaid, 2) }}</strong></th>
+                                    <th colspan="4"></th>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
@@ -648,17 +828,17 @@
                         <span class="value">₹{{ number_format($finalAmount, 2) }}</span>
                     </div>
 
-                    <!-- Payment Details -->
+                    <!-- Payment Summary -->
                     <div class="payment-card">
                         <h6 class="mb-3"><i class="fas fa-credit-card me-2"></i>Payment Summary</h6>
                         
                         <div class="d-flex justify-content-between mb-3">
-                            <span class="text-muted">Amount Paid:</span>
-                            <span class="fw-bold text-success">₹{{ number_format($order->amount_paid ?? 0, 2) }}</span>
+                            <span class="text-muted">Total Paid:</span>
+                            <span class="fw-bold text-success">₹{{ number_format($totalPaid, 2) }}</span>
                         </div>
                         
                         @php
-                            $balance = $finalAmount - ($order->amount_paid ?? 0);
+                            $balance = $finalAmount - $totalPaid;
                         @endphp
                         
                         @if($balance > 0)
@@ -668,12 +848,12 @@
                         </div>
                         @endif
                         
-                        <div class="alert {{ $order->payment_status == 'PAID' ? 'alert-success' : ($order->payment_status == 'MISCORDER' ? 'alert-warning' : 'alert-info') }} mt-2 mb-0">
-                            <i class="fas {{ $order->payment_status == 'PAID' ? 'fa-check-circle' : ($order->payment_status == 'MISCORDER' ? 'fa-exclamation-triangle' : 'fa-clock') }} me-2"></i>
-                            @if($order->payment_status == 'PAID')
+                        <div class="alert {{ $balance <= 0 ? 'alert-success' : ($totalPaid > 0 ? 'alert-warning' : 'alert-info') }} mt-2 mb-0">
+                            <i class="fas {{ $balance <= 0 ? 'fa-check-circle' : ($totalPaid > 0 ? 'fa-exclamation-triangle' : 'fa-clock') }} me-2"></i>
+                            @if($balance <= 0)
                                 <strong>Payment Completed:</strong> This order has been fully paid.
-                            @elseif($order->payment_status == 'MISCORDER')
-                                <strong>Miscorder Status:</strong> Customer ate but payment not completed.
+                            @elseif($totalPaid > 0)
+                                <strong>Partial Payment:</strong> Partially paid, {{ number_format($balance, 2) }} remaining.
                             @else
                                 <strong>Payment Pending:</strong> This order requires payment.
                             @endif
@@ -689,70 +869,276 @@
                     <a href="{{ route('order.invoice', $order->id) }}" class="btn btn-success btn-action" target="_blank">
                         <i class="fas fa-print"></i> Print Invoice
                     </a>
-                    @if($order->payment_status == 'PENDING')
-                    <a href="{{ route('order.edit', $order->id) }}" class="btn btn-warning btn-action">
-                        <i class="fas fa-edit"></i> Edit Order
-                    </a>
-                    <a href="{{ route('order.payment', $order->id) }}" class="btn btn-info btn-action">
-                        <i class="fas fa-cash-register"></i> Add Payment
-                    </a>
-                    @endif
+                    
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Add Payment Modal -->
+<div id="addPaymentModal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Add Payment</h5>
+                <button type="button" class="close" id="closeModalBtn">&times;</button>
+            </div>
+            <form id="addPaymentForm">
+                @csrf
+                <input type="hidden" name="order_id" value="{{ $order->id }}">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Amount <span class="text-danger">*</span></label>
+                        <input type="number" name="amount" id="paymentAmount" class="form-control" step="0.01" 
+                               max="{{ $balance }}" required placeholder="Enter amount">
+                        <small class="text-muted">Balance Due: ₹{{ number_format($balance, 2) }}</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Payment Method <span class="text-danger">*</span></label>
+                        <select name="payment_method" id="paymentMethod" class="form-control" required>
+                            <option value="">-- Select --</option>
+                            <option value="CASH">Cash</option>
+                            <option value="UPI">UPI</option>
+                            <option value="CARD">Card</option>
+                            <option value="BANK_TRANSFER">Bank Transfer</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Transaction No (Optional)</label>
+                        <input type="text" name="transaction_no" id="transactionNo" class="form-control" placeholder="e.g., UTR number, TXN ID">
+                    </div>
+                    <div class="form-group">
+                        <label>Remarks</label>
+                        <textarea name="remarks" id="remarks" class="form-control" rows="2" placeholder="Any notes about this payment"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelModalBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitPaymentBtn">Add Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 @include('includes.script')
 
 <script>
-// Smooth page load animation
-document.addEventListener('DOMContentLoaded', function() {
+let dataTable = null;
+let balanceDue = {{ $balance }};
+let orderId = {{ $order->id }};
+
+function showToast(message, isError = false) {
+    let toastClass = isError ? 'toast-error' : 'toast-success';
+    let toast = $(`<div class="${toastClass}">${message}</div>`);
+    $('body').append(toast);
+    setTimeout(() => {
+        toast.fadeOut(300, function() { $(this).remove(); });
+    }, 3000);
+}
+
+function openModal() {
+    $('#addPaymentModal').addClass('show');
+    $('body').css('overflow', 'hidden');
+}
+
+function closeModal() {
+    $('#addPaymentModal').removeClass('show');
+    $('body').css('overflow', 'auto');
+    $('#addPaymentForm')[0].reset();
+    $('#paymentMethod').val('');
+}
+
+function loadPayments() {
+    $.ajax({
+        url: "{{ route('order.get.payments', $order->id) }}",
+        type: "GET",
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                let tbody = $('#paymentTableBody');
+                tbody.empty();
+                
+                if (response.payments.length === 0) {
+                    tbody.append(`
+                        <tr id="noPaymentsRow">
+                            <td colspan="7" class="text-center py-4">
+                                <i class="fas fa-credit-card fa-2x text-muted mb-2 d-block"></i>
+                                No payments recorded yet
+                             </div>
+                         </div>
+                    `);
+                } else {
+                    response.payments.forEach((payment, index) => {
+                        let methodClass = payment.payment_method.toLowerCase().replace('_', '');
+                        let paymentDate = new Date(payment.payment_date);
+                        let dateStr = paymentDate.toLocaleString();
+                        
+                        tbody.append(`
+                            <tr>
+                                <td>${index + 1}</div>
+                                <td>${dateStr}</div>
+                                <td><strong>₹${parseFloat(payment.amount).toFixed(2)}</strong></div>
+                                <td>
+                                    <span class="payment-method-badge method-${methodClass}">
+                                        ${payment.payment_method}
+                                    </span>
+                                 </div>
+                                <td>${payment.transaction_no || '-'}</div>
+                                <td>${payment.remarks || '-'}</div>
+                                <td>
+                                    <button class="btn btn-sm btn-danger delete-payment" 
+                                            data-id="${payment.id}"
+                                            data-amount="${payment.amount}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                 </div>
+                            </tr>
+                        `);
+                    });
+                }
+                
+                $('#totalPaidFooter').text(`₹${response.total_paid.toFixed(2)}`);
+                balanceDue = response.balance_due;
+                $('#paymentAmount').attr('max', balanceDue);
+                $('.text-muted').html(`Balance Due: ₹${balanceDue.toFixed(2)}`);
+                
+                if (dataTable) {
+                    dataTable.destroy();
+                }
+                dataTable = $('#paymentTable').DataTable({
+                    order: [[0, 'desc']],
+                    responsive: true,
+                    paging: false,
+                    searching: false,
+                    info: false,
+                    destroy: true
+                });
+            }
+        }
+    });
+}
+
+$(document).ready(function() {
+    dataTable = $('#paymentTable').DataTable({
+        order: [[0, 'desc']],
+        responsive: true,
+        paging: false,
+        searching: false,
+        info: false,
+        destroy: true
+    });
+    
+    $('#showAddPaymentModal').click(function() {
+        if (balanceDue <= 0) {
+            showToast('Order is already fully paid', true);
+            return;
+        }
+        openModal();
+    });
+    
+    $('#closeModalBtn, #cancelModalBtn').click(function() {
+        closeModal();
+    });
+    
+    $('#addPaymentModal').click(function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+    
+    $('#addPaymentForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        let amount = $('#paymentAmount').val();
+        let paymentMethod = $('#paymentMethod').val();
+        
+        if (!amount || amount <= 0) {
+            showToast('Please enter a valid amount', true);
+            return;
+        }
+        
+        if (!paymentMethod) {
+            showToast('Please select payment method', true);
+            return;
+        }
+        
+        let formData = $(this).serialize();
+        let submitBtn = $('#submitPaymentBtn');
+        
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
+        
+        $.ajax({
+            url: "{{ route('order.add.payment', $order->id) }}",
+            type: "POST",
+            data: formData,
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    closeModal();
+                    loadPayments();
+                    showToast(response.message);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToast(response.message, true);
+                }
+            },
+            error: function(xhr) {
+                let errorMsg = xhr.responseJSON?.message || 'Error adding payment';
+                showToast(errorMsg, true);
+            },
+            complete: function() {
+                submitBtn.prop('disabled', false).html('Add Payment');
+            }
+        });
+    });
+    
+    $(document).on('click', '.delete-payment', function() {
+        let paymentId = $(this).data('id');
+        let amount = $(this).data('amount');
+        
+        if (confirm(`Delete payment of ₹${amount}? This action cannot be undone.`)) {
+            let deleteBtn = $(this);
+            deleteBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+            
+            $.ajax({
+                url: "{{ route('order.delete.payment', '') }}/" + paymentId,
+                type: "DELETE",
+                data: {
+                    _token: "{{ csrf_token() }}"
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        loadPayments();
+                        showToast(response.message);
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showToast(response.message, true);
+                    }
+                },
+                error: function() {
+                    showToast('Error deleting payment', true);
+                },
+                complete: function() {
+                    deleteBtn.prop('disabled', false).html('<i class="fas fa-trash"></i>');
+                }
+            });
+        }
+    });
+    
+    // Smooth page load animation
     const cards = document.querySelectorAll('.card-modern');
     cards.forEach((card, index) => {
         card.style.animationDelay = (index * 0.1) + 's';
     });
 });
 </script>
-
-<style>
-    /* Additional styles */
-    .text-purple {
-        color: #8b5cf6;
-    }
-    
-    .bg-gradient-primary {
-        background: linear-gradient(135deg, var(--primary), #34495e);
-    }
-    
-    .table-responsive::-webkit-scrollbar {
-        height: 6px;
-    }
-    
-    .table-responsive::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-    }
-    
-    .table-responsive::-webkit-scrollbar-thumb {
-        background: var(--secondary);
-        border-radius: 10px;
-    }
-    
-    .final-total {
-        animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.01); }
-        100% { transform: scale(1); }
-    }
-    
-    .gst-info-box, .non-gst-info-box {
-        margin-top: 15px;
-    }
-</style>
 
 </body>
 </html>

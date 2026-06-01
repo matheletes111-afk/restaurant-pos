@@ -43,6 +43,15 @@
           </a>
         </li>
 
+         <li class="pc-item">
+          <a href="{{route('admin.crm.index')}}" class="pc-link @if(Request::segment(2)=="crm") active_class @endif">
+            <span class="pc-micon">
+              <i class="fas fa-address-book"></i>
+            </span>
+            <span class="pc-mtext">Admin CRM</span>
+          </a>
+        </li>
+
         <li class="pc-item">
         <a href="{{ route('admin.support.tickets') }}" 
            class="pc-link @if(Request::segment(2) == 'subscriptions') active_class @endif">

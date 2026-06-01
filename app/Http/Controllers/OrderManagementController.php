@@ -7,6 +7,7 @@ use App\Models\TableManage;
 use App\Models\Category;
 use App\Models\User;
 use App\Models\SubCategory;
+use App\Models\OrderToPayment;
 use App\Models\OrderManage;
 use App\Models\OrderItems;
 use App\Models\RestaurantMaster;
@@ -515,21 +516,10 @@ class OrderManagementController extends Controller
             
             $order->grand_total = $finalTotal;
             $order->round_off = $roundOff;
-            
-            // Auto-fill amount_paid if status is PAID and amount_paid is empty
-            if ($order->payment_status === 'PAID' && empty($order->amount_paid)) {
-                $order->amount_paid = $finalTotal;
-            }
-            
-            // Clear amount_paid if status is not PAID
-            if ($order->payment_status !== 'PAID' && $order->payment_status !== 'MISCORDER') {
-                $order->amount_paid = null;
-            }
-            
             $order->save();
 
             // Release table for PAID or MISCORDER status
-            if (in_array($order->payment_status, ['PAID', 'MISCORDER']) && $order->table_id) {
+            if (in_array($order->order_complete, ['DONE']) && $order->table_id) {
                 TableManage::where('id', $order->table_id)->update([
                     'table_status' => 'AVAILABLE',
                     'order_id' => null
@@ -573,43 +563,179 @@ class OrderManagementController extends Controller
         }
     }
 
-    /**
-     * Show invoice page
-     */
-    public function invoicePage($order_id)
-    {
-        $order = OrderManage::with('orderItems.subcategory')->findOrFail($order_id);
+/**
+ * Show invoice page with payments
+ */
+public function invoicePage($order_id)
+{
+    $order = OrderManage::with(['orderItems.subcategory', 'table'])->findOrFail($order_id);
+    
+    // Get all payments for this order
+    $payments = OrderToPayment::where('order_id', $order_id)
+        ->orderBy('created_at', 'desc')
+        ->get();
+    
+    $totalPaid = $payments->sum('amount');
+    $balanceDue = $order->grand_total - $totalPaid;
+    
+    return view('order.invoice', compact('order', 'payments', 'totalPaid', 'balanceDue'));
+}
+
+/**
+ * Get payments for order (AJAX)
+ */
+public function getPayments($order_id)
+{
+    try {
+        $payments = OrderToPayment::where('order_id', $order_id)
+            ->orderBy('created_at', 'desc')
+            ->get();
         
-        // Calculate totals for display
-        $originalSubtotal = 0;
-        $totalTaxable = 0;
-        $totalGst = 0;
-        $totalCgst = 0;
-        $totalSgst = 0;
-        $totalIgst = 0;
+        $totalPaid = $payments->sum('amount');
+        $order = OrderManage::findOrFail($order_id);
+        $balanceDue = $order->grand_total - $totalPaid;
         
-        foreach ($order->orderItems as $item) {
-            $originalSubtotal += $item->price * $item->quantity;
-            $totalTaxable += $item->taxable_amount;
-            $totalGst += $item->gst_amount;
-            $totalCgst += $item->cgst_amount;
-            $totalSgst += $item->sgst_amount;
-            $totalIgst += $item->igst_amount;
+        return response()->json([
+            'success' => true,
+            'payments' => $payments,
+            'total_paid' => $totalPaid,
+            'balance_due' => $balanceDue
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Add payment to order
+ */
+public function addPayment(Request $request, $order_id)
+{
+    try {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'payment_method' => 'required|in:CASH,UPI,CARD,BANK_TRANSFER,OTHER',
+            'transaction_no' => 'nullable|string|max:100',
+            'remarks' => 'nullable|string'
+        ]);
+        
+        $order = OrderManage::findOrFail($order_id);
+        
+        // Calculate current total paid
+        $currentPaid = OrderToPayment::where('order_id', $order_id)->sum('amount');
+        $newTotal = $currentPaid + $request->amount;
+        
+        if ($newTotal > $order->grand_total) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment amount exceeds remaining balance'
+            ], 400);
         }
         
-        $data = [
-            'order' => $order,
-            'original_subtotal' => $originalSubtotal,
-            'total_taxable' => $totalTaxable,
-            'total_gst' => $totalGst,
-            'total_cgst' => $totalCgst,
-            'total_sgst' => $totalSgst,
-            'total_igst' => $totalIgst,
-        ];
+        // Create payment
+        $payment = OrderToPayment::create([
+            'order_id' => $order_id,
+            'restaurant_id' => $order->restaurant_id,
+            'amount' => $request->amount,
+            'payment_method' => $request->payment_method,
+            'transaction_no' => $request->transaction_no,
+            'remarks' => $request->remarks,
+            'payment_date' => now(),
+            'created_by' => auth()->id()
+        ]);
         
-        return view('order.invoice', $data);
+        // Update order payment status
+        $totalPaid = OrderToPayment::where('order_id', $order_id)->sum('amount');
+        
+        if ($totalPaid >= $order->grand_total) {
+            $order->payment_status = 'PAID';
+            $order->amount_paid = $order->grand_total;
+            
+            if ($order->table_id) {
+                TableManage::where('id', $order->table_id)->update([
+                    'table_status' => 'AVAILABLE',
+                    'order_id' => null
+                ]);
+            }
+        } elseif ($totalPaid > 0) {
+            $order->payment_status = 'PARTIAL';
+            $order->amount_paid = $totalPaid;
+        }
+        
+        $order->save();
+        
+        // Get updated payments
+        $payments = OrderToPayment::where('order_id', $order_id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment added successfully',
+            'payments' => $payments,
+            'total_paid' => $totalPaid,
+            'balance_due' => $order->grand_total - $totalPaid
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 500);
     }
+}
 
+/**
+ * Delete payment from order
+ */
+public function deletePayment($payment_id)
+{
+    try {
+        $payment = OrderToPayment::findOrFail($payment_id);
+        $order = OrderManage::findOrFail($payment->order_id);
+        
+        $payment->delete();
+        
+        // Update order payment status
+        $totalPaid = OrderToPayment::where('order_id', $order->id)->sum('amount');
+        $balanceDue = $order->grand_total - $totalPaid;
+        
+        if ($totalPaid >= $order->grand_total) {
+            $order->payment_status = 'PAID';
+            $order->amount_paid = $order->grand_total;
+        } elseif ($totalPaid > 0) {
+            $order->payment_status = 'PARTIAL';
+            $order->amount_paid = $totalPaid;
+        } else {
+            $order->payment_status = 'PENDING';
+            $order->amount_paid = 0;
+        }
+        
+        $order->save();
+        
+        // Get updated payments
+        $payments = OrderToPayment::where('order_id', $order->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment deleted successfully',
+            'payments' => $payments,
+            'total_paid' => $totalPaid,
+            'balance_due' => $balanceDue
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 500);
+    }
+}
     /**
      * Generate PDF receipt
      */

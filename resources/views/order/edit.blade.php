@@ -531,7 +531,7 @@
         <!-- Customer & Table -->
         <div class="card">
           <div class="card-header">
-            <h5><i class="fas fa-user me-2"></i>Customer & Table Details</h5>
+            <h5 class="text-white"><i class="fas fa-user me-2"></i>Customer & Table Details</h5>
           </div>
           <div class="card-body">
             <div class="row">
@@ -547,14 +547,14 @@
               </div>
             </div>
             <div class="row">
-              <div class="col-md-6 mb-3">
+              {{-- <div class="col-md-6 mb-3">
                 <label>Order Status</label>
                 <div>
                   <span class="order-status-badge status-{{ strtolower(str_replace(' ', '_', $order->order_status)) }}">
                     {{ strtoupper($order->order_status) }}
                   </span>
                 </div>
-              </div>
+              </div> --}}
               <div class="col-md-6 mb-3">
                 <label>Table</label>
                 <div>
@@ -845,18 +845,17 @@
 
         @if(in_array(auth()->user()->role_type, ["Manager", "Cashier", "ADMIN"]))
         <div class="payment-section">
-          <h5 class="mb-3"><i class="fas fa-credit-card me-2"></i>Payment Details</h5>
+          <h5 class="mb-3"><i class="fas fa-credit-card me-2"></i>Checkout</h5>
           
           <div class="mb-3">
-            <label class="form-label">Payment Status</label>
-            <select class="form-control" id="payment_status">
-              <option value="PENDING" {{ $order->payment_status == 'PENDING' ? 'selected' : '' }}>Pending</option>
-              <option value="PAID" {{ $order->payment_status == 'PAID' ? 'selected' : '' }}>Paid</option>
-              <option value="MISCORDER" {{ $order->payment_status == 'MISCORDER' ? 'selected' : '' }}>Miscorder (Ate but not paid)</option>
-            </select>
+            <label class="form-label">Order Complete ?</label>
+            <select class="form-control" id="order_complete">
+              <option value="PENDING" {{ $order->order_complete == 'PENDING' ? 'selected' : '' }}>Pending</option>
+              <option value="DONE" {{ $order->order_complete == 'DONE' ? 'selected' : '' }}>Done & Checkout</option>
+             </select>
           </div>
 
-          <div class="mb-3">
+{{--           <div class="mb-3">
             <label class="form-label">Payment Method</label>
             <select class="form-control" id="payment_method">
               <option value="">-- Select Method --</option>
@@ -878,7 +877,7 @@
           <div class="mb-3">
             <label class="form-label">Remarks</label>
             <textarea class="form-control" id="remarks" rows="2" placeholder="Any special instructions...">{{ $order->remarks }}</textarea>
-          </div>
+          </div> --}}
         </div>
         @endif
 
@@ -1024,7 +1023,7 @@ function updateSummary() {
     $('#final_total').text(finalTotal.toFixed(2));
     
     // Auto-fill amount paid when status is PAID
-    if ($('#payment_status').val() === 'PAID' && !$('#amount_paid').val()) {
+    if ($('#order_complete').val() === 'PAID' && !$('#amount_paid').val()) {
         $('#amount_paid').val(finalTotal.toFixed(2));
     }
 }
@@ -1259,15 +1258,12 @@ $(document).ready(function() {
     $('#saveOrderBtn').click(function() {
         let customer_phone = $('#customer_phone').val().trim();
         let orderDiscount = $('#order_discount').val() || 0;
-        let payment_status = $('#payment_status').val();
+        let order_complete = $('#order_complete').val();
         let payment_method = $('#payment_method').val();
         let amount_paid = $('#amount_paid').val();
         let remarks = $('#remarks').val();
         
-        if (payment_status === 'PAID' && !payment_method) {
-            showToast('Please select payment method for paid orders', true);
-            return;
-        }
+        
         
         if (customer_phone && !/^[0-9]{10}$/.test(customer_phone)) {
             showToast('Please enter a valid 10-digit phone number', true);
@@ -1278,7 +1274,7 @@ $(document).ready(function() {
         let data = {
             _token: "{{ csrf_token() }}",
             discount: orderDiscount,
-            payment_status: payment_status,
+            order_complete: order_complete,
             payment_method: payment_method,
             amount_paid: amount_paid,
             customer_phone: customer_phone,
@@ -1307,7 +1303,7 @@ $(document).ready(function() {
                 if (response.success) {
                     showToast('Order updated successfully!', false);
                     
-                    if (response.redirect_url && (payment_status === 'PAID' || payment_status === 'MISCORDER')) {
+                    if (response.redirect_url && (order_complete === 'DONE') {
                         window.location.href = response.redirect_url;
                     } else {
                         location.reload();

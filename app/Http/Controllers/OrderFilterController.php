@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\TableManage;
+use App\Models\OrderToPayment;
 use App\Models\Category;
 use App\Models\SubCategory;
 use App\Models\OrderManage;
@@ -33,24 +34,32 @@ class OrderFilterController extends Controller
         return view('order_report', compact('orders'));
     }
 
-    public function orderDetails($order_id)
-    {
-        $restaurantId = auth()->user()->restaurant_id;
+public function orderDetails($order_id)
+{
+    $restaurantId = auth()->user()->restaurant_id;
 
-        $order = OrderManage::with([
-            'items.subcategory',
-            'table',
-            'user'
-        ])
-        ->where('id', $order_id)
-        ->where('restaurant_id', $restaurantId)
-        ->first();
+    $order = OrderManage::with([
+        'items.subcategory',
+        'table',
+        'user'
+    ])
+    ->where('id', $order_id)
+    ->where('restaurant_id', $restaurantId)
+    ->first();
 
-        if (!$order) {
-            return redirect()->back()->with('error', 'Order not found');
-        }
-
-        return view('order.order-details', compact('order'));
+    if (!$order) {
+        return redirect()->back()->with('error', 'Order not found');
     }
+
+    // Get payments for this order
+    $payments = OrderToPayment::where('order_id', $order_id)
+        ->orderBy('created_at', 'desc')
+        ->get();
+    
+    $totalPaid = $payments->sum('amount');
+    $balance = $order->grand_total - $totalPaid;
+
+    return view('order.order-details', compact('order', 'payments', 'totalPaid', 'balance'));
+}
 
 }
