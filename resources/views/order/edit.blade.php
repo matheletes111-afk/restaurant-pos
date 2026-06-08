@@ -1063,14 +1063,14 @@ function updateNewItemsTable() {
                     </div>
                 </td>
                 <td class="text-end">₹${details.discountedPricePerItem.toFixed(2)}</td>
-                <td class="text-end">₹${details.taxableAmount.toFixed(2)}`;
+                <td class="text-end">₹${details.taxableAmount.toFixed(2)}</td>`;
         
         if (isGstRegistered) {
-            row += `<td class="text-center">${details.gstRate}%
-                    <td class="text-end">₹${details.gstAmount.toFixed(2)}`;
+            row += `<td class="text-center">${details.gstRate}%</td>
+                    <td class="text-end">₹${details.gstAmount.toFixed(2)}</td>`;
         }
         
-        row += `<td class="text-end fw-bold">₹${details.totalAmount.toFixed(2)}
+        row += `<td class="text-end fw-bold">₹${details.totalAmount.toFixed(2)}</td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-danger remove-btn delete-new" data-index="${index}">
                         <i class="fas fa-trash"></i>
@@ -1257,7 +1257,6 @@ $(document).ready(function() {
     // Save Order
     $('#saveOrderBtn').click(function() {
         let customer_phone = $('#customer_phone').val().trim();
-        let orderDiscount = $('#order_discount').val() || 0;
         let order_complete = $('#order_complete').val();
         let payment_method = $('#payment_method').val();
         let amount_paid = $('#amount_paid').val();
@@ -1273,7 +1272,6 @@ $(document).ready(function() {
         
         let data = {
             _token: "{{ csrf_token() }}",
-            discount: orderDiscount,
             order_complete: order_complete,
             payment_method: payment_method,
             amount_paid: amount_paid,
@@ -1282,6 +1280,10 @@ $(document).ready(function() {
             is_gst_registered: isGstRegistered,
             gst_percentage: restaurantGstPercentage
         };
+        
+        if ($('#order_discount').length) {
+            data.discount = $('#order_discount').val() || 0;
+        }
         
         if (newOrderItems.length > 0) {
             data.order_items = newOrderItems.map(item => ({
@@ -1303,7 +1305,7 @@ $(document).ready(function() {
                 if (response.success) {
                     showToast('Order updated successfully!', false);
                     
-                    if (response.redirect_url && (order_complete === 'DONE') {
+                    if (response.redirect_url) {
                         window.location.href = response.redirect_url;
                     } else {
                         location.reload();

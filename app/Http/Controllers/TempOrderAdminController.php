@@ -84,12 +84,14 @@ public function approveOrder($id)
 
         // Generate NEW order number (ignore the one from temp order)
         $restaurantId = auth()->user()->restaurant_id;
-        $today = Carbon::now()->format('Ymd');
         $todayCount = OrderManage::where('restaurant_id', $restaurantId)
             ->whereDate('created_at', Carbon::today())
             ->count() + 1;
-        $sequence = str_pad($todayCount, 4, '0', STR_PAD_LEFT);
-        $orderNo = "ORD-{$restaurantId}-{$today}-{$sequence}";
+        $restaurant = \App\Models\RestaurantMaster::find($restaurantId);
+        $prefix = $restaurant ? strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $restaurant->name), 0, 3)) : 'ORD';
+        $prefix = empty($prefix) ? 'ORD' : $prefix;
+        $dateStr = Carbon::now()->format('ymd');
+        $orderNo = "{$prefix}-{$dateStr}-" . str_pad($todayCount, 3, '0', STR_PAD_LEFT);
 
         // Create main order with all fields (using NEW order number)
         $order = new OrderManage();
@@ -119,6 +121,23 @@ public function approveOrder($id)
         $order->created_by = auth()->id();
         $order->save();
 
+        // Generate KOT number
+        $todayStart = Carbon::today()->startOfDay();
+        $todayEnd = Carbon::today()->endOfDay();
+        $latestItem = OrderItems::where('restaurant_id', $restaurantId)
+            ->whereBetween('created_at', [$todayStart, $todayEnd])
+            ->whereNotNull('kot_no')
+            ->orderBy('id', 'desc')
+            ->first();
+            
+        if ($latestItem && preg_match('/KOT-\d{6}-(\d+)/', $latestItem->kot_no, $matches)) {
+            $nextSequence = intval($matches[1]) + 1;
+        } else {
+            $nextSequence = 1;
+        }
+        $kotDate = Carbon::now()->format('ymd');
+        $kotNo = "KOT-{$kotDate}-" . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
+
         // Move items with all fields
         foreach ($tempOrder->items as $item) {
             $orderItem = new OrderItems();
@@ -138,6 +157,7 @@ public function approveOrder($id)
             $orderItem->order_status = 'PENDING';
             $orderItem->restaurant_id = $order->restaurant_id;
             $orderItem->user_id = auth()->id();
+            $orderItem->kot_no = $kotNo;
             $orderItem->save();
         }
 

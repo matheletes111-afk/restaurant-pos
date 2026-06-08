@@ -375,6 +375,7 @@
               $style = '';
               $iconClass = 'fa-utensils';
               $customerName = '';
+              $activeBillsCount = $table->activeOrders->count();
 
               // if table is inactive
               if($table->table_status == 'INACTIVE') {
@@ -383,12 +384,12 @@
                   $style = 'pointer-events:none; opacity:0.6; cursor:not-allowed;';
                   $iconClass = 'fa-tools';
 
-              // if table is occupied
-              } elseif($table->table_status == 'OCCUPIED' && $table->order) {
+              // if table is occupied (has active orders)
+              } elseif($activeBillsCount > 0) {
                   $bgClass = 'occupied-table';
-                  $statusText = 'Occupied';
-                  $customerName = $table->order->customer_name ?? 'Guest';
-                  $url = route('order.edit', $table->order_id);
+                  $statusText = 'Occupied • ' . $activeBillsCount . ' Bill' . ($activeBillsCount > 1 ? 's' : '');
+                  $customerName = $table->activeOrders->first()->customer_name ?? 'Guest';
+                  $url = 'javascript:void(0);';
                   $iconClass = 'fa-users';
 
               // if available
@@ -401,7 +402,23 @@
           @endphp
 
           <div class="col-md-3 col-sm-6 col-card">
-            <a href="{{ $url }}" style="text-decoration:none; {{ $style }}">
+            <a href="{{ $url }}" 
+               @if($activeBillsCount > 0 && $table->table_status != 'INACTIVE')
+                 class="occupied-table-link"
+                 data-table-id="{{ $table->id }}"
+                 data-table-name="{{ $table->name }}"
+                 data-active-bills="{{ json_encode($table->activeOrders->map(function($o) {
+                     return [
+                         'id' => $o->id,
+                         'order_id' => $o->order_id,
+                         'customer_name' => $o->customer_name ?? 'Guest',
+                         'grand_total' => $o->grand_total,
+                         'created_at' => $o->created_at->format('h:i A'),
+                         'edit_url' => route('order.edit', $o->id)
+                     ];
+                 })) }}"
+               @endif
+               style="text-decoration:none; {{ $style }}">
               <div class="table-card {{ $bgClass }}">
                 <div class="card-body d-flex flex-column justify-content-center align-items-center">
                   <div class="table-icon">
@@ -409,12 +426,12 @@
                   </div>
                   <h5 class="card-title">{{ $table->name }}</h5>
                   
-                  @if($table->table_status == 'OCCUPIED' && $table->order)
+                  @if($activeBillsCount > 0 && $table->table_status != 'INACTIVE')
                     <span class="status-label">
-                      <i class="fas fa-user-check"></i> {{ $customerName }}
+                      <i class="fas fa-user-check"></i> {{ $statusText }}
                     </span>
                     <div class="customer-info">
-                      <i class="fas fa-hourglass-half"></i> Order in progress
+                      <i class="fas fa-hourglass-half"></i> First: {{ $customerName }}
                     </div>
                   @elseif($table->table_status == 'INACTIVE')
                     <span class="status-label">
@@ -446,6 +463,36 @@
     </div>
   </div>
 
+  <!-- Active Bills Modal -->
+  <div class="modal fade" id="activeBillsModal" tabindex="-1" role="dialog" aria-labelledby="activeBillsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content" style="border-radius: 20px; overflow: hidden; border: none; box-shadow: 0 15px 30px rgba(0,0,0,0.2);">
+        <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e2a3a 0%, #0f172a 100%);">
+          <h5 class="modal-title text-white" id="activeBillsModalLabel">
+            <i class="fas fa-file-invoice-dollar mr-2"></i>
+            Active Bills for <span id="modalTableName">Table</span>
+          </h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body p-4" style="background: #f8fafc;">
+          <!-- List of active bills -->
+          <div id="activeBillsList" class="mb-4">
+            <!-- Dynamic active bills will be injected here -->
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="text-center">
+            <a href="#" id="modalAddNewBillBtn" class="btn btn-success btn-lg btn-block" style="border-radius: 12px; font-weight: 600; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">
+              <i class="fas fa-plus-circle mr-2"></i> Add New Bill
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Background Decoration -->
   <div class="bg-decoration"></div>
 
@@ -466,6 +513,54 @@
             alert('This table is currently under maintenance. Please choose another option.');
           }
         }
+      });
+
+      // Handle occupied table modal popup
+      $(document).on('click', '.occupied-table-link', function(e) {
+        e.preventDefault();
+        let tableId = $(this).data('table-id');
+        let tableName = $(this).data('table-name');
+        let activeBills = $(this).data('active-bills');
+        
+        $('#modalTableName').text(tableName);
+        
+        // Update Add New Bill button link
+        let createUrl = "{{ route('order.create', ':table_id') }}".replace(':table_id', tableId);
+        $('#modalAddNewBillBtn').attr('href', createUrl);
+        
+        let listDiv = $('#activeBillsList');
+        listDiv.empty();
+        
+        if (activeBills && activeBills.length > 0) {
+            activeBills.forEach(bill => {
+                let billHtml = `
+                    <div class="card mb-3 shadow-sm border-0" style="border-radius: 12px; background: white; border: 1px solid #e2e8f0;">
+                        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1 text-dark" style="font-weight: 700;">${bill.order_id}</h6>
+                                <p class="mb-0 text-muted small"><i class="fas fa-user mr-1"></i> ${bill.customer_name} • <i class="fas fa-clock mr-1"></i> ${bill.created_at}</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="mb-2 text-success" style="font-weight: 700; font-size: 1.05rem;">₹${parseFloat(bill.grand_total).toFixed(2)}</div>
+                                <a href="${bill.edit_url}" class="btn btn-primary btn-sm px-3" style="border-radius: 8px; font-weight: 600;">
+                                    <i class="fas fa-edit mr-1"></i> Edit
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                listDiv.append(billHtml);
+            });
+        } else {
+            listDiv.append(`
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-receipt fa-2x mb-2 d-block text-muted"></i>
+                    No active bills found.
+                </div>
+            `);
+        }
+        
+        $('#activeBillsModal').modal('show');
       });
 
       // Animate stats on load

@@ -27,6 +27,7 @@ class OrderItems extends Model
         'is_new',
         'restaurant_id',
         'user_id',
+        'kot_no',
     ];
 
     protected $casts = [

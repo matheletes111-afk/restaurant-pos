@@ -91,12 +91,14 @@ public function store(Request $request)
 
     // Generate order number
     $restaurantId = $request->restaurant_id;
-    $today = Carbon::now()->format('Ymd');
     $todayCount = OrderManage::where('restaurant_id', $restaurantId)
         ->whereDate('created_at', Carbon::today())
         ->count() + 1;
-    $sequence = str_pad($todayCount, 4, '0', STR_PAD_LEFT);
-    $orderNo = "ORD-{$restaurantId}-{$today}-{$sequence}";
+    $restaurant = RestaurantMaster::find($restaurantId);
+    $prefix = $restaurant ? strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $restaurant->name), 0, 3)) : 'ORD';
+    $prefix = empty($prefix) ? 'ORD' : $prefix;
+    $dateStr = Carbon::now()->format('ymd');
+    $orderNo = "{$prefix}-{$dateStr}-" . str_pad($todayCount, 3, '0', STR_PAD_LEFT);
 
     $tempOrder = TempOrder::create([
         'table_id' => $request->table_id,
@@ -172,18 +174,17 @@ public function store(Request $request)
             }
 
             $restaurantId = auth()->user()->restaurant_id;
-            $today = Carbon::now()->format('Ymd');
 
             // count today's orders for this restaurant
             $todayCount = OrderManage::where('restaurant_id', $restaurantId)
                 ->whereDate('created_at', Carbon::today())
                 ->count() + 1;
 
-            // pad sequence number (0001, 0002…)
-            $sequence = str_pad($todayCount, 4, '0', STR_PAD_LEFT);
-
-            // final order number
-            $orderNo = "ORD-{$restaurantId}-{$today}-{$sequence}";
+            $restaurant = RestaurantMaster::find($restaurantId);
+            $prefix = $restaurant ? strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $restaurant->name), 0, 3)) : 'ORD';
+            $prefix = empty($prefix) ? 'ORD' : $prefix;
+            $dateStr = Carbon::now()->format('ymd');
+            $orderNo = "{$prefix}-{$dateStr}-" . str_pad($todayCount, 3, '0', STR_PAD_LEFT);
 
             // Create main order using new + save
             $order = new OrderManage();
@@ -203,6 +204,23 @@ public function store(Request $request)
             $order->created_by     = auth()->id();
             $order->save();
 
+            // Generate KOT number
+            $todayStart = Carbon::today()->startOfDay();
+            $todayEnd = Carbon::today()->endOfDay();
+            $latestItem = OrderItems::where('restaurant_id', $restaurantId)
+                ->whereBetween('created_at', [$todayStart, $todayEnd])
+                ->whereNotNull('kot_no')
+                ->orderBy('id', 'desc')
+                ->first();
+                
+            if ($latestItem && preg_match('/KOT-\d{6}-(\d+)/', $latestItem->kot_no, $matches)) {
+                $nextSequence = intval($matches[1]) + 1;
+            } else {
+                $nextSequence = 1;
+            }
+            $kotDate = Carbon::now()->format('ymd');
+            $kotNo = "KOT-{$kotDate}-" . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
+
             // Move items
             foreach ($tempOrder->items as $item) {
                 $orderItem = new OrderItems();
@@ -215,6 +233,7 @@ public function store(Request $request)
                 $orderItem->order_status   = 'PENDING';
                 $orderItem->restaurant_id  = $item->restaurant_id;
                 $orderItem->user_id        = $item->user_id;
+                $orderItem->kot_no         = $kotNo;
                 $orderItem->save();
             }
 

@@ -25,6 +25,9 @@ class OrderManagementController extends Controller
     {
         $data['data'] = TableManage::where('restaurant_id', auth()->user()->restaurant_id)
             ->where('status', 'A')
+            ->with(['activeOrders' => function($q) {
+                $q->orderBy('created_at', 'desc');
+            }])
             ->get();
         return view('order.index', $data);
     }
@@ -45,16 +48,6 @@ class OrderManagementController extends Controller
                 return redirect()->back()->with('error', 'Unauthorized Access');
             }
 
-            if ($data['table'] && $data['table']->table_status === 'OCCUPIED') {
-                $order = OrderManage::where('table_id', $table_id)
-                    ->where('order_status', 'PENDING')
-                    ->latest()
-                    ->first();
-
-                if ($order) {
-                    return redirect()->route('order.edit', $order->id);
-                }
-            }
         }
 
         // Get restaurant GST info
@@ -292,12 +285,12 @@ class OrderManagementController extends Controller
         
         // Generate order number
         $restaurantId = auth()->user()->restaurant_id;
-        $today = Carbon::now()->format('Ymd');
         $todayCount = OrderManage::where('restaurant_id', $restaurantId)
             ->whereDate('created_at', Carbon::today())
             ->count() + 1;
-        $sequence = str_pad($todayCount, 4, '0', STR_PAD_LEFT);
-        $orderNo = "ORD-{$restaurantId}-{$today}-{$sequence}";
+        $prefix = $this->getRestaurantPrefix($restaurantId);
+        $dateStr = Carbon::now()->format('ymd');
+        $orderNo = "{$prefix}-{$dateStr}-" . str_pad($todayCount, 3, '0', STR_PAD_LEFT);
 
         DB::beginTransaction();
         
@@ -347,6 +340,9 @@ class OrderManagementController extends Controller
             $order->user_id = auth()->user()->id;
             $order->save();
        
+            // Generate KOT number for this order placement
+            $kotNo = $this->generateKOTNumber($restaurantId);
+
             // Save order items with all GST details
             foreach ($request->order_items as $index => $item) {
                 $calc = $calculatedItems[$index];
@@ -369,6 +365,7 @@ class OrderManagementController extends Controller
                 $orderItem->is_new = 1;
                 $orderItem->restaurant_id = auth()->user()->restaurant_id;
                 $orderItem->user_id = auth()->user()->id;
+                $orderItem->kot_no = $kotNo;
                 $orderItem->save();
             }
 
@@ -427,6 +424,11 @@ class OrderManagementController extends Controller
                 $order->amount_paid = floatval($request->amount_paid);
             }
             
+            // Update order complete status
+            if ($request->has('order_complete')) {
+                $order->order_complete = $request->order_complete;
+            }
+            
             // Update discount percentage
             $orderDiscountPercent = floatval($request->discount ?? $order->discount_percentage);
             $order->discount_percentage = $orderDiscountPercent;
@@ -440,6 +442,8 @@ class OrderManagementController extends Controller
 
             // Handle new item additions with discount
             if ($request->has('order_items') && is_array($request->order_items)) {
+                // Generate KOT number for these new items
+                $kotNo = $this->generateKOTNumber($restaurant->id);
                 foreach ($request->order_items as $item) {
                     $itemDiscount = isset($item['item_discount']) ? floatval($item['item_discount']) : 0;
                     $calc = $this->calculateItemGST(
@@ -467,7 +471,8 @@ class OrderManagementController extends Controller
                         'restaurant_id' => auth()->user()->restaurant_id,
                         'user_id' => auth()->user()->id,
                         'order_status' => 'PENDING',
-                        'is_new' => 1
+                        'is_new' => 1,
+                        'kot_no' => $kotNo
                     ]);
                 }
             }
@@ -518,12 +523,9 @@ class OrderManagementController extends Controller
             $order->round_off = $roundOff;
             $order->save();
 
-            // Release table for PAID or MISCORDER status
-            if (in_array($order->order_complete, ['DONE']) && $order->table_id) {
-                TableManage::where('id', $order->table_id)->update([
-                    'table_status' => 'AVAILABLE',
-                    'order_id' => null
-                ]);
+            // Release/Update table status based on remaining active orders
+            if ($order->table_id) {
+                $this->updateTableStatus($order->table_id);
             }
 
             DB::commit();
@@ -542,7 +544,7 @@ class OrderManagementController extends Controller
                     'total_igst' => $totalIgst,
                     'discount_amount' => $discountAmount,
                     'discount_percentage' => $orderDiscountPercent,
-                    'redirect_url' => in_array($order->payment_status, ['PAID', 'MISCORDER']) 
+                    'redirect_url' => (in_array($order->payment_status, ['PAID', 'MISCORDER']) || $order->order_complete === 'DONE') 
                         ? route('order.invoice', $order->id) : null
                 ]);
             }
@@ -653,19 +655,17 @@ public function addPayment(Request $request, $order_id)
         if ($totalPaid >= $order->grand_total) {
             $order->payment_status = 'PAID';
             $order->amount_paid = $order->grand_total;
-            
-            if ($order->table_id) {
-                TableManage::where('id', $order->table_id)->update([
-                    'table_status' => 'AVAILABLE',
-                    'order_id' => null
-                ]);
-            }
+            $order->order_complete = 'DONE';
         } elseif ($totalPaid > 0) {
             $order->payment_status = 'PARTIAL';
             $order->amount_paid = $totalPaid;
         }
         
         $order->save();
+        
+        if ($order->table_id) {
+            $this->updateTableStatus($order->table_id);
+        }
         
         // Get updated payments
         $payments = OrderToPayment::where('order_id', $order_id)
@@ -838,15 +838,13 @@ public function deletePayment($payment_id)
             
             if ($request->payment_status == 'PAID') {
                 $order->amount_paid = $order->grand_total;
+                $order->order_complete = 'DONE';
             }
             
             $order->save();
 
-            if ($request->payment_status == 'PAID' && $order->table_id) {
-                TableManage::where('id', $order->table_id)->update([
-                    'table_status' => 'AVAILABLE',
-                    'order_id' => null
-                ]);
+            if ($order->table_id) {
+                $this->updateTableStatus($order->table_id);
             }
         });
 
@@ -938,5 +936,69 @@ public function deletePayment($payment_id)
             'new_orders' => $newOrdersCount > 0,
             'count' => $newOrdersCount
         ]);
+    }
+
+    /**
+     * Generate the next KOT number for a restaurant
+     */
+    private function generateKOTNumber($restaurantId)
+    {
+        $todayStart = Carbon::today()->startOfDay();
+        $todayEnd = Carbon::today()->endOfDay();
+        
+        // Find the latest KOT number generated today for this restaurant
+        $latestItem = OrderItems::where('restaurant_id', $restaurantId)
+            ->whereBetween('created_at', [$todayStart, $todayEnd])
+            ->whereNotNull('kot_no')
+            ->orderBy('id', 'desc')
+            ->first();
+            
+        if ($latestItem && preg_match('/KOT-\d{6}-(\d+)/', $latestItem->kot_no, $matches)) {
+            $nextSequence = intval($matches[1]) + 1;
+        } else {
+            $nextSequence = 1;
+        }
+        
+        $dateStr = Carbon::now()->format('ymd');
+        return "KOT-{$dateStr}-" . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Release or update table status based on remaining active orders
+     */
+    private function updateTableStatus($tableId, $excludeOrderId = null)
+    {
+        if (!$tableId) return;
+        
+        $query = OrderManage::where('table_id', $tableId)
+            ->where('order_complete', '!=', 'DONE');
+            
+        if ($excludeOrderId) {
+            $query->where('id', '!=', $excludeOrderId);
+        }
+        
+        $nextActiveOrder = $query->first();
+        
+        if ($nextActiveOrder) {
+            TableManage::where('id', $tableId)->update([
+                'table_status' => 'OCCUPIED',
+                'order_id' => $nextActiveOrder->id
+            ]);
+        } else {
+            TableManage::where('id', $tableId)->update([
+                'table_status' => 'AVAILABLE',
+                'order_id' => null
+            ]);
+        }
+    }
+
+    /**
+     * Get short prefix from restaurant name
+     */
+    private function getRestaurantPrefix($restaurantId)
+    {
+        $restaurant = RestaurantMaster::find($restaurantId);
+        $prefix = $restaurant ? strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $restaurant->name), 0, 3)) : 'ORD';
+        return empty($prefix) ? 'ORD' : $prefix;
     }
 }

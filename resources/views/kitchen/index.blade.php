@@ -576,6 +576,11 @@ body {
         <div class="order-card {{ $item->order_status }}" data-status="{{ $item->order_status }}" id="card_{{ $item->id }}">
           <div class="card-header">
             <h6 class="order-id">ORDER #{{ $item->order->order_id }}</h6>
+            @if($item->kot_no)
+              <span class="badge badge-secondary mt-1" style="font-size: 0.75rem; font-weight: bold; background-color: #2c3e50; color: white;">
+                KOT: {{ $item->kot_no }}
+              </span>
+            @endif
             <span class="order-time">
               <i class="fa fa-clock-o"></i> {{ $item->created_at->format('d M, h:i A') }}
             </span>

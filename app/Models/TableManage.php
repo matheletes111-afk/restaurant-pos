@@ -25,4 +25,9 @@ class TableManage extends Model
     {
         return $this->hasOne('App\Models\OrderManage','id','order_id');
     }
+
+    public function activeOrders()
+    {
+        return $this->hasMany(OrderManage::class, 'table_id')->where('order_complete', '!=', 'DONE');
+    }
 }
