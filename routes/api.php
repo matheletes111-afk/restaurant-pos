@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\RestaurantStaffApiController;
 use App\Http\Controllers\Api\RestaurantProfileApiController;
 use App\Http\Controllers\Api\SupportTicketApiController;
 use App\Http\Controllers\Api\PasswordResetApiController;
+use App\Http\Controllers\Api\OrderApiController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -107,8 +108,26 @@ Route::prefix('support')->group(function () {
     Route::delete('/tickets/{id}', [SupportTicketApiController::class, 'destroy']); // Delete ticket
 });
 
+    // Order APIs
+    Route::prefix('orders')->group(function () {
+        Route::get('/', [OrderApiController::class, 'index']);
+        Route::get('/create-data/{table_id?}', [OrderApiController::class, 'getCreateData']);
+        Route::post('/store', [OrderApiController::class, 'store']);
+        Route::get('/{id}', [OrderApiController::class, 'show']);
+        Route::post('/update/{id}', [OrderApiController::class, 'update']);
+        Route::post('/{order_id}/item-delete/{item_id}', [OrderApiController::class, 'deleteOrderItem']);
+        Route::get('/{order_id}/payments', [OrderApiController::class, 'getPayments']);
+        Route::post('/{order_id}/add-payment', [OrderApiController::class, 'addPayment']);
+        Route::delete('/delete-payment/{payment_id}', [OrderApiController::class, 'deletePayment']);
+        Route::post('/{order_id}/submit-payment', [OrderApiController::class, 'submitPayment']);
+    });
 
-
+    // Kitchen Panel APIs
+    Route::prefix('kitchen')->group(function () {
+        Route::get('/', [OrderApiController::class, 'kitchen']);
+        Route::post('/update-status', [OrderApiController::class, 'updateKitchenStatus']);
+        Route::get('/orders/refresh', [OrderApiController::class, 'refreshOrders']);
+    });
 
 });
 
