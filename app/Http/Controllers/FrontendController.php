@@ -12,7 +12,15 @@ class FrontendController extends Controller
 {
     public function index()
     {
-        return view('welcome');
+        $defaultPlans = \App\Models\Plan::where(function($q) {
+                $q->where('is_default_plan', 'Y')
+                  ->orWhere('price', 0);
+            })
+            ->where('is_delete', 'N')
+            ->whereNull('plan_parent_id')
+            ->get();
+            
+        return view('welcome', compact('defaultPlans'));
     }
 
     public function create()
