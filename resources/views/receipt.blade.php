@@ -214,10 +214,10 @@
             <span>{{ $order->table->name ?? 'Table ' . $order->table_id }}</span>
         </div>
         @endif
-        <div class="info-row">
+        <!-- <div class="info-row">
             <span class="info-label">Status:</span>
             <span>{{ ucfirst($order->order_status) }}</span>
-        </div>
+        </div> -->
         
         <!-- GST Info Box -->
         {{-- @if(isset($order->is_gst_bill) && $order->is_gst_bill == 'YES')
@@ -389,12 +389,12 @@
         @endif
         
         <!-- GST Summary for Non-GST Bill -->
-        @if(!$isGstBill)
+        <!-- @if(!$isGstBill)
         <div class="non-gst-info" style="margin-top: 5px;">
             <strong>Note:</strong> This is a Non-GST bill. No tax applicable.
         </div>
         <div class="line-dotted"></div>
-        @endif
+        @endif -->
         
         <!-- Remarks -->
         @if($order->remarks)

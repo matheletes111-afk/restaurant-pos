@@ -978,8 +978,4 @@ section {
     .cta-section {
         padding: 60px 0;
     }
-    
-    .nav-actions .btn-login {
-        display: none; /* Hide login button on mobile for space */
-    }
 }
