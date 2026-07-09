@@ -36,6 +36,7 @@ class RestaurantProfileController extends Controller
             'address' => 'required|string',
             'pincode' => 'required|string|max:10',
             'gstin' => 'nullable|string|max:50',
+            'fssai_number' => 'nullable|string|max:50',
             'gst_percentage' => 'nullable|numeric|min:0|max:100'
         ]);
         
@@ -63,6 +64,7 @@ class RestaurantProfileController extends Controller
             $restaurant->address = $request->address;
             $restaurant->pincode = $request->pincode;
             $restaurant->gstin = $request->gstin;
+            $restaurant->fssai_number = $request->fssai_number;
             $restaurant->gst_percentage = $request->gst_percentage ?? 0;
             $restaurant->save();
             

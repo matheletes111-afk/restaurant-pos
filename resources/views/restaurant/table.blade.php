@@ -49,9 +49,9 @@
                 <td>{{ $table->description }}</td>
                 <td>
                   @if($table->qr_code)
-                      <img src="{{ asset('public/qrcodes/'.$table->qr_code) }}" width="80">
+                      <img src="{{ asset('qrcodes/'.$table->qr_code) }}" width="80">
                       <br>
-                      <a href="{{ asset('public/qrcodes/'.$table->qr_code) }}" download class="btn btn-sm btn-primary mt-2">
+                      <a href="{{ asset('qrcodes/'.$table->qr_code) }}" download class="btn btn-sm btn-primary mt-2">
                           Download QR
                       </a>
                   @else

@@ -220,7 +220,7 @@
         </div>
         
         <!-- GST Info Box -->
-        @if(isset($order->is_gst_bill) && $order->is_gst_bill == 'YES')
+        {{-- @if(isset($order->is_gst_bill) && $order->is_gst_bill == 'YES')
         <div class="gst-info">
             <i class="fas fa-file-invoice-dollar"></i> GST Bill ({{ $order->restaurant_gst_percentage ?? 0 }}% GST)
         </div>
@@ -228,7 +228,7 @@
         <div class="non-gst-info">
             <i class="fas fa-receipt"></i> Non-GST Bill
         </div>
-        @endif
+        @endif --}}
         
         <div class="line-dotted"></div>
         

@@ -27,7 +27,7 @@
                 <a href="#faq">FAQ</a>
             </div>
             <div class="nav-actions">
-                <a href="#" class="btn-login">Login</a>
+                <a href="{{ route('login') }}" class="btn-login">Login</a>
                 {{-- <a href="#" class="btn btn-primary">Book a Demo</a> --}}
             </div>
         </div>
@@ -149,6 +149,143 @@
         </div>
     </section>
 
+    <!-- Smart POS Features Section -->
+    <section class="smart-pos" id="smart-pos" style="padding: 80px 0; background-color: #fff;">
+        <div class="container">
+            <div class="section-header text-center" style="margin-bottom: 60px;">
+                <span class="section-subtitle" style="color: #ef4444; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; font-size: 0.85rem;">SMART POS FEATURES</span>
+                <h2 style="font-size: 2.5rem; margin-top: 10px; margin-bottom: 15px; color: #1f2937;">A restaurant POS made for<br>all your needs</h2>
+                <p style="color: #6b7280; max-width: 600px; margin: 0 auto; font-size: 1.05rem;">A quick and easy-to-use restaurant billing software that makes managing high order volumes butter smooth</p>
+            </div>
+
+            <style>
+                .spf-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 50px;
+                    margin-bottom: 80px;
+                }
+                .spf-row:last-child {
+                    margin-bottom: 0;
+                }
+                .spf-row.reverse {
+                    flex-direction: row-reverse;
+                }
+                .spf-image-col {
+                    flex: 1;
+                    background-color: #ef4444;
+                    border-radius: 12px;
+                    padding: 20px;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 350px;
+                    position: relative;
+                    overflow: hidden;
+                }
+                .spf-image-col.bg-light-red {
+                    background-color: #fcd3d3;
+                }
+                .spf-image-col img {
+                    max-width: 90%;
+                    height: auto;
+                    border-radius: 8px;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+                }
+                .spf-text-col {
+                    flex: 1;
+                }
+                .spf-text-col h3 {
+                    font-size: 1.8rem;
+                    color: #1f2937;
+                    margin-bottom: 15px;
+                }
+                .spf-text-col h3 span {
+                    color: #ef4444;
+                }
+                .spf-text-col p {
+                    color: #6b7280;
+                    line-height: 1.6;
+                    margin-bottom: 20px;
+                    font-size: 1rem;
+                }
+                .spf-explore-link {
+                    display: inline-flex;
+                    align-items: center;
+                    color: #111;
+                    font-weight: 600;
+                    text-decoration: none;
+                    font-size: 0.95rem;
+                    transition: color 0.3s;
+                }
+                .spf-explore-link:hover {
+                    color: #ef4444;
+                }
+                .spf-explore-link i {
+                    margin-left: 5px;
+                    font-size: 1.1rem;
+                }
+
+                @media (max-width: 768px) {
+                    .spf-row, .spf-row.reverse {
+                        flex-direction: column;
+                        gap: 30px;
+                        margin-bottom: 50px;
+                    }
+                    .spf-image-col {
+                        width: 100%;
+                        min-height: 250px;
+                    }
+                }
+            </style>
+
+            <div class="spf-row">
+                <div class="spf-image-col">
+                    <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=600" alt="Billing POS" style="object-fit: cover;">
+                </div>
+                <div class="spf-text-col">
+                    <h3>A quick 3-click restaurant <span>billing</span> software</h3>
+                    <p>Take orders, punch bills and generate KOT. Accept payments either by splitting bill or merging tables. Easily apply discounts and coupons. All of this, and more, is easy and quick with Bill&Bite's restaurant POS.</p>
+                    <a href="javascript:void(0)" class="spf-explore-link open-enquiry-btn">Explore all features <i class="ph ph-arrow-right"></i></a>
+                </div>
+            </div>
+
+            <div class="spf-row reverse">
+                <div class="spf-image-col bg-light-red">
+                    <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600" alt="Inventory Management" style="object-fit: cover;">
+                </div>
+                <div class="spf-text-col">
+                    <h3>Restaurant <span>inventory</span> management made easier</h3>
+                    <p>Do inventory management the smart way. Put your inventory on the item-wise auto deduction, get low-stock alerts, day-end inventory reports and more with Bill&Bite restaurant POS.</p>
+                    <a href="javascript:void(0)" class="spf-explore-link open-enquiry-btn">Explore all features <i class="ph ph-arrow-right"></i></a>
+                </div>
+            </div>
+
+            <div class="spf-row">
+                <div class="spf-image-col">
+                    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=600" alt="Reports and Analytics" style="object-fit: cover;">
+                </div>
+                <div class="spf-text-col">
+                    <h3>Get real-time restaurant <span>Reports</span></h3>
+                    <p>Automate your restaurant reports and go paper-free! Let Bill&Bite POS automatically track your business activities and provide you error-free reports on your restaurant's day-end sales, online orders, staff actions, inventory consumption, and various 80+ essential business reports.</p>
+                    <a href="javascript:void(0)" class="spf-explore-link open-enquiry-btn">Explore all features <i class="ph ph-arrow-right"></i></a>
+                </div>
+            </div>
+
+            <div class="spf-row reverse">
+                <div class="spf-image-col bg-light-red">
+                    <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=600" alt="Online Ordering System" style="object-fit: cover;">
+                </div>
+                <div class="spf-text-col">
+                    <h3>A single <span>Online Ordering</span> System to manage all your orders</h3>
+                    <p>Accept online orders, manage online menu, mark food ready, collect payment and check revenue without shuffling between multiple screens.</p>
+                    <a href="javascript:void(0)" class="spf-explore-link open-enquiry-btn">Explore all features <i class="ph ph-arrow-right"></i></a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
     <!-- Benefits Section -->
     <section class="benefits">
         <div class="container benefits-container">
@@ -166,7 +303,7 @@
             </div>
             <div class="benefits-image">
                 <div class="b-img-wrapper">
-                    <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=800" alt="Restaurant Manager" class="main-b-img">
+                    <img src="{{asset('bb.png')}}" alt="Restaurant Manager" class="main-b-img">
                     
                     <!-- Floating UI Elements -->
                     <div class="floating-card revenue-card">
@@ -418,7 +555,7 @@
                                 <li><i class="ph-fill ph-check-circle"></i> {{ $plan->total_number_of_table == 0 ? 'Unlimited' : $plan->total_number_of_table }} Tables</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Inventory {{ $plan->inventory_checkbox == 'Y' ? 'Enabled' : 'Disabled' }}</li>
                             </ul>
-                            <a href="{{ route('restaurant.register.form') }}" class="btn-plan">Get Started</a>
+                            <a href="javascript:void(0)" class="btn-plan open-enquiry-btn">Get Started</a>
                         </div>
                     @endforeach
                 @else
@@ -716,34 +853,32 @@
                 <div class="footer-links">
                     <h4>Product</h4>
                     <ul>
-                        <li><a href="#">Features</a></li>
-                        <li><a href="#">Pricing</a></li>
-                        <li><a href="#">How It Works</a></li>
-                        <li><a href="#">Updates</a></li>
-                        <li><a href="#">Integrations</a></li>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#pricing">Pricing</a></li>
+                        <li><a href="#how-it-works">How It Works</a></li>
+                        <li><a href="#testimonials">Testimonials</a></li>
+                        <li><a href="#faq">FAQ</a></li>
+                        <li><a href="javascript:void(0)" class="open-enquiry-btn">Enquiry Now</a></li>
                     </ul>
                 </div>
                 <div class="footer-links">
                     <h4>Company</h4>
                     <ul>
-                        <li><a href="#">About Us</a></li>
-                        <li><a href="#">Blog</a></li>
-                        <li><a href="#">Careers</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
-                        <li><a href="#">Terms & Conditions</a></li>
+                        <li><a href="javascript:void(0)" id="openPrivacyModalBtn">Privacy Policy</a></li>
+                        <li><a href="javascript:void(0)" id="openTermsModalBtn">Terms & Conditions</a></li>
                     </ul>
                 </div>
                 <div class="footer-contact">
                     <h4>Contact Us</h4>
                     <ul>
-                        <li><i class="ph ph-phone"></i> +91 98765 43210</li>
-                        <li><i class="ph ph-envelope-simple"></i> hello@billandbite.com</li>
-                        <li><i class="ph ph-map-pin"></i> Bangalore, India</li>
+                        <li><i class="ph ph-phone"></i> +91 7001769472</li>
+                        <li><i class="ph ph-envelope-simple"></i> info@billnbite.cloud</li>
+                        <li><i class="ph ph-map-pin"></i> Siliguri, India</li>
                     </ul>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>© 2024 Bill & Bite. All rights reserved.</p>
+                <p>© 2026 Bill & Bite. All rights reserved.</p>
             </div>
         </div>
     </footer>
@@ -914,8 +1049,30 @@
     </style>
 
     <!-- Sticky Enquiry Button -->
-    <div class="sticky-enquiry-btn" id="openEnquiryModalBtn">
+    <div class="sticky-enquiry-btn open-enquiry-btn" id="openEnquiryModalBtn">
         Enquiry Now
+    </div>
+
+    <!-- Privacy Policy Modal -->
+    <div class="enquiry-modal-overlay" id="privacyModalOverlay">
+        <div class="enquiry-modal">
+            <button class="close-modal-btn" id="closePrivacyModalBtn">&times;</button>
+            <h3>Privacy Policy</h3>
+            <div style="max-height: 400px; overflow-y: auto; color: #555; line-height: 1.6;">
+                <p>Privacy Policy Content goes here...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms & Conditions Modal -->
+    <div class="enquiry-modal-overlay" id="termsModalOverlay">
+        <div class="enquiry-modal">
+            <button class="close-modal-btn" id="closeTermsModalBtn">&times;</button>
+            <h3>Terms & Conditions</h3>
+            <div style="max-height: 400px; overflow-y: auto; color: #555; line-height: 1.6;">
+                <p>Terms & Conditions Content goes here...</p>
+            </div>
+        </div>
     </div>
 
     <!-- Enquiry Modal -->
@@ -963,29 +1120,69 @@
 
     <script>
         // Modal Logic
-        const enquiryBtn = document.getElementById('openEnquiryModalBtn');
+        const enquiryBtns = document.querySelectorAll('.open-enquiry-btn, #openEnquiryModalBtn');
         const enquiryModal = document.getElementById('enquiryModalOverlay');
-        const closeModalBtn = document.getElementById('closeEnquiryModalBtn');
+        const closeEnquiryModalBtn = document.getElementById('closeEnquiryModalBtn');
 
-        enquiryBtn.addEventListener('click', () => {
-            enquiryModal.style.display = 'flex';
-            // slight delay to allow display:flex to apply before adding opacity class
+        const privacyBtn = document.getElementById('openPrivacyModalBtn');
+        const privacyModal = document.getElementById('privacyModalOverlay');
+        const closePrivacyModalBtn = document.getElementById('closePrivacyModalBtn');
+
+        const termsBtn = document.getElementById('openTermsModalBtn');
+        const termsModal = document.getElementById('termsModalOverlay');
+        const closeTermsModalBtn = document.getElementById('closeTermsModalBtn');
+
+        function openModal(modal) {
+            modal.style.display = 'flex';
             setTimeout(() => {
-                enquiryModal.classList.add('show');
+                modal.classList.add('show');
             }, 10);
-        });
+        }
+
+        function closeAnyModal(modal) {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
 
         const closeModal = () => {
-            enquiryModal.classList.remove('show');
-            setTimeout(() => {
-                enquiryModal.style.display = 'none';
-            }, 300);
+            closeAnyModal(enquiryModal);
         };
 
-        closeModalBtn.addEventListener('click', closeModal);
-        enquiryModal.addEventListener('click', (e) => {
-            if (e.target === enquiryModal) {
-                closeModal();
+        enquiryBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                openModal(enquiryModal);
+            });
+        });
+
+        if(privacyBtn) {
+            privacyBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                openModal(privacyModal);
+            });
+        }
+
+        if(termsBtn) {
+            termsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                openModal(termsModal);
+            });
+        }
+
+        closeEnquiryModalBtn.addEventListener('click', closeModal);
+        if(closePrivacyModalBtn) closePrivacyModalBtn.addEventListener('click', () => closeAnyModal(privacyModal));
+        if(closeTermsModalBtn) closeTermsModalBtn.addEventListener('click', () => closeAnyModal(termsModal));
+
+        [enquiryModal, privacyModal, termsModal].forEach(modal => {
+            if(modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        if(modal === enquiryModal) closeModal();
+                        else closeAnyModal(modal);
+                    }
+                });
             }
         });
 

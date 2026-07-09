@@ -183,6 +183,8 @@
 </li>
 @endif
 
+
+@if(auth()->user()->role_type=="Manager" || auth()->user()->role_type=="ADMIN" || auth()->user()->role_type=="Kitchen Staff")
 @if(@$plan_details->inventory_checkbox=="Y")
 <li class="pc-item pc-hasmenu">
   <a href="#!" class="pc-link">
@@ -257,7 +259,10 @@
 </ul>
 </li>
 @endif
+@endif
 
+
+@if(auth()->user()->role_type=="Manager"  || auth()->user()->role_type=="ADMIN" )
 <li class="pc-item pc-hasmenu">
   <a href="#!" class="pc-link">
     <span class="pc-micon">
@@ -323,7 +328,7 @@
 </li>
 
 @endif
-
+@endif
 
 
 

@@ -25,6 +25,16 @@
         @include('includes.message')
 
         <div class="card-body">
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i> Role Access Disclaimer</h6>
+                <ul class="mb-0 ps-3" style="font-size: 0.9rem;">
+                    <li><strong>Manager / ADMIN:</strong> Full access to all modules including Menu, Tables, Orders, Kitchen, Inventory, Reports, and Staff Management.</li>
+                    <li><strong>Cashier & Waiter:</strong> Access limited to Dashboard and Order Master.</li>
+                    <li><strong>Kitchen Staff:</strong> Access to Kitchen Orders, Pending Orders, Inventory Settings, Restro AI, and Support.</li>
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            
             <div class="text-end mb-3">
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Staff</button>
             </div>

@@ -60,7 +60,7 @@ class SupplierController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate(Supplier::$rules);
+        
 
         // Check if phone already exists in this restaurant
         $existingSupplier = Supplier::where('phone', $request->phone)

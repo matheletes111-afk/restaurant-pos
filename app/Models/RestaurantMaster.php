@@ -16,6 +16,7 @@ class RestaurantMaster extends Model
         'address',
         'pincode',
         'gstin',
+        'fssai_number',
         'gst_percentage',
         'owner_id',
         'status',

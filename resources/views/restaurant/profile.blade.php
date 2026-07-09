@@ -169,6 +169,14 @@
                                     <small class="info-text">Default GST rate for billing (0-100%)</small>
                                 </div>
                             </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>FSSAI Number (Optional)</label>
+                                    <input type="text" name="fssai_number" class="form-control" 
+                                           value="{{ old('fssai_number', $restaurant->fssai_number) }}" 
+                                           placeholder="14-digit FSSAI number">
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="text-right">
