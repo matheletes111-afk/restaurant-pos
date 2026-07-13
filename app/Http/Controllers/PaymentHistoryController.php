@@ -50,7 +50,7 @@ class PaymentHistoryController extends Controller
         $restaurants = RestaurantMaster::where('status', 'A')->orderBy('name', 'asc')->get();
         
         // Get all plans for filter
-        $plans = Plan::where('is_delete', 'N')->orderBy('name', 'asc')->get();
+        $plans = Plan::where('is_delete', 'N')->where('plan_status', 'A')->orderBy('name', 'asc')->get();
         
         // Statistics
         $statistics = [

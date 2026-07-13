@@ -369,7 +369,7 @@
                         <div class="row">
                             @foreach($plans as $plan)
                                 @php
-                                    $isDefault = ($defaultPlan && $defaultPlan->id == $plan->id);
+                                    $isDefault = ($plan->is_default_plan == 'Y' || $plan->is_default_free == 'Y' || $plan->is_default_paid == 'Y' || $plan->price == 0);
                                     $isAssigned = in_array($plan->id, $assignedPlanIds);
                                     $isActive = isset($activeSubscriptions[$plan->id]);
                                     $activeSubscription = $isActive ? $activeSubscriptions[$plan->id] : null;

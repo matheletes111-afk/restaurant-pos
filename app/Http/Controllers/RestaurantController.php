@@ -37,6 +37,8 @@ class RestaurantController extends Controller
             'restaurant_name' => 'required|string|max:255',
             'address' => 'required|string',
             'pincode' => 'required|string|max:10',
+            'gstin' => 'nullable|string|max:50',
+            'fssai_number' => 'nullable|string|max:50',
             
             // Owner Information
             'name' => 'required|string|max:255',
@@ -78,6 +80,8 @@ class RestaurantController extends Controller
             $restaurant->name = $request->restaurant_name;
             $restaurant->address = $request->address;
             $restaurant->pincode = $request->pincode;
+            $restaurant->gstin = $request->gstin;
+            $restaurant->fssai_number = $request->fssai_number;
             $restaurant->owner_id = $user->id;
             $restaurant->status = 'A';
             $restaurant->created_by = auth()->id();
@@ -111,11 +115,13 @@ class RestaurantController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'id' => 'required|exists:restaurant_masters,id',
+            'id' => 'required|exists:restaurant_master,id',
             'owner_id' => 'required|exists:users,id',
             'restaurant_name' => 'required|string|max:255',
             'address' => 'required|string',
             'pincode' => 'required|string|max:10',
+            'gstin' => 'nullable|string|max:50',
+            'fssai_number' => 'nullable|string|max:50',
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $request->owner_id,
             'phone' => 'required|string|max:15',
@@ -133,6 +139,8 @@ class RestaurantController extends Controller
             $restaurant->name = $request->restaurant_name;
             $restaurant->address = $request->address;
             $restaurant->pincode = $request->pincode;
+            $restaurant->gstin = $request->gstin;
+            $restaurant->fssai_number = $request->fssai_number;
             $restaurant->updated_by = auth()->id();
             $restaurant->save();
 
@@ -252,9 +260,10 @@ class RestaurantController extends Controller
         // Get restaurant details
         $restaurant = RestaurantMaster::with('owner')->findOrFail($id);
         
-        // Get all custom plans (where is_default_free = 'N')
+        // Get all plans where plan_status = 'A' and is_default_plan = 'N'
         $plans = Plan::where('is_delete', 'N')
-            ->where('is_default_free', 'N')
+            ->where('plan_status', 'A')
+            ->where('is_default_plan', 'N')
             ->orderBy('name', 'asc')
             ->get();
         

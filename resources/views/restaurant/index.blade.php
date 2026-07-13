@@ -243,6 +243,8 @@
                                             data-restaurant_name="{{ $rest->name }}"
                                             data-restaurant_address="{{ $rest->address }}"
                                             data-restaurant_pincode="{{ $rest->pincode }}"
+                                            data-restaurant_gstin="{{ $rest->gstin }}"
+                                            data-restaurant_fssai_number="{{ $rest->fssai_number }}"
                                             data-owner_name="{{ @$rest->owner->name }}"
                                             data-owner_email="{{ @$rest->owner->email }}"
                                             data-owner_phone="{{ @$rest->owner->phone }}">
@@ -317,6 +319,24 @@
                             <input type="text" name="address" class="form-control" 
                                    value="{{ old('address') }}" required 
                                    placeholder="Street, city, landmark">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">GSTIN</label>
+                                    <input type="text" name="gstin" class="form-control" 
+                                           value="{{ old('gstin') }}" 
+                                           placeholder="e.g., 07AAAAA1111A1Z1">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">FSSAI Number</label>
+                                    <input type="text" name="fssai_number" class="form-control" 
+                                           value="{{ old('fssai_number') }}" 
+                                           placeholder="e.g., 12345678901234">
+                                </div>
+                            </div>
                         </div>
 
                         <div class="action-buttons">
@@ -438,6 +458,21 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
+                                <label class="form-label">GSTIN</label>
+                                <input type="text" name="gstin" id="edit_restaurant_gstin" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">FSSAI Number</label>
+                                <input type="text" name="fssai_number" id="edit_restaurant_fssai_number" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
                                 <label class="form-label required">Owner Name</label>
                                 <input type="text" name="name" id="edit_owner_name" class="form-control" required>
                             </div>
@@ -526,6 +561,8 @@ $(document).ready(function () {
         $('#edit_restaurant_name').val($(this).data('restaurant_name'));
         $('#edit_restaurant_address').val($(this).data('restaurant_address'));
         $('#edit_restaurant_pincode').val($(this).data('restaurant_pincode'));
+        $('#edit_restaurant_gstin').val($(this).data('restaurant_gstin'));
+        $('#edit_restaurant_fssai_number').val($(this).data('restaurant_fssai_number'));
         $('#edit_owner_name').val($(this).data('owner_name'));
         $('#edit_owner_email').val($(this).data('owner_email'));
         $('#edit_owner_phone').val($(this).data('owner_phone'));

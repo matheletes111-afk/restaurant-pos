@@ -392,7 +392,7 @@
 <div class="row justify-content-center">
     @foreach($plans as $plan)
         @php
-            $isDefault = ($defaultPlan && $defaultPlan->id == $plan->id);
+            $isDefault = ($plan->is_default_plan == 'Y' || $plan->is_default_free == 'Y' || $plan->is_default_paid == 'Y' || $plan->price == 0);
             $isAssigned = in_array($plan->id, $assignedPlanIds);
             // Only show "Currently Active" if the plan is specifically assigned (not just default)
             $isCurrentlyActive = $isAssigned;

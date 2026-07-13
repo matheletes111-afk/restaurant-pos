@@ -153,7 +153,7 @@
                 </div>
 
                 <div class="row">
-                  <div class="col-md-6">
+                  {{-- <div class="col-md-6">
                     <div class="form-group">
                       <label for="is_default_free">Default Free Plan *</label>
                       <select class="form-control" id="is_default_free" name="is_default_free" required>
@@ -172,7 +172,7 @@
                       </select>
                     </div>
                   </div>
-                </div>
+                </div> --}}
 
                 <!-- Default Plan Checkbox -->
                 <div class="row">

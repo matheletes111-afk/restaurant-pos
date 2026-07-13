@@ -27,7 +27,8 @@ protected $fillable = [
     'is_default_paid',
     'razorpay_plan_id',
     'is_delete',
-    'end_date'
+    'end_date',
+    'plan_status'
 ];
 
     protected $casts = [

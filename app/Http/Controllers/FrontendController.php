@@ -14,10 +14,8 @@ class FrontendController extends Controller
     {
         $defaultPlans = \App\Models\Plan::where(function($q) {
                 $q->where('is_default_plan', 'Y');
-                  
             })
-            
-            
+            ->where('plan_status', 'A')
             ->get();
             // return $defaultPlans;
             

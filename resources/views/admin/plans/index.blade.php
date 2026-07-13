@@ -118,7 +118,7 @@
             ->exists();
     ?>
     
-    @if($isActive)
+{{--     @if($isActive)
         <button class="btn btn-secondary btn-sm" disabled>
             <i class="fa fa-check"></i> Subscribed
         </button>
@@ -132,7 +132,7 @@
             <i class="fa fa-shopping-cart"></i> 
             {{ $plan->price == 0 ? 'Start Free Trial' : 'Subscribe' }}
         </a>
-    @endif
+    @endif --}}
                       </td>
                     </tr>
                     @endforeach

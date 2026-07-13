@@ -76,7 +76,7 @@ class TableManageApiController extends Controller
             $qrLink = url('/restaurant/table/' . $table->id . '/' . $table->restaurant_id);
             
             // Generate QR file name
-            $fileName = 'qr_' . $table->id . '.png';
+            $fileName = 'qr_' . $table->id . '.svg';
             $qrPath = public_path('qrcodes/' . $fileName);
             
             // Create directory if not exists
@@ -85,7 +85,7 @@ class TableManageApiController extends Controller
             }
             
             // Generate QR code
-            \QrCode::format('png')
+            \QrCode::format('svg')
                 ->size(300)
                 ->generate($qrLink, $qrPath);
             

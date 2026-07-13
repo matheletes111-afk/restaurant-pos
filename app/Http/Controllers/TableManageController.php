@@ -35,11 +35,11 @@ public function store(Request $request)
     $qrLink = url('/restaurant/table/'.$table->id.'/'.$table->restaurant_id);
 
     // QR FILE NAME
-    $fileName = 'qr_'.$table->id.'.png';
+    $fileName = 'qr_'.$table->id.'.svg';
     $qrPath  = public_path('qrcodes/'.$fileName);
 
-    // Generate using SimpleSoftwareIO (PNG format)
-    \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')->size(300)->generate($qrLink, $qrPath);
+    // Generate using SimpleSoftwareIO (SVG format)
+    \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(300)->generate($qrLink, $qrPath);
 
     // SAVE QR NAME
     $table->qr_code = $fileName;

@@ -18,6 +18,7 @@ class PlanController extends Controller
             return redirect()->route('restaurant.plans');
         }
         $plans = Plan::where('is_delete', 'N')
+                    ->where('plan_status', 'A')
                     ->orderBy('id', 'desc')
                     ->get();
         
@@ -34,30 +35,28 @@ public function selectPlan()
         ->pluck('plan_id')
         ->toArray();
     
-    // Get default plan (free plan or plan marked as default) - only latest version
-    $defaultPlan = Plan::where(function($q) {
+    // Get all active default plans (free plan or plan marked as default)
+    $defaultPlans = Plan::where(function($q) {
             $q->where('is_default_plan', 'Y')
+              ->orWhere('is_default_free', 'Y')
+              ->orWhere('is_default_paid', 'Y')
               ->orWhere('price', 0);
         })
         ->where('is_delete', 'N')
-        ->whereNull('plan_parent_id') // Only get parent plans (latest versions)
-        ->first();
-    
-    // Get assigned plan IDs that are parent plans (latest versions)
-    $assignedParentPlans = Plan::whereIn('id', $assignedPlanIds)
-        ->whereNull('plan_parent_id')
-        ->pluck('id')
-        ->toArray();
-    
-    // Merge default plan ID with assigned plan IDs
-    $planIdsToShow = array_unique(array_merge($assignedParentPlans, $defaultPlan ? [$defaultPlan->id] : []));
-    
-    // Get ONLY the parent plans (latest versions)
-    $plans = Plan::whereIn('id', $planIdsToShow)
-        ->where('is_delete', 'N')
-        ->whereNull('plan_parent_id') // Only parent plans
-        ->orderByRaw("FIELD(id, " . implode(',', $planIdsToShow) . ")")
+        ->where('plan_status', 'A')
         ->get();
+    
+    // Get assigned custom plans that are active versions
+    $assignedPlans = Plan::whereIn('id', $assignedPlanIds)
+        ->where('is_delete', 'N')
+        ->where('plan_status', 'A')
+        ->get();
+    
+    // Merge and unique them by id
+    $plans = $defaultPlans->merge($assignedPlans)->unique('id');
+    
+    // Pick the first default plan for backward compatibility or placeholder usage
+    $defaultPlan = $defaultPlans->first();
     
     return view('plans', compact('plans', 'assignedPlanIds', 'defaultPlan'));
 }
@@ -71,29 +70,29 @@ public function selectPlan()
 
 public function store(Request $request)
 {
-    $validator = Validator::make($request->all(), [
-        'name' => 'required|string|max:255',
-        'price' => 'required|numeric|min:0',
-        'gst_percentage' => 'nullable|numeric|min:0|max:100',
-        'country_id' => 'nullable|integer',
-        'currency' => 'nullable|string|max:10',
-        'billing_cycle' => 'required|in:monthly,quarterly,half-yearly,yearly',
-        'duration_days' => 'required|integer|min:1',
-        'description' => 'nullable|string',
-        'is_default_free' => 'required|in:Y,N',
-        'is_default_paid' => 'required|in:Y,N',
-        'category_number' => 'nullable|integer|min:0',
-        'total_number_of_dishes' => 'nullable|integer|min:0',
-        'total_number_of_table' => 'nullable|integer|min:0',
-        'inventory_checkbox' => 'nullable|in:Y,N',
-        'is_default_plan' => 'nullable|in:Y,N'
-    ]);
+    // $validator = Validator::make($request->all(), [
+    //     'name' => 'required|string|max:255',
+    //     'price' => 'required|numeric|min:0',
+    //     'gst_percentage' => 'nullable|numeric|min:0|max:100',
+    //     'country_id' => 'nullable|integer',
+    //     'currency' => 'nullable|string|max:10',
+    //     'billing_cycle' => 'required|in:monthly,quarterly,half-yearly,yearly',
+    //     'duration_days' => 'required|integer|min:1',
+    //     'description' => 'nullable|string',
+    //     'is_default_free' => 'required|in:Y,N',
+    //     'is_default_paid' => 'required|in:Y,N',
+    //     'category_number' => 'nullable|integer|min:0',
+    //     'total_number_of_dishes' => 'nullable|integer|min:0',
+    //     'total_number_of_table' => 'nullable|integer|min:0',
+    //     'inventory_checkbox' => 'nullable|in:Y,N',
+    //     'is_default_plan' => 'nullable|in:Y,N'
+    // ]);
 
-    if ($validator->fails()) {
-        return redirect()->back()
-            ->withErrors($validator)
-            ->withInput();
-    }
+    // if ($validator->fails()) {
+    //     return redirect()->back()
+    //         ->withErrors($validator)
+    //         ->withInput();
+    // }
 
     // Set default GST percentage (18% if not provided)
     $gstPercentage = $request->gst_percentage ?? 18.00;
@@ -122,40 +121,36 @@ public function store(Request $request)
     }
 
     // Check default free plan per country
-    if ($request->is_default_free === "Y" && $request->price == 0) {
-        $freeChk = Plan::where('is_default_free', 'Y')
-            ->where('price', 0)
-            ->where('is_delete', 'N')
-            ->where('country_id', $request->country_id)
-            ->first();
+    // if ($request->is_default_free === "Y" && $request->price == 0) {
+    //     $freeChk = Plan::where('is_default_free', 'Y')
+    //         ->where('price', 0)
+    //         ->where('is_delete', 'N')
+    //         ->where('country_id', $request->country_id)
+    //         ->first();
 
-        if ($freeChk) {
-            return redirect()->back()
-                ->with('error', 'Free Default Plan For This Country Already Exists')
-                ->withInput();
-        }
-    }
+    //     if ($freeChk) {
+    //         return redirect()->back()
+    //             ->with('error', 'Free Default Plan For This Country Already Exists')
+    //             ->withInput();
+    //     }
+    // }
 
     // Check default paid plan per country
-    if ($request->is_default_paid === "Y" && $request->price > 0) {
-        $paidChk = Plan::where('is_default_paid', 'Y')
-            ->where('price', '>', 0)
-            ->where('is_delete', 'N')
-            ->where('country_id', $request->country_id)
-            ->first();
+    // if ($request->is_default_paid === "Y" && $request->price > 0) {
+    //     $paidChk = Plan::where('is_default_paid', 'Y')
+    //         ->where('price', '>', 0)
+    //         ->where('is_delete', 'N')
+    //         ->where('country_id', $request->country_id)
+    //         ->first();
 
-        if ($paidChk) {
-            return redirect()->back()
-                ->with('error', 'Paid Default Plan For This Country Already Exists')
-                ->withInput();
-        }
-    }
+    //     if ($paidChk) {
+    //         return redirect()->back()
+    //             ->with('error', 'Paid Default Plan For This Country Already Exists')
+    //             ->withInput();
+    //     }
+    // }
 
-    // Check if this is being set as default plan
-    if ($request->is_default_plan === "Y") {
-        // Remove default flag from other plans
-        Plan::where('is_default_plan', 'Y')->update(['is_default_plan' => 'N']);
-    }
+   
 
     try {
 
@@ -234,6 +229,7 @@ public function store(Request $request)
         $plan->inventory_checkbox = $request->inventory_checkbox ?? 'N';
         $plan->is_default_plan = $request->is_default_plan ?? 'N';
         $plan->is_delete = 'N';
+        $plan->plan_status = 'A';
 
         $plan->save();
         
@@ -287,24 +283,24 @@ public function store(Request $request)
 
 public function update(Request $request, $id)
 {
-    $validator = Validator::make($request->all(), [
-        'name' => 'required|string|max:255',
-        'price' => 'required|numeric',
-        'gst_percentage' => 'nullable|numeric|min:0|max:100',
-        'country_id' => 'nullable|integer',
-        'currency' => 'nullable|string|max:10',
-        'billing_cycle' => 'required|in:monthly,quarterly,half-yearly,yearly',
-        'duration_days' => 'required|integer|min:1',
-        'description' => 'nullable|string',
-        'is_default_free' => 'required|in:Y,N',
-        'is_default_paid' => 'required|in:Y,N'
-    ]);
+    // $validator = Validator::make($request->all(), [
+    //     'name' => 'required|string|max:255',
+    //     'price' => 'required|numeric',
+    //     'gst_percentage' => 'nullable|numeric|min:0|max:100',
+    //     'country_id' => 'nullable|integer',
+    //     'currency' => 'nullable|string|max:10',
+    //     'billing_cycle' => 'required|in:monthly,quarterly,half-yearly,yearly',
+    //     'duration_days' => 'required|integer|min:1',
+    //     'description' => 'nullable|string',
+    //     'is_default_free' => 'required|in:Y,N',
+    //     'is_default_paid' => 'required|in:Y,N'
+    // ]);
 
-    if ($validator->fails()) {
-        return redirect()->back()
-            ->withErrors($validator)
-            ->withInput();
-    }
+    // if ($validator->fails()) {
+    //     return redirect()->back()
+    //         ->withErrors($validator)
+    //         ->withInput();
+    // }
 
     $plan = Plan::where('id', $id)
                 ->where('is_delete', 'N')
@@ -338,42 +334,38 @@ public function update(Request $request, $id)
     }
 
     // Check default free plan
-    if ($request->is_default_free == "Y" && $request->price == 0) {
-        $planChk = Plan::where('is_default_free', 'Y')
-            ->where('price', 0)
-            ->where('is_delete', 'N')
-            ->where('id', '!=', $id)
-            ->where('country_id', $request->country_id)
-            ->first();
+    // if ($request->is_default_free == "Y" && $request->price == 0) {
+    //     $planChk = Plan::where('is_default_free', 'Y')
+    //         ->where('price', 0)
+    //         ->where('is_delete', 'N')
+    //         ->where('id', '!=', $id)
+    //         ->where('country_id', $request->country_id)
+    //         ->first();
 
-        if ($planChk) {
-            return redirect()->back()
-                ->with('error', 'Free default Plan For That Country Already Exists')
-                ->withInput();
-        }
-    }
+    //     if ($planChk) {
+    //         return redirect()->back()
+    //             ->with('error', 'Free default Plan For That Country Already Exists')
+    //             ->withInput();
+    //     }
+    // }
 
     // Check default paid plan
-    if ($request->is_default_paid == "Y" && $request->price > 0) {
-        $planChk = Plan::where('is_default_paid', 'Y')
-            ->where('id', '!=', $id)
-            ->where('price', '>', 0)
-            ->where('is_delete', 'N')
-            ->where('country_id', $request->country_id)
-            ->first();
+    // if ($request->is_default_paid == "Y" && $request->price > 0) {
+    //     $planChk = Plan::where('is_default_paid', 'Y')
+    //         ->where('id', '!=', $id)
+    //         ->where('price', '>', 0)
+    //         ->where('is_delete', 'N')
+    //         ->where('country_id', $request->country_id)
+    //         ->first();
 
-        if ($planChk) {
-            return redirect()->back()
-                ->with('error', 'Paid default Plan For That Country Already Exists')
-                ->withInput();
-        }
-    }
+    //     if ($planChk) {
+    //         return redirect()->back()
+    //             ->with('error', 'Paid default Plan For That Country Already Exists')
+    //             ->withInput();
+    //     }
+    // }
 
-    // Check if this is being set as default plan
-    if ($request->is_default_plan === "Y") {
-        // Remove default flag from other plans
-        Plan::where('is_default_plan', 'Y')->where('id', '!=', $id)->update(['is_default_plan' => 'N']);
-    }
+
 
     try {
         $api = new Api(env('RAZORPAY_KEY_ID'), env('RAZORPAY_KEY_SECRET'));
@@ -434,11 +426,17 @@ public function update(Request $request, $id)
         $newUpdatedPlan->total_number_of_table = $request->total_number_of_table;
         $newUpdatedPlan->inventory_checkbox = $request->inventory_checkbox;
         $newUpdatedPlan->is_default_plan = $request->is_default_plan;
+        $newUpdatedPlan->plan_status = 'A';
         $newUpdatedPlan->save();
 
         // Update old plan end date
         $plan->end_date = now();
+        $plan->plan_status = 'U';
         $plan->save();
+
+        // Update assignments for any restaurants assigned to the old plan to point to the new replica plan ID
+        RestaurantToCustomPlan::where('plan_id', $plan->id)
+            ->update(['plan_id' => $newUpdatedPlan->id]);
 
         // Create plan history
         $insHis = new PlanHistory();
