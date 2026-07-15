@@ -8,6 +8,181 @@
     
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Public Sans', sans-serif;
+        }
+        .page-header {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.02);
+            margin-bottom: 25px;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+        .page-header h5 {
+            color: #0f172a;
+            font-weight: 800;
+            font-size: 1.3rem;
+            margin-bottom: 5px;
+        }
+        .breadcrumb-item a {
+            color: #009d1a;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.03);
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            overflow: hidden;
+        }
+        .card-body {
+            padding: 30px !important;
+        }
+        .form-group label {
+            font-weight: 700;
+            color: #475569;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+        .form-control, select {
+            background-color: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 10px !important;
+            padding: 10px 14px !important;
+            font-size: 0.9rem !important;
+            color: #1e293b !important;
+            transition: all 0.2s ease !important;
+            height: auto !important;
+        }
+        .form-control:focus, select:focus {
+            background-color: #ffffff !important;
+            border-color: #009d1a !important;
+            box-shadow: 0 0 0 3px rgba(0, 157, 26, 0.1) !important;
+            outline: none !important;
+        }
+        
+        /* Select2 Premium Styles */
+        .select2-container--default .select2-selection--single {
+            background-color: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 10px !important;
+            height: 42px !important;
+            padding: 6px 12px !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 40px !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 28px !important;
+            color: #1e293b !important;
+        }
+        .select2-container--default .select2-selection--single:focus,
+        .select2-container--default.select2-container--focus .select2-selection--single {
+            border-color: #009d1a !important;
+            background-color: #ffffff !important;
+        }
+        
+        /* Items Table */
+        #itemsTable {
+            border-collapse: collapse !important;
+            width: 100% !important;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            margin-top: 15px;
+        }
+        #itemsTable thead th {
+            background: #0f172a;
+            color: white;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 14px 16px;
+            border: none;
+        }
+        #itemsTable tbody td {
+            padding: 14px 16px;
+            vertical-align: middle;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        /* Action buttons */
+        .btn-success {
+            background: linear-gradient(135deg, #009d1a 0%, #00bc20 100%) !important;
+            border: none !important;
+            border-radius: 30px !important;
+            padding: 10px 24px !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 12px rgba(0, 157, 26, 0.15) !important;
+            transition: all 0.3s ease !important;
+        }
+        .btn-success:hover {
+            background: linear-gradient(135deg, #00bc20 0%, #009d1a 100%) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 18px rgba(0, 157, 26, 0.25) !important;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #009d1a 0%, #00bc20 100%) !important;
+            border: none !important;
+            border-radius: 30px !important;
+            padding: 12px 30px !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 12px rgba(0, 157, 26, 0.15) !important;
+            transition: all 0.3s ease !important;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #00bc20 0%, #009d1a 100%) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 18px rgba(0, 157, 26, 0.25) !important;
+        }
+        .btn-secondary {
+            background-color: #e2e8f0 !important;
+            color: #475569 !important;
+            border: none !important;
+            border-radius: 30px !important;
+            padding: 12px 24px !important;
+            font-weight: 600 !important;
+            transition: all 0.25s ease !important;
+        }
+        .btn-secondary:hover {
+            background-color: #cbd5e1 !important;
+            color: #1e293b !important;
+        }
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1) !important;
+            color: #ef4444 !important;
+            border: 1px solid rgba(239, 68, 68, 0.2) !important;
+            border-radius: 8px !important;
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 !important;
+            transition: all 0.2s ease !important;
+        }
+        .btn-danger:hover {
+            background: #ef4444 !important;
+            color: white !important;
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2) !important;
+        }
+        
+        .card-footer {
+            background: #f8fafc;
+            border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+            padding: 20px 30px !important;
+        }
+    </style>
 </head>
 
 <body data-pc-theme="light">

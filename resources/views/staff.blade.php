@@ -26,12 +26,8 @@
 
         <div class="card-body">
             <div class="alert alert-info alert-dismissible fade show" role="alert">
-                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i> Role Access Disclaimer</h6>
-                <ul class="mb-0 ps-3" style="font-size: 0.9rem;">
-                    <li><strong>Manager / ADMIN:</strong> Full access to all modules including Menu, Tables, Orders, Kitchen, Inventory, Reports, and Staff Management.</li>
-                    <li><strong>Cashier & Waiter:</strong> Access limited to Dashboard and Order Master.</li>
-                    <li><strong>Kitchen Staff:</strong> Access to Kitchen Orders, Pending Orders, Inventory Settings, Restro AI, and Support.</li>
-                </ul>
+                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i> Staff Permissions</h6>
+                <p class="mb-0" style="font-size: 0.9rem;">After adding your staff, you can configure their module access permissions manually by clicking the <strong class="text-warning"><i class="fas fa-user-shield"></i> Permissions</strong> button under Actions.</p>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
             
@@ -76,6 +72,12 @@
                                 <i class="fas fa-edit"></i>
                             </button>
 
+                            <a href="{{ route('restaurant.staff.permissions', $value->id) }}"
+                               class="btn btn-warning btn-sm"
+                               title="Manage Permissions">
+                               <i class="fas fa-user-shield"></i>
+                            </a>
+
                             <a href="{{ route('restaurant.staff.delete',$value->id) }}"
                                onclick="return confirm('Delete this staff?')"
                                class="btn btn-danger btn-sm">
@@ -102,8 +104,8 @@
 @csrf
 
 <div class="modal-header">
-    <h5>Add Staff</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <h5><i class="fas fa-user-plus text-success me-2"></i> Add Staff</h5>
+    <button type="button" class="btn-close-custom" data-bs-dismiss="modal"><i class="fas fa-times"></i></button>
 </div>
 
 <div class="modal-body row g-3">
@@ -160,7 +162,8 @@
 </div>
 
 <div class="modal-footer">
-    <button class="btn btn-success">Save</button>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+    <button type="submit" class="btn btn-success">Save Staff</button>
 </div>
 
 </form>
@@ -180,8 +183,8 @@
 <input type="hidden" name="id" id="edit_id">
 
 <div class="modal-header">
-    <h5>Edit Staff</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <h5><i class="fas fa-user-edit text-success me-2"></i> Edit Staff</h5>
+    <button type="button" class="btn-close-custom" data-bs-dismiss="modal"><i class="fas fa-times"></i></button>
 </div>
 
 <div class="modal-body row g-3">
@@ -232,7 +235,8 @@
 </div>
 
 <div class="modal-footer">
-    <button class="btn btn-success">Update</button>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+    <button type="submit" class="btn btn-success">Update Staff</button>
 </div>
 
 </form>

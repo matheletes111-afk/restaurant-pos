@@ -7,6 +7,7 @@ use App\Providers\RouteServiceProvider;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use App\Models\User;
 use App\Mail\ResetPassword;
+use App\Mail\LoginOtpMail;
 use Auth;
 use Mail;
 use Illuminate\Http\Request;
@@ -50,35 +51,132 @@ class LoginController extends Controller
        $userDataEmail=User::where('email',$request->email)->first();
         // return $request;
         if ($userDataEmail) {
-
-
-          
            if (!\Hash::check($request->password,$userDataEmail->password)) {
                return redirect()->back()->with('error','Incorrect Password');
             }
 
+            // Generate a random 6-digit OTP
+            $otp = rand(100000, 999999);
 
-   
-            
-            Auth::login($userDataEmail);
+            // Store user id, otp, and expires_at in session
+            session([
+                'login_2fa_user_id' => $userDataEmail->id,
+                'login_2fa_otp' => $otp,
+                'login_2fa_otp_expires_at' => now()->addMinutes(10),
+            ]);
 
+            $mailData = [
+                'email' => $userDataEmail->email,
+                'name' => $userDataEmail->name,
+                'otp' => $otp,
+            ];
 
-            if ($userDataEmail->role=="SA") {
-                return redirect()->route('manage.restaurant');
+            try {
+                Mail::send(new LoginOtpMail($mailData));
+            } catch (\Exception $e) {
+                // If mail sending fails, clear session and show error
+                session()->forget(['login_2fa_user_id', 'login_2fa_otp', 'login_2fa_otp_expires_at']);
+                return redirect()->back()->with('error', 'Failed to send OTP email: ' . $e->getMessage());
             }
-            $active = DB::table('subscriptions')->where('user_id',$userDataEmail->restaurant_id)->where('status','active')->first();
-            if(@$active=="")
-            {
-                return redirect()->route('select.plan.page');
-            }else{
-                return redirect()->route('dashboard');
-            }
 
-            
-            
+            return redirect()->route('login.verify')->with('success', 'A verification code has been sent to your email.');
         }else{
             return redirect()->back()->with('error','Wrong Credentials Are Given');
         }
+    }
+
+    public function showVerifyForm(Request $request)
+    {
+        if (!session()->has('login_2fa_user_id')) {
+            return redirect()->route('login')->with('error', 'Session expired. Please log in again.');
+        }
+
+        return view('auth.verify_otp');
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'otp' => 'required|numeric|digits:6',
+        ]);
+
+        if (!session()->has('login_2fa_user_id') || !session()->has('login_2fa_otp') || !session()->has('login_2fa_otp_expires_at')) {
+            return redirect()->route('login')->with('error', 'Session expired. Please log in again.');
+        }
+
+        if (now()->greaterThan(session('login_2fa_otp_expires_at'))) {
+            return redirect()->route('login.verify')->with('error', 'OTP has expired. Please request a new one.');
+        }
+
+        if ($request->otp != session('login_2fa_otp')) {
+            return redirect()->route('login.verify')->with('error', 'Invalid OTP code.');
+        }
+
+        $userId = session('login_2fa_user_id');
+        $user = User::find($userId);
+
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'User not found.');
+        }
+
+        // Authenticate the user
+        Auth::login($user);
+
+        // Clear 2FA session variables
+        session()->forget(['login_2fa_user_id', 'login_2fa_otp', 'login_2fa_otp_expires_at']);
+
+        // Redirect logic matching previous customLogin
+        if ($user->role == "SA") {
+            return redirect()->route('manage.restaurant');
+        }
+        
+        $active = DB::table('subscriptions')
+            ->where('user_id', $user->restaurant_id)
+            ->where('status', 'active')
+            ->first();
+            
+        if (@$active == "") {
+            return redirect()->route('select.plan.page');
+        } else {
+            return redirect()->route('dashboard');
+        }
+    }
+
+    public function resendOtp(Request $request)
+    {
+        if (!session()->has('login_2fa_user_id')) {
+            return redirect()->route('login')->with('error', 'Session expired. Please log in again.');
+        }
+
+        $userId = session('login_2fa_user_id');
+        $user = User::find($userId);
+
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'User not found.');
+        }
+
+        // Generate a new 6-digit OTP
+        $otp = rand(100000, 999999);
+
+        // Update session
+        session([
+            'login_2fa_otp' => $otp,
+            'login_2fa_otp_expires_at' => now()->addMinutes(10),
+        ]);
+
+        $mailData = [
+            'email' => $user->email,
+            'name' => $user->name,
+            'otp' => $otp,
+        ];
+
+        try {
+            Mail::send(new LoginOtpMail($mailData));
+        } catch (\Exception $e) {
+            return redirect()->route('login.verify')->with('error', 'Failed to send OTP email: ' . $e->getMessage());
+        }
+
+        return redirect()->route('login.verify')->with('success', 'A new OTP has been sent to your email.');
     }
 
     public function logout(Request $request)

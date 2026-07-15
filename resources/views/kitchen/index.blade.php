@@ -6,488 +6,497 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-:root {
-  --page-bg: #ffffff;
-  --primary-green: #009d1a;
-  --light-green: #e8f7eb;
-  --card-border: #009d1a;
-  --text-primary: #0f3d19;
-  --text-secondary: #2e6b3a;
-  
-  /* Status Colors - Background and Text */
-  --status-pending: #ff9800;
-  --status-pending-bg: #fff3e0;
-  --status-pending-text: #b45f06;
-  
-  --status-cooking: #2196f3;
-  --status-cooking-bg: #e3f2fd;
-  --status-cooking-text: #0d47a1;
-  
-  --status-done: #4caf50;
-  --status-done-bg: #e8f5e9;
-  --status-done-text: #1b5e20;
-}
+    :root {
+      --page-bg: #f8fafc;
+      --primary-green: #009d1a;
+      --light-green: #e8f7eb;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      
+      --status-pending: #f59e0b;
+      --status-pending-bg: #fffbeb;
+      --status-pending-text: #b45309;
+      
+      --status-cooking: #3b82f6;
+      --status-cooking-bg: #eff6ff;
+      --status-cooking-text: #1d4ed8;
+      
+      --status-done: #10b981;
+      --status-done-bg: #ecfdf5;
+      --status-done-text: #047857;
+    }
 
-/* ================= BODY ================= */
-body {
-  background: var(--page-bg);
-  color: var(--text-primary);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+    body {
+      background: var(--page-bg);
+      color: var(--text-primary);
+      font-family: 'Public Sans', sans-serif;
+    }
 
-/* ================= CONTAINER ================= */
-.kitchen-container {
-  padding: 15px;
-}
+    .kitchen-container {
+      padding: 15px 0;
+    }
 
-/* ================= FILTER SECTION ================= */
-.filter-section {
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 25px;
-  border: 1px solid #e9ecef;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
+    /* Premium Filter Card */
+    .filter-section {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 25px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    }
 
-.filter-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  align-items: flex-end;
-}
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: flex-end;
+    }
 
-.filter-group {
-  flex: 1 1 200px;
-}
+    .filter-group {
+      flex: 1 1 200px;
+    }
 
-.filter-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 600;
-  font-size: 13px;
-  color: #495057;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
+    .filter-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 700;
+      font-size: 0.75rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
 
-.filter-group input,
-.filter-group select {
-  width: 100%;
-  padding: 10px 12px;
-  border: 2px solid #dee2e6;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.3s;
-}
+    .filter-group input,
+    .filter-group select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #e2e8f0;
+      background-color: #f8fafc;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      color: #1e293b;
+      transition: all 0.2s ease;
+    }
 
-.filter-group input:focus,
-.filter-group select:focus {
-  border-color: var(--primary-green);
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 157, 26, 0.1);
-}
+    .filter-group input:focus,
+    .filter-group select:focus {
+      background-color: #ffffff;
+      border-color: var(--primary-green);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(0, 157, 26, 0.1);
+    }
 
-.filter-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
+    .btn-filter {
+      padding: 10px 28px;
+      background: linear-gradient(135deg, #009d1a 0%, #00bc20 100%);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 157, 26, 0.2);
+      transition: all 0.3s ease;
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-.btn-filter {
-  padding: 10px 24px;
-  background: var(--primary-green);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  height: 42px;
-}
+    .btn-filter:hover {
+      background: linear-gradient(135deg, #00bc20 0%, #009d1a 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0, 157, 26, 0.3);
+    }
 
-.btn-filter:hover {
-  background: #00b11e;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 157, 26, 0.3);
-}
+    .btn-reset {
+      padding: 10px 24px;
+      background: #e2e8f0;
+      color: #475569;
+      border: none;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
 
-.btn-reset {
-  padding: 10px 24px;
-  background: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  height: 42px;
-}
+    .btn-reset:hover {
+      background: #cbd5e1;
+      color: #1e293b;
+    }
 
-.btn-reset:hover {
-  background: #5a6268;
-  transform: translateY(-2px);
-}
+    /* Date Summary Box */
+    .date-summary {
+      margin: 20px 0;
+      padding: 14px 20px;
+      background: #eff6ff;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      color: #1d4ed8;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-left: 4px solid var(--status-cooking);
+    }
 
-/* ================= DATE SUMMARY ================= */
-.date-summary {
-  margin: 15px 0;
-  padding: 12px 18px;
-  background: #e8f4fd;
-  border-radius: 10px;
-  font-size: 14px;
-  color: #0d47a1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-left: 4px solid var(--status-cooking);
-}
+    .order-count {
+      margin-left: auto;
+      background: var(--primary-green);
+      color: white;
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      box-shadow: 0 4px 10px rgba(0, 157, 26, 0.15);
+    }
 
-.date-summary i {
-  font-size: 16px;
-}
+    /* Status Filters */
+    .filter-buttons {
+      margin: 24px 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
 
-.order-count {
-  margin-left: auto;
-  background: var(--primary-green);
-  color: white;
-  padding: 4px 15px;
-  border-radius: 30px;
-  font-weight: 600;
-  font-size: 13px;
-}
+    .filter-btn {
+      padding: 8px 24px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      color: #64748b;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
 
-/* ================= FILTER BUTTONS ================= */
-.filter-buttons {
-  margin: 20px 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
+    .filter-btn.active,
+    .filter-btn:hover {
+      background: linear-gradient(135deg, #009d1a, #00c72c);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(0, 157, 26, 0.25);
+    }
 
-.filter-btn {
-  padding: 8px 20px;
-  background: #ffffff;
-  border: 1px solid var(--primary-green);
-  color: var(--primary-green);
-  border-radius: 30px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s;
-}
+    /* Kitchen Grid layout */
+    .kitchen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      padding: 10px 0;
+    }
 
-.filter-btn.active,
-.filter-btn:hover {
-  background: linear-gradient(135deg, #009d1a, #00c72c);
-  color: white;
-  border-color: transparent;
-  box-shadow: 0 4px 10px rgba(0, 157, 26, 0.3);
-}
+    /* Premium KOT Cards */
+    .order-card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      box-shadow: 0 8px 30px rgba(15, 23, 42, 0.03);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
 
-/* ================= GRID ================= */
-.kitchen-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  padding: 10px 0;
-}
+    .order-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      z-index: 10;
+    }
 
-@media (min-width: 768px) {
-  .kitchen-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-  }
-}
+    .order-card.PENDING::before {
+      background: var(--status-pending);
+    }
+    .order-card.COOKING::before {
+      background: var(--status-cooking);
+    }
+    .order-card.DONE::before {
+      background: var(--status-done);
+    }
 
-@media (min-width: 1200px) {
-  .kitchen-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 18px;
-  }
-}
+    .order-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+      border-color: rgba(0, 157, 26, 0.15);
+    }
 
-@media (max-width: 480px) {
-  .kitchen-grid {
-    grid-template-columns: 1fr;
-  }
-}
+    .card-header {
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
 
-/* ================= ORDER CARD ================= */
-.order-card {
-  border-radius: 12px;
-  padding: 15px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  min-height: 200px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
+    .order-id {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
 
-.order-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-}
+    .kot-badge {
+      display: inline-flex;
+      padding: 4px 12px;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      background-color: #0f172a;
+      color: #ffffff;
+      align-self: flex-start;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
 
-/* ================= STATUS BACKGROUND COLORS ================= */
-.order-card.PENDING {
-  background: var(--status-pending-bg);
-  border-left: 6px solid var(--status-pending);
-}
+    .order-time {
+      font-size: 0.75rem;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
 
-.order-card.COOKING {
-  background: var(--status-cooking-bg);
-  border-left: 6px solid var(--status-cooking);
-}
+    /* Product layout */
+    .product-info {
+      margin-bottom: 15px;
+      flex-grow: 1;
+    }
 
-.order-card.DONE {
-  background: var(--status-done-bg);
-  border-left: 6px solid var(--status-done);
-}
+    .product-name {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 10px;
+    }
 
-/* ================= STATUS TEXT COLORS ================= */
-.order-card.PENDING .order-id,
-.order-card.PENDING .product-name {
-  color: var(--status-pending-text);
-}
+    .food-type {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 30px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
 
-.order-card.COOKING .order-id,
-.order-card.COOKING .product-name {
-  color: var(--status-cooking-text);
-}
+    .food-type.VEG {
+      background: #d1fae5;
+      color: #065f46;
+    }
 
-.order-card.DONE .order-id,
-.order-card.DONE .product-name {
-  color: var(--status-done-text);
-}
+    .food-type.NON-VEG {
+      background: #fee2e2;
+      color: #991b1b;
+    }
 
-/* ================= CARD HEADER ================= */
-.card-header {
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
+    /* Card Details Rows */
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #f1f5f9;
+    }
 
-.order-id {
-  font-size: 14px;
-  font-weight: 800;
-  margin: 0;
-}
+    .info-row:last-of-type {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
 
-.order-time {
-  font-size: 11px;
-  color: #666;
-  margin-top: 5px;
-  display: block;
-}
+    .info-label {
+      font-size: 0.8rem;
+      color: #64748b;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-.order-time i {
-  margin-right: 3px;
-}
+    .info-value {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
 
-/* ================= PRODUCT ================= */
-.product-info {
-  margin-bottom: 15px;
-  flex-grow: 1;
-}
+    .quantity-badge {
+      background: linear-gradient(135deg, #009d1a, #00c72c);
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 800;
+      box-shadow: 0 4px 10px rgba(0, 157, 26, 0.2);
+    }
 
-.product-name {
-  font-size: 16px;
-  font-weight: 800;
-  margin-bottom: 8px;
-}
+    .table-info {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      background: #f1f5f9;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #475569;
+    }
 
-.food-type {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 15px;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  margin-bottom: 12px;
-}
+    /* Note Container */
+    .order-note-box {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #fffbeb;
+      border-radius: 10px;
+      border: 1px solid #fef3c7;
+      font-size: 0.8rem;
+      color: #92400e;
+      font-weight: 600;
+      display: flex;
+      align-items: start;
+      gap: 8px;
+    }
 
-.food-type.VEG {
-  background: rgba(0, 157, 26, 0.15);
-  color: var(--primary-green);
-  border: 1px solid rgba(0, 157, 26, 0.4);
-}
+    /* Select Styles */
+    .status-section {
+      margin-top: auto;
+      padding-top: 16px;
+    }
 
-.food-type.NON-VEG {
-  background: rgba(244, 67, 54, 0.15);
-  color: #c62828;
-  border: 1px solid rgba(244, 67, 54, 0.4);
-}
+    .status-select {
+      width: 100%;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 10px !important;
+      padding: 10px 14px !important;
+      font-size: 0.85rem !important;
+      font-weight: 700 !important;
+      cursor: pointer;
+      background: #f8fafc !important;
+      color: #0f172a !important;
+      transition: all 0.2s ease !important;
+      outline: none;
+    }
 
-/* ================= INFO ROW ================= */
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  padding: 6px 0;
-  border-bottom: 1px dashed rgba(0, 0, 0, 0.05);
-}
+    .order-card.PENDING .status-select {
+      border-left: 3px solid var(--status-pending) !important;
+      color: var(--status-pending-text) !important;
+    }
 
-.info-row:last-child {
-  border-bottom: none;
-}
+    .order-card.COOKING .status-select {
+      border-left: 3px solid var(--status-cooking) !important;
+      color: var(--status-cooking-text) !important;
+    }
 
-.info-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-weight: 600;
-}
+    .order-card.DONE .status-select {
+      border-left: 3px solid var(--status-done) !important;
+      color: var(--status-done-text) !important;
+    }
 
-.info-label i {
-  margin-right: 5px;
-  color: var(--primary-green);
-}
+    .status-select:focus {
+      border-color: var(--primary-green) !important;
+      background: #ffffff !important;
+    }
 
-.info-value {
-  font-size: 14px;
-  font-weight: 700;
-}
+    /* Empty view */
+    .empty-state {
+      padding: 80px 20px;
+      text-align: center;
+      background: #ffffff;
+      border-radius: 16px;
+      border: 2px dashed #e2e8f0;
+      grid-column: 1 / -1;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.01);
+    }
 
-/* ================= QUANTITY ================= */
-.quantity-badge {
-  background: linear-gradient(135deg, #009d1a, #00c72c);
-  color: white;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 800;
-  box-shadow: 0 2px 5px rgba(0, 157, 26, 0.3);
-}
+    .empty-state i {
+      color: #cbd5e1;
+      margin-bottom: 20px;
+    }
 
-/* ================= TABLE INFO ================= */
-.table-info {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  background: rgba(0, 157, 26, 0.1);
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
-}
+    .empty-state h4 {
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
 
-.table-info i {
-  margin-right: 5px;
-  color: var(--primary-green);
-}
+    .empty-state p {
+      color: #64748b;
+    }
 
-/* ================= STATUS SELECT ================= */
-.status-section {
-  margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-}
+    /* Notification box */
+    .notification {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      min-width: 280px;
+      padding: 16px 24px;
+      color: #ffffff;
+      font-size: 0.9rem;
+      font-weight: 700;
+      border-radius: 12px;
+      z-index: 99999;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+      animation: slideInToast 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
 
-.status-select {
-  width: 100%;
-  border: 2px solid;
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  height: 40px;
-  background: white;
-}
+    @keyframes slideInToast {
+      from {
+        transform: translateY(-20px) scale(0.95);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
 
-/* Border colors based on current status */
-.order-card.PENDING .status-select {
-  border-color: var(--status-pending);
-  color: var(--status-pending-text);
-}
+    /* Auto-refresh indicator styling */
+    .refresh-info {
+      font-size: 0.75rem;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-.order-card.COOKING .status-select {
-  border-color: var(--status-cooking);
-  color: var(--status-cooking-text);
-}
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--primary-green);
+      border-radius: 50%;
+      display: inline-block;
+      animation: pulse 1.5s infinite;
+    }
 
-.order-card.DONE .status-select {
-  border-color: var(--status-done);
-  color: var(--status-done-text);
-}
-
-.status-select:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(0, 157, 26, 0.2);
-}
-
-.status-select option {
-  background: white;
-  color: var(--text-primary);
-}
-
-/* ================= NOTE STYLE ================= */
-.order-note {
-  margin-top: 8px;
-  padding: 6px 10px;
-  background: rgba(255, 193, 7, 0.1);
-  border-left: 3px solid #ffc107;
-  border-radius: 4px;
-  font-size: 11px;
-  color: #856404;
-}
-
-/* ================= EMPTY STATE ================= */
-.empty-state {
-  padding: 60px 20px;
-  text-align: center;
-  background: #f8f9fa;
-  border-radius: 12px;
-  border: 2px dashed #dee2e6;
-  grid-column: 1 / -1;
-}
-
-.empty-state i {
-  color: #adb5bd;
-  margin-bottom: 15px;
-}
-
-.empty-state h4 {
-  font-weight: 700;
-  color: #495057;
-  margin-bottom: 10px;
-}
-
-.empty-state p {
-  color: #6c757d;
-}
-
-/* ================= TOAST NOTIFICATION ================= */
-.notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  min-width: 250px;
-  padding: 12px 20px;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: 8px;
-  z-index: 99999;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-  animation: slideInToast 0.4s ease forwards;
-}
-
-@keyframes slideInToast {
-  from {
-    transform: translateX(120%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
+    @keyframes pulse {
+      0% {
+        transform: scale(0.9);
+        box-shadow: 0 0 0 0 rgba(0, 157, 26, 0.4);
+      }
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(0, 157, 26, 0);
+      }
+      100% {
+        transform: scale(0.9);
+        box-shadow: 0 0 0 0 rgba(0, 157, 26, 0);
+      }
+    }
   </style>
 </head>
 <body>
@@ -495,21 +504,22 @@ body {
 
 <div class="pc-container">
   <div class="pc-content">
-    <div class="page-header">
-      <div class="row align-items-center">
-        <div class="col-md-6">
-          <h5 class="page-title">Kitchen Orders</h5>
-          <ul class="breadcrumb">
-            <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
-            <li class="breadcrumb-item" aria-current="page">Kitchen</li>
-          </ul>
+    
+    <!-- Premium Header -->
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5 class="m-b-10 text-dark font-weight-bold" style="font-size: 1.5rem;"><i class="fas fa-utensils text-success me-2"></i> Kitchen Orders</h5>
+            <p class="text-muted mb-0" style="font-size: 0.9rem;">View and manage real-time KOT and order preparations</p>
         </div>
-        <div class="col-md-6 text-right">
-          <button id="refreshBtn" class="btn btn-primary">
-            <i class="fa fa-sync-alt"></i> Refresh
-          </button>
+        <div class="d-flex align-items-center gap-3">
+            <div class="refresh-info d-none d-sm-flex align-items-center gap-2">
+                <span class="pulse-dot"></span>
+                <span class="text-secondary font-weight-bold" style="font-size: 0.8rem; letter-spacing: 0.02em; text-transform: uppercase;">Real-time auto-sync</span>
+            </div>
+            <button id="refreshBtn" class="btn px-4 rounded-pill font-weight-bold text-white d-flex align-items-center gap-2" style="background: linear-gradient(135deg, #009d1a 0%, #00bc20 100%); border: none; box-shadow: 0 4px 15px rgba(0, 157, 26, 0.2); height: 40px; transition: all 0.3s ease;">
+                <i class="fa fa-sync-alt"></i> Refresh
+            </button>
         </div>
-      </div>
     </div>
 
     <div class="kitchen-container">
@@ -518,15 +528,15 @@ body {
         <form method="GET" action="{{ route('manage.kitchen-panel') }}" id="filterForm">
           <div class="filter-row">
             <div class="filter-group">
-              <label><i class="fa fa-calendar"></i> From Date</label>
+              <label><i class="fa fa-calendar me-1"></i> From Date</label>
               <input type="date" name="from_date" value="{{ $from_date }}" max="{{ date('Y-m-d') }}">
             </div>
             <div class="filter-group">
-              <label><i class="fa fa-calendar"></i> To Date</label>
+              <label><i class="fa fa-calendar me-1"></i> To Date</label>
               <input type="date" name="to_date" value="{{ $to_date }}" max="{{ date('Y-m-d') }}">
             </div>
             <div class="filter-group">
-              <label><i class="fa fa-filter"></i> Status</label>
+              <label><i class="fa fa-filter me-1"></i> Status</label>
               <select name="status">
                 <option value="all" {{ $selected_status == 'all' ? 'selected' : '' }}>All Status</option>
                 <option value="PENDING" {{ $selected_status == 'PENDING' ? 'selected' : '' }}>⏳ Pending</option>
@@ -535,7 +545,7 @@ body {
               </select>
             </div>
             <div class="filter-group">
-              <label><i class="fa fa-table"></i> Table</label>
+              <label><i class="fa fa-table me-1"></i> Table</label>
               <select name="table_id">
                 <option value="">All Tables</option>
                 @foreach($tables as $table)
@@ -545,7 +555,7 @@ body {
             </div>
             <div class="filter-actions">
               <button type="submit" class="btn-filter">
-                <i class="fa fa-search"></i> Apply
+                <i class="fa fa-search"></i> Apply Filters
               </button>
               <a href="{{ route('manage.kitchen-panel') }}" class="btn-reset">
                 <i class="fa fa-undo"></i> Reset
@@ -555,11 +565,11 @@ body {
         </form>
       </div>
 
-      <!-- Date Range Summary -->
-      <div class="date-summary">
-        <i class="fa fa-clock-o"></i>
+      <!-- Date Range Summary Box -->
+      <div class="date-summary shadow-sm">
+        <i class="fa fa-info-circle"></i>
         <span>Showing orders from <strong>{{ \Carbon\Carbon::parse($from_date)->format('d M Y') }}</strong> to <strong>{{ \Carbon\Carbon::parse($to_date)->format('d M Y') }}</strong></span>
-        <span class="order-count">{{ count($OrderItems) }} orders</span>
+        <span class="order-count">{{ count($OrderItems) }} items</span>
       </div>
 
       <!-- Filter Buttons -->
@@ -577,19 +587,19 @@ body {
           <div class="card-header">
             <h6 class="order-id">ORDER #{{ $item->order->order_id }}</h6>
             @if($item->kot_no)
-              <span class="badge badge-secondary mt-1" style="font-size: 0.75rem; font-weight: bold; background-color: #2c3e50; color: white;">
+              <span class="kot-badge">
                 KOT: {{ $item->kot_no }}
               </span>
             @endif
             <span class="order-time">
-              <i class="fa fa-clock-o"></i> {{ $item->created_at->format('d M, h:i A') }}
+              <i class="fa fa-clock"></i> {{ $item->created_at->format('d M, h:i A') }}
             </span>
           </div>
           
           <div class="product-info">
             <h4 class="product-name">{{ $item->subcategory->name }}</h4>
             <span class="food-type {{ $item->subcategory->food_type }}">
-              {{ $item->subcategory->food_type }}
+              <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i> {{ $item->subcategory->food_type }}
             </span>
             
             <div class="info-row">
@@ -598,7 +608,7 @@ body {
             </div>
             
             <div class="info-row">
-              <span class="info-label"><i class="fa fa-map-marker"></i> Table</span>
+              <span class="info-label"><i class="fa fa-map-marker-alt"></i> Table</span>
               <span class="table-info">
                 @if($item->order->table)
                   <i class="fa fa-table"></i> {{ $item->order->table->name }}
@@ -609,9 +619,9 @@ body {
             </div>
 
             @if($item->note)
-            <div class="info-row">
-              <span class="info-label"><i class="fa fa-sticky-note"></i> Note</span>
-              <span class="info-value" style="color: #856404;">{{ $item->note }}</span>
+            <div class="order-note-box">
+              <i class="fa fa-sticky-note mt-1"></i>
+              <span>{{ $item->note }}</span>
             </div>
             @endif
           </div>
@@ -626,9 +636,9 @@ body {
         </div>
         @empty
         <div class="empty-state">
-          <i class="fa fa-utensils fa-4x"></i>
+          <i class="fa fa-utensils fa-4x mb-3"></i>
           <h4>No Orders Found</h4>
-          <p>No orders available for the selected date range</p>
+          <p>No active kitchen orders found for the selected filter criteria.</p>
         </div>
         @endforelse
       </div>
@@ -720,7 +730,7 @@ $(document).ready(function() {
     location.reload();
   });
   
-  // Auto-refresh every 30 seconds (without confirm)
+  // Auto-refresh every 30 seconds
   setTimeout(function() {
     location.reload();
   }, 30000);
@@ -732,9 +742,9 @@ $(document).ready(function() {
     const notification = $('<div class="notification"></div>');
     
     if (type === 'success') {
-      notification.css('background', 'linear-gradient(135deg, #4CAF50, #45a049)');
+      notification.css('background', 'linear-gradient(135deg, #10b981, #059669)');
     } else {
-      notification.css('background', 'linear-gradient(135deg, #f44336, #d32f2f)');
+      notification.css('background', 'linear-gradient(135deg, #ef4444, #dc2626)');
     }
     
     notification.text(message);

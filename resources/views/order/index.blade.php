@@ -468,7 +468,7 @@
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content" style="border-radius: 20px; overflow: hidden; border: none; box-shadow: 0 15px 30px rgba(0,0,0,0.2);">
         <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e2a3a 0%, #0f172a 100%);">
-          <h5 class="modal-title text-white" id="activeBillsModalLabel">
+          <h5 class="modal-title text-white" style="color:white !important" id="activeBillsModalLabel">
             <i class="fas fa-file-invoice-dollar mr-2"></i>
             Active Bills for <span id="modalTableName">Table</span>
           </h5>

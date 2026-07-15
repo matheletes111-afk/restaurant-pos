@@ -6,6 +6,7 @@ use App\Providers\RouteServiceProvider;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class RedirectIfAuthenticated
 {
@@ -23,6 +24,23 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
+                $user = Auth::guard($guard)->user();
+                if ($user) {
+                    if ($user->role == "SA") {
+                        return redirect()->route('manage.restaurant');
+                    }
+                    
+                    $active = DB::table('subscriptions')
+                        ->where('user_id', $user->restaurant_id)
+                        ->where('status', 'active')
+                        ->first();
+                        
+                    if (@$active == "") {
+                        return redirect()->route('select.plan.page');
+                    } else {
+                        return redirect()->route('dashboard');
+                    }
+                }
                 return redirect(RouteServiceProvider::HOME);
             }
         }

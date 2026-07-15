@@ -5,6 +5,176 @@
     @include('includes.style')
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+    
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Public Sans', sans-serif;
+        }
+        .page-header {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.02);
+            margin-bottom: 25px;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+        .page-header h5 {
+            color: #0f172a;
+            font-weight: 800;
+            font-size: 1.3rem;
+            margin-bottom: 5px;
+        }
+        .breadcrumb-item a {
+            color: #009d1a;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.03);
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            overflow: hidden;
+        }
+        .card-body {
+            padding: 30px !important;
+        }
+        .table-bordered {
+            border-collapse: collapse !important;
+            width: 100% !important;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .table-bordered th {
+            background-color: #f8fafc;
+            font-weight: 700;
+            color: #475569;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 12px 16px;
+        }
+        .table-bordered td {
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            color: #1e293b;
+            vertical-align: middle;
+        }
+        
+        /* Items Table */
+        .table-responsive table {
+            margin-top: 15px;
+        }
+        .table-responsive thead th {
+            background: #0f172a !important;
+            color: white !important;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 14px 16px;
+            border: none;
+        }
+        .table-responsive tbody td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .table-responsive tfoot td {
+            padding: 14px 16px;
+            border-top: 1px solid #cbd5e1;
+        }
+        
+        /* Action buttons */
+        .btn-success {
+            background: linear-gradient(135deg, #009d1a 0%, #00bc20 100%) !important;
+            border: none !important;
+            border-radius: 30px !important;
+            padding: 10px 24px !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 12px rgba(0, 157, 26, 0.15) !important;
+            transition: all 0.3s ease !important;
+            color: white !important;
+        }
+        .btn-success:hover {
+            background: linear-gradient(135deg, #00bc20 0%, #009d1a 100%) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 18px rgba(0, 157, 26, 0.25) !important;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #009d1a 0%, #00bc20 100%) !important;
+            border: none !important;
+            border-radius: 30px !important;
+            padding: 12px 30px !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 12px rgba(0, 157, 26, 0.15) !important;
+            transition: all 0.3s ease !important;
+            color: white !important;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #00bc20 0%, #009d1a 100%) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 18px rgba(0, 157, 26, 0.25) !important;
+        }
+        .btn-secondary {
+            background-color: #e2e8f0 !important;
+            color: #475569 !important;
+            border: none !important;
+            border-radius: 30px !important;
+            padding: 10px 20px !important;
+            font-weight: 600 !important;
+            transition: all 0.25s ease !important;
+        }
+        .btn-secondary:hover {
+            background-color: #cbd5e1 !important;
+            color: #1e293b !important;
+        }
+        .btn-danger {
+            background-color: #ef4444 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 30px !important;
+            padding: 10px 24px !important;
+            font-weight: 600 !important;
+            transition: all 0.25s ease !important;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626 !important;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2) !important;
+        }
+        .btn-info {
+            background-color: #0f172a !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 30px !important;
+            padding: 10px 24px !important;
+            font-weight: 600 !important;
+            transition: all 0.25s ease !important;
+        }
+        .btn-info:hover {
+            background-color: #1e293b !important;
+        }
+        
+        .card-footer {
+            background: #f8fafc;
+            border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+            padding: 20px 30px !important;
+        }
+
+        .alert-info, .alert-light {
+            background: #f1f5f9 !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #0f172a !important;
+            border-radius: 12px !important;
+            padding: 16px 20px !important;
+        }
+        
+        .badge-success { background-color: #d1fae5; color: #065f46; font-size: 0.8rem; padding: 6px 12px; border-radius: 30px; }
+        .badge-warning { background-color: #fef3c7; color: #92400e; font-size: 0.8rem; padding: 6px 12px; border-radius: 30px; }
+        .badge-danger { background-color: #fee2e2; color: #991b1b; font-size: 0.8rem; padding: 6px 12px; border-radius: 30px; }
+    </style>
 </head>
 
 <body data-pc-theme="light">

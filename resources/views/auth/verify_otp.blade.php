@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>BILL & BITE | Forget Password</title>
+  <title>Restaurant - Two-Factor Authentication</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
   @include('includes.style')
@@ -84,9 +84,12 @@
       border: 1px solid #e2e8f0;
       border-radius: 12px;
       padding: 12px 16px;
-      font-size: 0.9rem;
+      font-size: 1.1rem;
+      font-weight: 700;
       color: #0f172a;
       transition: all 0.2s ease;
+      letter-spacing: 0.2em;
+      text-align: center;
     }
 
     .form-group .form-control:focus {
@@ -96,7 +99,7 @@
       outline: none;
     }
 
-    .btn-login {
+    .btn-verify {
       background: linear-gradient(135deg, #009d1a 0%, #00bc20 100%);
       border: none;
       color: white;
@@ -110,7 +113,7 @@
       width: 100%;
     }
 
-    .btn-login:hover {
+    .btn-verify:hover {
       background: linear-gradient(135deg, #00bc20 0%, #009d1a 100%);
       transform: translateY(-1px);
       box-shadow: 0 8px 25px rgba(0, 157, 26, 0.35);
@@ -122,11 +125,11 @@
       margin-top: 25px;
       border-top: 1px solid #f1f5f9;
       padding-top: 20px;
+      font-size: 0.85rem;
     }
 
     .auth-action-link {
       color: #64748b;
-      font-size: 0.8rem;
       font-weight: 700;
       text-decoration: none;
       transition: all 0.2s ease;
@@ -148,9 +151,52 @@
       font-size: 0.8rem;
       color: #94a3b8;
     }
+
+    #loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(8px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 9999;
+      color: white;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #00bc20;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      color: #ffffff;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
   </style>
 </head>
 <body>
+
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="overlay-text">Verifying code... Please wait.</div>
+</div>
 
 <div class="auth-wrapper">
   <div class="auth-card">
@@ -160,68 +206,79 @@
       <img src="{{ asset('logo.png') }}" class="img-fluid logo-img" alt="Restaurant Logo">
     </div>
     
-    <div class="auth-title">Forget Password</div>
-    <div class="auth-subtitle">Enter your email and we'll send a password reset OTP</div>
+    <div class="auth-title">Two-Factor Auth</div>
+    <div class="auth-subtitle">We have sent a 6-digit verification code to your email.</div>
     
-    @include('includes.message')
+    @if(session('error'))
+      <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 12px; font-size: 0.85rem; font-weight: 600;">
+        <i class="fas fa-exclamation-circle me-2"></i> {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="font-size: 0.75rem; padding: 1.1rem;"></button>
+      </div>
+    @endif
     
-    <form action="{{ route('forget.password.portal.forget.password.submit') }}" method="POST">
+    @if(session('success'))
+      <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 12px; font-size: 0.85rem; font-weight: 600;">
+        <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="font-size: 0.75rem; padding: 1.1rem;"></button>
+      </div>
+    @endif
+    
+    <form action="{{ route('login.verify') }}" id="otp-form" method="POST">
       @csrf
       <div class="form-group mb-4">
-        <label class="form-label">Email Address</label>
-        <input type="email" name="email" class="form-control" required placeholder="Enter registered email">
+        <label class="form-label d-block text-center">Verification Code</label>
+        <input type="text" name="otp" class="form-control" required placeholder="123456" maxlength="6" autofocus autocomplete="off">
       </div>
       
-      <button type="submit" class="btn btn-login">Send Reset Link</button>
+      <button type="submit" class="btn btn-verify">Verify & Authenticate</button>
     </form>
     
     <div class="auth-actions-row">
+      <a href="{{ route('login.verify.resend') }}" id="resend-link" class="auth-action-link">
+        <i class="fas fa-redo"></i> Resend Code
+      </a>
       <a href="{{ route('login') }}" class="auth-action-link">
         <i class="fas fa-arrow-left"></i> Back to Login
       </a>
-      <button type="button" class="auth-action-link" data-bs-toggle="modal" data-bs-target="#contactModal">
-        <i class="fas fa-headset"></i> Contact Admin
-      </button>
     </div>
   </div>
 
   <div class="auth-footer">
-    <p class="m-0">&copy; {{ date('Y') }} BILL & BITE. All rights reserved.</p>
-  </div>
-</div>
-
-<!-- Contact Admin Modal -->
-<div class="modal fade" id="contactModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-headset text-success me-2"></i> Contact Admin</h5>
-        <button type="button" class="btn-close-custom" data-dismiss="modal"><i class="fas fa-times"></i></button>
-      </div>
-      <div class="modal-body text-center py-4">
-        <i class="fas fa-headset text-success fa-3x mb-3" style="opacity: 0.9;"></i>
-        <h5 class="font-weight-bold mb-2">Need Assistance?</h5>
-        <p class="text-muted mb-4">Please contact the system administrator for account creation, support, or billing queries.</p>
-        <div class="d-flex flex-column gap-3 align-items-center justify-content-center">
-          <div class="d-inline-flex align-items-center gap-2">
-            <i class="fas fa-envelope text-secondary"></i>
-            <span class="font-weight-bold text-dark">admin@restaurantpos.com</span>
-          </div>
-          <div class="d-inline-flex align-items-center gap-2">
-            <i class="fas fa-phone-alt text-secondary"></i>
-            <span class="font-weight-bold text-dark">+1 (555) 019-2834</span>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-      </div>
-    </div>
+    <p class="m-0">&copy; {{ date('Y') }} Restaurant Management System. All rights reserved.</p>
   </div>
 </div>
 
 @include('includes.script')
+
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script>
+  $(document).ready(function() {
+    // Auto-hide alerts after 5 seconds
+    setTimeout(function() {
+      $('.alert').fadeOut('slow');
+    }, 5000);
+
+    // Limit OTP input to numbers only
+    $('input[name="otp"]').on('input', function() {
+      this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    // Show loading overlay on verify form submit
+    $('#otp-form').on('submit', function() {
+      $('#overlay-text').text('Verifying code... Please wait.');
+      $('#loading-overlay').css('display', 'flex');
+    });
+
+    // Show loading overlay on resend link click
+    $('#resend-link').on('click', function() {
+      $('#overlay-text').text('Resending verification code... Please wait.');
+      $('#loading-overlay').css('display', 'flex');
+    });
+  });
+</script>
+
 </body>
 </html>

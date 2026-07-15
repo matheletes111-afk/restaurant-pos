@@ -92,4 +92,110 @@ class RestaurantStaffController extends Controller
         }
         return back()->with('success','Staff status changed successfully!');
     }
+
+    public function permissions($id)
+    {
+        if (auth()->user()->role_type !== 'ADMIN') {
+            abort(403, 'Only restaurant administrators can manage staff permissions.');
+        }
+
+        $staff = User::where('id', $id)
+            ->where('restaurant_id', auth()->user()->restaurant_id)
+            ->firstOrFail();
+
+        $menus = [
+            [
+                'key' => 'menu_master',
+                'title' => 'Menu Master',
+                'description' => 'Manage food categories and add/edit/delete dishes.',
+                'icon' => 'fas fa-concierge-bell'
+            ],
+            [
+                'key' => 'menu_availability',
+                'title' => 'Menu Availability',
+                'description' => 'Toggle food availability status and manage discounts.',
+                'icon' => 'fas fa-clipboard-list'
+            ],
+            [
+                'key' => 'table_master',
+                'title' => 'Table Master',
+                'description' => 'Manage restaurant table layouts, details, and QR codes.',
+                'icon' => 'fas fa-chair'
+            ],
+            [
+                'key' => 'order_master',
+                'title' => 'Order Master',
+                'description' => 'Access to creating, editing, and managing orders and processing payments.',
+                'icon' => 'fas fa-receipt'
+            ],
+            [
+                'key' => 'kitchen_order',
+                'title' => 'Kitchen Order',
+                'description' => 'Access to the kitchen panel to view and process active food items.',
+                'icon' => 'fas fa-users'
+            ],
+            [
+                'key' => 'pending_order',
+                'title' => 'Pending Order',
+                'description' => 'Approve or reject customer-initiated QR orders.',
+                'icon' => 'fas fa-clock'
+            ],
+            [
+                'key' => 'restro_ai',
+                'title' => 'Restro AI',
+                'description' => 'Interact with the AI Chat assistant for restro analytics and help.',
+                'icon' => 'fas fa-robot'
+            ],
+            [
+                'key' => 'billing_subscription',
+                'title' => 'Billing & Subscription',
+                'description' => 'View current active plan, billing history, and handle subscription renewals.',
+                'icon' => 'fas fa-credit-card'
+            ],
+            [
+                'key' => 'customer_support',
+                'title' => 'Customer Support',
+                'description' => 'Create support tickets and view responses from customer support.',
+                'icon' => 'fas fa-headset'
+            ],
+            [
+                'key' => 'staff',
+                'title' => 'Staff Management',
+                'description' => 'Add new staff members, toggle status, or delete staff records.',
+                'icon' => 'fas fa-users'
+            ],
+            [
+                'key' => 'inventory_setting',
+                'title' => 'Inventory Setting',
+                'description' => 'Access to units, products, suppliers, purchases, stockouts, and debit notes.',
+                'icon' => 'fas fa-boxes'
+            ],
+            [
+                'key' => 'reports',
+                'title' => 'Reports & Analytics',
+                'description' => 'Access top dish/customer analysis, order reports, live stock, and order graphs.',
+                'icon' => 'ti ti-report-analytics'
+            ]
+        ];
+
+        $selectedPermissions = $staff->permissions ?: [];
+
+        return view('restaurant.permissions', compact('staff', 'menus', 'selectedPermissions'));
+    }
+
+    public function updatePermissions(Request $request, $id)
+    {
+        if (auth()->user()->role_type !== 'ADMIN') {
+            abort(403, 'Only restaurant administrators can manage staff permissions.');
+        }
+
+        $staff = User::where('id', $id)
+            ->where('restaurant_id', auth()->user()->restaurant_id)
+            ->firstOrFail();
+
+        $staff->permissions = $request->input('permissions', []);
+        $staff->save();
+
+        return redirect()->route('restaurant.staff.index')->with('success', 'Staff permissions updated successfully!');
+    }
 }

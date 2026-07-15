@@ -20,6 +20,7 @@
         
 
         @if(auth()->user()->role!="RES")
+        {{-- admin routes --}}
         <li class="pc-item">
           <a href="{{route('manage.restaurant')}}" class="pc-link @if(Request::segment(2)=="manage-restaurant") active_class @endif">
             <span class="pc-micon"><i class="fas fa-utensils"></i></span>
@@ -62,7 +63,7 @@
         </a>
       </li>
 
-
+      {{-- end admin routes --}}
 
         @endif
 
@@ -75,6 +76,8 @@
 @if($active!="")
 
 
+{{-- restaurant routes --}}
+
 <li class="pc-item">
           <a href="{{route('dashboard')}}" class="pc-link @if(Request::segment(1)=="dashboard") active_class @endif">
             <span class="pc-micon"><i class="fas fa-sitemap"></i></span>
@@ -82,33 +85,34 @@
           </a>
         </li>
 
-@if(auth()->user()->role_type=="Manager"  || auth()->user()->role_type=="ADMIN" )
+@if(auth()->user()->hasPermission('menu_master'))
 <li class="pc-item">
   <a href="{{route('manage.category')}}" class="pc-link @if(Request::segment(2)=="manage-menu-category") active_class @endif">
     <span class="pc-micon"><i class="fas fa-concierge-bell"></i></span>
     <span class="pc-mtext">Menu Master</span>
   </a>
 </li>
+@endif
 
+@if(auth()->user()->hasPermission('menu_availability'))
 <li class="pc-item">
   <a href="{{route('menu.availability')}}" class="pc-link @if(Request::segment(2)=="menu-availability") active_class @endif">
     <span class="pc-micon"><i class="fas fa-clipboard-list"></i></span>
     <span class="pc-mtext">Menu Avilability</span>
   </a>
 </li>
+@endif
 
-
+@if(auth()->user()->hasPermission('table_master'))
 <li class="pc-item">
   <a href="{{route('table.manage')}}" class="pc-link @if(Request::segment(2)=="table-manage") active_class @endif">
     <span class="pc-micon"><i class="fas fa-chair"></i></span>
     <span class="pc-mtext">Table Master</span>
   </a>
 </li>
-
-
 @endif
 
-@if(auth()->user()->role_type=="Manager"  || auth()->user()->role_type=="ADMIN" || auth()->user()->role_type=="Cashier" || auth()->user()->role_type=="Waiter")
+@if(auth()->user()->hasPermission('order_master'))
 <li class="pc-item">
   <a href="{{route('order.management.dashboard')}}" class="pc-link @if(Request::segment(2)=="order-management-dashboard") active_class @endif">
     <span class="pc-micon"><i class="fas fa-receipt"></i></span>
@@ -121,17 +125,16 @@
 
 
 
-@if(auth()->user()->role_type=="Manager" || auth()->user()->role_type=="ADMIN" || auth()->user()->role_type=="Kitchen Staff")
-
-
-
+@if(auth()->user()->hasPermission('kitchen_order'))
 <li class="pc-item">
   <a href="{{route('manage.kitchen-panel')}}" class="pc-link @if(Request::segment(2)=="kitchen-panel") active_class @endif">
     <span class="pc-micon"><i class="fas fa-users"></i></span>
     <span class="pc-mtext">Kitchen Order</span>
   </a>
 </li>
+@endif
 
+@if(auth()->user()->hasPermission('pending_order'))
 <li class="pc-item">
   <a href="{{ route('temp.orders') }}" 
      class="pc-link @if(Request::segment(2) == 'pending-temp-orders') active_class @endif">
@@ -141,7 +144,9 @@
     <span class="pc-mtext">Pending Order</span>
   </a>
 </li>
+@endif
 
+@if(auth()->user()->hasPermission('restro_ai'))
 <li class="pc-item">
   <a href="{{ route('ask-ai') }}" 
      class="pc-link @if(Request::segment(2) == 'ask-ai') active_class @endif">
@@ -151,7 +156,9 @@
     <span class="pc-mtext">Restro AI</span>
   </a>
 </li>
+@endif
 
+@if(auth()->user()->hasPermission('billing_subscription'))
 <li class="pc-item">
   <a href="{{ route('admin.subscriptions.index') }}" 
      class="pc-link @if(Request::segment(2) == 'subscriptions') active_class @endif">
@@ -161,7 +168,9 @@
     <span class="pc-mtext">Billing & Subscription</span>
   </a>
 </li>
+@endif
 
+@if(auth()->user()->hasPermission('customer_support'))
 <li class="pc-item">
   <a href="{{ route('restaurant.support.tickets') }}" 
      class="pc-link @if(Request::segment(2) == 'restaurant-support') active_class @endif">
@@ -171,10 +180,9 @@
     <span class="pc-mtext">Customer Support</span>
   </a>
 </li>
-
 @endif
 
-@if(auth()->user()->role=="RES" && auth()->user()->role_type=="ADMIN")
+@if(auth()->user()->hasPermission('staff'))
 <li class="pc-item">
   <a href="{{route('restaurant.staff.index')}}" class="pc-link @if(Request::segment(2)=="restaurant-staff") active_class @endif">
     <span class="pc-micon"><i class="fas fa-users"></i></span>
@@ -184,7 +192,7 @@
 @endif
 
 
-@if(auth()->user()->role_type=="Manager" || auth()->user()->role_type=="ADMIN" || auth()->user()->role_type=="Kitchen Staff")
+@if(auth()->user()->hasPermission('inventory_setting'))
 @if(@$plan_details->inventory_checkbox=="Y")
 <li class="pc-item pc-hasmenu">
   <a href="#!" class="pc-link">
@@ -262,7 +270,7 @@
 @endif
 
 
-@if(auth()->user()->role_type=="Manager"  || auth()->user()->role_type=="ADMIN" )
+@if(auth()->user()->hasPermission('reports'))
 <li class="pc-item pc-hasmenu">
   <a href="#!" class="pc-link">
     <span class="pc-micon">
@@ -327,6 +335,8 @@
   </ul>
 </li>
 
+
+{{-- end restaurant routes --}}
 @endif
 @endif
 

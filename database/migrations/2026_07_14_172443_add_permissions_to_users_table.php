@@ -13,9 +13,9 @@ return new class extends Migration
      */
     public function up()
     {
-        if (!Schema::hasColumn('plans', 'plan_status')) {
-            Schema::table('plans', function (Blueprint $table) {
-                $table->string('plan_status', 10)->default('A')->after('is_delete');
+        if (!Schema::hasColumn('users', 'permissions')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->text('permissions')->nullable()->after('role_type');
             });
         }
     }
@@ -27,8 +27,8 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('plans', function (Blueprint $table) {
-            $table->dropColumn('plan_status');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('permissions');
         });
     }
 };

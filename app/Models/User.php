@@ -41,6 +41,7 @@ class User extends Authenticatable implements JWTSubject
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'permissions' => 'array',
     ];
 
     public function restaurant()
@@ -48,13 +49,28 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasOne('App\Models\RestaurantMaster','id','restaurant_id');
     }
 
-public function getJWTIdentifier()
-{
-    return $this->getKey();
-}
+    public function hasPermission($menuKey)
+    {
+        // Restaurant ADMIN and Super Admin have all access by default
+        if ($this->role !== 'RES' || $this->role_type === 'ADMIN') {
+            return true;
+        }
 
-public function getJWTCustomClaims()
-{
-    return [];
-}
+        $perms = $this->permissions;
+        if (!is_array($perms)) {
+            return false;
+        }
+
+        return in_array($menuKey, $perms);
+    }
+
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
 }

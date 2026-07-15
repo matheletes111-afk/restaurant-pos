@@ -50,6 +50,9 @@ Auth::routes();
 // Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 Route::post('/custom-login',[LoginController::class,'customLogin'])->name('custom.login');
 Route::get('logout',[LoginController::class, 'logout'])->name('logout.user');
+Route::get('/login/verify', [LoginController::class, 'showVerifyForm'])->name('login.verify');
+Route::post('/login/verify', [LoginController::class, 'verifyOtp']);
+Route::get('/login/verify/resend', [LoginController::class, 'resendOtp'])->name('login.verify.resend');
 
 
 
@@ -57,7 +60,7 @@ Route::get('logout',[LoginController::class, 'logout'])->name('logout.user');
     Route::get('order-customer/{table_id}/{restaurant_id}', [App\Http\Controllers\TempOrderController::class, 'create'])->name('temp.order.create');
     Route::post('order/store', [App\Http\Controllers\TempOrderController::class, 'store'])->name('temp.order.store');
     Route::get('/order-success/{id}', [App\Http\Controllers\TempOrderController::class, 'success'])->name('order.success');
-Route::group(['middleware' => 'auth'], function () {
+Route::group(['middleware' => ['auth', 'menu.permission', 'secure.restro.data']], function () {
 
  Route::get('/select-plans', [App\Http\Controllers\PlanController::class, 'selectPlan'])->name('select.plan.page');
 
@@ -254,6 +257,10 @@ Route::prefix('restaurant-staff')->group(function () {
         ->name('restaurant.staff.delete');
     Route::get('/status/{id}', [RestaurantStaffController::class, 'status'])
         ->name('restaurant.staff.status');
+    Route::get('/permissions/{id}', [RestaurantStaffController::class, 'permissions'])
+        ->name('restaurant.staff.permissions');
+    Route::post('/permissions/{id}', [RestaurantStaffController::class, 'updatePermissions'])
+        ->name('restaurant.staff.update-permissions');
 });
 Route::get('/ask-ai', [AIChatController::class, 'index'])->name('ask-ai');
 Route::post('/ask-ai/send', [AIChatController::class, 'send'])->name('ask-ai.send');
