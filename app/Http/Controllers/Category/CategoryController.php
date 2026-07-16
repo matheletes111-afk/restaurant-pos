@@ -26,48 +26,82 @@ class CategoryController extends Controller
 
     public function insert(Request $request)
     {
-        $new = new Category;
-        $new->name = $request->name;
-        $new->user_id = auth()->user()->id;
-        $new->restaurant_id = auth()->user()->restaurant_id;
-        if ($request->image) {
-            $image = $request->image;
-            $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
-            //real image
-            $image->move("storage/app/public/category",$filename);    
-            $new->image = $filename;
+        \Log::info('Category Insert Request Data:', $request->except('image'));
+        try {
+            $new = new Category;
+            $new->name = $request->name;
+            $new->user_id = auth()->user()->id;
+            $new->restaurant_id = auth()->user()->restaurant_id;
+            if ($request->image) {
+                $image = $request->image;
+                $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
+                \Log::info('Category Insert: Uploading image', ['filename' => $filename]);
+                //real image
+                $image->move("storage/app/public/category",$filename);    
+                $new->image = $filename;
+            }
+            $new->save();
+            $upd = [];
+            $upd['slug'] = Str::slug($request->name).'-'.$new->id;
+            Category::where('id',$new->id)->update($upd);
+            \Log::info('Category Insert Success:', ['id' => $new->id]);
+            return redirect()->back()->with('success','Category inserted successfully');
+        } catch (\Exception $e) {
+            \Log::error('Category Insert Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()->with('error', 'Failed to insert category: ' . $e->getMessage());
         }
-        $new->save();
-        $upd = [];
-        $upd['slug'] = Str::slug($request->name).'-'.$new->id;
-        Category::where('id',$new->id)->update($upd);
-        return redirect()->back()->with('success','Category inserted successfully');
     }
 
     public function update(Request $request)
     {
-        $upd = [];
-        $upd['name'] = $request->name;
-        $upd['slug'] = Str::slug($request->name).'-'.$request->id;
-        if ($request->image) {
-            $check = Category::where('id',$request->id)->first();
-            @unlink('storage/app/public/category/'.$check->image);
-            $image = $request->image;
-            $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
-            //real image
-            $image->move("storage/app/public/category",$filename);    
-            $upd['image'] = $filename;
+        \Log::info('Category Update Request Data:', $request->except('image'));
+        try {
+            $upd = [];
+            $upd['name'] = $request->name;
+            $upd['slug'] = Str::slug($request->name).'-'.$request->id;
+            if ($request->image) {
+                $check = Category::where('id',$request->id)->first();
+                if ($check && $check->image) {
+                    $oldImagePath = 'storage/app/public/category/'.$check->image;
+                    \Log::info('Category Update: Unlinking old image', ['path' => $oldImagePath]);
+                    @unlink($oldImagePath);
+                }
+                $image = $request->image;
+                $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
+                \Log::info('Category Update: Uploading image', ['filename' => $filename]);
+                //real image
+                $image->move("storage/app/public/category",$filename);    
+                $upd['image'] = $filename;
+            }
+            Category::where('id',$request->id)->update($upd);
+            \Log::info('Category Update Success:', ['id' => $request->id]);
+            return redirect()->back()->with('success','Category updated successfully');
+        } catch (\Exception $e) {
+            \Log::error('Category Update Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()->with('error', 'Failed to update category: ' . $e->getMessage());
         }
-        Category::where('id',$request->id)->update($upd);
-        return redirect()->back()->with('success','Category updated successfully');
     }
 
     public function delete($id)
     {
-        $check = Category::where('id',$id)->where('restaurant_id',auth()->user()->restaurant_id)->first();
-        @unlink('storage/app/public/category/'.$check->image);
-        Category::where('id',$id)->update(['status'=>'D']);
-        return redirect()->back()->with('success','Category deleted successfully');
+        try {
+            $check = Category::where('id',$id)->where('restaurant_id',auth()->user()->restaurant_id)->first();
+            if ($check) {
+                if ($check->image) {
+                    @unlink('storage/app/public/category/'.$check->image);
+                }
+                Category::where('id',$id)->update(['status'=>'D']);
+                return redirect()->back()->with('success','Category deleted successfully');
+            }
+            return redirect()->back()->with('error','Category not found or unauthorized access');
+        } catch (\Exception $e) {
+            \Log::error('Category Delete Error: ' . $e->getMessage());
+            return redirect()->back()->with('error','Failed to delete category');
+        }
     }
 
     public function subCategory($id)
@@ -86,51 +120,85 @@ class CategoryController extends Controller
 
     public function subCategoryinsert(Request $request)
     {
-        $new = new SubCategory;
-        $new->name = $request->name;
-        $new->price = $request->price;
-        $new->gst_rate = $request->gst_rate;
-        $new->food_type = $request->food_type;
-        $new->category_id = $request->category_id;
-        $new->user_id = auth()->user()->id;
-        $new->restaurant_id = auth()->user()->restaurant_id;
-        if ($request->image) {
-            $image = $request->image;
-            $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
-            //real image
-            $image->move("storage/app/public/category",$filename);    
-            $new->image = $filename;
+        \Log::info('SubCategory Insert Request Data:', $request->except('image'));
+        try {
+            $new = new SubCategory;
+            $new->name = $request->name;
+            $new->price = $request->price;
+            $new->gst_rate = $request->gst_rate;
+            $new->food_type = $request->food_type;
+            $new->category_id = $request->category_id;
+            $new->user_id = auth()->user()->id;
+            $new->restaurant_id = auth()->user()->restaurant_id;
+            if ($request->image) {
+                $image = $request->image;
+                $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
+                \Log::info('SubCategory Insert: Uploading image', ['filename' => $filename]);
+                //real image
+                $image->move("storage/app/public/category",$filename);    
+                $new->image = $filename;
+            }
+            $new->save();
+            \Log::info('SubCategory Insert Success:', ['id' => $new->id]);
+            return redirect()->back()->with('success','Product inserted successfully');
+        } catch (\Exception $e) {
+            \Log::error('SubCategory Insert Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()->with('error', 'Failed to insert product: ' . $e->getMessage());
         }
-        $new->save();
-        return redirect()->back()->with('success','Product inserted successfully');
     }
 
     public function subCategoryupdate(Request $request)
     {
-        $upd = [];
-        $upd['name'] = $request->name;
-        $upd['price'] = $request->price;
-        $upd['gst_rate'] = $request->gst_rate;
-        $upd['food_type'] = $request->food_type;
-        if ($request->image) {
-            $check = Category::where('id',$request->id)->first();
-            @unlink('storage/app/public/category/'.$check->image);
-            $image = $request->image;
-            $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
-            //real image
-            $image->move("storage/app/public/category",$filename);    
-            $upd['image'] = $filename;
+        \Log::info('SubCategory Update Request Data:', $request->except('image'));
+        try {
+            $upd = [];
+            $upd['name'] = $request->name;
+            $upd['price'] = $request->price;
+            $upd['gst_rate'] = $request->gst_rate;
+            $upd['food_type'] = $request->food_type;
+            if ($request->image) {
+                $check = SubCategory::where('id',$request->id)->first();
+                if ($check && $check->image) {
+                    $oldImagePath = 'storage/app/public/category/'.$check->image;
+                    \Log::info('SubCategory Update: Unlinking old image', ['path' => $oldImagePath]);
+                    @unlink($oldImagePath);
+                }
+                $image = $request->image;
+                $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
+                \Log::info('SubCategory Update: Uploading image', ['filename' => $filename]);
+                //real image
+                $image->move("storage/app/public/category",$filename);    
+                $upd['image'] = $filename;
+            }
+            SubCategory::where('id',$request->id)->update($upd);
+            \Log::info('SubCategory Update Success:', ['id' => $request->id]);
+            return redirect()->back()->with('success','Product updated successfully');
+        } catch (\Exception $e) {
+            \Log::error('SubCategory Update Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()->with('error', 'Failed to update product: ' . $e->getMessage());
         }
-        SubCategory::where('id',$request->id)->update($upd);
-        return redirect()->back()->with('success','Product updated successfully');
     }
 
     public function subCategorydelete($id)
     {
-        $check = SubCategory::where('id',$id)->where('restaurant_id',auth()->user()->restaurant_id)->first();
-        @unlink('storage/app/public/category/'.$check->image);
-        SubCategory::where('id',$id)->where('restaurant_id',auth()->user()->restaurant_id)->update(['status'=>'D']);
-        return redirect()->back()->with('success','Product deleted successfully');
+        try {
+            $check = SubCategory::where('id',$id)->where('restaurant_id',auth()->user()->restaurant_id)->first();
+            if ($check) {
+                if ($check->image) {
+                    @unlink('storage/app/public/category/'.$check->image);
+                }
+                SubCategory::where('id',$id)->where('restaurant_id',auth()->user()->restaurant_id)->update(['status'=>'D']);
+                return redirect()->back()->with('success','Product deleted successfully');
+            }
+            return redirect()->back()->with('error','Product not found or unauthorized access');
+        } catch (\Exception $e) {
+            \Log::error('SubCategory Delete Error: ' . $e->getMessage());
+            return redirect()->back()->with('error','Failed to delete product');
+        }
     }
 
     public function subCategorystatus($id)
