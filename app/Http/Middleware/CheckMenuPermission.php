@@ -29,13 +29,17 @@ class CheckMenuPermission
         // Restrict Super Admin routes to ONLY role == 'SA'
         $superAdminPatterns = [
             'manage.restaurant', 'manage-restaurant',
-            'plans', 'admin.plans',
+            'plans.', 'admin.plans', 'admin/plans',
             'admin.payment.history', 'payment-history',
             'admin.crm', 'crm',
             'admin.support.tickets', 'admin-support'
         ];
 
         foreach ($superAdminPatterns as $pattern) {
+            // Exclude subscription paths/routes from plans restriction
+            if ($pattern === 'admin/plans' && str_contains($path, 'subscribe')) {
+                continue;
+            }
             if (($routeName && str_starts_with($routeName, $pattern)) || str_contains($path, $pattern)) {
                 if ($user->role !== 'SA') {
                     abort(403, 'Unauthorized. This page is accessible only by Super Administrators.');

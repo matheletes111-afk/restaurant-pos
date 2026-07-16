@@ -283,7 +283,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title text-white"><i class="fas fa-store"></i> Add New Restaurant</h5>
+                <h5 class="modal-title text-white" style="color:white !important"><i class="fas fa-store"></i> Add New Restaurant</h5>
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
 
@@ -425,7 +425,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title text-white"><i class="fas fa-edit"></i> Edit Restaurant</h5>
+                <h5 class="modal-title text-white" style="color:white !important;"><i class="fas fa-edit"></i> Edit Restaurant</h5>
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
 
