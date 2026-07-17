@@ -572,14 +572,7 @@
                         </div>
                     </div>
 
-                    <!-- Terms checkbox (required) -->
-                    <div class="custom-check">
-                        <input type="checkbox" id="terms" required>
-                        <label for="terms">
-                            I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms of Service</a> 
-                            and <a href="#" data-bs-toggle="modal" data-bs-target="#privacyModal">Privacy Policy</a>
-                        </label>
-                    </div>
+                    <input type="checkbox" id="terms" checked style="display: none;" required>
 
                     <div class="action-buttons">
                         <button type="button" class="btn-outline-light" onclick="showSection(1)">

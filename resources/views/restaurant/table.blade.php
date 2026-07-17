@@ -50,21 +50,21 @@
     }
 
     .btn-add-table {
-      background: linear-gradient(135deg, #009d1a 0%, #00bc20 100%) !important;
+      background: linear-gradient(135deg, #ff6a00 0%, #ff8c42 100%) !important;
       color: white !important;
       border: none !important;
       border-radius: 30px !important;
       padding: 10px 24px !important;
       font-weight: 700 !important;
       font-size: 0.85rem !important;
-      box-shadow: 0 4px 12px rgba(0, 157, 26, 0.15) !important;
+      box-shadow: 0 4px 12px rgba(255, 106, 0, 0.15) !important;
       transition: all 0.3s ease !important;
     }
 
     .btn-add-table:hover {
-      background: linear-gradient(135deg, #00bc20 0%, #009d1a 100%) !important;
+      background: linear-gradient(135deg, #ff8c42 0%, #ff6a00 100%) !important;
       transform: translateY(-1px) !important;
-      box-shadow: 0 6px 18px rgba(0, 157, 26, 0.25) !important;
+      box-shadow: 0 6px 18px rgba(255, 106, 0, 0.25) !important;
     }
 
     /* Table styles */
@@ -128,9 +128,9 @@
     }
 
     .btn-download-qr:hover {
-      background: #009d1a;
+      background: #ff6a00;
       color: white;
-      box-shadow: 0 4px 10px rgba(0, 157, 26, 0.2);
+      box-shadow: 0 4px 10px rgba(255, 106, 0, 0.2);
     }
 
     .status-pill {
@@ -167,9 +167,9 @@
 
     /* Actions */
     .btn-edit-action {
-      background: rgba(0, 157, 26, 0.1);
-      color: #009d1a;
-      border: 1px solid rgba(0, 157, 26, 0.2);
+      background: rgba(255, 106, 0, 0.1);
+      color: #ff6a00;
+      border: 1px solid rgba(255, 106, 0, 0.2);
       border-radius: 8px;
       width: 34px;
       height: 34px;
@@ -181,7 +181,7 @@
     }
 
     .btn-edit-action:hover {
-      background: #009d1a;
+      background: #ff6a00;
       color: white;
       transform: translateY(-1px);
     }

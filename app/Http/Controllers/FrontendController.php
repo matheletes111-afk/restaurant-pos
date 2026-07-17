@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\RestaurantMaster;
 use App\Models\DemoLead;
+use App\Mail\CustomerEnquiryMail;
+use App\Mail\AdminEnquiryMail;
+use Illuminate\Support\Facades\Mail;
 use Auth;
 
 class FrontendController extends Controller
@@ -89,6 +92,23 @@ class FrontendController extends Controller
                 'source' => $request->source,
                 'status' => 'Contacted',
             ]);
+
+            // Send email to customer thanking them for enquiry
+            try {
+                Mail::to($request->email_address)->send(new CustomerEnquiryMail($request->all()));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send customer enquiry email: ' . $e->getMessage());
+            }
+
+            // Send email to admin notifying about the enquiry
+            $adminEmail = config('mail.admin_email');
+            if ($adminEmail) {
+                try {
+                    Mail::to($adminEmail)->send(new AdminEnquiryMail($request->all()));
+                } catch (\Exception $e) {
+                    \Log::error('Failed to send admin enquiry email: ' . $e->getMessage());
+                }
+            }
 
             return response()->json([
                 'success' => true,

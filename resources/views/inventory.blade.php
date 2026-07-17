@@ -9,44 +9,212 @@
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .stock-out { background-color: #f8d7da !important; }
-        .stock-low { background-color: #fff3cd !important; }
-        .stock-medium { background-color: #d1ecf1 !important; }
-        .stock-good { background-color: #d4edda !important; }
-        .stock-badge {
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
+        body {
+            background-color: #f8fafc !important;
+        }
+        .card {
+            border: none !important;
+            border-radius: 16px !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+            background: white !important;
+            margin-bottom: 30px !important;
+            overflow: hidden;
         }
         .refresh-btn {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
+            background: linear-gradient(135deg, #ff6a00 0%, #ff8c42 100%) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 30px !important;
+            padding: 8px 20px !important;
+            font-weight: 600 !important;
+            font-size: 0.85rem !important;
+            box-shadow: 0 4px 12px rgba(255, 106, 0, 0.15) !important;
+            transition: all 0.3s ease !important;
             cursor: pointer;
-            margin-right: 10px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
         .refresh-btn:hover {
-            background-color: #218838;
+            background: linear-gradient(135deg, #ff8c42 0%, #ff6a00 100%) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 18px rgba(255, 106, 0, 0.25) !important;
+            color: white !important;
         }
-        .refresh-btn i {
-            margin-right: 5px;
+        .refresh-btn:disabled {
+            background: #cbd5e1 !important;
+            box-shadow: none !important;
+            cursor: not-allowed !important;
+            color: #94a3b8 !important;
+        }
+        
+        /* Modern search field */
+        .search-input-group {
+            position: relative;
+        }
+        .search-field {
+            padding-left: 36px !important;
+            border-radius: 30px !important;
+            border: 1px solid #e2e8f0 !important;
+            font-size: 0.85rem !important;
+            height: 38px !important;
+            width: 200px !important;
+            transition: all 0.2s ease !important;
+            background-color: white !important;
+        }
+        .search-field:focus {
+            border-color: #ff6a00 !important;
+            box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.15) !important;
+        }
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 0.85rem;
+            z-index: 10;
+        }
+
+        /* Filter Tab Group */
+        .filter-buttons-group {
+            display: inline-flex;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 30px;
+        }
+        .filter-tab-btn {
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
+            text-decoration: none !important;
+            transition: all 0.2s ease;
+        }
+        .filter-tab-btn:hover {
+            color: #0f172a;
+        }
+        .filter-tab-btn.active {
+            background: white;
+            color: #ff6a00;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+        .filter-tab-btn.warning-tab.active {
+            color: #d97706;
+        }
+        .filter-tab-btn.danger-tab.active {
+            color: #dc2626;
+        }
+
+        /* Premium Summary Cards */
+        .summary-card {
+            border: 1px solid #f1f5f9 !important;
+            border-radius: 14px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.01) !important;
+            transition: all 0.25s ease !important;
+        }
+        .summary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.03) !important;
+        }
+        .summary-icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Table Styles */
+        #inventoryTable {
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+            width: 100% !important;
+        }
+        #inventoryTable th {
+            background-color: #f8fafc !important;
+            color: #475569 !important;
+            font-weight: 600 !important;
+            font-size: 0.8rem !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            border-bottom: 2px solid #e2e8f0 !important;
+            padding: 12px 16px !important;
+        }
+        #inventoryTable td {
+            padding: 14px 16px !important;
+            vertical-align: middle !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+            font-size: 0.85rem !important;
+            color: #334155 !important;
+        }
+        
+        /* Stock Rows Colors */
+        .stock-out-row {
+            background-color: rgba(239, 68, 68, 0.02) !important;
+        }
+        .stock-low-row {
+            background-color: rgba(245, 158, 11, 0.02) !important;
+        }
+        
+        /* Stock badges */
+        .stock-badge-pill {
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .badge-pill-success {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+        .badge-pill-warning {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: #d97706;
+        }
+        .badge-pill-danger {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+        .badge-pill-info {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+        
+        .btn-action-custom {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 !important;
+            transition: all 0.2s ease;
+            border: none !important;
+            text-decoration: none !important;
+        }
+        .btn-action-custom:hover {
+            transform: translateY(-1px);
         }
         .stock-quantity {
-            font-weight: bold;
-            font-size: 1.1em;
+            font-weight: 700;
+            font-size: 0.95rem;
         }
         .zero-stock {
-            color: #dc3545;
+            color: #ef4444;
         }
         .low-stock {
-            color: #ffc107;
+            color: #d97706;
         }
         .good-stock {
-            color: #28a745;
+            color: #10b981;
         }
     </style>
 </head>
@@ -84,40 +252,34 @@
         <div class="row">
             <div class="col-sm-12">
                 <div class="card">
-                    <div class="card-header">
-                        <div class="row align-items-center">
-                            <div class="col-md-6">
-                                <h5 class="mb-0">Current Stock Levels</h5>
-                                <p class="text-muted mb-0 mt-1">Showing real-time inventory data</p>
+                    <div class="card-header border-0 bg-transparent py-4">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                            <div>
+                                <h4 class="mb-1 text-slate-800 fw-bold">Current Stock Levels</h4>
+                                <p class="text-muted mb-0">Real-time tracking of restaurant stock, supplies, and raw materials.</p>
                             </div>
-                            <div class="col-md-6 text-right">
+                            <div class="d-flex flex-wrap align-items-center gap-2">
                                 <button onclick="refreshInventory()" class="refresh-btn">
-                                    <i class="fa fa-refresh"></i> Refresh
+                                    <i class="fa-solid fa-arrows-rotate"></i> Refresh
                                 </button>
                                 
-                                <!-- Search Form -->
-                                <form method="GET" action="{{ route('inventory.live') }}" class="d-inline">
-                                    <div class="input-group" style="width: 250px; display: inline-flex;">
-                                        <input type="text" name="search" class="form-control" placeholder="Search products..." value="{{ request('search') }}">
-                                        <div class="input-group-append">
-                                            <button class="btn btn-outline-secondary" type="submit">
-                                                <i class="fa fa-search"></i>
-                                            </button>
-                                        </div>
+                                <form method="GET" action="{{ route('inventory.live') }}" class="d-flex align-items-center gap-2 m-0">
+                                    <div class="search-input-group">
+                                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                                        <input type="text" name="search" class="form-control search-field" placeholder="Search stock..." value="{{ request('search') }}">
                                     </div>
                                     
-                                    <!-- Stock Filters -->
-                                    <div class="btn-group ml-2" role="group">
+                                    <div class="filter-buttons-group">
                                         <a href="{{ route('inventory.live') }}" 
-                                           class="btn btn-sm {{ !request('low_stock') && !request('out_of_stock') ? 'btn-primary' : 'btn-outline-primary' }}">
+                                           class="filter-tab-btn {{ !request('low_stock') && !request('out_of_stock') ? 'active' : '' }}">
                                             All
                                         </a>
                                         <a href="{{ route('inventory.live') }}?low_stock=1" 
-                                           class="btn btn-sm {{ request('low_stock') ? 'btn-warning' : 'btn-outline-warning' }}">
-                                            Low Stock (≤10)
+                                           class="filter-tab-btn warning-tab {{ request('low_stock') ? 'active' : '' }}">
+                                            Low Stock
                                         </a>
                                         <a href="{{ route('inventory.live') }}?out_of_stock=1" 
-                                           class="btn btn-sm {{ request('out_of_stock') ? 'btn-danger' : 'btn-outline-danger' }}">
+                                           class="filter-tab-btn danger-tab {{ request('out_of_stock') ? 'active' : '' }}">
                                             Out of Stock
                                         </a>
                                     </div>
@@ -128,62 +290,62 @@
 
                     <div class="card-body">
                         <!-- Summary Cards -->
-                        <div class="row mb-4">
+                        <div class="row mb-4 g-3">
                             <div class="col-md-3">
-                                <div class="card border-primary">
+                                <div class="card summary-card mb-0">
                                     <div class="card-body">
                                         <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <i class="fa fa-cubes fa-2x text-primary"></i>
+                                            <div class="summary-icon-box text-primary" style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                                                <i class="fa-solid fa-cubes fa-lg"></i>
                                             </div>
                                             <div class="flex-grow-1 ms-3">
-                                                <h5 class="mb-0">{{ $totalProducts }}</h5>
-                                                <p class="text-muted mb-0">Total Items</p>
+                                                <h4 class="mb-0 fw-bold">{{ $totalProducts }}</h4>
+                                                <p class="text-muted mb-0 small">Total Products</p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="card border-success">
+                                <div class="card summary-card mb-0">
                                     <div class="card-body">
                                         <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <i class="fa fa-check-circle fa-2x text-success"></i>
+                                            <div class="summary-icon-box text-success" style="background-color: rgba(16, 185, 129, 0.1); color: #10b981;">
+                                                <i class="fa-solid fa-circle-check fa-lg"></i>
                                             </div>
                                             <div class="flex-grow-1 ms-3">
-                                                <h5 class="mb-0">{{ $totalProducts - $lowStockItems - $outOfStockItems }}</h5>
-                                                <p class="text-muted mb-0">In Stock</p>
+                                                <h4 class="mb-0 fw-bold">{{ $totalProducts - $lowStockItems - $outOfStockItems }}</h4>
+                                                <p class="text-muted mb-0 small">Good Stock</p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="card border-warning">
+                                <div class="card summary-card mb-0">
                                     <div class="card-body">
                                         <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <i class="fa fa-exclamation-triangle fa-2x text-warning"></i>
+                                            <div class="summary-icon-box text-warning" style="background-color: rgba(245, 158, 11, 0.1); color: #d97706;">
+                                                <i class="fa-solid fa-triangle-exclamation fa-lg"></i>
                                             </div>
                                             <div class="flex-grow-1 ms-3">
-                                                <h5 class="mb-0">{{ $lowStockItems }}</h5>
-                                                <p class="text-muted mb-0">Low Stock (≤10)</p>
+                                                <h4 class="mb-0 fw-bold">{{ $lowStockItems }}</h4>
+                                                <p class="text-muted mb-0 small">Low Stock (≤10)</p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="card border-danger">
+                                <div class="card summary-card mb-0">
                                     <div class="card-body">
                                         <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <i class="fa fa-times-circle fa-2x text-danger"></i>
+                                            <div class="summary-icon-box text-danger" style="background-color: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                                                <i class="fa-solid fa-circle-xmark fa-lg"></i>
                                             </div>
                                             <div class="flex-grow-1 ms-3">
-                                                <h5 class="mb-0">{{ $outOfStockItems }}</h5>
-                                                <p class="text-muted mb-0">Out of Stock</p>
+                                                <h4 class="mb-0 fw-bold">{{ $outOfStockItems }}</h4>
+                                                <p class="text-muted mb-0 small">Out of Stock</p>
                                             </div>
                                         </div>
                                     </div>
@@ -216,35 +378,31 @@
                                             
                                             // Determine stock status
                                             if ($currentStock <= 0) {
-                                                $statusClass = 'stock-out';
-                                                $statusText = 'Out of Stock';
-                                                $statusBadge = '<span class="stock-badge" style="background-color: #dc3545; color: white;">Out of Stock</span>';
+                                                $statusClass = 'stock-out-row';
+                                                $statusBadge = '<span class="stock-badge-pill badge-pill-danger"><i class="fa-solid fa-circle-xmark me-1"></i> Out of Stock</span>';
                                                 $quantityClass = 'zero-stock';
                                             } elseif ($currentStock <= 10) {
-                                                $statusClass = 'stock-low';
-                                                $statusText = 'Low Stock';
-                                                $statusBadge = '<span class="stock-badge" style="background-color: #ffc107; color: black;">Low</span>';
+                                                $statusClass = 'stock-low-row';
+                                                $statusBadge = '<span class="stock-badge-pill badge-pill-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i> Low Stock</span>';
                                                 $quantityClass = 'low-stock';
                                             } elseif ($currentStock <= 50) {
-                                                $statusClass = 'stock-medium';
-                                                $statusText = 'Medium Stock';
-                                                $statusBadge = '<span class="stock-badge" style="background-color: #17a2b8; color: white;">Medium</span>';
+                                                $statusClass = '';
+                                                $statusBadge = '<span class="stock-badge-pill badge-pill-info"><i class="fa-solid fa-circle-info me-1"></i> Medium Stock</span>';
                                                 $quantityClass = 'good-stock';
                                             } else {
-                                                $statusClass = 'stock-good';
-                                                $statusText = 'Good Stock';
-                                                $statusBadge = '<span class="stock-badge" style="background-color: #28a745; color: white;">Good</span>';
+                                                $statusClass = '';
+                                                $statusBadge = '<span class="stock-badge-pill badge-pill-success"><i class="fa-solid fa-circle-check me-1"></i> Good Stock</span>';
                                                 $quantityClass = 'good-stock';
                                             }
                                         @endphp
                                         <tr class="{{ $statusClass }}">
                                             <td>{{ $key + 1 }}</td>
                                             <td>
-                                                <strong>{{ $product->product_name ?? 'N/A' }}</strong>
+                                                <strong class="text-slate-800">{{ $product->product_name ?? 'N/A' }}</strong>
                                                 @if($currentStock <= 0)
-                                                    <br><small class="text-danger"><i class="fa fa-exclamation-circle"></i> Needs immediate restocking</small>
+                                                    <br><small class="text-danger"><i class="fa-solid fa-circle-exclamation me-1"></i> Needs immediate restocking</small>
                                                 @elseif($currentStock <= 10)
-                                                    <br><small class="text-warning"><i class="fa fa-exclamation-triangle"></i> Running low</small>
+                                                    <br><small class="text-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i> Running low</small>
                                                 @endif
                                             </td>
                                             <td>{{ $product->unit ? $product->unit->name : 'N/A' }}</td>
@@ -256,29 +414,32 @@
                                             </td>
                                             <td>{!! $statusBadge !!}</td>
                                             <td>
-                                                {{ $lastUpdated }}
+                                                <div>{{ $lastUpdated }}</div>
                                                 @if($inventory->created_by)
-                                                    <br><small class="text-muted">By: {{ $inventory->created_by }}</small>
+                                                    <small class="text-muted">By: {{ $inventory->created_by }}</small>
                                                 @endif
                                             </td>
                                             <td>
                                                 @if($product)
-                                                    <div class="btn-group btn-group-sm" role="group">
+                                                    <div class="d-flex align-items-center gap-1">
                                                         <a href="{{ route('purchases.create') }}?product_id={{ $product->id }}" 
-                                                           class="btn btn-success" 
+                                                           class="btn-action-custom text-success" 
+                                                           style="background-color: rgba(16, 185, 129, 0.1); color: #10b981;"
                                                            title="Add Purchase">
-                                                            <i class="fa fa-plus"></i>
+                                                            <i class="fa-solid fa-plus"></i>
                                                         </a>
                                                         <a href="{{ route('stock-outs.create') }}?product_id={{ $product->id }}" 
-                                                           class="btn btn-danger" 
+                                                           class="btn-action-custom text-danger" 
+                                                           style="background-color: rgba(239, 68, 68, 0.1); color: #ef4444;"
                                                            title="Stock Out">
-                                                            <i class="fa fa-minus"></i>
+                                                            <i class="fa-solid fa-minus"></i>
                                                         </a>
                                                         @if($currentStock <= 10)
                                                             <a href="{{ route('purchases.create') }}?product_id={{ $product->id }}&quantity={{ max(50, $currentStock * 2) }}" 
-                                                               class="btn btn-warning" 
+                                                               class="btn-action-custom text-warning" 
+                                                               style="background-color: rgba(245, 158, 11, 0.1); color: #d97706;"
                                                                title="Quick Restock">
-                                                                <i class="fa fa-bolt"></i>
+                                                                <i class="fa-solid fa-bolt"></i>
                                                             </a>
                                                         @endif
                                                     </div>
@@ -334,6 +495,16 @@
 @include('includes.script')
 
 <script>
+    function refreshInventory() {
+        const refreshBtn = $('.refresh-btn');
+        refreshBtn.html('<i class="fa-solid fa-arrows-rotate fa-spin"></i> Refreshing...');
+        refreshBtn.prop('disabled', true);
+        
+        setTimeout(function() {
+            location.reload();
+        }, 500);
+    }
+
     $(document).ready(function() {
         // Initialize DataTable
         $('#inventoryTable').DataTable({
@@ -343,7 +514,7 @@
             "buttons": [
                 {
                     extend: 'excel',
-                    text: '<i class="fa fa-file-excel-o"></i> Export Excel',
+                    text: '<i class="fa-solid fa-file-excel"></i> Export Excel',
                     className: 'btn btn-success',
                     title: 'Live_Inventory_Report_' + new Date().toISOString().split('T')[0],
                     exportOptions: {
@@ -352,7 +523,7 @@
                 },
                 {
                     extend: 'print',
-                    text: '<i class="fa fa-print"></i> Print',
+                    text: '<i class="fa-solid fa-print"></i> Print',
                     className: 'btn btn-info',
                     title: 'Live Inventory Report - ' + new Date().toLocaleDateString(),
                     exportOptions: {
@@ -386,19 +557,6 @@
         setInterval(refreshInventory, 120000);
     });
     
-    // function refreshInventory() {
-    //     // Show loading indicator
-    //     const refreshBtn = $('.refresh-btn');
-    //     const originalHtml = refreshBtn.html();
-    //     refreshBtn.html('<i class="fa fa-spinner fa-spin"></i> Refreshing...');
-    //     refreshBtn.prop('disabled', true);
-        
-    //     // Reload after showing loading state
-    //     setTimeout(function() {
-    //         location.reload();
-    //     }, 500);
-    // }
-    
     // Keyboard shortcut for refresh (Ctrl + R)
     $(document).keydown(function(e) {
         if (e.ctrlKey && e.keyCode === 82) {
@@ -406,19 +564,6 @@
             refreshInventory();
         }
     });
-    
-    // Auto-refresh notification
-    // $(document).ready(function() {
-    //     setTimeout(function() {
-    //         $('<div class="alert alert-light alert-dismissible fade show" role="alert" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; max-width: 300px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">' +
-    //           '<small><i class="fa fa-info-circle text-primary"></i> Auto-refresh every 2 minutes</small><br>' +
-    //           '<small class="text-muted">Press Ctrl+R to refresh manually</small>' +
-    //           '<button type="button" class="close" data-dismiss="alert" aria-label="Close">' +
-    //           '<span aria-hidden="true">&times;</span>' +
-    //           '</button>' +
-    //           '</div>').appendTo('body');
-    //     }, 2000);
-    // });
 </script>
 
 </body>

@@ -91,6 +91,15 @@ class RestaurantController extends Controller
             $user->restaurant_id = $restaurant->id;
             $user->save();
 
+            // Update DemoLead status / register_done if registered from a lead
+            if ($request->filled('lead_id')) {
+                $lead = \App\Models\DemoLead::find($request->lead_id);
+                if ($lead) {
+                    $lead->register_done = 'y';
+                    $lead->save();
+                }
+            }
+
             // 4. Send Welcome Email with credentials
             try {
                 Mail::to($user->email)->send(new RestaurantRegistrationMail($user, $plainPassword, $restaurant));

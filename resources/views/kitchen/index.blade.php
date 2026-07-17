@@ -8,8 +8,8 @@
   <style>
     :root {
       --page-bg: #f8fafc;
-      --primary-green: #009d1a;
-      --light-green: #e8f7eb;
+      --primary-orange: #ff6a00;
+      --light-orange: #fff0e6;
       --text-primary: #1e293b;
       --text-secondary: #64748b;
       
@@ -82,20 +82,20 @@
     .filter-group input:focus,
     .filter-group select:focus {
       background-color: #ffffff;
-      border-color: var(--primary-green);
+      border-color: var(--primary-orange);
       outline: none;
-      box-shadow: 0 0 0 3px rgba(0, 157, 26, 0.1);
+      box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.1);
     }
 
     .btn-filter {
       padding: 10px 28px;
-      background: linear-gradient(135deg, #009d1a 0%, #00bc20 100%);
+      background: linear-gradient(135deg, #ff6a00 0%, #ff8c42 100%);
       color: white;
       border: none;
       border-radius: 30px;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 4px 15px rgba(0, 157, 26, 0.2);
+      box-shadow: 0 4px 15px rgba(255, 106, 0, 0.2);
       transition: all 0.3s ease;
       height: 42px;
       display: inline-flex;
@@ -104,9 +104,9 @@
     }
 
     .btn-filter:hover {
-      background: linear-gradient(135deg, #00bc20 0%, #009d1a 100%);
+      background: linear-gradient(135deg, #ff8c42 0%, #ff6a00 100%);
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(0, 157, 26, 0.3);
+      box-shadow: 0 6px 20px rgba(255, 106, 0, 0.3);
     }
 
     .btn-reset {
@@ -146,13 +146,13 @@
 
     .order-count {
       margin-left: auto;
-      background: var(--primary-green);
+      background: var(--primary-orange);
       color: white;
       padding: 6px 16px;
       border-radius: 30px;
       font-weight: 700;
       font-size: 0.8rem;
-      box-shadow: 0 4px 10px rgba(0, 157, 26, 0.15);
+      box-shadow: 0 4px 10px rgba(255, 106, 0, 0.15);
     }
 
     /* Status Filters */
@@ -177,10 +177,10 @@
 
     .filter-btn.active,
     .filter-btn:hover {
-      background: linear-gradient(135deg, #009d1a, #00c72c);
+      background: linear-gradient(135deg, #ff6a00, #ff8c42);
       color: white;
       border-color: transparent;
-      box-shadow: 0 4px 12px rgba(0, 157, 26, 0.25);
+      box-shadow: 0 4px 12px rgba(255, 106, 0, 0.25);
     }
 
     /* Kitchen Grid layout */
@@ -228,7 +228,7 @@
     .order-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
-      border-color: rgba(0, 157, 26, 0.15);
+      border-color: rgba(255, 106, 0, 0.15);
     }
 
     .card-header {
@@ -333,7 +333,7 @@
     }
 
     .quantity-badge {
-      background: linear-gradient(135deg, #009d1a, #00c72c);
+      background: linear-gradient(135deg, #ff6a00, #ff8c42);
       color: white;
       width: 28px;
       height: 28px;
@@ -343,7 +343,7 @@
       justify-content: center;
       font-size: 0.85rem;
       font-weight: 800;
-      box-shadow: 0 4px 10px rgba(0, 157, 26, 0.2);
+      box-shadow: 0 4px 10px rgba(255, 106, 0, 0.2);
     }
 
     .table-info {
@@ -408,7 +408,7 @@
     }
 
     .status-select:focus {
-      border-color: var(--primary-green) !important;
+      border-color: var(--primary-orange) !important;
       background: #ffffff !important;
     }
 
@@ -477,7 +477,7 @@
     .pulse-dot {
       width: 8px;
       height: 8px;
-      background-color: var(--primary-green);
+      background-color: var(--primary-orange);
       border-radius: 50%;
       display: inline-block;
       animation: pulse 1.5s infinite;
@@ -486,15 +486,15 @@
     @keyframes pulse {
       0% {
         transform: scale(0.9);
-        box-shadow: 0 0 0 0 rgba(0, 157, 26, 0.4);
+        box-shadow: 0 0 0 0 rgba(255, 106, 0, 0.4);
       }
       70% {
         transform: scale(1);
-        box-shadow: 0 0 0 6px rgba(0, 157, 26, 0);
+        box-shadow: 0 0 0 6px rgba(255, 106, 0, 0);
       }
       100% {
         transform: scale(0.9);
-        box-shadow: 0 0 0 0 rgba(0, 157, 26, 0);
+        box-shadow: 0 0 0 0 rgba(255, 106, 0, 0);
       }
     }
   </style>
@@ -508,7 +508,7 @@
     <!-- Premium Header -->
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h5 class="m-b-10 text-dark font-weight-bold" style="font-size: 1.5rem;"><i class="fas fa-utensils text-success me-2"></i> Kitchen Orders</h5>
+            <h5 class="m-b-10 text-dark font-weight-bold" style="font-size: 1.5rem;"><i class="fas fa-utensils me-2" style="color: #ff6a00;"></i> Kitchen Orders</h5>
             <p class="text-muted mb-0" style="font-size: 0.9rem;">View and manage real-time KOT and order preparations</p>
         </div>
         <div class="d-flex align-items-center gap-3">
@@ -516,7 +516,7 @@
                 <span class="pulse-dot"></span>
                 <span class="text-secondary font-weight-bold" style="font-size: 0.8rem; letter-spacing: 0.02em; text-transform: uppercase;">Real-time auto-sync</span>
             </div>
-            <button id="refreshBtn" class="btn px-4 rounded-pill font-weight-bold text-white d-flex align-items-center gap-2" style="background: linear-gradient(135deg, #009d1a 0%, #00bc20 100%); border: none; box-shadow: 0 4px 15px rgba(0, 157, 26, 0.2); height: 40px; transition: all 0.3s ease;">
+            <button id="refreshBtn" class="btn px-4 rounded-pill font-weight-bold text-white d-flex align-items-center gap-2" style="background: linear-gradient(135deg, #ff6a00 0%, #ff8c42 100%); border: none; box-shadow: 0 4px 15px rgba(255, 106, 0, 0.2); height: 40px; transition: all 0.3s ease;">
                 <i class="fa fa-sync-alt"></i> Refresh
             </button>
         </div>
@@ -742,7 +742,7 @@ $(document).ready(function() {
     const notification = $('<div class="notification"></div>');
     
     if (type === 'success') {
-      notification.css('background', 'linear-gradient(135deg, #10b981, #059669)');
+      notification.css('background', 'linear-gradient(135deg, #ff6a00, #ff8c42)');
     } else {
       notification.css('background', 'linear-gradient(135deg, #ef4444, #dc2626)');
     }

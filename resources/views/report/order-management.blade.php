@@ -501,133 +501,135 @@
 
   <script>
   $(document).ready(function() {
-    // Initialize DataTable with export buttons
-    $('#ordersTable').DataTable({
-      "paging": false,
-      "searching": true,
-      "ordering": true,
-      "info": false,
-      "responsive": true,
-      "dom": '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dt-search"f>>rt<"row"<"col-sm-12"i>>',
-      "columnDefs": [
-        { "orderable": false, "targets": [1] } // Disable sorting on Actions column
-      ],
-      "buttons": [
-        {
-          extend: 'excelHtml5',
-          text: '<i class="bi bi-file-excel me-1"></i> Export Excel',
-          className: 'btn btn-success btn-sm',
-          title: 'Order_Management_Report_{{ date('Y-m-d') }}',
-          exportOptions: {
-            columns: [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], // Exclude Actions column (index 1)
-            format: {
-              body: function(data, row, column, node) {
-                let $node = $(node);
-                // For column 0 (Index/S.No)
-                if (column === 0) {
+    // Initialize DataTable with export buttons only if the table has data
+    if ($('#ordersTable .empty-state').length === 0) {
+      $('#ordersTable').DataTable({
+        "paging": false,
+        "searching": true,
+        "ordering": true,
+        "info": false,
+        "responsive": true,
+        "dom": '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dt-search"f>>rt<"row"<"col-sm-12"i>>',
+        "columnDefs": [
+          { "orderable": false, "targets": [1] } // Disable sorting on Actions column
+        ],
+        "buttons": [
+          {
+            extend: 'excelHtml5',
+            text: '<i class="bi bi-file-excel me-1"></i> Export Excel',
+            className: 'btn btn-success btn-sm',
+            title: 'Order_Management_Report_{{ date('Y-m-d') }}',
+            exportOptions: {
+              columns: [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], // Exclude Actions column (index 1)
+              format: {
+                body: function(data, row, column, node) {
+                  let $node = $(node);
+                  // For column 0 (Index/S.No)
+                  if (column === 0) {
+                    return $node.text().trim();
+                  }
+                  // For Order ID column
+                  if (column === 2) {
+                    return $node.find('.fw-bold').text().trim();
+                  }
+                  // For Type column
+                  if (column === 5) {
+                    return $node.text().replace(/\s+/g, ' ').trim();
+                  }
+                  // For amount columns
+                  if (column >= 6 && column <= 13) {
+                    let val = $node.find('strong').text() || $node.text();
+                    return val.replace('₹', '').replace(/\s+/g, ' ').trim();
+                  }
+                  // For Bill Type column
+                  if (column === 14) {
+                    return $node.text().trim();
+                  }
+                  // For Status column
+                  if (column === 15) {
+                    return $node.text().replace(/\s+/g, ' ').trim();
+                  }
+                  // For Date column
+                  if (column === 16) {
+                    let date = $node.find('div').text().trim();
+                    let time = $node.find('small').text().trim();
+                    return `${date} ${time}`;
+                  }
                   return $node.text().trim();
                 }
-                // For Order ID column
-                if (column === 2) {
-                  return $node.find('.fw-bold').text().trim();
-                }
-                // For Type column
-                if (column === 5) {
-                  return $node.text().replace(/\s+/g, ' ').trim();
-                }
-                // For amount columns
-                if (column >= 6 && column <= 13) {
-                  let val = $node.find('strong').text() || $node.text();
-                  return val.replace('₹', '').replace(/\s+/g, ' ').trim();
-                }
-                // For Bill Type column
-                if (column === 14) {
-                  return $node.text().trim();
-                }
-                // For Status column
-                if (column === 15) {
-                  return $node.text().replace(/\s+/g, ' ').trim();
-                }
-                // For Date column
-                if (column === 16) {
-                  let date = $node.find('div').text().trim();
-                  let time = $node.find('small').text().trim();
-                  return `${date} ${time}`;
-                }
-                return $node.text().trim();
-              }
-            }
-          }
-        },
-        {
-          extend: 'print',
-          text: '<i class="bi bi-printer me-1"></i> Print',
-          className: 'btn btn-primary btn-sm',
-          title: 'Order Management Report',
-          exportOptions: {
-            columns: [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], // Exclude Actions column
-            format: {
-              body: function(data, row, column, node) {
-                let $node = $(node);
-                if (column === 0) {
-                  return $node.text().trim();
-                }
-                if (column === 2) {
-                  return $node.find('.fw-bold').text().trim();
-                }
-                if (column === 5) {
-                  return $node.text().replace(/\s+/g, ' ').trim();
-                }
-                if (column >= 6 && column <= 13) {
-                  let val = $node.find('strong').text() || $node.text();
-                  return val.replace('₹', '').trim();
-                }
-                if (column === 14) {
-                  return $node.text().trim();
-                }
-                if (column === 15) {
-                  return $node.text().replace(/\s+/g, ' ').trim();
-                }
-                if (column === 16) {
-                  let date = $node.find('div').text().trim();
-                  let time = $node.find('small').text().trim();
-                  return `${date} ${time}`;
-                }
-                return $node.text().trim();
               }
             }
           },
-          customize: function(win) {
-            $(win.document.body).find('table').addClass('table table-bordered');
-            $(win.document.body).find('h1').css({
-              'text-align': 'center',
-              'font-size': '18px'
-            });
-            
-            $(win.document.body).prepend(`
-              <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                <div class="row">
-                  <div class="col-md-6">
-                    <p><strong>Date Range:</strong> {{ $fromDate->format('d M Y') }} - {{ $toDate->format('d M Y') }}</p>
-                    <p><strong>Total Orders:</strong> {{ $summary['total_orders'] }}</p>
-                    <p><strong>Total Revenue:</strong> ₹{{ number_format($summary['total_revenue'], 2) }}</p>
-                  </div>
-                  <div class="col-md-6">
-                    <p><strong>Filters:</strong> Type: {{ $orderType == 'all' || !$orderType ? 'All' : ucfirst(strtolower($orderType)) }}</p>
-                    <p><strong>Amount Collected:</strong> ₹{{ number_format($summary['total_collected'], 2) }}</p>
-                    <p><strong>Pending Amount:</strong> ₹{{ number_format($summary['pending_amount'], 2) }}</p>
+          {
+            extend: 'print',
+            text: '<i class="bi bi-printer me-1"></i> Print',
+            className: 'btn btn-primary btn-sm',
+            title: 'Order Management Report',
+            exportOptions: {
+              columns: [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], // Exclude Actions column
+              format: {
+                body: function(data, row, column, node) {
+                  let $node = $(node);
+                  if (column === 0) {
+                    return $node.text().trim();
+                  }
+                  if (column === 2) {
+                    return $node.find('.fw-bold').text().trim();
+                  }
+                  if (column === 5) {
+                    return $node.text().replace(/\s+/g, ' ').trim();
+                  }
+                  if (column >= 6 && column <= 13) {
+                    let val = $node.find('strong').text() || $node.text();
+                    return val.replace('₹', '').trim();
+                  }
+                  if (column === 14) {
+                    return $node.text().trim();
+                  }
+                  if (column === 15) {
+                    return $node.text().replace(/\s+/g, ' ').trim();
+                  }
+                  if (column === 16) {
+                    let date = $node.find('div').text().trim();
+                    let time = $node.find('small').text().trim();
+                    return `${date} ${time}`;
+                  }
+                  return $node.text().trim();
+                }
+              }
+            },
+            customize: function(win) {
+              $(win.document.body).find('table').addClass('table table-bordered');
+              $(win.document.body).find('h1').css({
+                'text-align': 'center',
+                'font-size': '18px'
+              });
+              
+              $(win.document.body).prepend(`
+                <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <p><strong>Date Range:</strong> {{ $fromDate->format('d M Y') }} - {{ $toDate->format('d M Y') }}</p>
+                      <p><strong>Total Orders:</strong> {{ $summary['total_orders'] }}</p>
+                      <p><strong>Total Revenue:</strong> ₹{{ number_format($summary['total_revenue'], 2) }}</p>
+                    </div>
+                    <div class="col-md-6">
+                      <p><strong>Filters:</strong> Type: {{ $orderType == 'all' || !$orderType ? 'All' : ucfirst(strtolower($orderType)) }}</p>
+                      <p><strong>Amount Collected:</strong> ₹{{ number_format($summary['total_collected'], 2) }}</p>
+                      <p><strong>Pending Amount:</strong> ₹{{ number_format($summary['pending_amount'], 2) }}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            `);
+              `);
+            }
           }
+        ],
+        "language": {
+          "search": "<i class='bi bi-search'></i>",
+          "searchPlaceholder": "Search orders..."
         }
-      ],
-      "language": {
-        "search": "<i class='bi bi-search'></i>",
-        "searchPlaceholder": "Search orders..."
-      }
-    });
+      });
+    }
   });
   </script>
 

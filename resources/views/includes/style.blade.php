@@ -28,7 +28,7 @@
         left: 0;
         right: 0;
         height: 4px;
-        background: linear-gradient(90deg, #009d1a 0%, #00bc20 100%);
+        background: linear-gradient(90deg, #ff6a00 0%, #ff8c42 100%);
         z-index: 10;
     }
     .modal-header {
@@ -101,8 +101,8 @@
     }
     .modal-body .form-control:focus, .modal-body select:focus, .modal-body textarea:focus {
         background-color: #ffffff !important;
-        border-color: #009d1a !important;
-        box-shadow: 0 0 0 3px rgba(0, 157, 26, 0.1), 0 4px 12px rgba(0, 157, 26, 0.05) !important;
+        border-color: #ff6a00 !important;
+        box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.15), 0 4px 12px rgba(255, 106, 0, 0.05) !important;
         outline: none;
     }
     .modal-footer {
@@ -124,18 +124,88 @@
         color: #1e293b !important;
     }
     .modal-footer .btn-success {
-        background: linear-gradient(135deg, #009d1a 0%, #00bc20 100%) !important;
+        background: linear-gradient(135deg, #ff6a00 0%, #ff8c42 100%) !important;
         border: none !important;
         border-radius: 30px !important;
         padding: 0.7rem 2.25rem !important;
         font-weight: 700 !important;
         letter-spacing: 0.02em;
-        box-shadow: 0 4px 15px rgba(0, 157, 26, 0.2) !important;
+        box-shadow: 0 4px 15px rgba(255, 106, 0, 0.2) !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     .modal-footer .btn-success:hover {
-        background: linear-gradient(135deg, #00bc20 0%, #009d1a 100%) !important;
+        background: linear-gradient(135deg, #ff8c42 0%, #ff6a00 100%) !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 8px 25px rgba(0, 157, 26, 0.3) !important;
+        box-shadow: 0 8px 25px rgba(255, 106, 0, 0.3) !important;
+    }
+
+    /* Global btn-success Overrides to Brand Orange */
+    .btn-success {
+        background: linear-gradient(135deg, #ff6a00 0%, #ff8c42 100%) !important;
+        border: none !important;
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(255, 106, 0, 0.15) !important;
+        transition: all 0.25s ease-in-out !important;
+    }
+    .btn-success:hover, .btn-success:focus, .btn-success:active {
+        background: linear-gradient(135deg, #ff8c42 0%, #ff6a00 100%) !important;
+        border: none !important;
+        color: white !important;
+        box-shadow: 0 6px 18px rgba(255, 106, 0, 0.25) !important;
+        transform: translateY(-1px) !important;
+    }
+    .btn-success:disabled {
+        background: #cbd5e1 !important;
+        box-shadow: none !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+        color: #94a3b8 !important;
+    }
+
+    .btn-outline-success {
+        border-color: #ff6a00 !important;
+        color: #ff6a00 !important;
+        background-color: transparent !important;
+        transition: all 0.25s ease-in-out !important;
+    }
+    .btn-outline-success:hover, .btn-outline-success:focus, .btn-outline-success:active {
+        background-color: #ff6a00 !important;
+        color: white !important;
+        border-color: #ff6a00 !important;
+    }
+
+    /* Global btn-primary Overrides to Brand Orange */
+    .btn-primary {
+        background: linear-gradient(135deg, #ff6a00 0%, #ff8c42 100%) !important;
+        border: none !important;
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(255, 106, 0, 0.15) !important;
+        transition: all 0.25s ease-in-out !important;
+    }
+    .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+        background: linear-gradient(135deg, #ff8c42 0%, #ff6a00 100%) !important;
+        border: none !important;
+        color: white !important;
+        box-shadow: 0 6px 18px rgba(255, 106, 0, 0.25) !important;
+        transform: translateY(-1px) !important;
+    }
+    .btn-primary:disabled {
+        background: #cbd5e1 !important;
+        box-shadow: none !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+        color: #94a3b8 !important;
+    }
+
+    .btn-outline-primary {
+        border-color: #ff6a00 !important;
+        color: #ff6a00 !important;
+        background-color: transparent !important;
+        transition: all 0.25s ease-in-out !important;
+    }
+    .btn-outline-primary:hover, .btn-outline-primary:focus, .btn-outline-primary:active {
+        background-color: #ff6a00 !important;
+        color: white !important;
+        border-color: #ff6a00 !important;
     }
 </style>

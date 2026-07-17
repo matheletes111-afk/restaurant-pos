@@ -63,8 +63,8 @@
                 </div>
 
                 <div class="hero-cta">
-                    <a href="#" class="btn btn-primary btn-lg">Book a Free Demo <i class="ph ph-arrow-right"></i></a>
-                    <a href="#" class="btn btn-outline btn-lg">Explore Features</a>
+                    <a href="javascript:void(0)" class="btn btn-primary btn-lg open-enquiry-btn">Book a Free Demo <i class="ph ph-arrow-right"></i></a>
+                    <a href="javascript:void(0)" class="btn btn-outline btn-lg open-enquiry-btn">Explore Features</a>
                 </div>
 
                 <div class="trust-indicator">
@@ -89,7 +89,7 @@
             <div class="hero-graphics">
                 <!-- Using the hero mockup from public directory -->
                 <div class="graphic-wrapper" style="display: flex; justify-content: center; align-items: center;">
-                    <img src="{{ asset('banner.png') }}" alt="Dashboard and Mobile Mockup" style="max-width: 100%; height: auto; border-radius: 12px;">
+                    <img src="{{ asset('banner3.png') }}" alt="Dashboard and Mobile Mockup" style="max-width: 100%; height: auto; border-radius: 12px;">
                 </div>
             </div>
         </div>
@@ -793,7 +793,7 @@
             </div>
             <div class="cta-form-wrapper">
                 <div class="cta-form-card">
-                    <h3>Book Your Free Demo</h3>
+                    <h3>Book A Free Demo</h3>
                     <form class="demo-form" id="demoLeadForm">
                         @csrf
                         <div id="form-alert" style="display: none; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-weight: 500; font-size: 0.9rem; text-align: center;"></div>
@@ -801,21 +801,21 @@
                         <div class="form-group-row">
                             <div class="form-group">
                                 <label>Full Name</label>
-                                <input type="text" name="full_name" placeholder="John Doe" required>
+                                <input type="text" name="full_name" placeholder="Enter name" required>
                             </div>
                             <div class="form-group">
                                 <label>Restaurant Name</label>
-                                <input type="text" name="restaurant_name" placeholder="The Food Place">
+                                <input type="text" name="restaurant_name" placeholder="Enter restaurant name">
                             </div>
                         </div>
                         <div class="form-group-row">
                             <div class="form-group">
                                 <label>Phone Number</label>
-                                <input type="tel" name="phone_number" placeholder="+91 98765 43210">
+                                <input type="tel" name="phone_number" placeholder="Enter mobile">
                             </div>
                             <div class="form-group">
                                 <label>Email Address</label>
-                                <input type="email" name="email_address" placeholder="john@example.com" required>
+                                <input type="email" name="email_address" placeholder="Enter email" required>
                             </div>
                         </div>
                         <div class="form-group">
@@ -1046,6 +1046,22 @@
             color: #111;
             font-size: 1.5rem;
         }
+        .demo-form input::placeholder {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        .demo-form input::-webkit-input-placeholder {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        .demo-form input::-moz-placeholder {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        .demo-form input:-ms-input-placeholder {
+            font-size: 12px;
+            opacity: 0.7;
+        }
     </style>
 
     <!-- Sticky Enquiry Button -->
@@ -1087,21 +1103,21 @@
                 <div class="form-group-row">
                     <div class="form-group">
                         <label>Full Name</label>
-                        <input type="text" name="full_name" placeholder="John Doe" required>
+                        <input type="text" name="full_name" placeholder="Enter name" required>
                     </div>
                     <div class="form-group">
                         <label>Restaurant Name</label>
-                        <input type="text" name="restaurant_name" placeholder="The Food Place">
+                        <input type="text" name="restaurant_name" placeholder="Enter restaurant name">
                     </div>
                 </div>
                 <div class="form-group-row">
                     <div class="form-group">
                         <label>Phone Number</label>
-                        <input type="tel" name="phone_number" placeholder="+91 98765 43210">
+                        <input type="tel" name="phone_number" placeholder="Enter mobile">
                     </div>
                     <div class="form-group">
                         <label>Email Address</label>
-                        <input type="email" name="email_address" placeholder="john@example.com" required>
+                        <input type="email" name="email_address" placeholder="Enter email" required>
                     </div>
                 </div>
                 <div class="form-group">

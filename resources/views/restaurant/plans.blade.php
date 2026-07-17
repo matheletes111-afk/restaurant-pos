@@ -8,111 +8,148 @@
 @include('includes.style')
 <style>
     :root {
-        --gold: #C9A84C;
-        --gold-light: #E8C97A;
-        --gold-dim: rgba(201,168,76,0.15);
-        --obsidian: #0A0A0B;
-        --deep: #111114;
-        --surface: #17171C;
-        --surface-2: #1E1E25;
-        --surface-3: #26262F;
-        --rim: rgba(255,255,255,0.07);
-        --rim-strong: rgba(255,255,255,0.12);
-        --text-primary: #F2EEE6;
-        --text-secondary: rgba(242,238,230,0.55);
-        --text-muted: rgba(242,238,230,0.3);
-        --success: #3DD68C;
-        --success-dark: #2BBF7A;
-        --danger: #FF6B6B;
-        --warning: #FFB347;
-        --radius-xl: 24px;
-        --radius-lg: 18px;
+        --primary: #ff6a00;
+        --primary-hover: #e65c00;
+        --bg-light: #f8fafc;
+        --surface: #ffffff;
+        --text-primary: #1e293b;
+        --text-secondary: #475569;
+        --text-muted: #94a3b8;
+        --border: #e2e8f0;
+        --success: #10b981;
+        --success-light: #ecfdf5;
+        --warning: #f59e0b;
+        --warning-light: #fffbeb;
+        --info: #0ea5e9;
+        --info-light: #f0f9ff;
+        --radius-xl: 20px;
+        --radius-lg: 16px;
         --radius-md: 12px;
         --radius-sm: 8px;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+        --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.03);
+    }
+
+    body {
+        background-color: var(--bg-light) !important;
+        color: var(--text-primary);
+        font-family: 'Public Sans', 'Inter', sans-serif;
     }
 
     /* Page Header */
     .page-header-custom {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        border-radius: var(--radius-xl);
-        padding: 32px 30px;
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border-radius: var(--radius-lg);
+        padding: 30px;
         margin-bottom: 30px;
         position: relative;
         overflow: hidden;
+        box-shadow: var(--shadow-md);
+        color: white;
     }
 
     .page-header-custom::before {
         content: '';
         position: absolute;
-        top: -30%;
+        top: -50%;
         right: -10%;
-        width: 250px;
-        height: 250px;
-        background: radial-gradient(circle, rgba(201,168,76,0.15), transparent);
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(255, 106, 0, 0.15), transparent 70%);
         border-radius: 50%;
     }
 
     .page-header-custom h2 {
-        font-size: 1.8rem;
+        font-size: 1.6rem;
         font-weight: 700;
         color: white;
         margin-bottom: 8px;
         position: relative;
         z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .page-header-custom h2 i {
+        color: var(--primary);
     }
 
     .page-header-custom p {
-        color: rgba(255,255,255,0.7);
+        color: rgba(255, 255, 255, 0.7);
         margin-bottom: 0;
+        font-size: 0.95rem;
         position: relative;
         z-index: 1;
     }
 
-    /* Plan Cards */
+    .user-welcome {
+        font-size: 0.9rem;
+        background: rgba(255,255,255,0.08);
+        padding: 8px 16px;
+        border-radius: var(--radius-sm);
+        border: 1px solid rgba(255,255,255,0.1);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Plan Card Design */
     .plan-card {
         background: var(--surface);
         border-radius: var(--radius-lg);
         overflow: hidden;
-        border: 1px solid var(--rim);
-        transition: all 0.3s ease;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         height: 100%;
         position: relative;
+        display: flex;
+        flex-direction: column;
     }
 
     .plan-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-        border-color: rgba(201,168,76,0.3);
+        transform: translateY(-6px);
+        box-shadow: var(--shadow-lg);
+        border-color: rgba(255, 106, 0, 0.3);
     }
 
     .plan-card.default-plan {
-        border: 2px solid var(--gold);
+        border: 2px solid var(--primary);
     }
 
-    /* Badges */
+    /* Badges style */
     .default-badge {
         position: absolute;
         top: 15px;
         left: 15px;
-        background: linear-gradient(135deg, var(--gold), var(--gold-light));
-        color: var(--obsidian);
-        padding: 4px 12px;
+        background: linear-gradient(135deg, var(--primary), #ff8c42);
+        color: white;
+        padding: 5px 12px;
         border-radius: 20px;
         font-size: 0.65rem;
         font-weight: 700;
         z-index: 10;
+        box-shadow: 0 2px 8px rgba(255,106,0,0.2);
+        display: flex;
+        align-items: center;
+        gap: 4px;
     }
 
     .active-badge {
         position: absolute;
         top: 15px;
         right: 15px;
-        background: linear-gradient(135deg, var(--success), var(--success-dark));
-        color: white;
-        padding: 4px 12px;
+        background: var(--success-light);
+        color: var(--success);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        padding: 5px 12px;
         border-radius: 20px;
         font-size: 0.65rem;
-        font-weight: 600;
+        font-weight: 700;
         z-index: 10;
         display: flex;
         align-items: center;
@@ -123,98 +160,114 @@
         position: absolute;
         top: 15px;
         right: 15px;
-        background: linear-gradient(135deg, var(--warning), #e67e22);
-        color: white;
-        padding: 4px 12px;
+        background: var(--warning-light);
+        color: var(--warning);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        padding: 5px 12px;
         border-radius: 20px;
         font-size: 0.65rem;
-        font-weight: 600;
+        font-weight: 700;
         z-index: 10;
         display: flex;
         align-items: center;
         gap: 5px;
     }
 
-    /* Plan Header */
+    /* Plan Header styling */
     .plan-header {
-        padding: 30px 20px 20px;
+        padding: 40px 24px 20px;
         text-align: center;
-        border-bottom: 1px solid var(--rim);
+        border-bottom: 1px solid #f1f5f9;
+        background-color: #fafbfc;
+        position: relative;
     }
 
     .plan-icon {
-        width: 65px;
-        height: 65px;
-        background: rgb(255 198 46);
+        width: 60px;
+        height: 60px;
+        background-color: #fff0e6;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         margin: 0 auto 15px;
+        color: var(--primary);
+        font-size: 1.5rem;
+        transition: all 0.3s;
     }
 
-    .plan-icon i {
-        font-size: 1.8rem;
-        color: var(--gold-light);
+    .plan-card:hover .plan-icon {
+        transform: scale(1.1);
+        background-color: var(--primary);
+        color: white;
     }
 
     .plan-name {
-        font-size: 1.3rem;
+        font-size: 1.25rem;
         font-weight: 700;
         color: var(--text-primary);
         margin-bottom: 8px;
     }
 
     .plan-price {
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: var(--gold-light);
+        font-size: 1.9rem;
+        font-weight: 800;
+        color: var(--text-primary);
         margin: 10px 0;
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 2px;
     }
 
     .plan-price small {
-        font-size: 0.7rem;
-        font-weight: normal;
+        font-size: 0.8rem;
+        font-weight: 500;
         color: var(--text-muted);
     }
 
     .plan-duration {
-        font-size: 0.7rem;
-        color: var(--text-muted);
-        background: var(--surface-2);
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        background: #f1f5f9;
         display: inline-block;
         padding: 4px 12px;
         border-radius: 20px;
+        font-weight: 600;
     }
 
     /* Plan Body */
     .plan-body {
-        padding: 20px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
     }
 
     .plan-description {
         color: var(--text-secondary);
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         line-height: 1.5;
-        margin-bottom: 20px;
+        margin-bottom: 24px;
         text-align: center;
-        min-height: 60px;
+        min-height: 45px;
     }
 
     .plan-features {
         list-style: none;
         padding: 0;
-        margin: 0 0 20px 0;
+        margin: 0 0 24px 0;
+        flex-grow: 1;
     }
 
     .plan-features li {
-        padding: 8px 0;
+        padding: 10px 0;
         display: flex;
         align-items: center;
-        gap: 10px;
-        font-size: 0.8rem;
+        gap: 12px;
+        font-size: 0.85rem;
         color: var(--text-secondary);
-        border-bottom: 1px solid var(--rim);
+        border-bottom: 1px solid #f8fafc;
     }
 
     .plan-features li:last-child {
@@ -222,34 +275,57 @@
     }
 
     .plan-features i {
-        width: 20px;
-        color: var(--gold);
-        font-size: 0.8rem;
+        color: var(--primary);
+        font-size: 0.9rem;
+        width: 16px;
+        text-align: center;
     }
 
-    /* Buttons */
+    /* Expiry Warning */
+    .expiry-info {
+        text-align: center;
+        margin-bottom: 16px;
+    }
+
+    .expiry-info small {
+        background: var(--success-light);
+        padding: 4px 12px;
+        border-radius: 20px;
+        color: var(--success);
+        font-size: 0.75rem;
+        font-weight: 700;
+        border: 1px solid rgba(16, 185, 129, 0.15);
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    /* Premium Buttons */
     .btn-current {
-        background: var(--surface-2);
-        border: 1px solid var(--rim-strong);
+        background-color: #f1f5f9;
+        border: 1px solid var(--border);
         color: var(--text-secondary);
-        padding: 10px 15px;
+        padding: 12px 20px;
         border-radius: var(--radius-sm);
-        font-weight: 600;
+        font-weight: 700;
+        font-size: 0.9rem;
         width: 100%;
         cursor: not-allowed;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
+        transition: all 0.25s;
     }
 
     .btn-select {
-        background: linear-gradient(135deg, #FF6A00, #FF8C42);
-        color: var(--obsidian);
+        background: linear-gradient(to right, var(--primary), #ff8c42);
+        color: white !important;
         border: none;
-        padding: 10px 15px;
+        padding: 12px 20px;
         border-radius: var(--radius-sm);
-        font-weight: 600;
+        font-weight: 700;
+        font-size: 0.9rem;
         width: 100%;
         transition: all 0.3s;
         display: inline-flex;
@@ -257,55 +333,49 @@
         justify-content: center;
         gap: 8px;
         text-decoration: none;
+        box-shadow: 0 4px 15px rgba(255, 106, 0, 0.15);
     }
 
     .btn-select:hover {
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(255,106,0,0.3);
-        color: var(--obsidian);
+        box-shadow: 0 8px 25px rgba(255, 106, 0, 0.3);
         text-decoration: none;
     }
 
     .btn-select.disabled {
-        opacity: 0.5;
+        background: #e2e8f0;
+        color: #94a3b8 !important;
+        box-shadow: none;
         cursor: not-allowed;
-    }
-
-    .expiry-info {
-        text-align: center;
-        margin-bottom: 15px;
-    }
-
-    .expiry-info small {
-        background: rgba(61,214,140,0.15);
-        padding: 3px 10px;
-        border-radius: 20px;
-        color: var(--success);
-        font-size: 0.7rem;
+        transform: none;
     }
 
     .empty-state {
         text-align: center;
-        padding: 60px 20px;
+        padding: 50px 30px;
         background: var(--surface);
         border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
     }
 
     .empty-state i {
-        font-size: 48px;
+        font-size: 3rem;
         color: var(--text-muted);
-        margin-bottom: 15px;
+        margin-bottom: 20px;
     }
 
     .empty-state h5 {
-        font-size: 1.2rem;
-        color: var(--text-secondary);
+        font-size: 1.15rem;
+        color: var(--text-primary);
+        font-weight: 700;
         margin-bottom: 8px;
     }
 
     .empty-state p {
-        color: var(--text-muted);
-        font-size: 0.85rem;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 0;
+        line-height: 1.6;
     }
 </style>
 @endsection
@@ -322,11 +392,11 @@
                 <div class="row align-items-center">
                     <div class="col-md-12">
                         <div class="page-header-title">
-                            <h5 class="m-b-10">Available Plans</h5>
+                            <h5 class="m-b-10">Plan Catalogue</h5>
                         </div>
                         <ul class="breadcrumb">
                             <li class="breadcrumb-item"><a href="#">Home</a></li>
-                            <li class="breadcrumb-item" aria-current="page">Plans</li>
+                            <li class="breadcrumb-item" aria-current="page">Available Plans</li>
                         </ul>
                     </div>
                 </div>
@@ -336,141 +406,141 @@
 
         <!-- Custom Page Header -->
         <div class="page-header-custom">
-            <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
-                    <h2><i class="fas fa-gem me-2"></i> Available Plans</h2>
-                    <p>Explore our premium plans and enhance your restaurant management experience</p>
+                    <h2><i class="fas fa-gem"></i> Available Plans</h2>
+                    <p>Upgrade or activate subscription plans customized for your restaurant operations</p>
                 </div>
-                <div class="user-welcome text-white">
+                <div class="user-welcome">
                     <i class="fas fa-store"></i> {{ Auth::user()->restaurant->name ?? 'Your Restaurant' }}
                 </div>
             </div>
         </div>
 
         @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <div class="alert alert-success alert-dismissible fade show" role="alert" style="border-radius: var(--radius-sm);">
                 <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline:none; border:none; background:none; float:right; font-size:1.5rem; line-height:1; color:#000; opacity:0.5;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
         @endif
 
         @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius: var(--radius-sm);">
                 <i class="fas fa-exclamation-circle me-2"></i> {{ session('error') }}
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline:none; border:none; background:none; float:right; font-size:1.5rem; line-height:1; color:#000; opacity:0.5;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
         @endif
 
         <div class="row">
             <div class="col-sm-12">
-                <div class="card">
-                    <div class="card-body">
-                        @if($plans->count() > 0)
-                        <div class="row">
-                            @foreach($plans as $plan)
-                                @php
-                                    $isDefault = ($plan->is_default_plan == 'Y' || $plan->is_default_free == 'Y' || $plan->is_default_paid == 'Y' || $plan->price == 0);
-                                    $isAssigned = in_array($plan->id, $assignedPlanIds);
-                                    $isActive = isset($activeSubscriptions[$plan->id]);
-                                    $activeSubscription = $isActive ? $activeSubscriptions[$plan->id] : null;
-                                    
-                                    $planIcons = [
-                                        'Basic' => 'fa-layer-group',
-                                        'Standard' => 'fa-chart-line',
-                                        'Premium' => 'fa-crown',
-                                        'Enterprise' => 'fa-building',
-                                        'Pro' => 'fa-rocket'
-                                    ];
-                                    $planIcon = $planIcons[$plan->name] ?? 'fa-gem';
-                                @endphp
-                                <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
-                                    <div class="plan-card {{ $isDefault ? 'default-plan' : '' }}">
-                                        @if($isDefault)
-                                            <div class="default-badge">
-                                                <i class="fas fa-star"></i> Default Plan
-                                            </div>
+                @if($plans->count() > 0)
+                <div class="row">
+                    @foreach($plans as $plan)
+                        @php
+                            $isDefault = ($plan->is_default_plan == 'Y' || $plan->is_default_free == 'Y' || $plan->is_default_paid == 'Y' || $plan->price == 0);
+                            $isAssigned = in_array($plan->id, $assignedPlanIds);
+                            $isActive = isset($activeSubscriptions[$plan->id]);
+                            $activeSubscription = $isActive ? $activeSubscriptions[$plan->id] : null;
+                            
+                            $planIcons = [
+                                'Basic' => 'fa-layer-group',
+                                'Standard' => 'fa-chart-line',
+                                'Premium' => 'fa-crown',
+                                'Enterprise' => 'fa-building',
+                                'Pro' => 'fa-rocket'
+                            ];
+                            $planIcon = $planIcons[$plan->name] ?? 'fa-gem';
+                        @endphp
+                        <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
+                            <div class="plan-card {{ $isDefault ? 'default-plan' : '' }}">
+                                @if($isDefault)
+                                    <div class="default-badge">
+                                        <i class="fas fa-star"></i> Default Plan
+                                    </div>
+                                @endif
+                                
+                                @if($isActive)
+                                    <div class="active-badge">
+                                        <i class="fas fa-check-circle"></i> Active
+                                    </div>
+                                @elseif($isAssigned && !$isActive)
+                                    <div class="assigned-badge">
+                                        <i class="fas fa-clock"></i> Assigned
+                                    </div>
+                                @endif
+
+                                <div class="plan-header">
+                                    <div class="plan-icon">
+                                        <i class="fas {{ $planIcon }}"></i>
+                                    </div>
+                                    <h4 class="plan-name">{{ $plan->name }}</h4>
+                                    <div class="plan-price">
+                                        @if($plan->price == 0)
+                                            <span style="color: var(--success);">FREE</span>
+                                        @else
+                                            ₹{{ number_format($plan->price, 2) }}
+                                            <small>/ {{ ucfirst($plan->billing_cycle) }}</small>
                                         @endif
-                                        
-                                        @if($isActive)
-                                            <div class="active-badge">
-                                                <i class="fas fa-check-circle"></i> Active
-                                            </div>
-                                        @elseif($isAssigned && !$isActive)
-                                            <div class="assigned-badge">
-                                                <i class="fas fa-clock"></i> Available
-                                            </div>
-                                        @endif
-
-                                        <div class="plan-header">
-                                            <div class="plan-icon">
-                                                <i class="fas {{ $planIcon }}"></i>
-                                            </div>
-                                            <h4 class="plan-name">{{ $plan->name }}</h4>
-                                            <div class="plan-price">
-                                                @if($plan->price == 0)
-                                                    <span style="color: var(--success);">FREE</span>
-                                                @else
-                                                    ₹{{ number_format($plan->price, 2) }}
-                                                    <small>/ {{ ucfirst($plan->billing_cycle) }}</small>
-                                                @endif
-                                            </div>
-                                            <div class="plan-duration">
-                                                <i class="fas fa-calendar-alt me-1"></i> {{ $plan->duration_days }} days validity
-                                            </div>
-                                        </div>
-
-                                        <div class="plan-body">
-                                            <div class="plan-description">
-                                                {{ $plan->description ?? 'Perfect plan for your restaurant needs' }}
-                                            </div>
-
-                                            <ul class="plan-features">
-                                                <li><i class="fas fa-folder"></i> {{ $plan->category_number == 0 ? 'Unlimited' : number_format($plan->category_number) }} Categories</li>
-                                                <li><i class="fas fa-utensils"></i> {{ $plan->total_number_of_dishes == 0 ? 'Unlimited' : number_format($plan->total_number_of_dishes) }} Dishes</li>
-                                                <li><i class="fas fa-table"></i> {{ $plan->total_number_of_table == 0 ? 'Unlimited' : number_format($plan->total_number_of_table) }} Tables</li>
-                                                <li><i class="fas fa-boxes"></i> Inventory {{ $plan->inventory_checkbox == 'Y' ? 'Enabled' : 'Disabled' }}</li>
-                                            </ul>
-
-                                            @if($isActive)
-                                                @if($activeSubscription)
-                                                    <div class="expiry-info">
-                                                        <small><i class="fas fa-hourglass-half me-1"></i> Expires: {{ $activeSubscription->end_date->format('d M Y') }}</small>
-                                                    </div>
-                                                @endif
-                                                <button class="btn-current" disabled>
-                                                    <i class="fas fa-check-circle me-2"></i> Currently Active
-                                                </button>
-                                            @else
-                                                @if($plan->price == 0)
-                                                    @if($hasFreeTrial ?? false)
-                                                        <button class="btn-select disabled" disabled>
-                                                            <i class="fas fa-ban me-2"></i> Trial Used
-                                                        </button>
-                                                    @else
-                                                        <a href="{{ route('admin.subscriptions.create', $plan->id) }}" class="btn-select">
-                                                            <i class="fas fa-gift me-2"></i> Start Free Trial
-                                                        </a>
-                                                    @endif
-                                                @else
-                                                    <a href="{{ route('admin.subscriptions.create', $plan->id) }}" class="btn-select">
-                                                        <i class="fas fa-shopping-cart me-2"></i> Subscribe Now
-                                                    </a>
-                                                @endif
-                                            @endif
-                                        </div>
+                                    </div>
+                                    <div class="plan-duration">
+                                        <i class="fas fa-calendar-alt me-1"></i> {{ $plan->duration_days }} days validity
                                     </div>
                                 </div>
-                            @endforeach
+
+                                <div class="plan-body">
+                                    <div class="plan-description">
+                                        {{ $plan->description ?? 'Premium POS management package for your business' }}
+                                    </div>
+
+                                    <ul class="plan-features">
+                                        <li><i class="fas fa-folder-open"></i> {{ $plan->category_number == 0 ? 'Unlimited' : number_format($plan->category_number) }} Categories</li>
+                                        <li><i class="fas fa-utensils"></i> {{ $plan->total_number_of_dishes == 0 ? 'Unlimited' : number_format($plan->total_number_of_dishes) }} Dishes</li>
+                                        <li><i class="fas fa-chair"></i> {{ $plan->total_number_of_table == 0 ? 'Unlimited' : number_format($plan->total_number_of_table) }} Tables</li>
+                                        <li><i class="fas fa-boxes"></i> Inventory {{ $plan->inventory_checkbox == 'Y' ? 'Enabled' : 'Disabled' }}</li>
+                                    </ul>
+
+                                    @if($isActive)
+                                        @if($activeSubscription)
+                                            <div class="expiry-info">
+                                                <small><i class="fas fa-hourglass-half me-1"></i> Expires: {{ $activeSubscription->end_date->format('d M Y') }}</small>
+                                            </div>
+                                        @endif
+                                        <button class="btn-current" disabled>
+                                            <i class="fas fa-check-circle me-2"></i> Currently Active
+                                        </button>
+                                    @else
+                                        @if($plan->price == 0)
+                                            @if($hasFreeTrial ?? false)
+                                                <button class="btn-select disabled" disabled>
+                                                    <i class="fas fa-ban me-2"></i> Free Trial Used
+                                                </button>
+                                            @else
+                                                <a href="{{ route('admin.subscriptions.create', $plan->id) }}" class="btn-select">
+                                                    <i class="fas fa-gift me-2"></i> Start Free Trial
+                                                </a>
+                                            @endif
+                                        @else
+                                            <a href="{{ route('admin.subscriptions.create', $plan->id) }}" class="btn-select">
+                                                <i class="fas fa-shopping-cart me-2"></i> Subscribe Now
+                                            </a>
+                                        @endif
+                                    @endif
+                                </div>
+                            </div>
                         </div>
-                        @else
-                        <div class="empty-state">
-                            <i class="fas fa-box-open"></i>
-                            <h5>No Plans Available</h5>
-                            <p>No plans have been assigned to your restaurant yet.<br>Please contact the administrator.</p>
-                        </div>
-                        @endif
-                    </div>
+                    @endforeach
                 </div>
+                @else
+                <div class="empty-state">
+                    <i class="fas fa-box-open"></i>
+                    <h5>No Plans Available</h5>
+                    <p>No plans have been assigned to your restaurant yet.<br>Please contact the administrator.</p>
+                </div>
+                @endif
             </div>
         </div>
 
@@ -480,16 +550,5 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 @include('includes.script')
-
-<script>
-    $(document).ready(function() {
-        // Add hover effect for cards
-        $('.plan-card').on('mouseenter', function() {
-            $(this).css('z-index', '10');
-        }).on('mouseleave', function() {
-            $(this).css('z-index', '1');
-        });
-    });
-</script>
 
 @endsection

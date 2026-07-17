@@ -427,6 +427,109 @@
             background-color: rgba(99, 102, 241, 0.04);
             border-color: #6366f1;
         }
+
+        /* Multi-step Modal Styles */
+        .form-section-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1a2c3e;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #ff6a00;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-section-title i {
+            color: #ff6a00;
+            font-size: 1.3rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #1a2c3e;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .form-label.required::after {
+            content: '*';
+            color: #e76f51;
+            margin-left: 4px;
+        }
+
+        .form-control {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: #ff6a00;
+            box-shadow: 0 0 0 3px rgba(255,106,0,0.1);
+            outline: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .btn-gradient {
+            background: linear-gradient(135deg, #ff6a00, #ff8c42);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255,106,53,0.3);
+            color: white;
+        }
+
+        .btn-outline-light {
+            background: transparent;
+            border: 1px solid #cbd5e1;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-weight: 600;
+            color: #6c7a8a;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-outline-light:hover {
+            border-color: #ff6a00;
+            color: #ff6a00;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 70%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6c7a8a;
+        }
+
+        .position-relative {
+            position: relative;
+        }
     </style>
 </head>
 <body data-pc-theme="light">
@@ -653,6 +756,130 @@
                         <button type="submit" class="btn btn-primary">Save Follow-up</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Restaurant Modal (autofilled from Lead) -->
+    <div class="modal fade" id="addRestaurantModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-white" style="color:black !important"><i class="fas fa-store"></i> Add New Restaurant</h5>
+                    <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+                </div>
+
+                <div class="modal-body">
+                    <form method="POST" action="{{ route('manage.restaurant.insert') }}" id="multiStepForm">
+                        @csrf
+                        <input type="hidden" name="lead_id" id="modal_lead_id">
+
+                        <!-- SECTION 1: RESTAURANT INFO -->
+                        <div id="section1">
+                            <div class="form-section-title">
+                                <i class="fas fa-store"></i> Restaurant Information
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label required">Restaurant Name</label>
+                                        <input type="text" name="restaurant_name" id="modal_restaurant_name" class="form-control" 
+                                               required placeholder="e.g., Spice Garden">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label required">Pincode</label>
+                                        <input type="text" name="pincode" id="modal_pincode" class="form-control" 
+                                               required placeholder="e.g., 110001">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label class="form-label required">Full Address</label>
+                                <input type="text" name="address" id="modal_address" class="form-control" 
+                                       required placeholder="Street, city, landmark">
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">GSTIN</label>
+                                        <input type="text" name="gstin" id="modal_gstin" class="form-control" 
+                                               placeholder="e.g., 07AAAAA1111A1Z1">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">FSSAI Number</label>
+                                        <input type="text" name="fssai_number" id="modal_fssai_number" class="form-control" 
+                                               placeholder="e.g., 12345678901234">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="action-buttons">
+                                <div></div>
+                                <button type="button" class="btn-gradient" onclick="showSection(2)">
+                                    Next Step <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 2: OWNER DETAILS -->
+                        <div id="section2" style="display: none;">
+                            <div class="form-section-title">
+                                <i class="fas fa-user-circle"></i> Owner & Account
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label required">Owner Name</label>
+                                        <input type="text" name="name" id="modal_owner_name" class="form-control" 
+                                               required placeholder="Full name">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label required">Email Address</label>
+                                        <input type="email" name="email" id="modal_owner_email" class="form-control" 
+                                               required placeholder="hello@restaurant.com">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label required">Phone Number</label>
+                                        <input type="text" name="phone" id="modal_owner_phone" class="form-control" 
+                                               required placeholder="+91 98765 43210">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group position-relative">
+                                        <label class="form-label required">Password</label>
+                                        <input type="password" name="password" id="modal_password" class="form-control" 
+                                               required placeholder="••••••••">
+                                        <span class="password-toggle" onclick="togglePassword()" style="top: 72%;">
+                                            <i class="far fa-eye" id="toggleIcon"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Terms checkbox (hidden) -->
+                            <input type="checkbox" id="terms" checked style="display: none;" required>
+
+                            <div class="action-buttons">
+                                <button type="button" class="btn-outline-light" onclick="showSection(1)">
+                                    <i class="fas fa-arrow-left"></i> Back
+                                </button>
+                                <button type="submit" class="btn-gradient" id="submitBtn">
+                                    <i class="fas fa-user-plus"></i> Register Restaurant
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -916,6 +1143,83 @@
                     }
                 });
             });
+
+            // Handle clicking register restaurant button
+            $('.register-lead-btn').on('click', function() {
+                const leadId = $(this).data('lead-id');
+                const restaurantName = $(this).data('restaurant-name');
+                const ownerName = $(this).data('owner-name');
+                const ownerEmail = $(this).data('owner-email');
+                const ownerPhone = $(this).data('owner-phone');
+
+                // Prefill fields
+                $('#modal_lead_id').val(leadId);
+                $('#modal_restaurant_name').val(restaurantName || '');
+                $('#modal_owner_name').val(ownerName || '');
+                $('#modal_owner_email').val(ownerEmail || '');
+                $('#modal_owner_phone').val(ownerPhone || '');
+                $('#modal_pincode').val('');
+                $('#modal_address').val('');
+                $('#modal_gstin').val('');
+                $('#modal_fssai_number').val('');
+                $('#modal_password').val('');
+
+                // Reset section
+                showSection(1);
+
+                // Show modal
+                $('#addRestaurantModal').modal('show');
+            });
+
+            // Multi-step form navigation
+            function showSection(section) {
+                if (section === 1) {
+                    $('#section1').show();
+                    $('#section2').hide();
+                } else {
+                    // Validate section 1 before proceeding
+                    let restaurantName = $('#modal_restaurant_name').val();
+                    let pincode = $('#modal_pincode').val();
+                    let address = $('#modal_address').val();
+                    
+                    if (!restaurantName) {
+                        showToast('Please enter restaurant name', 'error');
+                        $('#modal_restaurant_name').focus();
+                        return;
+                    }
+                    if (!pincode) {
+                        showToast('Please enter pincode', 'error');
+                        $('#modal_pincode').focus();
+                        return;
+                    }
+                    if (!address) {
+                        showToast('Please enter address', 'error');
+                        $('#modal_address').focus();
+                        return;
+                    }
+                    
+                    $('#section1').hide();
+                    $('#section2').show();
+                }
+            }
+            window.showSection = showSection;
+
+            // Password visibility toggle
+            function togglePassword() {
+                const passwordInput = document.getElementById('modal_password');
+                const icon = document.getElementById('toggleIcon');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            }
+            window.togglePassword = togglePassword;
         });
     </script>
 </body>

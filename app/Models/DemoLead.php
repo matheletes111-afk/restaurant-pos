@@ -20,6 +20,7 @@ class DemoLead extends Model
         'status',
         'followup_date',
         'followup_notes',
+        'register_done',
     ];
 
     protected $casts = [

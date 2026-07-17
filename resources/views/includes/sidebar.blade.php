@@ -1,8 +1,13 @@
-
-  <style type="text/css">
+<style type="text/css">
    .active_class{
-    background: #009d1a !important;
+    background: #ff6a00 !important;
     color: white !important;
+   }
+   .sidebar-disabled-item {
+    pointer-events: none !important;
+    opacity: 0.55 !important;
+    filter: blur(1.2px) !important;
+    user-select: none !important;
    }
  </style>
 <nav class="pc-sidebar">
@@ -72,13 +77,14 @@
 @php
   $active = DB::table('subscriptions')->where('user_id',auth()->user()->restaurant_id)->where('status','active')->first();
   $plan_details = DB::table('plans')->where('id',@$active->plan_id)->first();
+  $disabledClass = $active == "" ? 'sidebar-disabled-item' : '';
 @endphp
-@if($active!="")
+@if(auth()->user()->role == "RES" || $active != "")
 
 
 {{-- restaurant routes --}}
 
-<li class="pc-item">
+<li class="pc-item {{ $disabledClass }}">
           <a href="{{route('dashboard')}}" class="pc-link @if(Request::segment(1)=="dashboard") active_class @endif">
             <span class="pc-micon"><i class="fas fa-sitemap"></i></span>
             <span class="pc-mtext">Dashboard</span>
@@ -86,7 +92,7 @@
         </li>
 
 @if(auth()->user()->hasPermission('menu_master'))
-<li class="pc-item">
+<li class="pc-item {{ $disabledClass }}">
   <a href="{{route('manage.category')}}" class="pc-link @if(Request::segment(2)=="manage-menu-category") active_class @endif">
     <span class="pc-micon"><i class="fas fa-concierge-bell"></i></span>
     <span class="pc-mtext">Menu Master</span>
@@ -95,7 +101,7 @@
 @endif
 
 @if(auth()->user()->hasPermission('menu_availability'))
-<li class="pc-item">
+<li class="pc-item {{ $disabledClass }}">
   <a href="{{route('menu.availability')}}" class="pc-link @if(Request::segment(2)=="menu-availability") active_class @endif">
     <span class="pc-micon"><i class="fas fa-clipboard-list"></i></span>
     <span class="pc-mtext">Menu Avilability</span>
@@ -104,7 +110,7 @@
 @endif
 
 @if(auth()->user()->hasPermission('table_master'))
-<li class="pc-item">
+<li class="pc-item {{ $disabledClass }}">
   <a href="{{route('table.manage')}}" class="pc-link @if(Request::segment(2)=="table-manage") active_class @endif">
     <span class="pc-micon"><i class="fas fa-chair"></i></span>
     <span class="pc-mtext">Table Master</span>
@@ -113,7 +119,7 @@
 @endif
 
 @if(auth()->user()->hasPermission('order_master'))
-<li class="pc-item">
+<li class="pc-item {{ $disabledClass }}">
   <a href="{{route('order.management.dashboard')}}" class="pc-link @if(Request::segment(2)=="order-management-dashboard") active_class @endif">
     <span class="pc-micon"><i class="fas fa-receipt"></i></span>
     <span class="pc-mtext">Order Master</span>
@@ -126,7 +132,7 @@
 
 
 @if(auth()->user()->hasPermission('kitchen_order'))
-<li class="pc-item">
+<li class="pc-item {{ $disabledClass }}">
   <a href="{{route('manage.kitchen-panel')}}" class="pc-link @if(Request::segment(2)=="kitchen-panel") active_class @endif">
     <span class="pc-micon"><i class="fas fa-users"></i></span>
     <span class="pc-mtext">Kitchen Order</span>
@@ -135,7 +141,7 @@
 @endif
 
 @if(auth()->user()->hasPermission('pending_order'))
-<li class="pc-item">
+<li class="pc-item {{ $disabledClass }}">
   <a href="{{ route('temp.orders') }}" 
      class="pc-link @if(Request::segment(2) == 'pending-temp-orders') active_class @endif">
     <span class="pc-micon">
@@ -147,7 +153,7 @@
 @endif
 
 @if(auth()->user()->hasPermission('restro_ai'))
-<li class="pc-item">
+<li class="pc-item {{ $disabledClass }}">
   <a href="{{ route('ask-ai') }}" 
      class="pc-link @if(Request::segment(2) == 'ask-ai') active_class @endif">
     <span class="pc-micon">
@@ -183,7 +189,7 @@
 @endif
 
 @if(auth()->user()->hasPermission('staff'))
-<li class="pc-item">
+<li class="pc-item {{ $disabledClass }}">
   <a href="{{route('restaurant.staff.index')}}" class="pc-link @if(Request::segment(2)=="restaurant-staff") active_class @endif">
     <span class="pc-micon"><i class="fas fa-users"></i></span>
     <span class="pc-mtext">Staff</span>
@@ -193,8 +199,8 @@
 
 
 @if(auth()->user()->hasPermission('inventory_setting'))
-@if(@$plan_details->inventory_checkbox=="Y")
-<li class="pc-item pc-hasmenu">
+@if(@$plan_details->inventory_checkbox=="Y" || $active == "")
+<li class="pc-item pc-hasmenu {{ $disabledClass }}">
   <a href="#!" class="pc-link">
     <span class="pc-micon">
       <i class="ti ti-menu"></i>
@@ -271,7 +277,7 @@
 
 
 @if(auth()->user()->hasPermission('reports'))
-<li class="pc-item pc-hasmenu">
+<li class="pc-item pc-hasmenu {{ $disabledClass }}">
   <a href="#!" class="pc-link">
     <span class="pc-micon">
       <i class="ti ti-report-analytics"></i>
@@ -321,7 +327,7 @@
     </li>
 
     <!-- Live Stocks -->
-    @if(@$plan_details->inventory_checkbox=="Y")
+    @if(@$plan_details->inventory_checkbox=="Y" || $active == "")
     <li class="pc-item">
       <a href="{{ route('inventory.live') }}" class="pc-link">
         <span class="pc-micon">

@@ -22,6 +22,52 @@ class CheckMenuPermission
             return $next($request);
         }
 
+        // Restrict access for restaurant level users without an active subscription
+        if ($user->role === 'RES') {
+            $hasActiveSubscription = \DB::table('subscriptions')
+                ->where('user_id', $user->restaurant_id)
+                ->where('status', 'active')
+                ->exists();
+
+            if (!$hasActiveSubscription) {
+                $allowedRoutes = [
+                    'select.plan.page',
+                    'admin.subscriptions.index',
+                    'admin.subscriptions.create',
+                    'admin.subscriptions.store',
+                    'admin.subscriptions.payment',
+                    'admin.subscriptions.payment.success',
+                    'admin.subscriptions.payment.success.get',
+                    'admin.subscriptions.payment.failed',
+                    'admin.subscriptions.payment.failed.get',
+                    'restaurant.support.tickets',
+                    'restaurant-support',
+                    'logout',
+                    'logout.user'
+                ];
+
+                $routeName = $request->route()->getName();
+                $path = $request->path();
+
+                $isAllowed = false;
+                foreach ($allowedRoutes as $allowed) {
+                    if ($routeName === $allowed || str_contains($path, $allowed) || ($routeName && str_contains($routeName, $allowed))) {
+                        $isAllowed = true;
+                        break;
+                    }
+                }
+
+                if (str_contains($path, 'subscribe') || str_contains($path, 'payment') || str_contains($path, 'support') || str_contains($path, 'logout')) {
+                    $isAllowed = true;
+                }
+
+                if (!$isAllowed) {
+                    return redirect()->route('select.plan.page')
+                        ->with('error', 'Please subscribe to a plan to access this feature.');
+                }
+            }
+        }
+
         // Get the route name or path
         $routeName = $request->route()->getName();
         $path = $request->path();

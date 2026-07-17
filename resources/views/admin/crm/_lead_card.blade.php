@@ -61,6 +61,20 @@
         </div>
     @endif
 
+    @if($lead->status == 'Converted' && strtolower($lead->register_done ?? 'n') != 'y')
+        <div class="mt-2 mb-2">
+            <button type="button" class="btn btn-sm w-100 register-lead-btn" 
+                    data-lead-id="{{ $lead->id }}"
+                    data-restaurant-name="{{ $lead->restaurant_name }}"
+                    data-owner-name="{{ $lead->full_name }}"
+                    data-owner-email="{{ $lead->email_address }}"
+                    data-owner-phone="{{ $lead->phone_number }}"
+                    style="border-radius: 20px; background: linear-gradient(135deg, #ff6a00, #ff8c42); color: white; border: none; font-weight: 600; padding: 8px;">
+                <i class="fa fa-user-plus me-1"></i> Register
+            </button>
+        </div>
+    @endif
+
     <!-- Move Stage & Followup Actions -->
     <div class="card-actions">
         <select class="status-select select-style">

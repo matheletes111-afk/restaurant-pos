@@ -8,51 +8,33 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
         :root {
-            --gold: #C9A84C;
-            --gold-light: #E8C97A;
-            --gold-dim: rgba(201,168,76,0.15);
-            --obsidian: #0A0A0B;
-            --deep: #111114;
-            --surface: #17171C;
-            --surface-2: #1E1E25;
-            --surface-3: #26262F;
-            --rim: rgba(255,255,255,0.07);
-            --rim-strong: rgba(255,255,255,0.12);
-            --text-primary: #F2EEE6;
-            --text-secondary: rgba(242,238,230,0.55);
-            --text-muted: rgba(242,238,230,0.3);
-            --success: #3DD68C;
-            --danger: #FF6B6B;
-            --radius-xl: 24px;
-            --radius-lg: 18px;
-            --radius-md: 12px;
-            --radius-sm: 8px;
-            --glow: 0 0 40px rgba(201,168,76,0.12);
+            --primary: #ff6a00;
+            --primary-hover: #e65c00;
+            --bg-light: #f8fafc;
+            --surface: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --success-bg: #d1fae5;
+            --danger: #ef4444;
+            --radius-xl: 18px;
+            --radius-lg: 14px;
+            --radius-md: 10px;
+            --radius-sm: 6px;
         }
 
         body {
-            background-color: var(--obsidian);
-            background-image:
-                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201,168,76,0.08) 0%, transparent 60%),
-                radial-gradient(ellipse 60% 40% at 80% 100%, rgba(201,168,76,0.05) 0%, transparent 50%);
-            font-family: 'DM Sans', sans-serif;
+            background-color: var(--bg-light);
+            font-family: 'Public Sans', 'Inter', sans-serif;
             color: var(--text-primary);
             min-height: 100vh;
             padding-bottom: 80px;
         }
 
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.6;
-        }
-
         .plans-container {
-            max-width: 1380px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 40px 20px;
             position: relative;
@@ -61,13 +43,14 @@
 
         /* Page Header */
         .page-header-custom {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             border-radius: var(--radius-xl);
-            padding: 48px 40px;
-            margin-bottom: 48px;
+            padding: 40px;
+            margin-bottom: 40px;
             position: relative;
             overflow: hidden;
             text-align: center;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
         }
 
         .page-header-custom::before {
@@ -77,14 +60,13 @@
             right: -10%;
             width: 300px;
             height: 300px;
-            background: radial-gradient(circle, rgba(201,168,76,0.15), transparent);
+            background: radial-gradient(circle, rgba(255, 106, 0, 0.12), transparent 70%);
             border-radius: 50%;
         }
 
         .page-header-custom h1 {
-            font-family: 'Cormorant Garamond', serif;
             font-weight: 700;
-            font-size: 2.8rem;
+            font-size: 2.2rem;
             color: white;
             margin-bottom: 10px;
             position: relative;
@@ -96,15 +78,20 @@
             font-size: 1rem;
             position: relative;
             z-index: 1;
+            margin-bottom: 0;
         }
 
         .user-welcome {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.12);
             border-radius: 50px;
             padding: 8px 20px;
             display: inline-block;
             margin-top: 20px;
             font-size: 0.85rem;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            position: relative;
+            z-index: 1;
         }
 
         /* Plan Cards */
@@ -112,10 +99,13 @@
             background: var(--surface);
             border-radius: var(--radius-lg);
             overflow: hidden;
-            border: 1px solid var(--rim);
-            transition: transform 0.35s cubic-bezier(.22,.68,0,1.2), box-shadow 0.35s ease, border-color 0.25s;
+            border: 1px solid var(--border);
+            transition: transform 0.3s cubic-bezier(.25,.8,.25,1), box-shadow 0.3s ease, border-color 0.2s;
             position: relative;
             height: 100%;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
             animation: fadeUp 0.5s ease both;
         }
 
@@ -125,28 +115,29 @@
         }
 
         .plan-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.2);
-            border-color: rgba(201,168,76,0.25);
+            transform: translateY(-4px);
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -5px rgba(0, 0, 0, 0.03);
+            border-color: rgba(255, 106, 0, 0.3);
         }
 
         .plan-card.default-plan {
-            border: 2px solid var(--gold);
-            box-shadow: 0 0 30px rgba(201,168,76,0.2);
+            border: 2px solid var(--primary);
+            box-shadow: 0 10px 20px -3px rgba(255, 106, 0, 0.08), 0 4px 6px -2px rgba(255, 106, 0, 0.03);
         }
 
         .default-badge {
             position: absolute;
             top: 15px;
             left: 15px;
-            background: linear-gradient(135deg, var(--gold), var(--gold-light));
-            color: var(--obsidian);
+            background: linear-gradient(135deg, var(--primary), #ff8c42);
+            color: white;
             padding: 5px 15px;
             border-radius: 20px;
             font-size: 0.7rem;
             font-weight: 700;
             z-index: 10;
             letter-spacing: 0.05em;
+            box-shadow: 0 2px 8px rgba(255, 106, 0, 0.2);
         }
 
         .assigned-badge {
@@ -163,63 +154,71 @@
         }
 
         .plan-header {
-            padding: 30px 24px 20px;
+            padding: 35px 24px 20px;
             text-align: center;
-            border-bottom: 1px solid var(--rim);
+            border-bottom: 1px solid var(--border);
         }
 
         .plan-name {
-            font-family: 'Cormorant Garamond', serif;
             font-weight: 700;
-            font-size: 1.6rem;
+            font-size: 1.5rem;
             color: var(--text-primary);
             margin-bottom: 10px;
         }
 
         .plan-price {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--gold-light);
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary);
             margin: 15px 0;
         }
 
         .plan-price small {
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             font-weight: normal;
-            color: var(--text-muted);
+            color: var(--text-secondary);
         }
 
         .plan-duration {
             font-size: 0.8rem;
-            color: var(--text-muted);
+            color: var(--text-secondary);
+            background-color: #f1f5f9;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
         }
 
         .plan-body {
             padding: 24px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
         }
 
         .plan-description {
             color: var(--text-secondary);
-            font-size: 0.85rem;
+            font-size: 0.875rem;
             line-height: 1.6;
             margin-bottom: 20px;
-            min-height: 70px;
+            min-height: 60px;
+            text-align: center;
         }
 
         .plan-features {
             list-style: none;
             padding: 0;
-            margin: 20px 0;
+            margin: 0 0 30px 0;
+            flex-grow: 1;
         }
 
         .plan-features li {
-            padding: 8px 0;
+            padding: 10px 0;
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 0.85rem;
+            gap: 12px;
+            font-size: 0.875rem;
             color: var(--text-secondary);
-            border-bottom: 1px solid var(--rim);
+            border-bottom: 1px solid #f1f5f9;
         }
 
         .plan-features li:last-child {
@@ -228,27 +227,29 @@
 
         .plan-features i {
             width: 20px;
-            color: var(--gold);
-            font-size: 0.8rem;
+            color: var(--primary);
+            font-size: 0.95rem;
         }
 
         /* Buttons */
         .btn-current {
-            background: var(--surface-2);
-            border: 1px solid var(--rim-strong);
+            background: #e2e8f0;
+            border: 1px solid var(--border);
             color: var(--text-secondary);
-            padding: 12px 20px;
+            padding: 14px 20px;
             border-radius: var(--radius-sm);
             font-weight: 600;
             width: 100%;
             cursor: not-allowed;
+            text-align: center;
+            display: block;
         }
 
         .btn-select {
-            background: linear-gradient(to right, #FF6A00, #FF8C42);
-            color: var(--obsidian);
+            background: linear-gradient(to right, var(--primary), #ff8c42);
+            color: white;
             border: none;
-            padding: 12px 20px;
+            padding: 14px 20px;
             border-radius: var(--radius-sm);
             font-weight: 600;
             width: 100%;
@@ -257,12 +258,15 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+            box-shadow: 0 4px 12px rgba(255, 106, 0, 0.15);
+            text-decoration: none;
         }
 
         .btn-select:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255,106,0,0.35);
-            color: var(--obsidian);
+            box-shadow: 0 8px 20px rgba(255,106,0,0.3);
+            color: white;
+            text-decoration: none;
         }
 
         .btn-select:disabled {
@@ -274,19 +278,27 @@
         /* Alert */
         .alert-custom {
             background: var(--surface);
-            border: 1px solid var(--rim-strong);
+            border: 1px solid var(--border);
             border-radius: var(--radius-lg);
-            padding: 20px;
+            padding: 18px 24px;
             margin-bottom: 30px;
             text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .alert-custom.success {
             border-left: 4px solid var(--success);
+            background-color: var(--success-bg);
+            color: #065f46;
+            font-weight: 500;
         }
 
         .alert-custom i {
-            margin-right: 10px;
+            margin-right: 5px;
         }
 
         /* Grid */
@@ -307,18 +319,21 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: var(--surface-2);
-            border: 1px solid var(--rim-strong);
+            background: var(--surface);
+            border: 1px solid var(--border);
             color: var(--text-secondary);
             padding: 12px 30px;
             border-radius: 50px;
             transition: all 0.3s;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            text-decoration: none;
         }
 
         .back-link a:hover {
-            background: var(--surface-3);
-            border-color: rgba(201,168,76,0.4);
-            color: var(--gold-light);
+            background: #f1f5f9;
+            color: var(--primary);
+            border-color: var(--primary);
             transform: translateY(-2px);
         }
 
@@ -328,7 +343,8 @@
             padding: 60px 20px;
             background: var(--surface);
             border-radius: var(--radius-lg);
-            border: 1px solid var(--rim);
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
         }
 
         .empty-state i {
@@ -338,24 +354,24 @@
         }
 
         .empty-state h5 {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 1.5rem;
-            color: var(--text-secondary);
+            font-size: 1.25rem;
+            color: var(--text-primary);
             margin-bottom: 10px;
+            font-weight: 700;
         }
 
         .empty-state p {
-            color: var(--text-muted);
+            color: var(--text-secondary);
         }
 
         /* Responsive */
         @media (max-width: 768px) {
             .plans-container { padding: 20px 15px; }
             .page-header-custom { padding: 30px 20px; }
-            .page-header-custom h1 { font-size: 2rem; }
+            .page-header-custom h1 { font-size: 1.8rem; }
             .plans-grid { grid-template-columns: 1fr; }
             .plan-name { font-size: 1.3rem; }
-            .plan-price { font-size: 1.5rem; }
+            .plan-price { font-size: 1.8rem; }
         }
 
         /* Animation delays */
@@ -369,8 +385,8 @@
 <div class="plans-container">
     <!-- Page Header -->
     <div class="page-header-custom">
-        <h1><i class="fas fa-gem me-2"></i>Your Plans</h1>
-        <p>Here are the plans available for your restaurant</p>
+        <h1><i class="fas fa-gem me-2"></i>Available Plans</h1>
+        <p>Choose a plan that fits your restaurant's size and needs</p>
         <div class="user-welcome">
             <i class="fas fa-store"></i> {{ Auth::user()->restaurant->name ?? 'Your Restaurant' }}
         </div>
@@ -383,7 +399,7 @@
     @endif
 
     @if(session('error'))
-        <div class="alert-custom" style="border-left-color: var(--danger);">
+        <div class="alert-custom" style="border-left-color: var(--danger); background-color: #fee2e2; color: #991b1b;">
             <i class="fas fa-exclamation-circle" style="color: var(--danger);"></i> {{ session('error') }}
         </div>
     @endif
@@ -403,35 +419,32 @@
             <div class="plan-card {{ $isDefault ? 'default-plan' : '' }}">
                 @if($isDefault)
                     <div class="default-badge">
-                        <i class="fas fa-star"></i> Default Plan
+                        <i class="fas fa-star"></i> Default
                     </div>
                 @endif
                 @if($isAssigned)
                     <div class="assigned-badge">
-                        <i class="fas fa-check-circle"></i> Assigned to You
+                        <i class="fas fa-check-circle"></i> Assigned
                     </div>
                 @endif
 
                 <div class="plan-header">
-    <h3 class="plan-name">{{ $plan->name }}</h3>
-    <div class="plan-price">
-        @if($plan->price == 0)
-            FREE
-        @else
-            @php
-                $gstPercentage = $plan->gst_percentage ?? 18;
-                $taxableAmount = $plan->taxable_amount ?? ($plan->price / (1 + ($gstPercentage / 100)));
-            @endphp
-            <div>₹{{ number_format($plan->price, 2) }}{{--  <small>/ {{ ucfirst($plan->billing_cycle) }}</small> --}}</div>
-            {{-- <div class="small text-muted mt-1">
-                <i class="fas fa-info-circle"></i> ₹{{ number_format($taxableAmount, 2) }} + {{ $gstPercentage }}% GST
-            </div> --}}
-        @endif
-    </div>
-    <div class="plan-duration">
-        <i class="fas fa-calendar-alt me-1"></i> {{ $plan->duration_days }} days validity
-    </div>
-</div>
+                    <h3 class="plan-name">{{ $plan->name }}</h3>
+                    <div class="plan-price">
+                        @if($plan->price == 0)
+                            FREE
+                        @else
+                            @php
+                                $gstPercentage = $plan->gst_percentage ?? 18;
+                                $taxableAmount = $plan->taxable_amount ?? ($plan->price / (1 + ($gstPercentage / 100)));
+                            @endphp
+                            <div>₹{{ number_format($plan->price, 2) }}</div>
+                        @endif
+                    </div>
+                    <div class="plan-duration">
+                        <i class="fas fa-calendar-alt me-1"></i> {{ $plan->duration_days }} days validity
+                    </div>
+                </div>
 
                 <div class="plan-body">
                     <div class="plan-description">
@@ -445,27 +458,23 @@
                         <li><i class="fas fa-boxes"></i> Inventory {{ $plan->inventory_checkbox == 'Y' ? 'Enabled' : 'Disabled' }}</li>
                     </ul>
 
-                   
-                       
-                   
-                        <a href="{{ route('admin.subscriptions.create', $plan->id) }}" class="btn-select">
-                            <i class="fas fa-shopping-cart me-2"></i>
-                            {{ $plan->price == 0 ? 'Start Free Trial' : 'Subscribe Now' }}
-                        </a>
-                 
+                    <a href="{{ route('admin.subscriptions.create', $plan->id) }}" class="btn-select">
+                        <i class="fas fa-shopping-cart me-2"></i>
+                        {{ $plan->price == 0 ? 'Start Free Trial' : 'Subscribe Now' }}
+                    </a>
                 </div>
             </div>
         </div>
     @endforeach
 </div>
 @else
-<div class="row">
-    <div class="col-md-12">
+<div class="row w-100 justify-content-center">
+    <div class="col-md-8">
         <div class="empty-state">
             <i class="fas fa-box-open"></i>
             <h5>No Plans Available</h5>
             <p>No plans have been assigned to your restaurant yet.<br>Please contact the administrator.</p>
-            <a href="{{ route('logout') }}" class="btn-select" style="display: inline-block; width: auto; margin-top: 20px; padding: 10px 30px;">
+            <a href="{{ route('logout') }}" class="btn-select" style="display: inline-flex; width: auto; margin-top: 20px; padding: 10px 30px;">
                 <i class="fas fa-arrow-left me-2"></i> Go Back
             </a>
         </div>
