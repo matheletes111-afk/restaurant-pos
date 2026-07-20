@@ -241,7 +241,7 @@
 
             <div class="spf-row">
                 <div class="spf-image-col">
-                    <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=600" alt="Billing POS" style="object-fit: cover;">
+                    <img src="{{asset('bill.jpeg')}}" style="max-width:100% !important" alt="Billing POS" style="object-fit: cover;">
                 </div>
                 <div class="spf-text-col">
                     <h3>A quick 3-click restaurant <span>billing</span> software</h3>
@@ -252,7 +252,7 @@
 
             <div class="spf-row reverse">
                 <div class="spf-image-col bg-light-red">
-                    <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600" alt="Inventory Management" style="object-fit: cover;">
+                    <img src="{{asset('inventory.jpeg')}}" style="max-width:100% !important" alt="Inventory Management" style="object-fit: cover;">
                 </div>
                 <div class="spf-text-col">
                     <h3>Restaurant <span>inventory</span> management made easier</h3>
@@ -263,7 +263,7 @@
 
             <div class="spf-row">
                 <div class="spf-image-col">
-                    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=600" alt="Reports and Analytics" style="object-fit: cover;">
+                    <img src="{{asset('report.jpeg')}}" style="max-width:100% !important" alt="Reports and Analytics" style="object-fit: cover;">
                 </div>
                 <div class="spf-text-col">
                     <h3>Get real-time restaurant <span>Reports</span></h3>
