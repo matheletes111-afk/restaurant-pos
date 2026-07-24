@@ -231,7 +231,21 @@
             padding: 0;
             margin: 0;
         }
+    @if(request()->has('embed'))
+    <style>
+        .pc-sidebar, .pc-header, .btn-back {
+            display: none !important;
+        }
+        .pc-container {
+            margin-left: 0 !important;
+            top: 0 !important;
+            padding: 0 !important;
+        }
+        .pc-content {
+            padding: 15px !important;
+        }
     </style>
+    @endif
 </head>
 
 <body>

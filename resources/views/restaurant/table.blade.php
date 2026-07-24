@@ -217,7 +217,8 @@
     <div class="page-header">
       <h5><i class="fas fa-table text-success me-2"></i> Manage Tables</h5>
       @if(
-          isset($plan_details)
+          auth()->user()->hasPermission('table_master', 'add')
+          && isset($plan_details)
           && isset($plan_details->total_number_of_table)
           && count($tables ?? []) < $plan_details->total_number_of_table
       )
@@ -262,24 +263,35 @@
                   </div>
                 </td>
                 <td>
-                  <a href="{{ route('table.manage.status', $table->id) }}"
-                     onclick="return confirm('Are you sure you want to change status?')"
-                     class="status-pill {{ $table->status == 'A' ? 'status-pill-active' : 'status-pill-inactive' }}">
-                     <i class="fas {{ $table->status == 'A' ? 'fa-check-circle' : 'fa-times-circle' }} me-1"></i>
-                     {{ $table->status == 'A' ? 'Active' : 'Inactive' }}
-                  </a>
+                  @if(auth()->user()->hasPermission('table_master', 'edit'))
+                      <a href="{{ route('table.manage.status', $table->id) }}"
+                         onclick="return confirm('Are you sure you want to change status?')"
+                         class="status-pill {{ $table->status == 'A' ? 'status-pill-active' : 'status-pill-inactive' }}">
+                         <i class="fas {{ $table->status == 'A' ? 'fa-check-circle' : 'fa-times-circle' }} me-1"></i>
+                         {{ $table->status == 'A' ? 'Active' : 'Inactive' }}
+                      </a>
+                  @else
+                      <span class="status-pill {{ $table->status == 'A' ? 'status-pill-active' : 'status-pill-inactive' }}" style="cursor: default;">
+                         <i class="fas {{ $table->status == 'A' ? 'fa-check-circle' : 'fa-times-circle' }} me-1"></i>
+                         {{ $table->status == 'A' ? 'Active' : 'Inactive' }}
+                      </span>
+                  @endif
                 </td>
                 <td>
                   <div class="d-flex gap-2">
+                    @if(auth()->user()->hasPermission('table_master', 'edit'))
                     <button class="btn-edit-action editBtn"
                             data-id="{{ $table->id }}"
                             data-name="{{ $table->name }}"
                             data-description="{{ $table->description }}">
                       <i class="fa fa-edit"></i>
                     </button>
+                    @endif
+                    @if(auth()->user()->hasPermission('table_master', 'delete'))
                     <a href="{{ route('table.manage.delete', $table->id) }}"
                        onclick="return confirm('Are you sure you want to delete this table?')"
                        class="btn-delete-action"><i class="fa fa-trash"></i></a>
+                    @endif
                   </div>
                 </td>
               </tr>
@@ -369,6 +381,20 @@ $(document).ready(function() {
     $('#edit_name').val($(this).data('name'));
     $('#edit_description').val($(this).data('description'));
     $('#editTableModal').modal('show');
+  });
+
+  // Prevent double form submissions by disabling submit button
+  $('form').on('submit', function() {
+    let form = $(this);
+    let submitBtn = form.find('button[type="submit"]');
+    
+    submitBtn.prop('disabled', true);
+    
+    if (submitBtn.text().trim().toLowerCase().indexOf('update') !== -1) {
+      submitBtn.html('<i class="fas fa-spinner fa-spin me-1"></i> Updating...');
+    } else {
+      submitBtn.html('<i class="fas fa-spinner fa-spin me-1"></i> Saving...');
+    }
   });
 });
 </script>

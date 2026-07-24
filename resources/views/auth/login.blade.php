@@ -291,11 +291,11 @@
         <div class="d-flex flex-column gap-3 align-items-center justify-content-center">
           <div class="d-inline-flex align-items-center gap-2">
             <i class="fas fa-envelope text-secondary"></i>
-            <span class="font-weight-bold text-dark">admin@restaurantpos.com</span>
+            <span class="font-weight-bold text-dark">info@billnbite.com</span>
           </div>
           <div class="d-inline-flex align-items-center gap-2">
             <i class="fas fa-phone-alt text-secondary"></i>
-            <span class="font-weight-bold text-dark">+1 (555) 019-2834</span>
+            <span class="font-weight-bold text-dark">+91 7001769472</span>
           </div>
         </div>
       </div>

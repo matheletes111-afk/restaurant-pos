@@ -19,6 +19,7 @@
 
     <div class="page-header">
       <h5 class="m-b-10">Manage Products</h5>
+      @if(auth()->user()->hasPermission('inventory_setting', 'add'))
       <div class="float-right">
         {{-- <a href="{{ route('products.import.view') }}" class="btn btn-info mr-2">
           <i class="fa fa-upload"></i> Import Excel
@@ -30,6 +31,7 @@
           <i class="fa fa-plus"></i> Add Product
         </a>
       </div>
+      @endif
     </div>
 
     @include('includes.message')
@@ -68,6 +70,7 @@
                 
                 
                 <td>
+                  @if(auth()->user()->hasPermission('inventory_setting', 'edit'))
                   <button class="btn btn-sm btn-info editBtn"
                           data-id="{{ $product->id }}"
                           data-name="{{ $product->product_name }}"
@@ -75,12 +78,15 @@
                           data-qty="{{ $product->opening_qty }}">
                     <i class="fa fa-edit"></i>
                   </button>
+                  @endif
 
+                  @if(auth()->user()->hasPermission('inventory_setting', 'delete'))
                   <a href="{{ route('products.delete', $product->id) }}"
                      onclick="return confirm('Are you sure you want to delete this product?')"
                      class="btn btn-sm btn-danger">
                     <i class="fa fa-trash"></i>
                   </a>
+                  @endif
                 </td>
               </tr>
               @endforeach

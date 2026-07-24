@@ -979,3 +979,160 @@ section {
         padding: 60px 0;
     }
 }
+
+/* Premium Overrides for landing page */
+body {
+    background-color: #fcfcfd;
+}
+
+.navbar {
+    background-color: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(16px) !important;
+    border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02) !important;
+    padding: 15px 0 !important;
+}
+
+.hero {
+    background-color: #fcfcfd !important;
+    background-image:
+        radial-gradient(circle at 10% 20%, rgba(255, 107, 0, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(255, 107, 0, 0.03) 0%, transparent 40%) !important;
+    padding: 120px 0 80px !important;
+}
+
+.hero h1 {
+    font-size: 3.8rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -1.5px !important;
+    line-height: 1.15 !important;
+    color: #0f172a !important;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #FF6B00 0%, #FF8C42 100%) !important;
+    color: white !important;
+    border-radius: 30px !important;
+    padding: 12px 28px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 15px rgba(255, 107, 0, 0.25) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #FF8C42 0%, #FF6B00 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(255, 107, 0, 0.35) !important;
+}
+
+.btn-outline {
+    border-radius: 30px !important;
+    padding: 12px 28px !important;
+    font-weight: 700 !important;
+    border: 1px solid #FF6B00 !important;
+    color: #FF6B00 !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.btn-outline:hover {
+    background-color: rgba(255, 107, 0, 0.05) !important;
+    transform: translateY(-2px) !important;
+}
+
+.btn-login {
+    border-radius: 30px !important;
+    padding: 8px 22px !important;
+    font-weight: 600 !important;
+    border: 1px solid rgba(0,0,0,0.08) !important;
+    transition: all 0.3s ease !important;
+}
+
+.btn-login:hover {
+    border-color: #FF6B00 !important;
+    color: #FF6B00 !important;
+    background-color: rgba(255, 107, 0, 0.02) !important;
+}
+
+.badge {
+    background-color: rgba(255, 107, 0, 0.08) !important;
+    color: #FF6B00 !important;
+    border-radius: 30px !important;
+    padding: 6px 16px !important;
+    font-weight: 600 !important;
+    border: 1px solid rgba(255, 107, 0, 0.15) !important;
+}
+
+.feature-card {
+    background: white !important;
+    border: 1px solid rgba(0,0,0,0.04) !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.015) !important;
+    border-radius: 16px !important;
+    padding: 30px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.feature-card:hover {
+    transform: translateY(-6px) !important;
+    box-shadow: 0 12px 30px rgba(255, 107, 0, 0.07) !important;
+    border-color: rgba(255, 107, 0, 0.2) !important;
+}
+
+.feature-icon {
+    background-color: rgba(255, 107, 0, 0.08) !important;
+    color: #FF6B00 !important;
+    border-radius: 12px !important;
+    width: 48px !important;
+    height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-bottom: 20px !important;
+}
+
+.smart-pos {
+    background-color: #fcfcfd !important;
+}
+
+.spf-image-col {
+    background: linear-gradient(135deg, #FF6B0010 0%, #FF8C4215 100%) !important;
+    border: 1px solid rgba(255, 107, 0, 0.1) !important;
+    border-radius: 16px !important;
+}
+
+.spf-image-col img {
+    border-radius: 12px !important;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.08) !important;
+    transition: transform 0.4s ease !important;
+}
+
+.spf-row:hover img {
+    transform: scale(1.02) translateY(-2px) !important;
+}
+
+.footer {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    padding: 80px 0 40px !important;
+}
+
+.footer-brand p, .social-links a, .footer-links a, .footer-contact li {
+    color: #94a3b8 !important;
+}
+
+.footer-links a:hover {
+    color: #FF8C42 !important;
+}
+
+.footer-links h4, .footer-contact h4 {
+    color: white !important;
+}
+
+.social-links a {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    color: #94a3b8 !important;
+}
+
+.social-links a:hover {
+    background-color: #FF6B00 !important;
+    color: white !important;
+}

@@ -28,7 +28,8 @@ protected $fillable = [
     'razorpay_plan_id',
     'is_delete',
     'end_date',
-    'plan_status'
+    'plan_status',
+    'sort_order'
 ];
 
     protected $casts = [

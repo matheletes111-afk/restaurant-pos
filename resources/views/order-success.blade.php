@@ -2,27 +2,28 @@
 <html lang="en">
 <head>
     <title>Order Placed | {{ $restaurant_details->name ?? 'Premium Dining' }}</title>
+    <link rel="shortcut icon" href="{{ asset('fav_web.png') }}">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --gold: #C9A84C;
-            --gold-light: #E8C97A;
-            --gold-dim: rgba(201,168,76,0.15);
-            --obsidian: #0A0A0B;
-            --deep: #111114;
-            --surface: #17171C;
-            --surface-2: #1E1E25;
-            --surface-3: #26262F;
-            --rim: rgba(255,255,255,0.07);
-            --rim-strong: rgba(255,255,255,0.12);
-            --text-primary: #F2EEE6;
-            --text-secondary: rgba(242,238,230,0.55);
-            --text-muted: rgba(242,238,230,0.3);
-            --success: #3DD68C;
-            --success-dark: #2BBF7A;
+            --gold: #ff6a00;
+            --gold-light: #ff8c42;
+            --gold-dim: rgba(255, 106, 0, 0.08);
+            --obsidian: #f8fafc;
+            --deep: #f1f5f9;
+            --surface: #ffffff;
+            --surface-2: #f8fafc;
+            --surface-3: #f1f5f9;
+            --rim: #e2e8f0;
+            --rim-strong: #cbd5e1;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --success-dark: #059669;
             --radius-xl: 24px;
             --radius-lg: 18px;
             --radius-md: 12px;
@@ -37,8 +38,8 @@
         body {
             background-color: var(--obsidian);
             background-image:
-                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201,168,76,0.08) 0%, transparent 60%),
-                radial-gradient(ellipse 60% 40% at 80% 100%, rgba(201,168,76,0.05) 0%, transparent 50%);
+                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 106, 0, 0.05) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 100%, rgba(255, 106, 0, 0.02) 0%, transparent 50%);
             font-family: 'DM Sans', sans-serif;
             color: var(--text-primary);
             min-height: 100vh;
@@ -54,10 +55,10 @@
             content: '';
             position: fixed;
             inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.015'/%3E%3C/svg%3E");
             pointer-events: none;
             z-index: 0;
-            opacity: 0.6;
+            opacity: 0.35;
         }
 
         .success-container {
@@ -83,9 +84,9 @@
         .success-card {
             background: var(--surface);
             border-radius: var(--radius-xl);
-            border: 1px solid var(--rim-strong);
+            border: 1px solid var(--rim);
             overflow: hidden;
-            box-shadow: 0 32px 80px rgba(0,0,0,0.5), var(--glow);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.06);
             backdrop-filter: blur(0px);
         }
 
@@ -184,7 +185,7 @@
             padding: 20px 40px;
             border-top: 1px solid var(--rim);
             border-bottom: 1px solid var(--rim);
-            background: rgba(0,0,0,0.2);
+            background: var(--surface-2);
         }
 
         .message {
@@ -194,7 +195,7 @@
         }
 
         .message strong {
-            color: var(--gold-light);
+            color: var(--gold);
             font-weight: 600;
         }
 
@@ -266,11 +267,11 @@
 
         .btn-primary {
             background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
-            color: var(--obsidian);
+            color: white !important;
             border: none;
             border-radius: 50px;
             padding: 14px 32px;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 0.85rem;
             letter-spacing: 0.08em;
             text-transform: uppercase;
@@ -280,22 +281,23 @@
             gap: 10px;
             transition: all 0.3s ease;
             cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 106, 0, 0.2);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(201,168,76,0.35);
-            color: var(--obsidian);
+            box-shadow: 0 8px 25px rgba(255, 106, 0, 0.3);
+            color: white !important;
             text-decoration: none;
         }
 
         .btn-secondary {
             background: var(--surface-2);
-            border: 1px solid var(--rim-strong);
+            border: 1px solid var(--rim);
             color: var(--text-secondary);
             border-radius: 50px;
             padding: 14px 32px;
-            font-weight: 500;
+            font-weight: 600;
             font-size: 0.85rem;
             letter-spacing: 0.05em;
             text-decoration: none;
@@ -307,8 +309,8 @@
 
         .btn-secondary:hover {
             background: var(--surface-3);
-            border-color: rgba(201,168,76,0.4);
-            color: var(--gold-light);
+            border-color: var(--gold);
+            color: var(--gold);
             text-decoration: none;
         }
 
@@ -346,6 +348,14 @@
 
 <body>
 <div class="success-container">
+    
+    <!-- Branding Header -->
+    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 24px;">
+        <div style="background-color: #ffffff; padding: 8px 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; border: 1px solid var(--rim); height: 48px;">
+            <img src="{{ asset('logo.png') }}" alt="Bill & Bite Logo" style="height: 30px; width: auto; display: block;">
+        </div>
+    </div>
+
     <div class="success-card">
         <div class="card-header-decoration"></div>
 

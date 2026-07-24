@@ -585,7 +585,23 @@
         @forelse($OrderItems as $item)
         <div class="order-card {{ $item->order_status }}" data-status="{{ $item->order_status }}" id="card_{{ $item->id }}">
           <div class="card-header">
-            <h6 class="order-id">ORDER #{{ $item->order->order_id }}</h6>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <h6 class="order-id">ORDER #{{ $item->order->order_id }}</h6>
+              <button class="btn btn-sm btn-link p-0 text-secondary print-kot-trigger" 
+                      data-id="{{ $item->id }}"
+                      data-order-id="{{ $item->order->order_id }}"
+                      data-kot-no="{{ $item->kot_no ?? 'N/A' }}"
+                      data-date="{{ $item->created_at->format('d M, h:i A') }}"
+                      data-dish-name="{{ $item->subcategory->name }}"
+                      data-food-type="{{ $item->subcategory->food_type }}"
+                      data-quantity="{{ $item->quantity }}"
+                      data-table="{{ $item->order->table->name ?? 'Take Away' }}"
+                      data-note="{{ $item->note ?? '' }}"
+                      title="Print KOT Ticket"
+                      style="color: var(--text-secondary); border: none; background: none; outline: none; cursor: pointer;">
+                <i class="fas fa-print" style="font-size: 1.05rem; color: #ff6a00;"></i>
+              </button>
+            </div>
             @if($item->kot_no)
               <span class="kot-badge">
                 KOT: {{ $item->kot_no }}
@@ -730,11 +746,8 @@ $(document).ready(function() {
     location.reload();
   });
   
-  // Auto-refresh every 30 seconds
-  setTimeout(function() {
-    location.reload();
-  }, 30000);
-  
+
+
   // Notification function
   function showNotification(message, type) {
     $('.notification').remove();
@@ -756,6 +769,44 @@ $(document).ready(function() {
       });
     }, 3000);
   }
+
+  // Handle KOT Print Trigger click (direct print)
+  $(document).on('click', '.print-kot-trigger', function() {
+    let btn = $(this);
+    let id = btn.data('id');
+    let originalHtml = btn.html();
+    
+    // Change print icon to spinner to show it is loading
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin" style="font-size: 1.05rem; color: #ff6a00;"></i>');
+    
+    let pdfUrl = "{{ route('kitchen.kot.pdf', ':id') }}".replace(':id', id);
+    
+    // Remove old iframe and create a fresh one
+    $('#kotPdfFrame').remove();
+    
+    let iframe = $('<iframe>', {
+        id: 'kotPdfFrame',
+        src: pdfUrl,
+        style: 'position: absolute; width: 0; height: 0; border: 0; visibility: hidden;'
+    }).appendTo('body');
+
+    // Wait for iframe to fully load, print, and restore icon
+    iframe[0].onload = function() {
+        btn.prop('disabled', false).html(originalHtml);
+        try {
+            iframe[0].contentWindow.focus();
+            iframe[0].contentWindow.print();
+        } catch (e) {
+            // Fallback: open in new tab if iframe print fails
+            window.open(pdfUrl, '_blank');
+        }
+    };
+
+    // Fallback timeout to restore icon in case onload doesn't fire
+    setTimeout(function() {
+        btn.prop('disabled', false).html(originalHtml);
+    }, 5000);
+  });
 });
 </script>
 

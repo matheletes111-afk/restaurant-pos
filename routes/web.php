@@ -181,6 +181,10 @@ Route::get('order/{id}/invoice', [OrderManagementController::class, 'invoicePage
 Route::get('order/{id}/receipt-pdf', [OrderManagementController::class, 'pdfReceipt'])
     ->name('order.receipt.pdf');
 
+// PDF KOT
+Route::get('kitchen/kot-pdf/{id}', [OrderManagementController::class, 'kotPdf'])
+    ->name('kitchen.kot.pdf');
+
 Route::post('order-update/{order_id}', [App\Http\Controllers\OrderManagementController::class, 'update'])
     ->name('order.update');
 Route::get('order/{order}/payment', [App\Http\Controllers\OrderManagementController::class, 'paymentPage'])->name('order.payment');
@@ -276,8 +280,10 @@ Route::get('admin/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdmin
 
 // Admin Plan Routes
 
+    Route::post('plans/update-order', [\App\Http\Controllers\PlanController::class, 'updateOrder'])->name('admin.plans.update-order');
     Route::resource('plans', \App\Http\Controllers\PlanController::class);
     Route::get('plans/{id}/history', [\App\Http\Controllers\PlanController::class, 'history'])->name('admin.plans.history');
+    Route::post('plans/{id}/toggle-default', [\App\Http\Controllers\PlanController::class, 'toggleDefaultPlan'])->name('admin.plans.toggle-default');
 
 
     // Payment History Routes
@@ -298,6 +304,7 @@ Route::get('admin/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdmin
     Route::post('subscriptions/payment-failed', [\App\Http\Controllers\SubscriptionController::class, 'paymentFailed'])->name('admin.subscriptions.payment.failed');
     Route::get('subscriptions/payment-failed', [\App\Http\Controllers\SubscriptionController::class, 'paymentFailed'])->name('admin.subscriptions.payment.failed.get');
     Route::delete('subscriptions/{id}/cancel', [\App\Http\Controllers\SubscriptionController::class, 'cancel'])->name('admin.subscriptions.cancel');
+    Route::post('subscriptions/{id}/toggle-auto-renew', [\App\Http\Controllers\SubscriptionController::class, 'toggleAutoRenew'])->name('admin.subscriptions.toggleAutoRenew');
     Route::post('razorpay/webhook', [\App\Http\Controllers\Admin\WebhookController::class, 'handle']);
     
     // Restaurant Plans View
@@ -367,6 +374,8 @@ Route::get('admin/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdmin
     Route::get('report-top-analysis', [App\Http\Controllers\ReportController::class, 'topAnalysisReport'])->name('order.report.top.analysis');
     Route::get('report-order-analysis', [App\Http\Controllers\ReportController::class, 'orderAnalysisReport'])->name('order.report.analysis');
     Route::get('report-order-management', [App\Http\Controllers\ReportController::class, 'orderManagementReport'])->name('order.report.management');
+    Route::post('report-order-management/send-otp', [App\Http\Controllers\ReportController::class, 'sendOrderDeleteOtp'])->name('order.report.management.send-otp');
+    Route::post('report-order-management/verify-delete', [App\Http\Controllers\ReportController::class, 'verifyAndDeleteOrder'])->name('order.report.management.verify-delete');
     Route::get('item-gst-summary', [App\Http\Controllers\ReportController::class, 'itemGstSummary'])->name('report.item.gst.summary');
     // Expense Management Routes
     Route::prefix('expense')->group(function () {

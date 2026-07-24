@@ -32,7 +32,7 @@ public function store(Request $request)
     $table->save();
 
     // QR LINK
-    $qrLink = url('/restaurant/table/'.$table->id.'/'.$table->restaurant_id);
+    $qrLink = url('/order-customer/'.$table->id.'/'.$table->restaurant_id);
 
     // QR FILE NAME
     $fileName = 'qr_'.$table->id.'.svg';
@@ -53,12 +53,35 @@ public function store(Request $request)
     public function update(Request $request)
     {
         $table = TableManage::find($request->id);
+        
+        // Delete old QR code file if exists
+        if ($table->qr_code) {
+            $oldPath = public_path('qrcodes/' . $table->qr_code);
+            if (file_exists($oldPath)) {
+                @unlink($oldPath);
+            }
+        }
+
         $table->update([
             'name' => $request->name,
             'description' => $request->description,
         ]);
 
-        return redirect()->back()->with('success', 'Table updated successfully.');
+        // QR LINK
+        $qrLink = url('/order-customer/' . $table->id . '/' . $table->restaurant_id);
+
+        // Generate new QR file name with timestamp to avoid cache issues
+        $fileName = 'qr_' . $table->id . '_' . time() . '.svg';
+        $qrPath = public_path('qrcodes/' . $fileName);
+
+        // Generate the new SVG QR Code
+        \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(300)->generate($qrLink, $qrPath);
+
+        // Save the new QR Code file name
+        $table->qr_code = $fileName;
+        $table->save();
+
+        return redirect()->back()->with('success', 'Table updated and QR Code regenerated successfully.');
     }
 
     public function status($id)

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Receipt #{{ $order->order_id }}</title>
+    <link rel="shortcut icon" href="{{ asset('fav_web.png') }}">
     <style>
         * {
             margin: 0;

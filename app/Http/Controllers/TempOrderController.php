@@ -154,7 +154,12 @@ public function store(Request $request)
 
     public function success($id)
     {
-       return view('order-success');
+        $tempOrder = TempOrder::findOrFail($id);
+        $restaurant_details = RestaurantMaster::find($tempOrder->restaurant_id);
+        $orderId = $tempOrder->order_id ?? ('#' . $tempOrder->id);
+        $customerName = $tempOrder->customer_name;
+        
+        return view('order-success', compact('tempOrder', 'restaurant_details', 'orderId', 'customerName'));
     }
 
     public function approveOrder($id)
@@ -204,25 +209,25 @@ public function store(Request $request)
             $order->created_by     = auth()->id();
             $order->save();
 
-            // Generate KOT number
-            $todayStart = Carbon::today()->startOfDay();
-            $todayEnd = Carbon::today()->endOfDay();
-            $latestItem = OrderItems::where('restaurant_id', $restaurantId)
-                ->whereBetween('created_at', [$todayStart, $todayEnd])
-                ->whereNotNull('kot_no')
-                ->orderBy('id', 'desc')
-                ->first();
-                
-            if ($latestItem && preg_match('/KOT-\d{6}-(\d+)/', $latestItem->kot_no, $matches)) {
-                $nextSequence = intval($matches[1]) + 1;
-            } else {
-                $nextSequence = 1;
-            }
-            $kotDate = Carbon::now()->format('ymd');
-            $kotNo = "KOT-{$kotDate}-" . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
-
-            // Move items
+            // Move items and generate a unique KOT number for each
             foreach ($tempOrder->items as $item) {
+                $latestItem = OrderItems::where('restaurant_id', $restaurantId)
+                    ->whereNotNull('kot_no')
+                    ->orderBy('id', 'desc')
+                    ->first();
+                    
+                $todayDateStr = Carbon::now()->format('ymd');
+                $nextSequence = 1;
+
+                if ($latestItem && preg_match('/KOT-(\d{6})-(\d+)/', $latestItem->kot_no, $matches)) {
+                    $latestDateStr = $matches[1];
+                    $latestSequence = intval($matches[2]);
+                    if ($latestDateStr === $todayDateStr) {
+                        $nextSequence = $latestSequence + 1;
+                    }
+                }
+                $kotNo = "KOT-{$todayDateStr}-" . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
+
                 $orderItem = new OrderItems();
                 $orderItem->order_id       = $order->id;
                 $orderItem->subcategory_id = $item->subcategory_id;

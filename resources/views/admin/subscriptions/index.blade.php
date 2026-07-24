@@ -6,6 +6,68 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <style>
+        /* Premium custom switch toggle */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 22px;
+            vertical-align: middle;
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        input:checked + .slider {
+            background-color: #ff6a00;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #ff6a00;
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(22px);
+            -ms-transform: translateX(22px);
+            transform: translateX(22px);
+        }
+
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+    </style>
 </head>
 <body data-pc-theme="light">
     <div class="loader-bg">
@@ -41,7 +103,7 @@
                     <div class="card">
                         <div class="card-header">
                             <a href="{{ route('restaurant.plans') }}" class="btn btn-primary" style="float: right;">
-                                        <i class="fa fa-plus"></i> View Plans
+                                        <i class="fa fa-plus"></i> Upgrade Plan
                                     </a>
                         </div>
                         <div class="card-body">
@@ -81,9 +143,21 @@
                                             <td>{{ $subscription->end_date->format('Y-m-d') }}</td>
                                             <td>{{ $subscription->renewal_date ? $subscription->renewal_date->format('Y-m-d') : 'N/A' }}</td>
                                             <td>
-                                                <span class="btn btn-{{ $subscription->auto_renew ? 'success' : 'secondary' }}">
-                                                    {{ $subscription->auto_renew ? 'Yes' : 'No' }}
-                                                </span>
+                                                @if($subscription->status == 'active')
+                                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                                        <label class="switch">
+                                                            <input type="checkbox" class="toggle-auto-renew" data-id="{{ $subscription->id }}" {{ $subscription->auto_renew ? 'checked' : '' }}>
+                                                            <span class="slider round"></span>
+                                                        </label>
+                                                        <span class="auto-renew-status badge badge-{{ $subscription->auto_renew ? 'success' : 'secondary' }}">
+                                                            {{ $subscription->auto_renew ? 'ON' : 'OFF' }}
+                                                        </span>
+                                                    </div>
+                                                @else
+                                                    <span class="badge badge-secondary">
+                                                        {{ $subscription->auto_renew ? 'Yes' : 'No' }}
+                                                    </span>
+                                                @endif
                                             </td>
                                             <td>
                                                 @if($subscription->status == 'active')
@@ -155,6 +229,49 @@
                 $('#planName').text(planName);
                 $('#cancelForm').attr('action', '{{ url("admin/subscriptions") }}/' + id + '/cancel');
                 $('#cancelModal').modal('show');
+            });
+
+            // Toggle Auto-Renew AJAX
+            $('.toggle-auto-renew').on('change', function() {
+                let checkbox = $(this);
+                let id = checkbox.data('id');
+                let statusBadge = checkbox.closest('div').find('.auto-renew-status');
+                
+                statusBadge.text('Updating...').removeClass('badge-success badge-secondary').addClass('badge-info');
+                
+                $.ajax({
+                    url: '{{ url("admin/subscriptions") }}/' + id + '/toggle-auto-renew',
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            if (response.auto_renew) {
+                                checkbox.prop('checked', true);
+                                statusBadge.text('ON').removeClass('badge-info badge-secondary').addClass('badge-success');
+                            } else {
+                                checkbox.prop('checked', false);
+                                statusBadge.text('OFF').removeClass('badge-info badge-success').addClass('badge-secondary');
+                            }
+                        } else {
+                            // Revert on error
+                            checkbox.prop('checked', !checkbox.prop('checked'));
+                            statusBadge.text(checkbox.prop('checked') ? 'ON' : 'OFF')
+                                .removeClass('badge-info')
+                                .addClass(checkbox.prop('checked') ? 'badge-success' : 'badge-secondary');
+                            alert(response.message || 'Failed to toggle auto-renew.');
+                        }
+                    },
+                    error: function(xhr) {
+                        // Revert on error
+                        checkbox.prop('checked', !checkbox.prop('checked'));
+                        statusBadge.text(checkbox.prop('checked') ? 'ON' : 'OFF')
+                            .removeClass('badge-info')
+                            .addClass(checkbox.prop('checked') ? 'badge-success' : 'badge-secondary');
+                        alert('Error connecting to server. Please try again.');
+                    }
+                });
             });
         });
     </script>

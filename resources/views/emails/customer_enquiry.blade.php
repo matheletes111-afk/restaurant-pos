@@ -23,21 +23,20 @@
             border: 1px solid #eef2f6;
         }
         .header {
-            background: linear-gradient(135deg, #ff6a00 0%, #ff8c42 100%);
-            color: white;
-            padding: 40px 30px;
+            background-color: #ffffff;
+            padding: 30px;
             text-align: center;
+            border-bottom: 1px solid #f0f0f0;
         }
-        .header h1 {
-            margin: 0;
-            font-size: 26px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
+        .header img {
+            max-height: 50px;
+            width: auto;
+            display: inline-block;
         }
         .header p {
             margin: 10px 0 0;
-            font-size: 16px;
-            opacity: 0.9;
+            font-size: 14px;
+            color: #555;
         }
         .content {
             padding: 40px 35px;
@@ -102,7 +101,7 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>Bill & Bite</h1>
+            <img src="{{ asset('logo.png') }}" alt="Bill & Bite Logo">
             <p>Complete Restaurant Management System</p>
         </div>
 
@@ -119,7 +118,7 @@
             </div>
 
             <div class="button-wrapper">
-                <a href="https://billnbite.cloud/" class="button" target="_blank">Visit Our Website</a>
+                <a href="https://billnbite.com/" class="button" target="_blank">Visit Our Website</a>
             </div>
 
             <div class="divider"></div>
@@ -132,7 +131,7 @@
         <!-- Footer -->
         <div class="footer">
             <p>© {{ date('Y') }} Bill & Bite. All rights reserved.</p>
-            <p>Siliguri, India | <a href="mailto:info@billnbite.cloud">info@billnbite.cloud</a></p>
+            <p>Siliguri, India | <a href="mailto:info@billnbite.com">info@billnbite.com</a></p>
         </div>
     </div>
 </body>

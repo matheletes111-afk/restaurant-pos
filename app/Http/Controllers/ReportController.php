@@ -14,6 +14,9 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\FirebasePushService;
+use App\Mail\OrderDeleteOtpMail;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Session;
 
 class ReportController extends Controller
 {
@@ -521,5 +524,113 @@ public function itemGstSummary(Request $request)
     
     return view('report.item-gst-summary', compact('reportData', 'totals', 'fromDate', 'toDate'));
 }
+
+    /**
+     * Send OTP for deleting an order to the restaurant admin's email.
+     */
+    public function sendOrderDeleteOtp(Request $request)
+    {
+        $request->validate([
+            'order_id' => 'required|exists:orders,id',
+            'remarks' => 'required|string|max:1000',
+        ]);
+
+        $restaurantId = auth()->user()->restaurant_id;
+        $order = OrderManage::where('restaurant_id', $restaurantId)->where('id', $request->order_id)->first();
+        
+        if (!$order) {
+            return response()->json(['success' => false, 'message' => 'Order not found.'], 404);
+        }
+
+        // Find the admin user of this restaurant
+        $admin = User::where('restaurant_id', $restaurantId)->where('role_type', 'ADMIN')->first();
+        if (!$admin) {
+            return response()->json(['success' => false, 'message' => 'Restaurant Administrator email not found.'], 404);
+        }
+
+        // Generate 6-digit OTP
+        $otp = rand(100000, 999999);
+
+        // Save OTP, order_id, remarks, and timestamp in session (or cache)
+        Session::put('order_delete_otp_' . $order->id, [
+            'otp' => $otp,
+            'remarks' => $request->remarks,
+            'expires_at' => Carbon::now()->addMinutes(10),
+        ]);
+
+        // Send email to admin
+        try {
+            $mailData = [
+                'name' => $admin->name,
+                'email' => $admin->email,
+                'order_uid' => $order->order_id,
+                'remarks' => $request->remarks,
+                'otp' => $otp
+            ];
+            Mail::to($admin->email)->send(new OrderDeleteOtpMail($mailData));
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to send OTP email: ' . $e->getMessage()], 500);
+        }
+
+        // Helper function to mask email
+        $maskEmail = function ($email) {
+            $parts = explode('@', $email);
+            if (count($parts) < 2) return $email;
+            $name = $parts[0];
+            $domain = $parts[1];
+            $len = strlen($name);
+            if ($len <= 3) {
+                $maskedName = substr($name, 0, 1) . str_repeat('*', $len - 1);
+            } else {
+                $maskedName = substr($name, 0, 2) . str_repeat('*', $len - 4) . substr($name, -2);
+            }
+            return $maskedName . '@' . $domain;
+        };
+
+        return response()->json(['success' => true, 'message' => 'OTP sent successfully to ' . $maskEmail($admin->email)]);
+    }
+
+    /**
+     * Verify OTP and soft delete the order.
+     */
+    public function verifyAndDeleteOrder(Request $request)
+    {
+        $request->validate([
+            'order_id' => 'required|exists:orders,id',
+            'otp' => 'required|numeric',
+        ]);
+
+        $restaurantId = auth()->user()->restaurant_id;
+        $order = OrderManage::where('restaurant_id', $restaurantId)->where('id', $request->order_id)->first();
+        
+        if (!$order) {
+            return response()->json(['success' => false, 'message' => 'Order not found.'], 404);
+        }
+
+        $otpData = Session::get('order_delete_otp_' . $order->id);
+
+        if (!$otpData) {
+            return response()->json(['success' => false, 'message' => 'OTP request expired or not found. Please request a new OTP.'], 400);
+        }
+
+        if (Carbon::now()->greaterThan($otpData['expires_at'])) {
+            Session::forget('order_delete_otp_' . $order->id);
+            return response()->json(['success' => false, 'message' => 'OTP has expired. Please request a new OTP.'], 400);
+        }
+
+        if (intval($request->otp) !== intval($otpData['otp'])) {
+            return response()->json(['success' => false, 'message' => 'Invalid OTP. Please try again.'], 400);
+        }
+
+        // Save remarks and soft delete the order
+        $order->remarks = ($order->remarks ? $order->remarks . "\n" : "") . "[Soft Deleted Reason: " . $otpData['remarks'] . "]";
+        $order->save();
+        $order->delete(); // Soft deletes the order
+
+        // Clear OTP session
+        Session::forget('order_delete_otp_' . $order->id);
+
+        return response()->json(['success' => true, 'message' => 'Order deleted successfully.']);
+    }
 
 }

@@ -82,6 +82,7 @@
 
     .category-card-actions {
       display: flex;
+      align-items: center;
       gap: 8px;
       margin-top: 1rem;
       border-top: 1px solid #e9ecef;
@@ -89,10 +90,35 @@
     }
 
     .category-card-actions .btn {
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 10px;
+      transition: all 0.2s;
+    }
+
+    .category-card-actions .btn-add-dishes {
       flex: 1;
-      padding: 6px 12px;
-      font-size: 0.8rem;
-      border-radius: 8px;
+      background: linear-gradient(135deg, #ff6a00 0%, #ff8c42 100%);
+      border: none;
+      color: white;
+      gap: 6px;
+    }
+
+    .category-card-actions .btn-add-dishes:hover {
+      background: linear-gradient(135deg, #e65c00 0%, #e65c00 100%);
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 106, 0, 0.2);
+    }
+
+    .category-card-actions .btn-icon-only {
+      width: 38px;
+      flex: 0 0 38px;
+      padding: 0;
     }
 
     /* Grid layout - exactly col-md-3 style */
@@ -172,7 +198,8 @@
             @include('includes.message')
             <div class="card-header">
               @if(
-                  isset($plan_details)
+                  auth()->user()->hasPermission('menu_master', 'add')
+                  && isset($plan_details)
                   && isset($plan_details->category_number)
                   && count($data ?? []) < $plan_details->category_number
               )
@@ -206,24 +233,28 @@
                       </div>
                       <div class="category-card-actions">
                         <!-- Subcategory -->
-                        <a href="{{ route('manage.subcategory.category', @$value->id) }}" class="btn btn-dark btn-sm" title="View Subcategories">
-                          <i class="fa fa-list"></i>
+                        <a href="{{ route('manage.subcategory.category', @$value->id) }}" class="btn btn-add-dishes" title="Add Dishes">
+                          <i class="fa fa-plus"></i> Add Dishes
                         </a>
 
+                        @if(auth()->user()->hasPermission('menu_master', 'edit'))
                         <!-- Edit -->
-                        <button class="btn btn-success btn-sm edit-btn"
+                        <button class="btn btn-success btn-icon-only edit-btn"
                                 data-id="{{ $value->id }}"
                                 data-name="{{ $value->name }}"
                                 data-image="{{ $value->image }}">
                           <i class="fa fa-edit"></i>
                         </button>
+                        @endif
 
+                        @if(auth()->user()->hasPermission('menu_master', 'delete'))
                         <!-- Delete -->
                         <a href="{{ route('manage.category.delete', @$value->id) }}"
-                           class="btn btn-danger btn-sm"
+                           class="btn btn-danger btn-icon-only"
                            onclick="return confirm('Are you sure want to delete this category?')">
                           <i class="fa fa-trash"></i>
                         </a>
+                        @endif
                       </div>
                     </div>
                   </div>
@@ -260,7 +291,7 @@
                       </td>
                       <td>{{ @$value->slug }}</td>
                       <td>
-                        <a href="{{ route('manage.subcategory.category', @$value->id) }}" class="btn btn-dark btn-sm">Subcategory</a>
+                        <a href="{{ route('manage.subcategory.category', @$value->id) }}" class="btn btn-dark btn-sm">+ Add Dishes</a>
                         <button class="btn btn-success btn-sm edit-btn" data-id="{{ $value->id }}" data-name="{{ $value->name }}" data-image="{{ $value->image }}">Edit</button>
                         <a href="{{ route('manage.category.delete', @$value->id) }}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
                       </td>

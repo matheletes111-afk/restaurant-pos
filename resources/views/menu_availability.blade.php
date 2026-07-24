@@ -811,6 +811,7 @@
                 
                 // Update data attribute
                 card.attr('data-discount', discount);
+                card.data('discount', discount);
             }
             
             // Handle Discount Update via AJAX (on keypress/change)
@@ -949,6 +950,7 @@
                     success: function(response) {
                         if (response.success) {
                             card.attr('data-status', response.status);
+                            card.data('status', response.status);
                             
                             if (response.status === 'A') {
                                 statusBadge.html('<i class="fa fa-check-circle"></i> Available');
@@ -988,9 +990,9 @@
                     let item = $(this);
                     let name = item.data('name');
                     let category = item.data('category');
-                    let status = item.data('status');
+                    let status = item.attr('data-status') || item.data('status');
                     let foodType = item.data('foodtype');
-                    let discount = parseFloat(item.data('discount') || 0);
+                    let discount = parseFloat(item.attr('data-discount') || item.data('discount') || 0);
                     
                     let matchesSearch = (name.includes(searchTerm) || category.includes(searchTerm));
                     let matchesFilter = true;

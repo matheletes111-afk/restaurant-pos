@@ -31,9 +31,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
             
+            @if(auth()->user()->hasPermission('staff', 'add'))
             <div class="text-end mb-3">
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Staff</button>
             </div>
+            @endif
             <div class="table-responsive">
             <table id="staffTable" class="table table-bordered table-striped">
                 <thead>
@@ -52,14 +54,23 @@
                         <td>{{ $value->role_type }}</td>
 
                         <td>
-                          @if($value->status=="A")
-                            <a  href="{{route('restaurant.staff.status',@$value->id)}}" class="badge bg-success">Active</a>
+                          @if(auth()->user()->hasPermission('staff', 'edit'))
+                              @if($value->status=="A")
+                                <a  href="{{route('restaurant.staff.status',@$value->id)}}" class="badge bg-success">Active</a>
+                              @else
+                                <a href="{{route('restaurant.staff.status',@$value->id)}}"  class="badge bg-danger">Inactive</a>
+                              @endif
                           @else
-                            <a href="{{route('restaurant.staff.status',@$value->id)}}"  class="badge bg-danger">Inactive</a>
+                              @if($value->status=="A")
+                                <span class="badge bg-success">Active</span>
+                              @else
+                                <span class="badge bg-danger">Inactive</span>
+                              @endif
                           @endif
                         </td>
 
                         <td>
+                            @if(auth()->user()->hasPermission('staff', 'edit'))
                             <button class="btn btn-primary btn-sm editBtn"
                                 data-id="{{ $value->id }}"
                                 data-name="{{ $value->name }}"
@@ -71,18 +82,23 @@
                                 data-status="{{ $value->status }}">
                                 <i class="fas fa-edit"></i>
                             </button>
+                            @endif
 
+                            @if(auth()->user()->role_type === 'ADMIN')
                             <a href="{{ route('restaurant.staff.permissions', $value->id) }}"
                                class="btn btn-warning btn-sm"
                                title="Manage Permissions">
                                <i class="fas fa-user-shield"></i>
                             </a>
+                            @endif
 
+                            @if(auth()->user()->hasPermission('staff', 'delete'))
                             <a href="{{ route('restaurant.staff.delete',$value->id) }}"
                                onclick="return confirm('Delete this staff?')"
                                class="btn btn-danger btn-sm">
                                <i class="fas fa-trash"></i>
                             </a>
+                            @endif
                         </td>
                     </tr>
                     @endforeach

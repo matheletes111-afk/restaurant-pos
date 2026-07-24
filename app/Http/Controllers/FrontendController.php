@@ -19,6 +19,9 @@ class FrontendController extends Controller
                 $q->where('is_default_plan', 'Y');
             })
             ->where('plan_status', 'A')
+            ->where('is_delete', 'N')
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('id', 'desc')
             ->get();
             // return $defaultPlans;
             

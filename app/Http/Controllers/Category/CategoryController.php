@@ -125,7 +125,7 @@ class CategoryController extends Controller
             $new = new SubCategory;
             $new->name = $request->name;
             $new->price = $request->price;
-            $new->gst_rate = $request->gst_rate;
+            $new->gst_rate = $request->gst_rate ?? 0;
             $new->food_type = $request->food_type;
             $new->category_id = $request->category_id;
             $new->user_id = auth()->user()->id;
@@ -156,7 +156,7 @@ class CategoryController extends Controller
             $upd = [];
             $upd['name'] = $request->name;
             $upd['price'] = $request->price;
-            $upd['gst_rate'] = $request->gst_rate;
+            $upd['gst_rate'] = $request->gst_rate ?? 0;
             $upd['food_type'] = $request->food_type;
             if ($request->image) {
                 $check = SubCategory::where('id',$request->id)->first();

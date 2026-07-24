@@ -44,11 +44,13 @@
             <div class="col-sm-12">
                 <div class="card">
                     @include('includes.message')
+                    @if(auth()->user()->hasPermission('inventory_setting', 'add'))
                     <div class="card-header">
                         <a href="#" class="btn btn-primary" style="float: right;" data-toggle="modal" data-target="#addModal">
                             <i class="fa fa-plus"></i> Add Supplier
                         </a>
                     </div>
+                    @endif
 
                     <div class="card-body">
                         <div class="dt-responsive table-responsive">
@@ -74,6 +76,7 @@
                                         <td>{{ $supplier->email ?? 'N/A' }}</td>
                                         <td>{{ Str::limit($supplier->address, 30) }}</td>
                                         <td>
+                                            @if(auth()->user()->hasPermission('inventory_setting', 'edit'))
                                             <button class="btn btn-success edit-btn"
                                                     data-id="{{ $supplier->id }}"
                                                     data-name="{{ $supplier->supplier_name }}"
@@ -84,14 +87,19 @@
                                                     data-outstanding="{{ $supplier->opening_outstanding }}">
                                                 <i class="fa fa-edit"></i>
                                             </button>
-                                                <a href="{{ route('suppliers.ledger', $supplier->id) }}" class="btn btn-warning btn-sm" title="View Ledger">
-                                                    <i class="fa fa-book"></i> Ledger
-                                                </a>
+                                            @endif
+                                            
+                                            <a href="{{ route('suppliers.ledger', $supplier->id) }}" class="btn btn-warning btn-sm" title="View Ledger">
+                                                <i class="fa fa-book"></i> Ledger
+                                            </a>
+                                            
+                                            @if(auth()->user()->hasPermission('inventory_setting', 'delete'))
                                             <a href="{{ route('suppliers.delete', $supplier->id) }}"
                                                class="btn btn-danger"
                                                onclick="return confirm('Are you sure you want to delete this supplier?')">
                                                 <i class="fa fa-trash"></i>
                                             </a>
+                                            @endif
                                         </td>
                                     </tr>
                                     @endforeach

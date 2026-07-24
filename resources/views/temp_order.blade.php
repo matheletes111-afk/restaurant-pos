@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <title>Customer Order | {{ $restaurant_details->name ?? 'Premium Dining' }}</title>
+  <link rel="shortcut icon" href="{{ asset('fav_web.png') }}">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
@@ -12,31 +13,31 @@
 
   <style>
     :root {
-      --primary: #C9A84C;
-      --primary-light: rgba(201,168,76, 0.1);
-      --primary-hover: #E8C97A;
-      --secondary: #E8C97A;
-      --surface: #17171C;
-      --surface-2: #1E1E25;
-      --surface-3: #26262F;
-      --text-main: #F2EEE6;
-      --text-muted: rgba(242,238,230,0.55);
-      --border: rgba(255,255,255,0.07);
-      --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
-      --shadow-md: 0 8px 24px rgba(0,0,0,0.4);
-      --shadow-lg: 0 20px 40px rgba(0,0,0,0.5);
+      --primary: #ff6a00;
+      --primary-light: rgba(255, 106, 0, 0.08);
+      --primary-hover: #ff8c42;
+      --secondary: #ff8c42;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --surface-3: #f1f5f9;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 20px rgba(0,0,0,0.05);
+      --shadow-lg: 0 10px 30px rgba(0,0,0,0.07);
       --radius-sm: 8px;
       --radius-md: 16px;
       --radius-lg: 24px;
-      --success: #3DD68C;
-      --danger: #FF6B6B;
+      --success: #10b981;
+      --danger: #ef4444;
     }
 
     body {
-      background-color: #0A0A0B;
+      background-color: #f8fafc;
       background-image:
-          radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201,168,76,0.08) 0%, transparent 60%),
-          radial-gradient(ellipse 60% 40% at 80% 100%, rgba(201,168,76,0.05) 0%, transparent 50%);
+          radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 106, 0, 0.05) 0%, transparent 60%),
+          radial-gradient(ellipse 60% 40% at 80% 100%, rgba(255, 106, 0, 0.02) 0%, transparent 50%);
       font-family: 'Inter', sans-serif;
       color: var(--text-main);
       min-height: 100vh;
@@ -49,10 +50,10 @@
       content: '';
       position: fixed;
       inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.015'/%3E%3C/svg%3E");
       pointer-events: none;
       z-index: 0;
-      opacity: 0.6;
+      opacity: 0.35;
     }
     
     .container { max-width: 1200px; padding-top: 40px; position: relative; z-index: 1; }
@@ -245,7 +246,7 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      background: rgba(10, 10, 11, 0.85);
+      background: rgba(248, 250, 252, 0.85);
       backdrop-filter: blur(12px);
       padding: 16px 0;
     }
@@ -618,6 +619,16 @@
 </head>
 <body>
 <div class="container">
+  
+  <!-- Branding Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4 pt-3 pb-2 border-bottom">
+    <div class="bg-white px-3 py-2 rounded shadow-sm d-flex align-items-center justify-content-center" style="border: 1px solid var(--border); height: 48px;">
+      <img src="{{ asset('logo.png') }}" alt="Bill & Bite Logo" style="height: 30px; width: auto; display: block;">
+    </div>
+    <span class="badge badge-light px-3 py-2 text-secondary font-weight-bold" style="border: 1px solid var(--border); border-radius: 30px; font-size: 0.8rem; background-color: #f1f5f9;">
+      <i class="fas fa-mobile-alt me-1" style="color: #ff6a00;"></i> Self Ordering Portal
+    </span>
+  </div>
 
   <!-- Restaurant Header -->
   <div class="restaurant-header">

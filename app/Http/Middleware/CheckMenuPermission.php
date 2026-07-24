@@ -119,7 +119,14 @@ class CheckMenuPermission
         foreach ($mappings as $permission => $patterns) {
             foreach ($patterns as $pattern) {
                 if (($routeName && str_starts_with($routeName, $pattern)) || str_contains($path, $pattern)) {
-                    if (!$user->hasPermission($permission)) {
+                    $granularModules = ['menu_master', 'table_master', 'staff', 'inventory_setting'];
+                    if (in_array($permission, $granularModules)) {
+                        $action = $this->getRequiredAction($request, $routeName, $path);
+                    } else {
+                        $action = 'view';
+                    }
+
+                    if (!$user->hasPermission($permission, $action)) {
                         abort(403, 'Unauthorized access to this menu/module.');
                     }
                     return $next($request);
@@ -128,5 +135,52 @@ class CheckMenuPermission
         }
 
         return $next($request);
+    }
+
+    /**
+     * Resolve the required action (view, add, edit, delete) for granular modules.
+     */
+    private function getRequiredAction(Request $request, $routeName, $path)
+    {
+        $method = strtoupper($request->method());
+
+        // 1. DELETE Action
+        if ($method === 'DELETE' || 
+            $this->strContainsAny($path, ['delete', 'destroy', 'remove']) || 
+            ($routeName && $this->strContainsAny($routeName, ['delete', 'destroy', 'remove']))) {
+            return 'delete';
+        }
+
+        // 2. EDIT Action
+        if ($this->strContainsAny($path, ['edit', 'update', 'status', 'toggle', 'modify']) || 
+            ($routeName && $this->strContainsAny($routeName, ['edit', 'update', 'status', 'toggle', 'modify']))) {
+            return 'edit';
+        }
+
+        // 3. ADD Action
+        if ($method === 'POST' || 
+            $this->strContainsAny($path, ['create', 'add', 'insert', 'store', 'save', 'bulk', 'upload', 'import']) || 
+            ($routeName && $this->strContainsAny($routeName, ['create', 'add', 'insert', 'store', 'save', 'bulk', 'upload', 'import']))) {
+            return 'add';
+        }
+
+        // 4. Default to VIEW Action
+        return 'view';
+    }
+
+    /**
+     * Helper to check if string contains any needle in the array.
+     */
+    private function strContainsAny($haystack, array $needles)
+    {
+        if (!$haystack) {
+            return false;
+        }
+        foreach ($needles as $needle) {
+            if (str_contains($haystack, $needle)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

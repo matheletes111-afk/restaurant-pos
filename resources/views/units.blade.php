@@ -28,11 +28,13 @@
 
           @include('includes.message')
 
+          @if(auth()->user()->hasPermission('inventory_setting', 'add'))
           <div class="card-header">
             <a href="#" class="btn btn-primary" style="float:right;" data-toggle="modal" data-target="#addUnitModal">
               <i class="fa fa-plus"></i> Add Unit
             </a>
           </div>
+          @endif
 
           <div class="card-body">
             <table id="unitsTable" class="table table-striped table-bordered">
@@ -50,17 +52,21 @@
                   {{-- <td>{{ $value->id }}</td> --}}
                   <td>{{ $value->name }}</td>
                   <td>
+                    @if(auth()->user()->hasPermission('inventory_setting', 'edit'))
                     <button class="btn btn-success btn-sm edit-btn"
                       data-id="{{ $value->id }}"
                       data-name="{{ $value->name }}">
                       <i class="fa fa-edit"></i>
                     </button>
+                    @endif
 
+                    @if(auth()->user()->hasPermission('inventory_setting', 'delete'))
                     <a href="{{ route('manage.units.delete', $value->id) }}"
                       class="btn btn-sm btn-danger"
                       onclick="return confirm('Delete this unit?')">
                       <i class="fa fa-trash"></i>
                     </a>
+                    @endif
                   </td>
                 </tr>
                 @endforeach

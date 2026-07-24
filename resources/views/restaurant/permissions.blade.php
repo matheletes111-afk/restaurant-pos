@@ -128,9 +128,61 @@
                 <div class="row g-4">
                     @foreach($menus as $menu)
                     @php
-                        $hasPerm = in_array($menu['key'], $selectedPermissions);
+                        $isGranular = in_array($menu['key'], ['menu_master', 'table_master', 'staff', 'inventory_setting']);
+                        if ($isGranular) {
+                            $hasView = in_array($menu['key'] . '.view', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
+                            $hasAdd = in_array($menu['key'] . '.add', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
+                            $hasEdit = in_array($menu['key'] . '.edit', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
+                            $hasDelete = in_array($menu['key'] . '.delete', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
+                            $hasAny = $hasView || $hasAdd || $hasEdit || $hasDelete;
+                        } else {
+                            $hasPerm = in_array($menu['key'] . '.view', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
+                        }
                     @endphp
                     <div class="col-xl-4 col-md-6">
+                        @if($isGranular)
+                        <div class="permission-card p-4 d-flex flex-column {{ $hasAny ? 'active' : '' }}">
+                            <div class="d-flex align-items-start w-100 mb-2">
+                                <div class="permission-icon me-3">
+                                    <i class="{{ $menu['icon'] }}"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1 text-dark font-weight-bold" style="font-size: 1rem;">{{ $menu['title'] }}</h6>
+                                    <p class="text-muted mb-0" style="font-size: 0.85rem; line-height: 1.4;">{{ $menu['description'] }}</p>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-3 mt-3 pt-3 border-top w-100 justify-content-between">
+                                <div class="d-flex align-items-center">
+                                    <label class="switch-toggle mb-0 me-2" onclick="event.stopPropagation();">
+                                        <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}.view" class="permission-checkbox granular-checkbox" {{ $hasView ? 'checked' : '' }} onchange="onGranularChange(this)">
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span class="text-dark font-weight-bold" style="font-size: 0.8rem;">View</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <label class="switch-toggle mb-0 me-2" onclick="event.stopPropagation();">
+                                        <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}.add" class="permission-checkbox granular-checkbox" {{ $hasAdd ? 'checked' : '' }} onchange="onGranularChange(this)">
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span class="text-dark font-weight-bold" style="font-size: 0.8rem;">Add</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <label class="switch-toggle mb-0 me-2" onclick="event.stopPropagation();">
+                                        <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}.edit" class="permission-checkbox granular-checkbox" {{ $hasEdit ? 'checked' : '' }} onchange="onGranularChange(this)">
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span class="text-dark font-weight-bold" style="font-size: 0.8rem;">Edit</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <label class="switch-toggle mb-0 me-2" onclick="event.stopPropagation();">
+                                        <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}.delete" class="permission-checkbox granular-checkbox" {{ $hasDelete ? 'checked' : '' }} onchange="onGranularChange(this)">
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span class="text-dark font-weight-bold" style="font-size: 0.8rem;">Delete</span>
+                                </div>
+                            </div>
+                        </div>
+                        @else
                         <div class="permission-card p-4 d-flex align-items-start {{ $hasPerm ? 'active' : '' }}" onclick="toggleCard(this)">
                             <div class="permission-icon me-3">
                                 <i class="{{ $menu['icon'] }}"></i>
@@ -139,13 +191,14 @@
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <h6 class="mb-0 text-dark font-weight-bold" style="font-size: 1rem;">{{ $menu['title'] }}</h6>
                                     <label class="switch-toggle mb-0" onclick="event.stopPropagation();">
-                                        <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}" class="permission-checkbox" {{ $hasPerm ? 'checked' : '' }} onchange="onCheckboxChange(this)">
+                                        <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}.view" class="permission-checkbox" {{ $hasPerm ? 'checked' : '' }} onchange="onCheckboxChange(this)">
                                         <span class="slider"></span>
                                     </label>
                                 </div>
                                 <p class="text-muted mb-0" style="font-size: 0.85rem; line-height: 1.4;">{{ $menu['description'] }}</p>
                             </div>
                         </div>
+                        @endif
                     </div>
                     @endforeach
                 </div>
@@ -168,6 +221,9 @@
 @include('includes.script')
 <script>
     function toggleCard(card) {
+        if (card.querySelector('.granular-checkbox')) {
+            return;
+        }
         const checkbox = card.querySelector('.permission-checkbox');
         checkbox.checked = !checkbox.checked;
         if (checkbox.checked) {
@@ -175,6 +231,7 @@
         } else {
             card.classList.remove('active');
         }
+        updateSelectAllButton();
     }
 
     function onCheckboxChange(checkbox) {
@@ -184,6 +241,57 @@
         } else {
             card.classList.remove('active');
         }
+        updateSelectAllButton();
+    }
+
+    function onGranularChange(checkbox) {
+        const card = checkbox.closest('.permission-card');
+        const viewCheckbox = card.querySelector('input[value$=".view"]');
+        const isView = checkbox === viewCheckbox;
+
+        if (isView) {
+            if (!viewCheckbox.checked) {
+                card.querySelectorAll('.granular-checkbox').forEach(cb => {
+                    if (cb !== viewCheckbox) {
+                        cb.checked = false;
+                    }
+                });
+            }
+        } else {
+            if (checkbox.checked) {
+                viewCheckbox.checked = true;
+            }
+        }
+
+        const granulars = card.querySelectorAll('.granular-checkbox');
+        let anyChecked = false;
+        granulars.forEach(cb => {
+            if (cb.checked) {
+                anyChecked = true;
+            }
+        });
+
+        if (anyChecked) {
+            card.classList.add('active');
+        } else {
+            card.classList.remove('active');
+        }
+        updateSelectAllButton();
+    }
+
+    function updateSelectAllButton() {
+        const checkboxes = document.querySelectorAll('.permission-checkbox');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        const btn = document.getElementById('selectAllBtn');
+        if (allChecked && checkboxes.length > 0) {
+            btn.textContent = 'Deselect All';
+            btn.classList.remove('btn-light-primary');
+            btn.classList.add('btn-light-danger');
+        } else {
+            btn.textContent = 'Select All';
+            btn.classList.remove('btn-light-danger');
+            btn.classList.add('btn-light-primary');
+        }
     }
 
     document.getElementById('selectAllBtn').addEventListener('click', function() {
@@ -191,12 +299,15 @@
         const cards = document.querySelectorAll('.permission-card');
         const allChecked = Array.from(checkboxes).every(cb => cb.checked);
         
-        checkboxes.forEach((cb, idx) => {
+        checkboxes.forEach((cb) => {
             cb.checked = !allChecked;
-            if (cb.checked) {
-                cards[idx].classList.add('active');
+        });
+
+        cards.forEach((card) => {
+            if (!allChecked) {
+                card.classList.add('active');
             } else {
-                cards[idx].classList.remove('active');
+                card.classList.remove('active');
             }
         });
 
@@ -212,14 +323,7 @@
 
     // Initialize the button text based on start state
     window.addEventListener('DOMContentLoaded', () => {
-        const checkboxes = document.querySelectorAll('.permission-checkbox');
-        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-        const btn = document.getElementById('selectAllBtn');
-        if (allChecked && checkboxes.length > 0) {
-            btn.textContent = 'Deselect All';
-            btn.classList.remove('btn-light-primary');
-            btn.classList.add('btn-light-danger');
-        }
+        updateSelectAllButton();
     });
 </script>
 @endsection

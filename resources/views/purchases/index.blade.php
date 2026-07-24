@@ -44,11 +44,13 @@
             <div class="col-sm-12">
                 <div class="card">
                     @include('includes.message')
+                    @if(auth()->user()->hasPermission('inventory_setting', 'add'))
                     <div class="card-header">
                         <a href="{{ route('purchases.create') }}" class="btn btn-primary" style="float: right;">
                             <i class="fa fa-plus"></i> Add Purchase
                         </a>
                     </div>
+                    @endif
 
                     <div class="card-body">
                         <div class="dt-responsive table-responsive">
@@ -91,15 +93,19 @@
                                             <a href="{{ route('purchases.show', $purchase->id) }}" class="btn btn-info btn-sm" title="View">
                                                 <i class="fa fa-eye"></i>
                                             </a>
+                                            @if(auth()->user()->hasPermission('inventory_setting', 'edit'))
                                             <a href="{{ route('purchases.edit', $purchase->id) }}" class="btn btn-success btn-sm" title="Edit">
                                                 <i class="fa fa-edit"></i>
                                             </a>
+                                            @endif
+                                            @if(auth()->user()->hasPermission('inventory_setting', 'delete'))
                                             <a href="{{ route('purchases.delete', $purchase->id) }}" 
                                                class="btn btn-danger btn-sm" 
                                                title="Delete"
                                                onclick="return confirm('Are you sure you want to delete this purchase?')">
                                                 <i class="fa fa-trash"></i>
                                             </a>
+                                            @endif
                                         </td>
                                     </tr>
                                     @endforeach

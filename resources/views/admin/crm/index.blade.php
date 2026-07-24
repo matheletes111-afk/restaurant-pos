@@ -369,8 +369,8 @@
             max-width: 100%;
         }
 
-        /* Toast notifications */
-        .toast-notification {
+        /* CRM Local Toast notifications */
+        .crm-toast-notification {
             position: fixed;
             top: 20px;
             right: 20px;
@@ -385,11 +385,12 @@
             font-size: 0.9rem;
         }
         
-        .toast-success {
+        .crm-toast-notification.toast-success {
             background: #10b981;
             border-left: 5px solid #047857;
         }
 
+        .crm-toast-notification.toast-error {
             background: #ef4444;
             border-left: 5px solid #b91c1c;
         }
@@ -530,6 +531,18 @@
         .position-relative {
             position: relative;
         }
+
+        /* Modal Styles same as Restaurant Master */
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #1e293b, #2C3E50);
+            color: white;
+            border-radius: 20px 20px 0 0;
+            border-bottom: none;
+        }
     </style>
 </head>
 <body data-pc-theme="light">
@@ -542,9 +555,10 @@
 
     <!-- Sidebar include -->
     @include('includes.sidebar')
+    @include('includes.message')
 
     <!-- Toast container -->
-    <div id="crm-toast" class="toast-notification"></div>
+    <div id="crm-toast" class="crm-toast-notification"></div>
 
     <div class="pc-container">
         <div class="pc-content">
@@ -765,14 +779,14 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title text-white" style="color:black !important"><i class="fas fa-store"></i> Add New Restaurant</h5>
-                    <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+                    <h5 class="modal-title text-white" style="color: white !important;"><i class="fas fa-store"></i> Add New Restaurant</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
                 <div class="modal-body">
                     <form method="POST" action="{{ route('manage.restaurant.insert') }}" id="multiStepForm">
                         @csrf
-                        <input type="hidden" name="lead_id" id="modal_lead_id">
+                        <input type="hidden" name="lead_id" id="modal_lead_id" value="{{ old('lead_id') }}">
 
                         <!-- SECTION 1: RESTAURANT INFO -->
                         <div id="section1">
@@ -784,35 +798,50 @@
                                     <div class="form-group">
                                         <label class="form-label required">Restaurant Name</label>
                                         <input type="text" name="restaurant_name" id="modal_restaurant_name" class="form-control" 
-                                               required placeholder="e.g., Spice Garden">
+                                               required placeholder="e.g., Spice Garden" value="{{ old('restaurant_name') }}">
+                                        @if($errors->has('restaurant_name'))
+                                            <small class="text-danger d-block mt-1" style="font-size: 0.75rem;">{{ $errors->first('restaurant_name') }}</small>
+                                        @endif
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label class="form-label required">Pincode</label>
                                         <input type="text" name="pincode" id="modal_pincode" class="form-control" 
-                                               required placeholder="e.g., 110001">
+                                               required placeholder="e.g., 110001" value="{{ old('pincode') }}">
+                                        @if($errors->has('pincode'))
+                                            <small class="text-danger d-block mt-1" style="font-size: 0.75rem;">{{ $errors->first('pincode') }}</small>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
                             <div class="form-group mb-3">
                                 <label class="form-label required">Full Address</label>
                                 <input type="text" name="address" id="modal_address" class="form-control" 
-                                       required placeholder="Street, city, landmark">
+                                       required placeholder="Street, city, landmark" value="{{ old('address') }}">
+                                @if($errors->has('address'))
+                                    <small class="text-danger d-block mt-1" style="font-size: 0.75rem;">{{ $errors->first('address') }}</small>
+                                @endif
                             </div>
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label class="form-label">GSTIN</label>
                                         <input type="text" name="gstin" id="modal_gstin" class="form-control" 
-                                               placeholder="e.g., 07AAAAA1111A1Z1">
+                                               placeholder="e.g., 07AAAAA1111A1Z1" value="{{ old('gstin') }}">
+                                        @if($errors->has('gstin'))
+                                            <small class="text-danger d-block mt-1" style="font-size: 0.75rem;">{{ $errors->first('gstin') }}</small>
+                                        @endif
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label class="form-label">FSSAI Number</label>
                                         <input type="text" name="fssai_number" id="modal_fssai_number" class="form-control" 
-                                               placeholder="e.g., 12345678901234">
+                                               placeholder="e.g., 12345678901234" value="{{ old('fssai_number') }}">
+                                        @if($errors->has('fssai_number'))
+                                            <small class="text-danger d-block mt-1" style="font-size: 0.75rem;">{{ $errors->first('fssai_number') }}</small>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -835,14 +864,20 @@
                                     <div class="form-group">
                                         <label class="form-label required">Owner Name</label>
                                         <input type="text" name="name" id="modal_owner_name" class="form-control" 
-                                               required placeholder="Full name">
+                                               required placeholder="Full name" value="{{ old('name') }}">
+                                        @if($errors->has('name'))
+                                            <small class="text-danger d-block mt-1" style="font-size: 0.75rem;">{{ $errors->first('name') }}</small>
+                                        @endif
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label class="form-label required">Email Address</label>
                                         <input type="email" name="email" id="modal_owner_email" class="form-control" 
-                                               required placeholder="hello@restaurant.com">
+                                               required placeholder="hello@restaurant.com" value="{{ old('email') }}">
+                                        @if($errors->has('email'))
+                                            <small class="text-danger d-block mt-1" style="font-size: 0.75rem;">{{ $errors->first('email') }}</small>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -851,7 +886,10 @@
                                     <div class="form-group">
                                         <label class="form-label required">Phone Number</label>
                                         <input type="text" name="phone" id="modal_owner_phone" class="form-control" 
-                                               required placeholder="+91 98765 43210">
+                                               required placeholder="+91 98765 43210" value="{{ old('phone') }}">
+                                        @if($errors->has('phone'))
+                                            <small class="text-danger d-block mt-1" style="font-size: 0.75rem;">{{ $errors->first('phone') }}</small>
+                                        @endif
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -862,6 +900,9 @@
                                         <span class="password-toggle" onclick="togglePassword()" style="top: 72%;">
                                             <i class="far fa-eye" id="toggleIcon"></i>
                                         </span>
+                                        @if($errors->has('password'))
+                                            <small class="text-danger d-block mt-1" style="font-size: 0.75rem;">{{ $errors->first('password') }}</small>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -985,6 +1026,11 @@
                     success: function(response) {
                         if (response.success) {
                             showToast(response.message, 'success');
+                            if (newStatus === 'Converted') {
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 800);
+                            }
                         } else {
                             showToast(response.message || 'Error updating status.', 'error');
                             revertCardMovement(cardElement, originalStatus, newStatus);
@@ -1220,6 +1266,16 @@
                 }
             }
             window.togglePassword = togglePassword;
+
+            // If validation errors exist, show modal and navigate to the correct section
+            @if($errors->any())
+                $('#addRestaurantModal').modal('show');
+                @if($errors->has('email') || $errors->has('name') || $errors->has('phone') || $errors->has('password'))
+                    showSection(2);
+                @else
+                    showSection(1);
+                @endif
+            @endif
         });
     </script>
 </body>

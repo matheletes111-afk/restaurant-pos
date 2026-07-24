@@ -61,7 +61,7 @@ public function storeTicket(Request $request)
         
         // Send email to admin
         try {
-            $adminEmail = 'developersayan2001@gmail.com';
+            $adminEmail = config('mail.admin_email') ?? env('ADMIN_EMAIL', 'developersayan2001@gmail.com');
             \Mail::to($adminEmail)->send(new \App\Mail\NewSupportTicketMail($ticket, $restaurant, $user));
             \Log::info('Admin notification email sent for ticket: ' . $ticket->ticket_no);
         } catch (\Exception $e) {

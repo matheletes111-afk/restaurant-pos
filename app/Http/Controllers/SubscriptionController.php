@@ -400,7 +400,18 @@ public function paymentSuccess(Request $request)
             throw new \Exception('Unable to verify subscription status with payment gateway');
         }
 
-        // 2. Create or update payment record
+        // 2. Fetch payment details from Razorpay to get method
+        $paymentMethod = 'N/A';
+        if ($request->razorpay_payment_id) {
+            try {
+                $razorpayPayment = $this->razorpay->payment->fetch($request->razorpay_payment_id);
+                $paymentMethod = $razorpayPayment->method ?? 'N/A';
+            } catch (\Exception $e) {
+                Log::warning('Failed to fetch payment method from Razorpay: ' . $e->getMessage());
+            }
+        }
+
+        // Create or update payment record
         $payment = Payment::updateOrCreate(
             [
                 'razorpay_order_id' => $subscriptionId,
@@ -415,6 +426,7 @@ public function paymentSuccess(Request $request)
                 'currency' => 'INR',
                 'status' => 'success',
                 'description' => 'Subscription payment for ' . $plan->name,
+                'payment_method' => $paymentMethod,
                 'created_at' => now()
             ]
         );
@@ -446,7 +458,14 @@ public function paymentSuccess(Request $request)
         // 5. Send email notification (continue even if email fails)
         try {
             \Mail::to($user->email)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $subscription, $payment, $restaurant));
-            Log::info('Subscription success email sent to: ' . $user->email);
+            Log::info('Subscription success email sent to customer: ' . $user->email);
+
+            // Send copy to admin also
+            $adminEmail = config('mail.admin_email') ?? env('ADMIN_EMAIL');
+            if ($adminEmail) {
+                \Mail::to($adminEmail)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $subscription, $payment, $restaurant));
+                Log::info('Subscription success email sent to admin: ' . $adminEmail);
+            }
         } catch (\Exception $e) {
             Log::error('Failed to send subscription success email: ' . $e->getMessage());
             // Continue execution - don't throw exception
@@ -741,6 +760,52 @@ public function paymentSuccess(Request $request)
             ->exists();
 
         return view('admin.subscriptions.index', compact('subscriptions', 'hasUsedFreeTrial'));
+    }
+
+    // Toggle auto-renew status of subscription
+    public function toggleAutoRenew($id)
+    {
+        try {
+            $subscription = Subscription::where('id', $id)
+                ->where('user_id', auth()->user()->restaurant_id)
+                ->where('status', 'active')
+                ->firstOrFail();
+
+            $newStatus = $subscription->auto_renew ? 0 : 1;
+
+            // If Razorpay subscription exists, try to update it
+            if ($subscription->razorpay_subscription_id) {
+                try {
+                    $rzSubscription = $this->razorpay->subscription->fetch($subscription->razorpay_subscription_id);
+                    if ($newStatus == 0) {
+                        // Cancel at end of current cycle (turn off auto-renew)
+                        $rzSubscription->cancel(['cancel_at_cycle_end' => 1]);
+                    } else {
+                        // Razorpay subscriptions cancelled at cycle end cannot be reactivated directly.
+                        // But we allow updating the database field to keep state consistent.
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Razorpay auto-renew toggle sync failed: ' . $e->getMessage());
+                }
+            }
+
+            $subscription->update([
+                'auto_renew' => $newStatus
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Auto-renew updated successfully!',
+                'auto_renew' => $newStatus
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Toggle Auto Renew Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update auto-renew: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     // Cancel subscription

@@ -41,12 +41,13 @@
             <div class="col-sm-12">
                 <div class="card">
                     <div class="card-header">
-                        
+                        @if(auth()->user()->hasPermission('inventory_setting', 'add'))
                         <div class="float-end">
-                            <a href="{{ route('debit-notes.create') }}" class="btn btn-primary btn-sm">
+                            <a href="{{ route('debit-notes.create') }}" class="btn btn-primary" style="float: right;">
                                 <i class="fa fa-plus"></i> Create Debit Note
                             </a>
                         </div>
+                        @endif
                     </div>
                     
                     <div class="card-body">
@@ -78,6 +79,7 @@
                                             <a href="{{ route('debit-notes.show', $note->id) }}" class="btn btn-info btn-sm" title="View">
                                                 <i class="fa fa-eye"></i>
                                             </a>
+                                            @if(auth()->user()->hasPermission('inventory_setting', 'delete'))
                                             <form action="{{ route('debit-notes.destroy', $note->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this debit note? Stock will be restored.');">
                                                 @csrf
                                                 @method('DELETE')
@@ -85,6 +87,7 @@
                                                     <i class="fa fa-trash"></i>
                                                 </button>
                                             </form>
+                                            @endif
                                         </td>
                                     </tr>
                                     @endforeach

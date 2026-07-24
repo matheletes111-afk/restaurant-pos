@@ -49,7 +49,7 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasOne('App\Models\RestaurantMaster','id','restaurant_id');
     }
 
-    public function hasPermission($menuKey)
+    public function hasPermission($menuKey, $action = 'view')
     {
         // Restaurant ADMIN and Super Admin have all access by default
         if ($this->role !== 'RES' || $this->role_type === 'ADMIN') {
@@ -61,7 +61,13 @@ class User extends Authenticatable implements JWTSubject
             return false;
         }
 
-        return in_array($menuKey, $perms);
+        // Support legacy permission where full module key is stored (meaning full access)
+        if (in_array($menuKey, $perms)) {
+            return true;
+        }
+
+        // Support granular permission check
+        return in_array($menuKey . '.' . $action, $perms);
     }
 
     public function getJWTIdentifier()

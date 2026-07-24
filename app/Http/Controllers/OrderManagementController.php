@@ -340,12 +340,10 @@ class OrderManagementController extends Controller
             $order->user_id = auth()->user()->id;
             $order->save();
        
-            // Generate KOT number for this order placement
-            $kotNo = $this->generateKOTNumber($restaurantId);
-
-            // Save order items with all GST details
+            // Save order items with all GST details and generate unique KOT number for each
             foreach ($request->order_items as $index => $item) {
                 $calc = $calculatedItems[$index];
+                $kotNo = $this->generateKOTNumber($restaurantId);
                 
                 $orderItem = new OrderItems();
                 $orderItem->order_id = $order->id;
@@ -442,8 +440,6 @@ class OrderManagementController extends Controller
 
             // Handle new item additions with discount
             if ($request->has('order_items') && is_array($request->order_items)) {
-                // Generate KOT number for these new items
-                $kotNo = $this->generateKOTNumber($restaurant->id);
                 foreach ($request->order_items as $item) {
                     $itemDiscount = isset($item['item_discount']) ? floatval($item['item_discount']) : 0;
                     $calc = $this->calculateItemGST(
@@ -453,6 +449,9 @@ class OrderManagementController extends Controller
                         $restaurantGstPercentage,
                         $isGstRegistered
                     );
+                    
+                    // Generate unique KOT number for each new item
+                    $kotNo = $this->generateKOTNumber($restaurant->id);
                     
                     OrderItems::create([
                         'order_id' => $id,
@@ -812,6 +811,25 @@ public function deletePayment($payment_id)
     }
 
     /**
+     * Generate KOT PDF receipt for kitchen
+     */
+    public function kotPdf($id)
+    {
+        $item = OrderItems::with(['order.table', 'subcategory.category'])->findOrFail($id);
+        $restaurant_details = RestaurantMaster::where('id', $item->restaurant_id)->first();
+
+        $data = [
+            'item' => $item,
+            'restaurant_details' => $restaurant_details,
+        ];
+
+        $pdf = Pdf::loadView('invoice_kot', $data)
+            ->setPaper([0, 0, 226, 400]);
+
+        return $pdf->stream('kot_' . $item->id . '.pdf');
+    }
+
+    /**
      * Show payment page
      */
     public function paymentPage($order_id)
@@ -943,24 +961,24 @@ public function deletePayment($payment_id)
      */
     private function generateKOTNumber($restaurantId)
     {
-        $todayStart = Carbon::today()->startOfDay();
-        $todayEnd = Carbon::today()->endOfDay();
-        
-        // Find the latest KOT number generated today for this restaurant
+        // Find the latest KOT number generated for this restaurant
         $latestItem = OrderItems::where('restaurant_id', $restaurantId)
-            ->whereBetween('created_at', [$todayStart, $todayEnd])
             ->whereNotNull('kot_no')
             ->orderBy('id', 'desc')
             ->first();
             
-        if ($latestItem && preg_match('/KOT-\d{6}-(\d+)/', $latestItem->kot_no, $matches)) {
-            $nextSequence = intval($matches[1]) + 1;
-        } else {
-            $nextSequence = 1;
+        $todayDateStr = Carbon::now()->format('ymd');
+        $nextSequence = 1;
+
+        if ($latestItem && preg_match('/KOT-(\d{6})-(\d+)/', $latestItem->kot_no, $matches)) {
+            $latestDateStr = $matches[1];
+            $latestSequence = intval($matches[2]);
+            if ($latestDateStr === $todayDateStr) {
+                $nextSequence = $latestSequence + 1;
+            }
         }
         
-        $dateStr = Carbon::now()->format('ymd');
-        return "KOT-{$dateStr}-" . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
+        return "KOT-{$todayDateStr}-" . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
     }
 
     /**

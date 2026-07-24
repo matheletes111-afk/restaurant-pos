@@ -45,11 +45,15 @@
         .page-header-custom {
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             border-radius: var(--radius-xl);
-            padding: 40px;
+            padding: 30px 40px;
             margin-bottom: 40px;
             position: relative;
             overflow: hidden;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
             box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
         }
 
@@ -66,16 +70,16 @@
 
         .page-header-custom h1 {
             font-weight: 700;
-            font-size: 2.2rem;
+            font-size: 1.8rem;
             color: white;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             position: relative;
             z-index: 1;
         }
 
         .page-header-custom p {
             color: rgba(255,255,255,0.7);
-            font-size: 1rem;
+            font-size: 0.95rem;
             position: relative;
             z-index: 1;
             margin-bottom: 0;
@@ -225,7 +229,7 @@
             border-bottom: none;
         }
 
-        .plan-features i {
+        .plan-features li > i:first-child {
             width: 20px;
             color: var(--primary);
             font-size: 0.95rem;
@@ -385,9 +389,16 @@
 <div class="plans-container">
     <!-- Page Header -->
     <div class="page-header-custom">
-        <h1><i class="fas fa-gem me-2"></i>Available Plans</h1>
-        <p>Choose a plan that fits your restaurant's size and needs</p>
-        <div class="user-welcome">
+        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <div style="background: #ffffff; padding: 12px 18px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.08); flex-shrink: 0;">
+                <img src="{{ asset('logo.png') }}" alt="Bill & Bite Logo" style="height: 40px; width: auto;">
+            </div>
+            <div style="text-align: left;">
+                <h1><i class="fas fa-gem me-2"></i>Available Plans</h1>
+                <p>Choose a plan that fits your restaurant's size and needs</p>
+            </div>
+        </div>
+        <div class="user-welcome" style="margin-top: 0;">
             <i class="fas fa-store"></i> {{ Auth::user()->restaurant->name ?? 'Your Restaurant' }}
         </div>
     </div>
@@ -455,7 +466,15 @@
                         <li><i class="fas fa-folder"></i> {{ $plan->category_number == 0 ? 'Unlimited' : $plan->category_number }} Categories</li>
                         <li><i class="fas fa-utensils"></i> {{ $plan->total_number_of_dishes == 0 ? 'Unlimited' : $plan->total_number_of_dishes }} Dishes</li>
                         <li><i class="fas fa-table"></i> {{ $plan->total_number_of_table == 0 ? 'Unlimited' : $plan->total_number_of_table }} Tables</li>
-                        <li><i class="fas fa-boxes"></i> Inventory {{ $plan->inventory_checkbox == 'Y' ? 'Enabled' : 'Disabled' }}</li>
+                        <li>
+                            <i class="fas fa-boxes"></i> 
+                            Inventory: 
+                            @if($plan->inventory_checkbox == 'Y')
+                                <i class="fas fa-check text-success ms-1"></i>
+                            @else
+                                <i class="fas fa-times text-danger ms-1"></i>
+                            @endif
+                        </li>
                     </ul>
 
                     <a href="{{ route('admin.subscriptions.create', $plan->id) }}" class="btn-select">

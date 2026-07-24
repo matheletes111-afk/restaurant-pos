@@ -23,19 +23,26 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background-color: #ffffff;
             padding: 30px;
             text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .header img {
+            max-height: 50px;
+            width: auto;
+            display: inline-block;
         }
         .header h1 {
-            margin: 0;
-            font-size: 28px;
+            margin: 15px 0 0;
+            font-size: 24px;
             font-weight: bold;
+            color: #1f2937;
         }
         .header p {
-            margin: 10px 0 0;
-            opacity: 0.9;
+            margin: 5px 0 0;
+            color: #6b7280;
+            font-size: 14px;
         }
         .content {
             padding: 40px 30px;
@@ -45,12 +52,12 @@
             margin-bottom: 20px;
         }
         .greeting strong {
-            color: #667eea;
+            color: #ff6a00;
             font-size: 20px;
         }
         .credentials-box {
             background-color: #f8f9fa;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #ff6a00;
             padding: 20px;
             margin: 25px 0;
             border-radius: 5px;
@@ -63,7 +70,7 @@
         }
         .credential-label {
             font-weight: bold;
-            color: #667eea;
+            color: #ff6a00;
             display: inline-block;
             width: 100px;
         }
@@ -73,14 +80,15 @@
             font-size: 14px;
         }
         .restaurant-details {
-            background-color: #e8f4f8;
+            background-color: #fff8f5;
+            border-left: 4px solid #ff6a00;
             padding: 20px;
-            border-radius: 8px;
+            border-radius: 5px;
             margin: 20px 0;
         }
         .restaurant-details h3 {
             margin-top: 0;
-            color: #2c3e50;
+            color: #ff6a00;
         }
         .warning {
             background-color: #fff3cd;
@@ -92,7 +100,7 @@
         }
         .button {
             display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #ff6a00 0%, #ff8c42 100%);
             color: white;
             padding: 12px 30px;
             text-decoration: none;
@@ -122,6 +130,7 @@
 <body>
     <div class="container">
         <div class="header">
+            <img src="{{ asset('logo.png') }}" alt="Bill & Bite Logo">
             <h1>Welcome to {{ config('app.name') }}!</h1>
             <p>Your Restaurant Registration is Successful</p>
         </div>

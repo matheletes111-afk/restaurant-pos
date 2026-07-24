@@ -351,6 +351,13 @@
                                 <i class="bi bi-cash"></i>
                               </a>
                             @endif
+                            <button type="button" 
+                                    class="btn btn-sm btn-outline-danger btn-delete-order" 
+                                    data-order-id="{{ $order->id }}"
+                                    data-order-uid="{{ $order->order_id }}"
+                                    title="Delete Order">
+                              <i class="bi bi-trash"></i>
+                            </button>
                           </div>
                         </td>
                         <td>
@@ -669,5 +676,170 @@
     }
   </style>
 
+  <!-- Delete Order Modal -->
+  <div class="modal fade" id="deleteOrderModal" tabindex="-1" role="dialog" aria-labelledby="deleteOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content" style="border: none !important; border-radius: 16px !important; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12) !important;">
+        <div class="modal-header" style="background: #f8fafc; border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important; padding: 1.5rem 1.75rem !important;">
+          <h5 class="modal-title text-danger" id="deleteOrderModalLabel" style="font-weight: 700 !important; font-size: 1.2rem !important; display: flex; align-items: center; gap: 8px;">
+            <i class="bi bi-exclamation-triangle-fill"></i> Delete Order
+          </h5>
+          <button type="button" class="close btn-close-custom" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="background: #e2e8f0; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #475569; font-size: 0.85rem; cursor: pointer; transition: all 0.3s ease;">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body" style="padding: 2rem 1.75rem !important;">
+          <!-- Step 1: Enter Remarks -->
+          <div id="deleteStepRemarks">
+            <div class="alert alert-warning" style="border-radius: 10px; font-size: 0.9rem;">
+              Are you sure you want to delete Order <strong id="deleteOrderUIDDisplay"></strong>? This action will soft-delete the order.
+            </div>
+            <div class="form-group mb-3">
+              <label for="deleteRemarks" class="form-label" style="font-weight: 700 !important; color: #475569 !important; font-size: 0.75rem !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; margin-bottom: 0.5rem !important;">Reason/Remarks <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="deleteRemarks" rows="3" placeholder="Enter reason for deletion..." required style="background-color: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: 10px !important; padding: 0.7rem 1rem !important; font-size: 0.9rem !important; color: #1e293b !important;"></textarea>
+              <div class="text-danger" id="deleteRemarksFeedback" style="display: none; font-size: 0.85rem; margin-top: 5px; font-weight: 600;">Remarks are required.</div>
+            </div>
+            <div class="text-right text-end mt-4">
+              <button type="button" class="btn btn-secondary me-2" data-dismiss="modal" data-bs-dismiss="modal" style="border-radius: 10px; padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.9rem;">Cancel</button>
+              <button type="button" class="btn btn-danger" id="btnSendDeleteOTP" style="border-radius: 10px; padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.9rem; background: linear-gradient(90deg, #ff3333 0%, #ff5555 100%); border: none;">Send Verification OTP</button>
+            </div>
+          </div>
+
+          <!-- Step 2: Verify OTP -->
+          <div id="deleteStepOTP" style="display: none;">
+            <div class="alert alert-info" style="border-radius: 10px; font-size: 0.9rem;">
+              Verification OTP has been sent to the Restaurant Administrator's email. Please enter it below.
+            </div>
+            <div class="form-group mb-3">
+              <label for="deleteOTP" class="form-label" style="font-weight: 700 !important; color: #475569 !important; font-size: 0.75rem !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; margin-bottom: 0.5rem !important;">Verification OTP <span class="text-danger">*</span></label>
+              <input type="text" class="form-control text-center fw-bold" id="deleteOTP" maxlength="6" placeholder="000000" style="letter-spacing: 8px; font-size: 1.5rem !important; background-color: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: 10px !important; padding: 0.7rem 1rem !important; color: #1e293b !important;">
+              <div class="text-danger" id="deleteOTPFeedback" style="display: none; font-size: 0.85rem; margin-top: 5px; font-weight: 600;">Invalid OTP.</div>
+            </div>
+            <div class="text-right text-end mt-4">
+              <button type="button" class="btn btn-secondary me-2" id="btnBackToRemarks" style="border-radius: 10px; padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.9rem;">Back</button>
+              <button type="button" class="btn btn-success" id="btnVerifyAndDelete" style="border-radius: 10px; padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.9rem; background: linear-gradient(90deg, #10b981 0%, #059669 100%); border: none;">Verify &amp; Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  $(document).ready(function() {
+    let currentDeleteOrderId = null;
+
+    // Handle delete button click
+    $(document).on('click', '.btn-delete-order', function(e) {
+      e.preventDefault();
+      currentDeleteOrderId = $(this).data('order-id');
+      let orderUID = $(this).data('order-uid');
+
+      $('#deleteOrderUIDDisplay').text(orderUID);
+      $('#deleteRemarks').val('');
+      $('#deleteOTP').val('');
+      $('#deleteRemarksFeedback').hide();
+      $('#deleteOTPFeedback').hide();
+      
+      $('#deleteStepRemarks').show();
+      $('#deleteStepOTP').hide();
+
+      // Show modal
+      $('#deleteOrderModal').modal('show');
+    });
+
+    // Send OTP
+    $('#btnSendDeleteOTP').on('click', function() {
+      let remarks = $('#deleteRemarks').val().trim();
+      if (!remarks) {
+        $('#deleteRemarksFeedback').text('Remarks are required.').show();
+        return;
+      }
+      $('#deleteRemarksFeedback').hide();
+
+      let btn = $(this);
+      btn.prop('disabled', true).text('Sending OTP...');
+
+      $.ajax({
+        url: "{{ route('order.report.management.send-otp') }}",
+        method: "POST",
+        data: {
+          _token: "{{ csrf_token() }}",
+          order_id: currentDeleteOrderId,
+          remarks: remarks
+        },
+        success: function(response) {
+          btn.prop('disabled', false).text('Send Verification OTP');
+          if (response.success) {
+            $('#deleteStepRemarks').hide();
+            $('#deleteStepOTP').show();
+          } else {
+            alert(response.message || 'An error occurred.');
+          }
+        },
+        error: function(xhr) {
+          btn.prop('disabled', false).text('Send Verification OTP');
+          let msg = 'An error occurred while sending OTP.';
+          if (xhr.responseJSON && xhr.responseJSON.message) {
+            msg = xhr.responseJSON.message;
+          }
+          alert(msg);
+        }
+      });
+    });
+
+    // Back to remarks
+    $('#btnBackToRemarks').on('click', function() {
+      $('#deleteStepOTP').hide();
+      $('#deleteStepRemarks').show();
+    });
+
+    // Verify OTP and Soft Delete
+    $('#btnVerifyAndDelete').on('click', function() {
+      let otp = $('#deleteOTP').val().trim();
+      if (!otp || otp.length !== 6) {
+        $('#deleteOTPFeedback').text('Please enter a 6-digit OTP.').show();
+        return;
+      }
+      $('#deleteOTPFeedback').hide();
+
+      let btn = $(this);
+      btn.prop('disabled', true).text('Verifying...');
+
+      $.ajax({
+        url: "{{ route('order.report.management.verify-delete') }}",
+        method: "POST",
+        data: {
+          _token: "{{ csrf_token() }}",
+          order_id: currentDeleteOrderId,
+          otp: otp
+        },
+        success: function(response) {
+          btn.prop('disabled', false).text('Verify & Delete');
+          if (response.success) {
+            $('#deleteOrderModal').modal('hide');
+            alert('Order soft-deleted successfully.');
+            window.location.reload();
+          } else {
+            $('#deleteOTPFeedback').text(response.message || 'Verification failed.').show();
+          }
+        },
+        error: function(xhr) {
+          btn.prop('disabled', false).text('Verify & Delete');
+          let msg = 'Verification failed.';
+          if (xhr.responseJSON && xhr.responseJSON.message) {
+            msg = xhr.responseJSON.message;
+          }
+          $('#deleteOTPFeedback').text(msg).show();
+        }
+      });
+    });
+
+    // Dismiss modal support for close buttons
+    $('[data-dismiss="modal"], [data-bs-dismiss="modal"]').on('click', function() {
+      $('#deleteOrderModal').modal('hide');
+    });
+  });
+  </script>
 </body>
 </html>

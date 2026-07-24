@@ -23,22 +23,26 @@
             border: 1px solid #eef2f6;
         }
         .header {
-            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-            color: white;
+            background-color: #ffffff;
             padding: 30px;
             text-align: center;
-            border-bottom: 4px solid #ff6a00;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .header img {
+            max-height: 50px;
+            width: auto;
+            display: inline-block;
         }
         .header h1 {
-            margin: 0;
+            margin: 15px 0 0;
             font-size: 22px;
             font-weight: 700;
-            letter-spacing: 0.5px;
+            color: #ff6a00;
         }
         .header p {
             margin: 5px 0 0;
             font-size: 14px;
-            opacity: 0.8;
+            color: #555;
         }
         .content {
             padding: 35px 30px;
@@ -90,6 +94,7 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
+            <img src="{{ asset('logo.png') }}" alt="Bill & Bite Logo">
             <h1>New Website Enquiry</h1>
             <p>Bill & Bite Restaurant POS System</p>
         </div>

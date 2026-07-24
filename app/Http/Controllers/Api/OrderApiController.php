@@ -214,12 +214,10 @@ class OrderApiController extends Controller
             $order->user_id = $userId;
             $order->save();
        
-            // Generate KOT number for this order placement
-            $kotNo = $this->generateKOTNumber($restaurantId);
-
-            // Save order items with all GST details
+            // Save order items with all GST details and generate unique KOT number for each
             foreach ($request->order_items as $index => $item) {
                 $calc = $calculatedItems[$index];
+                $kotNo = $this->generateKOTNumber($restaurantId);
                 
                 $orderItem = new OrderItems();
                 $orderItem->order_id = $order->id;
@@ -394,7 +392,6 @@ class OrderApiController extends Controller
 
             // Handle new item additions
             if ($request->has('order_items') && is_array($request->order_items)) {
-                $kotNo = $this->generateKOTNumber($restaurantId);
                 foreach ($request->order_items as $item) {
                     $itemDiscount = isset($item['item_discount']) ? floatval($item['item_discount']) : 0;
                     $calc = $this->calculateItemGST(
@@ -405,6 +402,9 @@ class OrderApiController extends Controller
                         $isGstRegistered
                     );
                     
+                    // Generate unique KOT number for each new item
+                    $kotNo = $this->generateKOTNumber($restaurantId);
+
                     OrderItems::create([
                         'order_id' => $id,
                         'subcategory_id' => $item['id'],
@@ -1067,23 +1067,23 @@ class OrderApiController extends Controller
      */
     private function generateKOTNumber($restaurantId)
     {
-        $todayStart = Carbon::today()->startOfDay();
-        $todayEnd = Carbon::today()->endOfDay();
-        
         $latestItem = OrderItems::where('restaurant_id', $restaurantId)
-            ->whereBetween('created_at', [$todayStart, $todayEnd])
             ->whereNotNull('kot_no')
             ->orderBy('id', 'desc')
             ->first();
             
-        if ($latestItem && preg_match('/KOT-\d{6}-(\d+)/', $latestItem->kot_no, $matches)) {
-            $nextSequence = intval($matches[1]) + 1;
-        } else {
-            $nextSequence = 1;
+        $todayDateStr = Carbon::now()->format('ymd');
+        $nextSequence = 1;
+
+        if ($latestItem && preg_match('/KOT-(\d{6})-(\d+)/', $latestItem->kot_no, $matches)) {
+            $latestDateStr = $matches[1];
+            $latestSequence = intval($matches[2]);
+            if ($latestDateStr === $todayDateStr) {
+                $nextSequence = $latestSequence + 1;
+            }
         }
         
-        $dateStr = Carbon::now()->format('ymd');
-        return "KOT-{$dateStr}-" . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
+        return "KOT-{$todayDateStr}-" . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
     }
 
     /**

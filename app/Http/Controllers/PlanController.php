@@ -9,6 +9,8 @@ use App\Models\Plan;
 use App\Models\RestaurantToCustomPlan;
 use App\Models\PlanHistory;
 use Razorpay\Api\Api;
+use Illuminate\Support\Facades\DB;
+use App\Models\Subscription;
 
 class PlanController extends Controller
 {
@@ -18,7 +20,8 @@ class PlanController extends Controller
             return redirect()->route('restaurant.plans');
         }
         $plans = Plan::where('is_delete', 'N')
-                    ->where('plan_status', 'A')
+                    ->orderByRaw("CASE WHEN is_default_plan = 'Y' AND plan_status = 'A' THEN 0 WHEN plan_status = 'A' THEN 1 ELSE 2 END")
+                    ->orderBy('sort_order', 'asc')
                     ->orderBy('id', 'desc')
                     ->get();
         
@@ -44,16 +47,46 @@ public function selectPlan()
         })
         ->where('is_delete', 'N')
         ->where('plan_status', 'A')
+        ->orderBy('sort_order', 'asc')
+        ->orderBy('id', 'desc')
         ->get();
     
     // Get assigned custom plans that are active versions
     $assignedPlans = Plan::whereIn('id', $assignedPlanIds)
         ->where('is_delete', 'N')
         ->where('plan_status', 'A')
+        ->orderBy('sort_order', 'asc')
+        ->orderBy('id', 'desc')
         ->get();
     
     // Merge and unique them by id
     $plans = $defaultPlans->merge($assignedPlans)->unique('id');
+
+    // Filter plans: if there is an active subscription, only show plans with price > current active plan price
+    $activeSubscription = Subscription::where('user_id', $restaurantId)
+        ->where('status', 'active')
+        ->with('plan')
+        ->first();
+
+    if ($activeSubscription && $activeSubscription->plan) {
+        $currentPlanPrice = $activeSubscription->plan->price;
+        $plans = $plans->filter(function($plan) use ($currentPlanPrice) {
+            return $plan->price > $currentPlanPrice;
+        });
+    }
+
+    // Sort plans: Active default plans first, then other plans, ordered by sort_order and fallback ID
+    $plans = $plans->sort(function($a, $b) {
+        $a_def = ($a->is_default_plan == 'Y' && $a->plan_status == 'A') ? 0 : 1;
+        $b_def = ($b->is_default_plan == 'Y' && $b->plan_status == 'A') ? 0 : 1;
+        if ($a_def !== $b_def) {
+            return $a_def <=> $b_def;
+        }
+        if ($a->sort_order !== $b->sort_order) {
+            return $a->sort_order <=> $b->sort_order;
+        }
+        return $b->id <=> $a->id;
+    })->values();
     
     // Pick the first default plan for backward compatibility or placeholder usage
     $defaultPlan = $defaultPlans->first();
@@ -318,7 +351,8 @@ public function update(Request $request, $id)
     $taxableAmount = round($taxableAmount, 2);
     $gstAmount = round($gstAmount, 2);
 
-    // Check if plan already exists with different ID
+    // Check if plan already exists with different ID (Commented out to allow editing plans multiple times)
+    /*
     $planChk = Plan::where('name', $request->name)
         ->where('price', $request->price)
         ->where('id', '!=', $id)
@@ -332,6 +366,7 @@ public function update(Request $request, $id)
             ->with('error', 'This Plan Already Exists')
             ->withInput();
     }
+    */
 
     // Check default free plan
     // if ($request->is_default_free == "Y" && $request->price == 0) {
@@ -498,5 +533,48 @@ public function update(Request $request, $id)
 
         return redirect()->back()
             ->with('success', 'Plan deleted successfully');
+    }
+
+    public function toggleDefaultPlan($id)
+    {
+        if (auth()->user()->role != "SA") {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $plan = Plan::findOrFail($id);
+        $plan->is_default_plan = $plan->is_default_plan == 'Y' ? 'N' : 'Y';
+        $plan->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Plan default status updated successfully',
+            'is_default_plan' => $plan->is_default_plan
+        ]);
+    }
+
+    public function updateOrder(Request $request)
+    {
+        if (auth()->user()->role != "SA") {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'order' => 'required|array',
+            'order.*' => 'integer'
+        ]);
+
+        $newOrderIds = $request->order;
+
+        DB::beginTransaction();
+        try {
+            foreach ($newOrderIds as $index => $currentId) {
+                DB::table('plans')->where('id', $currentId)->update(['sort_order' => $index]);
+            }
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Order updated successfully']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Failed to update order: ' . $e->getMessage()], 500);
+        }
     }
 }

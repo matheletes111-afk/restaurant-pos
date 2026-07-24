@@ -23,19 +23,26 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background-color: #ffffff;
             padding: 30px;
             text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .header img {
+            max-height: 50px;
+            width: auto;
+            display: inline-block;
         }
         .header h1 {
-            margin: 0;
-            font-size: 28px;
+            margin: 15px 0 0;
+            font-size: 24px;
             font-weight: bold;
+            color: #1f2937;
         }
         .header p {
-            margin: 10px 0 0;
-            opacity: 0.9;
+            margin: 5px 0 0;
+            color: #6b7280;
+            font-size: 14px;
         }
         .content {
             padding: 40px 30px;
@@ -88,7 +95,7 @@
         }
         .info-box {
             background-color: #f8f9fa;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #ff6a00;
             padding: 20px;
             margin: 20px 0;
             border-radius: 5px;
@@ -101,7 +108,7 @@
         }
         .info-label {
             font-weight: bold;
-            color: #667eea;
+            color: #ff6a00;
             display: inline-block;
             width: 120px;
         }
@@ -121,7 +128,7 @@
         }
         .button {
             display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #ff6a00 0%, #ff8c42 100%);
             color: white;
             padding: 12px 30px;
             text-decoration: none;
@@ -151,6 +158,7 @@
 <body>
     <div class="container">
         <div class="header">
+            <img src="{{ asset('logo.png') }}" alt="Bill & Bite Logo">
             <h1>New Support Ticket</h1>
             <p>A new support request has been submitted</p>
         </div>
@@ -225,11 +233,7 @@
                 <p style="white-space: pre-wrap;">{{ $ticket->message }}</p>
             </div>
             
-            <center>
-                <a href="{{ url('/admin/support/ticket/' . $ticket->id) }}" class="button">
-                    <i class="fas fa-eye"></i> View & Reply to Ticket
-                </a>
-            </center>
+            
             
             <p style="margin-top: 20px; font-size: 12px; color: #666; text-align: center;">
                 Please respond to this ticket as soon as possible. The customer is waiting for assistance.

@@ -308,7 +308,8 @@
                 </div>
                 <div class="col-md-6 text-right">
                   @if(
-                    isset($plan_details)
+                    auth()->user()->hasPermission('menu_master', 'add')
+                    && isset($plan_details)
                     && isset($plan_details->total_number_of_dishes)
                     && count($data ?? []) < $plan_details->total_number_of_dishes
                   )
@@ -357,9 +358,6 @@
                         <span class="product-price">
                           ₹{{ number_format($value->price, 2) }}
                         </span>
-                        <span class="product-gst">
-                          <i class="fa fa-percent"></i> GST {{ $value->gst_rate }}%
-                        </span>
                       </div>
                       
                       <!-- Status Badge -->
@@ -371,13 +369,13 @@
                       </div>
                       
                       <!-- Action Buttons -->
-                      <div class="product-card-actions">
+                       <div class="product-card-actions">
+                        @if(auth()->user()->hasPermission('menu_master', 'edit'))
                         <!-- Edit Button -->
                         <button class="btn btn-outline-success edit-btn"
                                 data-id="{{ $value->id }}"
                                 data-name="{{ $value->name }}"
                                 data-price="{{ $value->price }}"
-                                data-gst="{{ $value->gst_rate }}"
                                 data-type="{{ $value->food_type }}">
                          <i class="fa fa-edit"></i>
                         </button>
@@ -389,13 +387,16 @@
                           <i class="fa {{ $value->status == 'A' ? 'fa-ban' : 'fa-check' }}"></i>
                           
                         </a>
+                        @endif
                         
+                        @if(auth()->user()->hasPermission('menu_master', 'delete'))
                         <!-- Delete Button -->
                         <a href="{{ route('manage.subcategory.category.delete', $value->id) }}"
                            class="btn btn-outline-danger"
                            onclick="return confirm('Are you sure want to delete this product?')">
                           <i class="fa fa-trash"></i>
                         </a>
+                        @endif
                       </div>
                     </div>
                   </div>
@@ -418,7 +419,6 @@
                       <th>Image</th>
                       <th>Product Name</th>
                       <th>Price (₹)</th>
-                      <th>GST (%)</th>
                       <th>Food Type</th>
                       <th>Status</th>
                       <th>Action</th>
@@ -436,11 +436,10 @@
                       </td>
                       <td>{{ @$value->name }}</td>
                       <td>{{ number_format($value->price, 2) }}</td>
-                      <td>{{ $value->gst_rate }}</td>
                       <td>{{ $value->food_type }}</td>
                       <td>{{ $value->status == 'A' ? 'Active' : 'Inactive' }}</td>
                       <td>
-                        <button class="btn btn-success edit-btn" data-id="{{ $value->id }}" data-name="{{ $value->name }}" data-price="{{ $value->price }}" data-gst="{{ $value->gst_rate }}" data-type="{{ $value->food_type }}">Edit</button>
+                        <button class="btn btn-success edit-btn" data-id="{{ $value->id }}" data-name="{{ $value->name }}" data-price="{{ $value->price }}" data-type="{{ $value->food_type }}">Edit</button>
                         <a href="{{ route('manage.subcategory.category.delete', $value->id) }}" class="btn btn-danger">Delete</a>
                        </td>
                     </tr>
@@ -481,10 +480,7 @@
               <input type="number" step="0.01" name="price" class="form-control" required>
             </div>
 
-            <div class="form-group">
-              <label>GST Rate (%)</label>
-              <input type="number" step="0.01" name="gst_rate" class="form-control" placeholder="e.g. 5, 12, 18" required>
-            </div>
+
 
             <div class="form-group">
               <label>Food Type</label>
@@ -532,10 +528,7 @@
               <input type="number" step="0.01" name="price" id="edit_price" class="form-control" required>
             </div>
 
-            <div class="form-group">
-              <label>GST Rate (%)</label>
-              <input type="number" step="0.01" name="gst_rate" id="edit_gst" class="form-control" required>
-            </div>
+
 
             <div class="form-group">
               <label>Food Type</label>
@@ -654,7 +647,6 @@
         $('#edit_id').val($(this).data('id'));
         $('#edit_name').val($(this).data('name'));
         $('#edit_price').val($(this).data('price'));
-        $('#edit_gst').val($(this).data('gst'));
         $('#edit_food_type').val($(this).data('type'));
         $('#editProductModal').modal('show');
       });

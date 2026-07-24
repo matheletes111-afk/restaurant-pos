@@ -23,19 +23,26 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         .header {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
+            background-color: #ffffff;
             padding: 30px;
             text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .header img {
+            max-height: 50px;
+            width: auto;
+            display: inline-block;
         }
         .header h1 {
-            margin: 0;
-            font-size: 28px;
+            margin: 15px 0 0;
+            font-size: 24px;
             font-weight: bold;
+            color: #1f2937;
         }
         .header p {
-            margin: 10px 0 0;
-            opacity: 0.9;
+            margin: 5px 0 0;
+            color: #6b7280;
+            font-size: 14px;
         }
         .content {
             padding: 40px 30px;
@@ -45,22 +52,22 @@
             margin-bottom: 20px;
         }
         .greeting strong {
-            color: #10b981;
+            color: #ff6a00;
             font-size: 20px;
         }
         .plan-details {
-            background: linear-gradient(135deg, #e8f4f8 0%, #d1fae5 100%);
+            background: linear-gradient(135deg, #fff8f5 0%, #ffebeb 100%);
             padding: 20px;
             border-radius: 8px;
             margin: 20px 0;
         }
         .plan-details h3 {
             margin-top: 0;
-            color: #065f46;
+            color: #ff6a00;
         }
         .info-box {
             background-color: #f8f9fa;
-            border-left: 4px solid #10b981;
+            border-left: 4px solid #ff6a00;
             padding: 20px;
             margin: 25px 0;
             border-radius: 5px;
@@ -73,7 +80,7 @@
         }
         .info-label {
             font-weight: bold;
-            color: #10b981;
+            color: #ff6a00;
             display: inline-block;
             width: 140px;
         }
@@ -91,11 +98,11 @@
             color: #92400e;
         }
         .gst-breakdown {
-            background-color: #f0fdf4;
+            background-color: #fff8f5;
             padding: 15px;
             border-radius: 8px;
             margin-top: 15px;
-            border: 1px solid #bbf7d0;
+            border: 1px solid #ffebeb;
         }
         .gst-breakdown .row {
             display: flex;
@@ -104,21 +111,21 @@
         }
         .gst-breakdown .label {
             font-weight: 500;
-            color: #166534;
+            color: #ff6a00;
         }
         .gst-breakdown .value {
             font-weight: 600;
-            color: #14532d;
+            color: #ff8c42;
         }
         .gst-breakdown .total {
-            border-top: 1px solid #bbf7d0;
+            border-top: 1px solid #ffebeb;
             margin-top: 5px;
             padding-top: 8px;
             font-weight: bold;
         }
         .button {
             display: inline-block;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(135deg, #ff6a00 0%, #ff8c42 100%);
             color: white;
             padding: 12px 30px;
             text-decoration: none;
@@ -148,6 +155,7 @@
 <body>
     <div class="container">
         <div class="header">
+            <img src="{{ $message->embed(public_path('logo.png')) }}" alt="Bill & Bite Logo">
             <h1>Subscription Activated Successfully!</h1>
             <p>Your plan is now active</p>
         </div>
@@ -176,18 +184,28 @@
             </div>
             
             <div class="info-box">
-                <h3>📅 Subscription Period</h3>
+                <h3>📅 Subscription Details</h3>
                 <div class="info-item">
-                    <span class="info-label">Start Date:</span>
-                    <span class="info-value">{{ \Carbon\Carbon::parse($subscription->start_date)->format('d M Y') }}</span>
+                    <span class="info-label">Subscription ID:</span>
+                    <span class="info-value"><strong>{{ $subscription->razorpay_subscription_id ?? 'SUB-' . str_pad($subscription->id, 6, '0', STR_PAD_LEFT) }}</strong></span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">End Date:</span>
-                    <span class="info-value">{{ \Carbon\Carbon::parse($subscription->end_date)->format('d M Y') }}</span>
+                    <span class="info-label">Period:</span>
+                    <span class="info-value"><strong>{{ \Carbon\Carbon::parse($subscription->start_date)->format('d M Y') }}</strong> to <strong>{{ \Carbon\Carbon::parse($subscription->end_date)->format('d M Y') }}</strong></span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Auto Renew:</span>
-                    <span class="info-value">{{ $subscription->auto_renew ? 'Yes' : 'No' }}</span>
+                    <span class="info-label">Auto Renew Date:</span>
+                    <span class="info-value">
+                        @if($subscription->renewal_date)
+                            <strong>{{ \Carbon\Carbon::parse($subscription->renewal_date)->format('d M Y') }}</strong>
+                        @else
+                            N/A
+                        @endif
+                    </span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Payment Method:</span>
+                    <span class="info-value"><strong>{{ strtoupper($payment->payment_method ?? 'N/A') }}</strong></span>
                 </div>
             </div>
             
@@ -221,10 +239,6 @@
                     </div>
                 </div>
             </div>
-            
-            <center>
-                <a href="{{ url('/restaurant/plans') }}" class="button">View Your Plans</a>
-            </center>
             
             <p>If you have any questions or need assistance with your subscription, please don't hesitate to contact our support team.</p>
             

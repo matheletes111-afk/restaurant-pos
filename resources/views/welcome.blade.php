@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bill&Bite - Complete Restaurant Management System</title>
+    <link rel="shortcut icon" href="{{ asset('fav_web.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -553,7 +554,11 @@
                                 <li><i class="ph-fill ph-check-circle"></i> {{ $plan->category_number == 0 ? 'Unlimited' : $plan->category_number }} Categories</li>
                                 <li><i class="ph-fill ph-check-circle"></i> {{ $plan->total_number_of_dishes == 0 ? 'Unlimited' : $plan->total_number_of_dishes }} Dishes</li>
                                 <li><i class="ph-fill ph-check-circle"></i> {{ $plan->total_number_of_table == 0 ? 'Unlimited' : $plan->total_number_of_table }} Tables</li>
-                                <li><i class="ph-fill ph-check-circle"></i> Inventory {{ $plan->inventory_checkbox == 'Y' ? 'Enabled' : 'Disabled' }}</li>
+                                @if($plan->inventory_checkbox == 'Y')
+                                    <li><i class="ph-fill ph-check-circle" style="color: #2e7d32;"></i> Inventory</li>
+                                @else
+                                    <li><i class="ph-fill ph-x-circle" style="color: #d32f2f;"></i> Inventory</li>
+                                @endif
                             </ul>
                             <a href="javascript:void(0)" class="btn-plan open-enquiry-btn">Get Started</a>
                         </div>
@@ -835,7 +840,7 @@
     </section>
 
     <!-- Footer -->
-    <footer class="footer">
+    <footer class="footer" style="background:white !important;">
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-brand">
@@ -872,7 +877,7 @@
                     <h4>Contact Us</h4>
                     <ul>
                         <li><i class="ph ph-phone"></i> +91 7001769472</li>
-                        <li><i class="ph ph-envelope-simple"></i> info@billnbite.cloud</li>
+                        <li><i class="ph ph-envelope-simple"></i> info@billnbite.com</li>
                         <li><i class="ph ph-map-pin"></i> Siliguri, India</li>
                     </ul>
                 </div>

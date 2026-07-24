@@ -274,7 +274,7 @@
         border-bottom: none;
     }
 
-    .plan-features i {
+    .plan-features li > i:first-child {
         color: var(--primary);
         font-size: 0.9rem;
         width: 16px;
@@ -406,12 +406,17 @@
 
         <!-- Custom Page Header -->
         <div class="page-header-custom">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <div>
-                    <h2><i class="fas fa-gem"></i> Available Plans</h2>
-                    <p>Upgrade or activate subscription plans customized for your restaurant operations</p>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 w-100">
+                <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                    <div style="background: #ffffff; padding: 12px 18px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.08); flex-shrink: 0;">
+                        <img src="{{ asset('logo.png') }}" alt="Bill & Bite Logo" style="height: 40px; width: auto;">
+                    </div>
+                    <div style="text-align: left;">
+                        <h2 style="margin-bottom: 5px; color: white;"><i class="fas fa-gem"></i> Available Plans</h2>
+                        <p>Upgrade or activate subscription plans customized for your restaurant operations</p>
+                    </div>
                 </div>
-                <div class="user-welcome">
+                <div class="user-welcome" style="margin-top: 0;">
                     <i class="fas fa-store"></i> {{ Auth::user()->restaurant->name ?? 'Your Restaurant' }}
                 </div>
             </div>
@@ -500,7 +505,15 @@
                                         <li><i class="fas fa-folder-open"></i> {{ $plan->category_number == 0 ? 'Unlimited' : number_format($plan->category_number) }} Categories</li>
                                         <li><i class="fas fa-utensils"></i> {{ $plan->total_number_of_dishes == 0 ? 'Unlimited' : number_format($plan->total_number_of_dishes) }} Dishes</li>
                                         <li><i class="fas fa-chair"></i> {{ $plan->total_number_of_table == 0 ? 'Unlimited' : number_format($plan->total_number_of_table) }} Tables</li>
-                                        <li><i class="fas fa-boxes"></i> Inventory {{ $plan->inventory_checkbox == 'Y' ? 'Enabled' : 'Disabled' }}</li>
+                                        <li>
+                                            <i class="fas fa-boxes"></i> 
+                                            Inventory: 
+                                            @if($plan->inventory_checkbox == 'Y')
+                                                <i class="fas fa-check text-success ms-1"></i>
+                                            @else
+                                                <i class="fas fa-times text-danger ms-1"></i>
+                                            @endif
+                                        </li>
                                     </ul>
 
                                     @if($isActive)

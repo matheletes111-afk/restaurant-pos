@@ -64,6 +64,32 @@ public function showPlans()
         ->where('status', 'active')
         ->get()
         ->keyBy('plan_id');
+
+    // Filter plans: if there is an active subscription, only show plans with price > current active plan price
+    $activeSubscription = Subscription::where('user_id', $user->restaurant_id)
+        ->where('status', 'active')
+        ->with('plan')
+        ->first();
+
+    if ($activeSubscription && $activeSubscription->plan) {
+        $currentPlanPrice = $activeSubscription->plan->price;
+        $plans = $plans->filter(function($plan) use ($currentPlanPrice) {
+            return $plan->price > $currentPlanPrice;
+        });
+    }
+
+    // Sort plans: Active default plans first, then other plans, ordered by sort_order and fallback ID
+    $plans = $plans->sort(function($a, $b) {
+        $a_def = ($a->is_default_plan == 'Y' && $a->plan_status == 'A') ? 0 : 1;
+        $b_def = ($b->is_default_plan == 'Y' && $b->plan_status == 'A') ? 0 : 1;
+        if ($a_def !== $b_def) {
+            return $a_def <=> $b_def;
+        }
+        if ($a->sort_order !== $b->sort_order) {
+            return $a->sort_order <=> $b->sort_order;
+        }
+        return $b->id <=> $a->id;
+    })->values();
     
     return view('restaurant.plans', compact('plans', 'assignedPlanIds', 'defaultPlan', 'activeSubscriptionPlanIds', 'activeSubscriptions', 'hasFreeTrial'));
 }
