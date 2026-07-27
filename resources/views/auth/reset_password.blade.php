@@ -91,29 +91,29 @@
 
     .form-group .form-control:focus {
       background: #ffffff;
-      border-color: #009d1a;
-      box-shadow: 0 0 0 3px rgba(0, 157, 26, 0.1), 0 4px 12px rgba(0, 157, 26, 0.05);
+      border-color: #ff6b00;
+      box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.15), 0 4px 12px rgba(255, 107, 0, 0.08);
       outline: none;
     }
 
     .btn-login {
-      background: linear-gradient(135deg, #009d1a 0%, #00bc20 100%);
+      background: linear-gradient(135deg, #ff6b00 0%, #ff8800 100%);
       border: none;
       color: white;
       border-radius: 30px;
       padding: 12px 30px;
       font-weight: 700;
       font-size: 0.95rem;
-      box-shadow: 0 4px 15px rgba(0, 157, 26, 0.2);
+      box-shadow: 0 4px 15px rgba(255, 107, 0, 0.25);
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
       width: 100%;
     }
 
     .btn-login:hover {
-      background: linear-gradient(135deg, #00bc20 0%, #009d1a 100%);
+      background: linear-gradient(135deg, #ff8800 0%, #ff6b00 100%);
       transform: translateY(-1px);
-      box-shadow: 0 8px 25px rgba(0, 157, 26, 0.35);
+      box-shadow: 0 8px 25px rgba(255, 107, 0, 0.4);
     }
 
     .auth-actions-row {
@@ -139,7 +139,7 @@
     }
 
     .auth-action-link:hover {
-      color: #009d1a;
+      color: #ff6b00;
     }
 
     .auth-footer {
@@ -176,7 +176,7 @@
       
       <div class="form-group mb-4">
         <label class="form-label">Verification Code (OTP)</label>
-        <input type="text" name="email_vcode" class="form-control" required placeholder="Enter OTP code">
+        <input type="text" name="email_vcode" class="form-control" required placeholder="Enter 5-digit OTP code" maxlength="5">
       </div>
       
       <button type="submit" class="btn btn-login">Reset Password</button>

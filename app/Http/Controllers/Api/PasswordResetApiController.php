@@ -43,8 +43,8 @@ class PasswordResetApiController extends Controller
                 ], Response::HTTP_NOT_FOUND);
             }
             
-            // Generate OTP (6-digit code)
-            $otp = rand(100000, 999999);
+            // Generate OTP (5-digit code)
+            $otp = rand(10000, 99999);
             
             // Update OTP in database
             $user->email_vcode = $otp;
@@ -93,7 +93,7 @@ class PasswordResetApiController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'user_id' => 'required|exists:users,id',
-                'otp' => 'required|string|min:6|max:6'
+                'otp' => 'required|string|min:5|max:5'
             ]);
             
             if ($validator->fails()) {
@@ -143,7 +143,7 @@ class PasswordResetApiController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'user_id' => 'required|exists:users,id',
-                'otp' => 'required|string|min:6|max:6',
+                'otp' => 'required|string|min:5|max:5',
                 'password' => 'required|string|min:6|confirmed'
             ]);
             
@@ -208,7 +208,7 @@ class PasswordResetApiController extends Controller
             }
             
             // Generate OTP
-            $otp = rand(100000, 999999);
+            $otp = rand(10000, 99999);
             
             // Update user with OTP
             $user = User::where('email', $request->email)->first();

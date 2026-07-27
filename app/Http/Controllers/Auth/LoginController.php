@@ -197,7 +197,8 @@ class LoginController extends Controller
         if ($getdata === null) {
            return back()->with('error','This email is not registered yet');
         }else{
-            $update_vcode = User::where('email',$request->email)->update(['email_vcode'=>time()]);
+            $otp = rand(10000, 99999);
+            $update_vcode = User::where('email',$request->email)->update(['email_vcode'=>$otp]);
             $get_vcode = User::where('email',$request->email)->first();
              $data = [
                 'email'=>$request->email,
