@@ -37,7 +37,7 @@ class CategoryController extends Controller
                 $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
                 \Log::info('Category Insert: Uploading image', ['filename' => $filename]);
                 //real image
-                $image->move("storage/app/public/category",$filename);    
+                $image->move(storage_path('app/public/category'),$filename);    
                 $new->image = $filename;
             }
             $new->save();
@@ -64,7 +64,7 @@ class CategoryController extends Controller
             if ($request->image) {
                 $check = Category::where('id',$request->id)->first();
                 if ($check && $check->image) {
-                    $oldImagePath = 'storage/app/public/category/'.$check->image;
+                    $oldImagePath = storage_path('app/public/category/'.$check->image);
                     \Log::info('Category Update: Unlinking old image', ['path' => $oldImagePath]);
                     @unlink($oldImagePath);
                 }
@@ -72,7 +72,7 @@ class CategoryController extends Controller
                 $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
                 \Log::info('Category Update: Uploading image', ['filename' => $filename]);
                 //real image
-                $image->move("storage/app/public/category",$filename);    
+                $image->move(storage_path('app/public/category'),$filename);    
                 $upd['image'] = $filename;
             }
             Category::where('id',$request->id)->update($upd);
@@ -92,7 +92,7 @@ class CategoryController extends Controller
             $check = Category::where('id',$id)->where('restaurant_id',auth()->user()->restaurant_id)->first();
             if ($check) {
                 if ($check->image) {
-                    @unlink('storage/app/public/category/'.$check->image);
+                    @unlink(storage_path('app/public/category/'.$check->image));
                 }
                 Category::where('id',$id)->update(['status'=>'D']);
                 return redirect()->back()->with('success','Category deleted successfully');
@@ -135,7 +135,7 @@ class CategoryController extends Controller
                 $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
                 \Log::info('SubCategory Insert: Uploading image', ['filename' => $filename]);
                 //real image
-                $image->move("storage/app/public/category",$filename);    
+                $image->move(storage_path('app/public/category'),$filename);    
                 $new->image = $filename;
             }
             $new->save();
@@ -161,7 +161,7 @@ class CategoryController extends Controller
             if ($request->image) {
                 $check = SubCategory::where('id',$request->id)->first();
                 if ($check && $check->image) {
-                    $oldImagePath = 'storage/app/public/category/'.$check->image;
+                    $oldImagePath = storage_path('app/public/category/'.$check->image);
                     \Log::info('SubCategory Update: Unlinking old image', ['path' => $oldImagePath]);
                     @unlink($oldImagePath);
                 }
@@ -169,7 +169,7 @@ class CategoryController extends Controller
                 $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
                 \Log::info('SubCategory Update: Uploading image', ['filename' => $filename]);
                 //real image
-                $image->move("storage/app/public/category",$filename);    
+                $image->move(storage_path('app/public/category'),$filename);    
                 $upd['image'] = $filename;
             }
             SubCategory::where('id',$request->id)->update($upd);
@@ -189,7 +189,7 @@ class CategoryController extends Controller
             $check = SubCategory::where('id',$id)->where('restaurant_id',auth()->user()->restaurant_id)->first();
             if ($check) {
                 if ($check->image) {
-                    @unlink('storage/app/public/category/'.$check->image);
+                    @unlink(storage_path('app/public/category/'.$check->image));
                 }
                 SubCategory::where('id',$id)->where('restaurant_id',auth()->user()->restaurant_id)->update(['status'=>'D']);
                 return redirect()->back()->with('success','Product deleted successfully');
