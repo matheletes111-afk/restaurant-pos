@@ -90,7 +90,7 @@
             <div class="hero-graphics">
                 <!-- Using the hero mockup from public directory -->
                 <div class="graphic-wrapper" style="display: flex; justify-content: center; align-items: center;">
-                    <img src="{{ asset('banner3.png') }}" alt="Dashboard and Mobile Mockup" style="max-width: 100%; height: auto; border-radius: 12px;">
+                    <img src="{{ asset('new_banner.png') }}" alt="Dashboard and Mobile Mockup" style="max-width: 100%; height: auto; border-radius: 12px;">
                 </div>
             </div>
         </div>
