@@ -41,7 +41,7 @@
                 {{-- <div class="badge">
                     <span class="badge-dot"></span> Complete Restaurant Management System
                 </div> --}}
-                <h1 style="font-size: 44px;">Simplify <span class="text-orange">Every Operation.</span></h1>
+                <h1 style="font-size: 44px;">Simplify <span class="text-orange">Every Operation</span> For Your Restaurant.</h1>
                 <p>Bill & Bite is an all-in-one restaurant management system that helps you manage orders, staff, kitchen, inventory, payments and more — from one powerful dashboard.</p>
                 
                 <div class="hero-features">
