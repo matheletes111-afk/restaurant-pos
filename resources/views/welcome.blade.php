@@ -24,7 +24,7 @@
                 <a href="#features">Features</a>
                 <a href="#pricing">Pricing</a>
                 <a href="#how-it-works">How It Works</a>
-                <a href="#testimonials">Testimonials</a>
+                <a href="#platform-benefits">Benefits</a>
                 <a href="#faq">FAQ</a>
             </div>
             <div class="nav-actions">
@@ -38,10 +38,10 @@
     <header class="hero">
         <div class="container hero-container">
             <div class="hero-content">
-                <div class="badge">
+                {{-- <div class="badge">
                     <span class="badge-dot"></span> Complete Restaurant Management System
-                </div>
-                <h1 style="font-size: 44px;">Manage Your Restaurant.<br>Simplify <span class="text-orange">Every Operation.</span></h1>
+                </div> --}}
+                <h1 style="font-size: 44px;">Simplify <span class="text-orange">Every Operation.</span></h1>
                 <p>Bill & Bite is an all-in-one restaurant management system that helps you manage orders, staff, kitchen, inventory, payments and more — from one powerful dashboard.</p>
                 
                 <div class="hero-features">
@@ -51,7 +51,7 @@
                     </div>
                     <div class="hf-item">
                         <div class="hf-icon"><i class="ph ph-squares-four"></i></div>
-                        <span>All-In-One<br>Solution</span>
+                        <span style="white-space: nowrap;">All-In-One Solution</span>
                     </div>
                     <div class="hf-item">
                         <div class="hf-icon"><i class="ph ph-cloud-arrow-up"></i></div>
@@ -59,7 +59,7 @@
                     </div>
                     <div class="hf-item">
                         <div class="hf-icon"><i class="ph ph-shield-check"></i></div>
-                        <span>Secure &<br>Reliable</span>
+                        <span style="white-space: nowrap;">Secure & Reliable</span>
                     </div>
                 </div>
 
@@ -68,7 +68,7 @@
                     <a href="javascript:void(0)" class="btn btn-outline btn-lg open-enquiry-btn">Explore Features</a>
                 </div>
 
-                <div class="trust-indicator">
+                {{-- <div class="trust-indicator">
                     <div class="avatars">
                         <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=100" alt="User 1">
                         <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100" alt="User 2">
@@ -85,7 +85,7 @@
                             <span class="rating">4.8/5</span>
                         </div>
                     </div>
-                </div>
+                </div> --}}
             </div>
             <div class="hero-graphics">
                 <!-- Using the hero mockup from public directory -->
@@ -242,7 +242,7 @@
 
             <div class="spf-row">
                 <div class="spf-image-col">
-                    <img src="{{asset('bill.jpeg')}}" style="max-width:100% !important" alt="Billing POS" style="object-fit: cover;">
+                    <img src="{{asset('bill_new.png')}}" style="max-width:100% !important" alt="Billing POS" style="object-fit: cover;">
                 </div>
                 <div class="spf-text-col">
                     <h3>A quick 3-click restaurant <span>billing</span> software</h3>
@@ -253,7 +253,7 @@
 
             <div class="spf-row reverse">
                 <div class="spf-image-col bg-light-red">
-                    <img src="{{asset('inventory.jpeg')}}" style="max-width:100% !important" alt="Inventory Management" style="object-fit: cover;">
+                    <img src="{{asset('inventory_new.png')}}" style="max-width:100% !important" alt="Inventory Management" style="object-fit: cover;">
                 </div>
                 <div class="spf-text-col">
                     <h3>Restaurant <span>inventory</span> management made easier</h3>
@@ -264,7 +264,7 @@
 
             <div class="spf-row">
                 <div class="spf-image-col">
-                    <img src="{{asset('report.jpeg')}}" style="max-width:100% !important" alt="Reports and Analytics" style="object-fit: cover;">
+                    <img src="{{asset('report_new.png')}}" style="max-width:100% !important" alt="Reports and Analytics" style="object-fit: cover;">
                 </div>
                 <div class="spf-text-col">
                     <h3>Get real-time restaurant <span>Reports</span></h3>
@@ -340,14 +340,14 @@
     <section class="stats">
         <div class="container stats-container">
             <div class="stat-item">
-                <i class="ph ph-storefront"></i>
-                <h3>1000+</h3>
-                <p>Happy Restaurants</p>
+                <i class="ph ph-rocket-launch"></i>
+                <h3>< 10 Mins</h3>
+                <p>Quick Setup & Launch</p>
             </div>
             <div class="stat-item">
-                <i class="ph ph-receipt"></i>
-                <h3>50K+</h3>
-                <p>Daily Orders Managed</p>
+                <i class="ph ph-chef-hat"></i>
+                <h3>Real-Time</h3>
+                <p>Track Food Status in Kitchen</p>
             </div>
             <div class="stat-item">
                 <i class="ph ph-shield-check"></i>
@@ -357,73 +357,127 @@
             <div class="stat-item">
                 <i class="ph ph-headset"></i>
                 <h3>24/7</h3>
-                <p>Customer Support</p>
+                <p>Dedicated Support</p>
             </div>
         </div>
     </section>
 
-    <!-- Testimonials Section -->
-    <section class="testimonials" id="testimonials">
+    <!-- Customer Platform Benefits Section -->
+    <section class="platform-benefits" id="platform-benefits" style="padding: 80px 0; background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);">
         <div class="container">
-            <div class="section-header text-center">
-                <span class="section-subtitle">TRUSTED BY RESTAURANT OWNERS</span>
-                <h2>See What <span class="text-orange">Our Customers</span> Say</h2>
+            <div class="section-header text-center" style="margin-bottom: 50px;">
+                <span class="section-subtitle" style="color: #ff6a00; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; font-size: 0.85rem;">WHY CHOOSE OUR PLATFORM</span>
+                <h2 style="font-size: 2.3rem; margin-top: 10px; margin-bottom: 15px; color: #111827;">Designed for <span class="text-orange">Maximum Efficiency</span> & Delight</h2>
+                <p style="color: #6b7280; max-width: 650px; margin: 0 auto; font-size: 1.05rem;">Discover how our platform delivers an exceptional experience for both restaurant staff and dining customers.</p>
             </div>
 
-            <div class="swiper testimonials-swiper">
-                <div class="swiper-wrapper testimonials-grid">
-                    <div class="swiper-slide">
-                        <div class="testimonial-card">
-                            <i class="ph-fill ph-quotes text-orange quote-icon"></i>
-                            <p class="review-text">Bill & Bite has completely transformed how we run our restaurant. It's easy to use and the support team is outstanding!</p>
-                            <div class="stars mb-4">
-                                <i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i>
-                            </div>
-                            <div class="reviewer">
-                                <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&q=80&w=100" alt="Rahul Verma">
-                                <div>
-                                    <h4>Rahul Verma</h4>
-                                    <span>The Spice Hub</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <style>
+                .benefits-grid-cards {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+                    gap: 25px;
+                }
+                .benefit-card-item {
+                    background: #ffffff;
+                    border-radius: 16px;
+                    padding: 32px 24px;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+                    border: 1px solid #f3f4f6;
+                    transition: all 0.3s ease;
+                    position: relative;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                }
+                .benefit-card-item::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 4px;
+                    background: linear-gradient(90deg, #ff6a00, #ff8c42);
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                }
+                .benefit-card-item:hover {
+                    transform: translateY(-6px);
+                    box-shadow: 0 20px 40px rgba(255, 106, 0, 0.12);
+                    border-color: #ffe4d6;
+                }
+                .benefit-card-item:hover::before {
+                    opacity: 1;
+                }
+                .b-card-icon {
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 12px;
+                    background: rgba(255, 106, 0, 0.1);
+                    color: #ff6a00;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 28px;
+                    margin-bottom: 20px;
+                    transition: all 0.3s ease;
+                }
+                .benefit-card-item:hover .b-card-icon {
+                    background: #ff6a00;
+                    color: #ffffff;
+                }
+                .b-card-title {
+                    font-size: 1.25rem;
+                    font-weight: 700;
+                    color: #111827;
+                    margin-bottom: 12px;
+                }
+                .b-card-desc {
+                    font-size: 0.95rem;
+                    color: #6b7280;
+                    line-height: 1.6;
+                    flex-grow: 1;
+                }
+                .b-card-badge {
+                    display: inline-block;
+                    margin-top: 18px;
+                    padding: 4px 12px;
+                    border-radius: 20px;
+                    background-color: #fff4ed;
+                    color: #ff6a00;
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                    align-self: flex-start;
+                }
+            </style>
 
-                    <div class="swiper-slide">
-                        <div class="testimonial-card">
-                            <i class="ph-fill ph-quotes text-orange quote-icon"></i>
-                            <p class="review-text">From inventory to billing to online orders, everything is streamlined. Highly recommended for every restaurant.</p>
-                            <div class="stars mb-4">
-                                <i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i>
-                            </div>
-                            <div class="reviewer">
-                                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100" alt="Anjali Mehta">
-                                <div>
-                                    <h4>Anjali Mehta</h4>
-                                    <span>Foodies Lounge</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="swiper-slide">
-                        <div class="testimonial-card">
-                            <i class="ph-fill ph-quotes text-orange quote-icon"></i>
-                            <p class="review-text">The QR ordering feature is a game changer. Our customers love it and our order management is so much better now.</p>
-                            <div class="stars mb-4">
-                                <i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i>
-                            </div>
-                            <div class="reviewer">
-                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100" alt="Vikram Singh">
-                                <div>
-                                    <h4>Vikram Singh</h4>
-                                    <span>Burger Town</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="benefits-grid-cards">
+                <div class="benefit-card-item">
+                    <div class="b-card-icon"><i class="ph ph-qr-code"></i></div>
+                    <h3 class="b-card-title">Instant Digital QR Ordering</h3>
+                    <p class="b-card-desc">Customers can view menus, customize dishes, and place orders directly from their phone with zero waiting time.</p>
+                    <span class="b-card-badge">Speed & Convenience</span>
                 </div>
-                <div class="swiper-pagination mt-4"></div>
+
+                <div class="benefit-card-item">
+                    <div class="b-card-icon"><i class="ph ph-lightning"></i></div>
+                    <h3 class="b-card-title">Real-Time Kitchen Sync</h3>
+                    <p class="b-card-desc">Orders stream directly to KOT displays instantly, eliminating human errors and speeding up preparation.</p>
+                    <span class="b-card-badge">Zero Errors</span>
+                </div>
+
+                <div class="benefit-card-item">
+                    <div class="b-card-icon"><i class="ph ph-package"></i></div>
+                    <h3 class="b-card-title">Automated Inventory Management</h3>
+                    <p class="b-card-desc">Track stock ingredients in real time, enable item-wise auto-deduction, and get instant low-stock alerts.</p>
+                    <span class="b-card-badge">Smart Stock Control</span>
+                </div>
+
+                <div class="benefit-card-item">
+                    <div class="b-card-icon"><i class="ph ph-chart-bar"></i></div>
+                    <h3 class="b-card-title">Data-Driven Insights</h3>
+                    <p class="b-card-desc">Track customer preferences, peak dining hours, and top-selling dishes to boost profit margins effortlessly.</p>
+                    <span class="b-card-badge">Smart Analytics</span>
+                </div>
             </div>
         </div>
     </section>
