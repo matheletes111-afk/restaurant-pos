@@ -653,7 +653,7 @@
                         <!-- Product Image -->
                         <div class="product-card-img">
                             @if($product->image)
-                                <img src="{{ URL::to('storage/app/public/category') }}/{{ $product->image }}" alt="{{ $product->name }}">
+                                <img src="{{ URL::to('storage/category') }}/{{ $product->image }}" alt="{{ $product->name }}">
                             @else
                                 <div class="no-image">
                                     <i class="fa fa-hamburger"></i>

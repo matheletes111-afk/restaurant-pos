@@ -21,7 +21,9 @@ class RestaurantMaster extends Model
         'owner_id',
         'status',
         'created_by',
-        'updated_by'
+        'updated_by',
+        'qr_code_image',
+        'upi_id'
     ];
     
     protected $casts = [

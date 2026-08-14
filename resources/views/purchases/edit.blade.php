@@ -278,7 +278,7 @@
                                         @if($purchase->bill_attachment)
                                             <small class="text-success">
                                                 <i class="fa fa-paperclip"></i> 
-                                                <a href="{{ URL::to('storage/app/public/') }}/{{ @$purchase->bill_attachment }}" target="_blank">View Current Attachment</a>
+                                                <a href="{{ URL::to('storage') }}/{{ @$purchase->bill_attachment }}" target="_blank">View Current Attachment</a>
                                             </small>
                                         @endif
                                         <small class="text-muted">Max file size: 2MB (JPG, PNG, PDF)</small>

@@ -700,7 +700,7 @@
           <div class="food-card">
             <div class="food-image-container">
               @if($item->image)
-                <img src="{{ URL::to('storage/app/public/category') }}/{{ $item->image }}" alt="{{ $item->name }}" class="food-image" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop'">
+                <img src="{{ URL::to('storage/category') }}/{{ $item->image }}" alt="{{ $item->name }}" class="food-image" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop'">
               @else
                 <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop" alt="{{ $item->name }}" class="food-image">
               @endif

@@ -1,0 +1,131 @@
+========================================================================
+                     ADMIN CRM (LEAD MANAGEMENT) FLOW
+========================================================================
+
+This document outlines the database schema, routes, controller actions,
+and frontend user experience (UX) flow required to implement the CRM
+Kanban Board and Lead Profile Timeline system.
+
+------------------------------------------------------------------------
+1. DATABASE SCHEMA & MODELS
+------------------------------------------------------------------------
+
+A. Leads Table ('demo_leads')
+-----------------------------
+Tracks basic lead metadata and its status on the sales pipeline.
+- Column definitions:
+  * id (BigInt, PK, Auto-Increment)
+  * full_name (String, Required)
+  * email_address (String, Required)
+  * phone_number (String, Required)
+  * restaurant_name (String, Nullable)
+  * source (String) [e.g. 'Social Media', 'Search Engine', 'Referral']
+  * status (String/Enum, Default: 'Contacted')
+    [Allowed values: 'Contacted', 'Qualified', 'Nurturing', 'Converted', 'Lost']
+  * followup_date (Date/DateTime, Nullable)
+  * followup_notes (Text, Nullable)
+  * created_at & updated_at (Timestamps)
+
+B. Interactions Table ('demo_lead_interactions')
+------------------------------------------------
+Saves notes and automatic trail entries (e.g. status changes).
+- Column definitions:
+  * id (BigInt, PK, Auto-Increment)
+  * demo_lead_id (BigInt, FK pointing to demo_leads.id)
+  * user_id (BigInt, FK pointing to users.id)
+  * notes (Text, Required)
+  * created_at & updated_at (Timestamps)
+
+C. Tasks Table ('demo_lead_tasks')
+----------------------------------
+Checklist items / reminders for following up with the lead.
+- Column definitions:
+  * id (BigInt, PK, Auto-Increment)
+  * demo_lead_id (BigInt, FK pointing to demo_leads.id)
+  * task_title (String, Required)
+  * description (Text, Nullable)
+  * due_date (Date, Nullable)
+  * is_completed (Boolean, Default: false)
+  * created_at & updated_at (Timestamps)
+
+
+------------------------------------------------------------------------
+2. ROUTE ARCHITECTURE (Laravel web.php)
+------------------------------------------------------------------------
+
+Route::prefix('admin/crm')->name('admin.crm.')->group(function () {
+    // 1. Render Kanban Board
+    Route::get('/', [AdminCrmController::class, 'index'])->name('index');
+    
+    // 2. Drag & Drop Pipeline Status Update (AJAX)
+    Route::post('/update-status/{id}', [AdminCrmController::class, 'updateStatus'])->name('update-status');
+    
+    // 3. Update Inline Followup Date & Notes
+    Route::post('/update-followup/{id}', [AdminCrmController::class, 'updateFollowup'])->name('update-followup');
+    
+    // 4. Detailed Lead Profile & Timeline Page
+    Route::get('/{id}', [AdminCrmController::class, 'show'])->name('show');
+    
+    // 5. Add custom note to Timeline history (AJAX/Redirect)
+    Route::post('/{id}/log-note', [AdminCrmController::class, 'logNote'])->name('log-note');
+    
+    // 6. Append follow-up task checklist item
+    Route::post('/{id}/add-task', [AdminCrmController::class, 'addTask'])->name('add-task');
+    
+    // 7. Toggle Task checkbox state (AJAX)
+    Route::post('/tasks/{taskId}/toggle', [AdminCrmController::class, 'toggleTask'])->name('toggle-task');
+});
+
+
+------------------------------------------------------------------------
+3. BACKEND CONTROLLER LOGIC (AdminCrmController)
+------------------------------------------------------------------------
+
+- index(Request $request)
+  * Retrieves all leads from the database.
+  * Applies search filter query matching 'full_name', 'email_address' or 'restaurant_name'.
+  * Filters collection by 'source' query if requested.
+  * Groups leads using collections helper by pipeline status.
+  * Calculates metric statistics for dashboard widgets and serves the 'admin.crm.index' view.
+
+- updateStatus(Request $request, $id)
+  * Checks requested status in validator.
+  * Fetches lead record; updates status field.
+  * Automatically writes a timeline interaction: 
+    "Lead pipeline stage updated to [NEW STATUS]."
+  * Returns JSON success status for AJAX or redirects back.
+
+- show($id)
+  * Retrieves lead record along with preloaded relationships: 'interactions.user' and 'tasks'.
+  * Serves 'admin.crm.show' detailed profile layout.
+
+- logNote(Request $request, $id)
+  * Creates record under 'DemoLeadInteraction' mapping 'notes', lead ID, and Auth::id().
+
+- addTask(Request $request, $id)
+  * Creates record under 'DemoLeadTask' with task title, due date, description. Sets 'is_completed' to false.
+
+- toggleTask(Request $request, $taskId)
+  * Finds task, flips is_completed bit (0 to 1 / 1 to 0).
+  * Returns JSON payload displaying state change.
+
+
+------------------------------------------------------------------------
+4. FRONTEND & UX INTERACTION FLOW
+------------------------------------------------------------------------
+
+A. Kanban Board Page
+--------------------
+- Displays 5 adjacent vertical lanes (Contacted, Qualified, Nurturing, Converted, Lost).
+- Includes top control bar (text search input, filters for lead source, and summary metric cards).
+- JavaScript allows users to drag a lead card and drop it inside a new lane.
+- Upon drop, JS triggers a POST request to 'crm/update-status/{id}' with the destination status.
+- UI updates the card location and triggers a success toast notifications pop-up.
+
+B. Profile Timeline Detail Page
+-------------------------------
+- Left section: Profile info card (Details, marketing source, direct follow-up date updater form).
+- Right section: Split tab view:
+  * Tab 1 (Timeline): Input box to log a new manual call note or interaction. Below this, a vertical line renders historical interactions in descending order.
+  * Tab 2 (Checklist): Form to append new tasks/reminders. Ticking task checkbox triggers background AJAX calling 'crm/tasks/{taskId}/toggle' to update completed status in real-time.
+========================================================================

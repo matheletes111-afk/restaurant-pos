@@ -23,7 +23,7 @@ class CategoryApiController extends Controller
             
             $response['success'] = true;
             $response['data'] = $data;
-            $response['image_url'] = url('storage/app/public/category/');
+            $response['image_url'] = url('storage/category/');
             
             // Optional: Include plan details if needed
             $check_plan = Subscription::where('user_id', auth()->user()->restaurant_id)
@@ -73,7 +73,7 @@ class CategoryApiController extends Controller
             $response['success'] = true;
             $response['message'] = 'Category created successfully';
             $response['data'] = Category::where('id', $new->id)->first();
-            $response['image_url'] = url('storage/app/public/category/');
+            $response['image_url'] = url('storage/category/');
             
             return Response::json($response, 201);
             
@@ -100,7 +100,7 @@ class CategoryApiController extends Controller
             
             $response['success'] = true;
             $response['data'] = $data;
-            $response['image_url'] = url('storage/app/public/category/');
+            $response['image_url'] = url('storage/category/');
             
             return Response::json($response);
             
@@ -150,7 +150,7 @@ class CategoryApiController extends Controller
             $response['success'] = true;
             $response['message'] = 'Category updated successfully';
             $response['data'] = Category::where('id', $id)->first();
-            $response['image_url'] = url('storage/app/public/category/');
+            $response['image_url'] = url('storage/category/');
             
             return Response::json($response);
             

@@ -569,7 +569,7 @@ class OrderManagementController extends Controller
  */
 public function invoicePage($order_id)
 {
-    $order = OrderManage::with(['orderItems.subcategory', 'table'])->findOrFail($order_id);
+    $order = OrderManage::with(['orderItems.subcategory', 'table', 'restaurant'])->findOrFail($order_id);
     
     // Get all payments for this order
     $payments = OrderToPayment::where('order_id', $order_id)

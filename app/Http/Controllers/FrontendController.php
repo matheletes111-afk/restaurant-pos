@@ -28,6 +28,16 @@ class FrontendController extends Controller
         return view('welcome', compact('defaultPlans'));
     }
 
+    public function terms()
+    {
+        return view('terms');
+    }
+
+    public function privacy()
+    {
+        return view('privacy');
+    }
+
     public function create()
     {
         return view('register_restaurant');

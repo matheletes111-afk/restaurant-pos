@@ -406,6 +406,22 @@
         <div class="line-dotted"></div>
         @endif
         
+        @if(!empty($restaurant_details->qr_code_image) || !empty($restaurant_details->upi_id))
+        <div class="line-dotted"></div>
+        <div class="center" style="margin: 8px 0;">
+            @if(!empty($restaurant_details->qr_code_image))
+            <div style="margin-bottom: 4px;">
+                <img src="{{ public_path('storage/restaurant/' . $restaurant_details->qr_code_image) }}" style="width: 100px; height: 100px; object-fit: contain; display: inline-block;">
+            </div>
+            @endif
+            @if(!empty($restaurant_details->upi_id))
+            <div style="font-size: 9px; font-weight: bold;">
+                UPI ID: {{ $restaurant_details->upi_id }}
+            </div>
+            @endif
+        </div>
+        @endif
+        
         <!-- Footer -->
         <div class="footer">
             Thank you for dining with us!<br>

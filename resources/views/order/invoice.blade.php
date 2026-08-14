@@ -402,6 +402,29 @@
                     </table>
                 </div>
             </div>
+
+            @if(!empty($order->restaurant->qr_code_image) || !empty($order->restaurant->upi_id))
+            <div class="border-top pt-4 mt-3 px-4 pb-4">
+                <div class="row align-items-center justify-content-center text-center">
+                    <div class="col-md-6 mx-auto">
+                        @if(!empty($order->restaurant->qr_code_image))
+                            <div class="mb-2">
+                                <h6 class="text-muted mb-2"><i class="fas fa-qrcode mr-2"></i>Scan to Pay</h6>
+                                <img src="{{ asset('storage/restaurant/' . $order->restaurant->qr_code_image) }}" 
+                                     alt="Payment QR Code" 
+                                     style="max-width: 150px; border: 1px solid #dee2e6; border-radius: 8px; padding: 5px;">
+                            </div>
+                        @endif
+                        @if(!empty($order->restaurant->upi_id))
+                            <div class="mt-2">
+                                <span class="text-muted">UPI ID:</span> 
+                                <strong class="text-dark">{{ $order->restaurant->upi_id }}</strong>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 </div>

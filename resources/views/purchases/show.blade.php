@@ -289,14 +289,14 @@
                                     @endphp
                                     
                                     @if($isImage)
-                                        <img src="{{ URL::to('storage/app/public/') }}/{{ $purchase->bill_attachment }}" 
+                                        <img src="{{ URL::to('storage') }}/{{ $purchase->bill_attachment }}" 
                                              alt="Bill Attachment" 
                                              class="img-thumbnail" 
                                              style="max-width: 300px; max-height: 300px; margin-bottom: 10px;">
                                         <br>
                                     @endif
                                     
-                                    <a href="{{ URL::to('storage/app/public/') }}/{{ $purchase->bill_attachment }}" 
+                                    <a href="{{ URL::to('storage') }}/{{ $purchase->bill_attachment }}" 
                                        target="_blank" 
                                        class="btn btn-outline-primary">
                                         <i class="fa fa-download"></i> Download Bill

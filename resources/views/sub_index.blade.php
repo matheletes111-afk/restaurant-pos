@@ -339,7 +339,7 @@
                     <!-- Product Image -->
                     <div class="product-card-img">
                       @if($value->image)
-                        <img src="{{ URL::to('storage/app/public/category') }}/{{ @$value->image }}" alt="{{ @$value->name }}">
+                        <img src="{{ URL::to('storage/category') }}/{{ @$value->image }}" alt="{{ @$value->name }}">
                       @else
                         <div class="no-image">
                           <i class="fa fa-hamburger"></i>
@@ -429,7 +429,7 @@
                     <tr>
                       <td>
                         @if($value->image)
-                          <img src="{{ URL::to('storage/app/public/category') }}/{{ @$value->image }}" alt="Category" width="60" height="60">
+                          <img src="{{ URL::to('storage/category') }}/{{ @$value->image }}" alt="Category" width="60" height="60">
                         @else
                           <span>No Image</span>
                         @endif

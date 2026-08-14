@@ -217,7 +217,7 @@
                   <div class="category-card">
                     <div class="category-card-img">
                       @if($value->image)
-                        <img src="{{ URL::to('storage/app/public/category') }}/{{ @$value->image }}" alt="{{ @$value->name }}">
+                        <img src="{{ URL::to('storage/category') }}/{{ @$value->image }}" alt="{{ @$value->name }}">
                       @else
                         <div class="no-image">
                           <i class="fa fa-image"></i>
@@ -284,7 +284,7 @@
                       <td>{{ @$value->name }}</td>
                       <td>
                         @if($value->image)
-                          <img src="{{ URL::to('storage/app/public/category') }}/{{ @$value->image }}" alt="Category" width="60" height="60">
+                          <img src="{{ URL::to('storage/category') }}/{{ @$value->image }}" alt="Category" width="60" height="60">
                         @else
                           <span>No Image</span>
                         @endif
@@ -389,7 +389,7 @@
         $('#edit_id').val(id);
         $('#edit_name').val(name);
         if (image) {
-          $('#edit_image_preview').attr('src', '{{ URL::to("storage/app/public/category") }}/' + image).show();
+          $('#edit_image_preview').attr('src', '{{ URL::to("storage/category") }}/' + image).show();
         } else {
           $('#edit_image_preview').hide();
         }

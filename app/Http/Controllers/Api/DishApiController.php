@@ -42,7 +42,7 @@ class DishApiController extends Controller
             
             $response['success'] = true;
             $response['data'] = $data;
-            $response['image_url'] = url('storage/app/public/category/');
+            $response['image_url'] = url('storage/category/');
             
             // Optional: Include plan details if needed
             $check_plan = Subscription::where('user_id', auth()->user()->restaurant_id)
@@ -86,7 +86,7 @@ class DishApiController extends Controller
             $response['success'] = true;
             $response['data'] = $data;
             $response['category_details'] = $category;
-            $response['image_url'] = url('storage/app/public/category/');
+            $response['image_url'] = url('storage/category/');
             
             return Response::json($response);
             
@@ -144,7 +144,7 @@ class DishApiController extends Controller
             $response['success'] = true;
             $response['message'] = 'Dish created successfully';
             $response['data'] = SubCategory::where('id', $new->id)->first();
-            $response['image_url'] = url('storage/app/public/category/');
+            $response['image_url'] = url('storage/category/');
             
             return Response::json($response, 201);
             
@@ -216,7 +216,7 @@ class DishApiController extends Controller
             $response['success'] = true;
             $response['message'] = 'Dish updated successfully';
             $response['data'] = SubCategory::where('id', $id)->first();
-            $response['image_url'] = url('storage/app/public/category/');
+            $response['image_url'] = url('storage/category/');
             
             return Response::json($response);
             

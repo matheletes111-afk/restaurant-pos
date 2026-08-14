@@ -73,4 +73,9 @@ class OrderManage extends Model
     {
         return $this->discount_percentage ? $this->discount_percentage . '%' : '0%';
     }
+
+    public function restaurant()
+    {
+        return $this->belongsTo(RestaurantMaster::class, 'restaurant_id');
+    }
 }

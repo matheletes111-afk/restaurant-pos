@@ -923,8 +923,8 @@
                 <div class="footer-links">
                     <h4>Company</h4>
                     <ul>
-                        <li><a href="javascript:void(0)" id="openPrivacyModalBtn">Privacy Policy</a></li>
-                        <li><a href="javascript:void(0)" id="openTermsModalBtn">Terms & Conditions</a></li>
+                        <li><a href="{{ route('privacy.policy') }}">Privacy Policy</a></li>
+                        <li><a href="{{ route('terms.conditions') }}">Terms & Conditions</a></li>
                     </ul>
                 </div>
                 <div class="footer-contact">
@@ -1128,27 +1128,9 @@
         Enquiry Now
     </div>
 
-    <!-- Privacy Policy Modal -->
-    <div class="enquiry-modal-overlay" id="privacyModalOverlay">
-        <div class="enquiry-modal">
-            <button class="close-modal-btn" id="closePrivacyModalBtn">&times;</button>
-            <h3>Privacy Policy</h3>
-            <div style="max-height: 400px; overflow-y: auto; color: #555; line-height: 1.6;">
-                <p>Privacy Policy Content goes here...</p>
-            </div>
-        </div>
-    </div>
 
-    <!-- Terms & Conditions Modal -->
-    <div class="enquiry-modal-overlay" id="termsModalOverlay">
-        <div class="enquiry-modal">
-            <button class="close-modal-btn" id="closeTermsModalBtn">&times;</button>
-            <h3>Terms & Conditions</h3>
-            <div style="max-height: 400px; overflow-y: auto; color: #555; line-height: 1.6;">
-                <p>Terms & Conditions Content goes here...</p>
-            </div>
-        </div>
-    </div>
+
+
 
     <!-- Enquiry Modal -->
     <div class="enquiry-modal-overlay" id="enquiryModalOverlay">
@@ -1199,14 +1181,6 @@
         const enquiryModal = document.getElementById('enquiryModalOverlay');
         const closeEnquiryModalBtn = document.getElementById('closeEnquiryModalBtn');
 
-        const privacyBtn = document.getElementById('openPrivacyModalBtn');
-        const privacyModal = document.getElementById('privacyModalOverlay');
-        const closePrivacyModalBtn = document.getElementById('closePrivacyModalBtn');
-
-        const termsBtn = document.getElementById('openTermsModalBtn');
-        const termsModal = document.getElementById('termsModalOverlay');
-        const closeTermsModalBtn = document.getElementById('closeTermsModalBtn');
-
         function openModal(modal) {
             modal.style.display = 'flex';
             setTimeout(() => {
@@ -1232,30 +1206,13 @@
             });
         });
 
-        if(privacyBtn) {
-            privacyBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                openModal(privacyModal);
-            });
-        }
-
-        if(termsBtn) {
-            termsBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                openModal(termsModal);
-            });
-        }
-
         closeEnquiryModalBtn.addEventListener('click', closeModal);
-        if(closePrivacyModalBtn) closePrivacyModalBtn.addEventListener('click', () => closeAnyModal(privacyModal));
-        if(closeTermsModalBtn) closeTermsModalBtn.addEventListener('click', () => closeAnyModal(termsModal));
 
-        [enquiryModal, privacyModal, termsModal].forEach(modal => {
+        [enquiryModal].forEach(modal => {
             if(modal) {
                 modal.addEventListener('click', (e) => {
                     if (e.target === modal) {
-                        if(modal === enquiryModal) closeModal();
-                        else closeAnyModal(modal);
+                        closeModal();
                     }
                 });
             }

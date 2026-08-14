@@ -41,6 +41,8 @@ Route::post('forget-password-user/enter-new-password',[LoginController::class, '
 
 Route::get('/', [App\Http\Controllers\FrontendController::class, 'index'])->name('home');
 Route::post('/book-demo', [App\Http\Controllers\FrontendController::class, 'bookDemo'])->name('book.demo');
+Route::get('/terms-and-conditions', [App\Http\Controllers\FrontendController::class, 'terms'])->name('terms.conditions');
+Route::get('/privacy-policy', [App\Http\Controllers\FrontendController::class, 'privacy'])->name('privacy.policy');
 // Registration routes
 Route::get('/register-restaurant', [App\Http\Controllers\FrontendController::class, 'create'])->name('restaurant.register.form');
 Route::post('/register-restaurant', [App\Http\Controllers\FrontendController::class, 'store'])->name('restaurant.register');

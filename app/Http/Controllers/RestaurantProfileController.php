@@ -37,7 +37,9 @@ class RestaurantProfileController extends Controller
             'pincode' => 'required|string|max:10',
             'gstin' => 'nullable|string|max:50',
             'fssai_number' => 'nullable|string|max:50',
-            'gst_percentage' => 'nullable|numeric|min:0|max:100'
+            'gst_percentage' => 'nullable|numeric|min:0|max:100',
+            'upi_id' => 'nullable|string|max:100',
+            'qr_code_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
         
         if ($validator->fails()) {
@@ -59,6 +61,24 @@ class RestaurantProfileController extends Controller
             $user->phone = $request->phone;
             $user->save();
             
+            // Handle QR Code image upload
+            if ($request->hasFile('qr_code_image')) {
+                $image = $request->file('qr_code_image');
+                $filename = 'qr_' . time() . '_' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
+                
+                // Ensure directory exists
+                $targetDir = storage_path('app/public/restaurant');
+                if (!file_exists($targetDir)) {
+                    mkdir($targetDir, 0755, true);
+                }
+
+                if ($restaurant->qr_code_image && file_exists($targetDir . '/' . $restaurant->qr_code_image)) {
+                    @unlink($targetDir . '/' . $restaurant->qr_code_image);
+                }
+                $image->move($targetDir, $filename);
+                $restaurant->qr_code_image = $filename;
+            }
+
             // Update Restaurant Master
             $restaurant->name = $request->restaurant_name;
             $restaurant->address = $request->address;
@@ -66,6 +86,7 @@ class RestaurantProfileController extends Controller
             $restaurant->gstin = $request->gstin;
             $restaurant->fssai_number = $request->fssai_number;
             $restaurant->gst_percentage = $request->gst_percentage ?? 0;
+            $restaurant->upi_id = $request->upi_id;
             $restaurant->save();
             
             DB::commit();

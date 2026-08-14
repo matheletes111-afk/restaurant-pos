@@ -103,7 +103,7 @@
                         <i class="fas fa-store me-2"></i> Restaurant Information
                     </div>
                     
-                    <form method="POST" action="{{ route('restaurant.profile.update') }}">
+                    <form method="POST" action="{{ route('restaurant.profile.update') }}" enctype="multipart/form-data">
                         @csrf
                         
                         <div class="row">
@@ -175,6 +175,30 @@
                                     <input type="text" name="fssai_number" class="form-control" 
                                            value="{{ old('fssai_number', $restaurant->fssai_number) }}" 
                                            placeholder="14-digit FSSAI number">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>UPI ID</label>
+                                    <input type="text" name="upi_id" class="form-control" 
+                                           value="{{ old('upi_id', $restaurant->upi_id) }}" 
+                                           placeholder="example@upi">
+                                    <small class="info-text">Enter UPI ID for payments</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Payment QR Code Image</label>
+                                    <input type="file" name="qr_code_image" class="form-control" accept="image/*">
+                                    @if($restaurant->qr_code_image)
+                                        <div class="mt-2">
+                                            <img src="{{ asset('storage/restaurant/' . $restaurant->qr_code_image) }}" alt="QR Code" style="max-height: 100px; border-radius: 8px; border: 1px solid #ccc;">
+                                        </div>
+                                    @endif
+                                    <small class="info-text">Upload a QR Code image for UPI payments</small>
                                 </div>
                             </div>
                         </div>
