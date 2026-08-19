@@ -28,7 +28,7 @@
                 <a href="#faq">FAQ</a>
             </div>
             <div class="nav-actions">
-                <a href="{{ route('login') }}" class="btn-login">Login</a>
+                <a href="javascript:void(0)" class="btn-login open-enquiry-btn">Book A Demo</a>
                 {{-- <a href="#" class="btn btn-primary">Book a Demo</a> --}}
             </div>
         </div>
@@ -839,7 +839,7 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="cta-section">
+    <section class="cta-section" id="contact-form">
         <div class="container cta-container">
             <div class="cta-content">
                 <h2>Ready to <span class="text-orange">Simplify</span> Your<br>Restaurant Operations?</h2>
@@ -1176,47 +1176,39 @@
     </div>
 
     <script>
-        // Modal Logic
+        // Scroll Logic instead of Modal
         const enquiryBtns = document.querySelectorAll('.open-enquiry-btn, #openEnquiryModalBtn');
-        const enquiryModal = document.getElementById('enquiryModalOverlay');
-        const closeEnquiryModalBtn = document.getElementById('closeEnquiryModalBtn');
-
-        function openModal(modal) {
-            modal.style.display = 'flex';
-            setTimeout(() => {
-                modal.classList.add('show');
-            }, 10);
-        }
-
-        function closeAnyModal(modal) {
-            modal.classList.remove('show');
-            setTimeout(() => {
-                modal.style.display = 'none';
-            }, 300);
-        }
-
-        const closeModal = () => {
-            closeAnyModal(enquiryModal);
-        };
-
+        
         enquiryBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                openModal(enquiryModal);
+                const targetElement = document.getElementById('contact-form');
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
             });
         });
 
-        closeEnquiryModalBtn.addEventListener('click', closeModal);
-
-        [enquiryModal].forEach(modal => {
-            if(modal) {
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) {
-                        closeModal();
-                    }
-                });
+        const enquiryModal = document.getElementById('enquiryModalOverlay');
+        const closeModal = () => {
+            if (enquiryModal) {
+                enquiryModal.classList.remove('show');
+                setTimeout(() => {
+                    enquiryModal.style.display = 'none';
+                }, 300);
             }
-        });
+        };
+
+        if (enquiryModal) {
+            enquiryModal.addEventListener('click', (e) => {
+                if (e.target === enquiryModal) {
+                    closeModal();
+                }
+            });
+        }
 
         // Form Submit Logic
         document.getElementById('popupEnquiryForm').addEventListener('submit', function(e) {
