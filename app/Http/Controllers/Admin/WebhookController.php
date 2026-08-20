@@ -16,7 +16,7 @@ class WebhookController extends Controller
 
     public function __construct()
     {
-        $this->razorpay = new Api(env('RAZORPAY_KEY_ID'), env('RAZORPAY_KEY_SECRET'));
+        $this->razorpay = new Api(config('services.razorpay.key_id'), config('services.razorpay.key_secret'));
     }
 
     public function handle(Request $request)
@@ -25,7 +25,7 @@ class WebhookController extends Controller
             $this->razorpay->utility->verifyWebhookSignature(
                 $request->getContent(),
                 $request->header('X-Razorpay-Signature'),
-                env('RAZORPAY_WEBHOOK_SECRET')
+                config('services.razorpay.webhook_secret')
             );
 
             $payload = $request->all();
