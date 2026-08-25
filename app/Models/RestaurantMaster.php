@@ -34,4 +34,19 @@ class RestaurantMaster extends Model
     {
         return $this->belongsTo(User::class, 'owner_id');
     }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class, 'user_id');
+    }
+
+    public function active_subscription()
+    {
+        return $this->hasOne(Subscription::class, 'user_id')->where('status', 'active');
+    }
+
+    public function latest_subscription()
+    {
+        return $this->hasOne(Subscription::class, 'user_id')->latestOfMany();
+    }
 }

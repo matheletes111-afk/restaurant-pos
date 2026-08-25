@@ -216,26 +216,55 @@
                                 <th>Owner</th>
                                 <th>Email</th>
                                 <th>Phone</th>
+                                <th>Active Plan</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($restaurants as $rest)
-                            </tr>
-                                <td>{{ $rest->name }}</div>
-                                <td>{{ $rest->address }}</div>
-                                <td>{{ $rest->pincode }}</div>
-                                <td>{{ $rest->owner->name ?? '' }}</div>
-                                <td>{{ $rest->owner->email ?? '' }}</div>
-                                <td>{{ $rest->owner->phone ?? '' }}</div>
+                            @php
+                                $sub = $rest->active_subscription ?? $rest->latest_subscription;
+                                $plan = $sub->plan ?? null;
+                                $payment = $sub ? $sub->payments->first() : null;
+                            @endphp
+                            <tr>
+                                <td>{{ $rest->name }}</td>
+                                <td>{{ $rest->address }}</td>
+                                <td>{{ $rest->pincode }}</td>
+                                <td>{{ $rest->owner->name ?? '' }}</td>
+                                <td>{{ $rest->owner->email ?? '' }}</td>
+                                <td>{{ $rest->owner->phone ?? '' }}</td>
+                                <td>
+                                    @if($plan)
+                                        @php
+                                            $isExpired = $sub->end_date && $sub->end_date->isPast();
+                                            $badgeClass = $sub->status == 'active' && !$isExpired ? 'bg-success' : 'bg-danger';
+                                        @endphp
+                                        <a href="javascript:void(0)" class="badge {{ $badgeClass }} text-white showPlanDetailsBtn" style="text-decoration:none;"
+                                           data-plan-name="{{ $plan->name }}"
+                                           data-plan-price="{{ $plan->price }}"
+                                           data-sub-status="{{ $sub->status }}"
+                                           data-start-date="{{ $sub->start_date ? $sub->start_date->format('Y-m-d H:i') : 'N/A' }}"
+                                           data-end-date="{{ $sub->end_date ? $sub->end_date->format('Y-m-d H:i') : 'N/A' }}"
+                                           data-payment-amount="{{ $payment ? $payment->amount : 'N/A' }}"
+                                           data-payment-method="{{ $payment ? $payment->payment_method : 'N/A' }}"
+                                           data-payment-status="{{ $payment ? $payment->status : 'N/A' }}"
+                                           data-payment-id="{{ $payment ? $payment->razorpay_payment_id : 'N/A' }}"
+                                           data-payment-date="{{ $payment ? $payment->created_at->format('Y-m-d H:i') : 'N/A' }}">
+                                            {{ $plan->name }} @if($isExpired) (Expired) @endif
+                                        </a>
+                                    @else
+                                        <span class="badge bg-secondary text-white">No Plan</span>
+                                    @endif
+                                </td>
                                 <td>
                                     <a href="{{ route('manage.restaurant.status', $rest->owner_id) }}"
                                        onclick="return confirm('Are you sure?')"
                                        class="btn btn-sm {{ $rest->status == 'A' ? 'btn-success' : 'btn-warning' }}">
                                         {{ $rest->status == 'A' ? 'Active' : 'Inactive' }}
                                     </a>
-                                 </div>
+                                </td>
                                 <td>
                                     <button class="btn btn-sm btn-success editBtn"
                                             data-id="{{ $rest->id }}"
@@ -265,7 +294,7 @@
                                        class="btn btn-sm btn-danger">
                                         <i class="fa fa-trash"></i>
                                     </a>
-                                 </div>
+                                </td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -534,6 +563,76 @@
     </div>
 </div>
 
+<!-- Plan Details Modal -->
+<div class="modal fade" id="planDetailsModal" tabindex="-1" role="dialog" aria-labelledby="planDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-white" style="color: white !important;" id="planDetailsModalLabel"><i class="fas fa-file-invoice-dollar"></i> Subscription & Payment Details</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="border: none; background: transparent; font-size: 1.5rem; outline: none;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <h6 class="text-uppercase text-muted small font-weight-bold mb-3">Subscription Details</h6>
+                <div class="table-responsive">
+                    <table class="table table-borderless table-sm mb-4">
+                        <tr>
+                            <td class="pl-0 text-muted" style="width: 140px;">Plan Name:</td>
+                            <td class="font-weight-bold" id="detail_plan_name">N/A</td>
+                        </tr>
+                        <tr>
+                            <td class="pl-0 text-muted">Price:</td>
+                            <td class="font-weight-bold" id="detail_plan_price">N/A</td>
+                        </tr>
+                        <tr>
+                            <td class="pl-0 text-muted">Status:</td>
+                            <td><span class="badge" id="detail_sub_status">N/A</span></td>
+                        </tr>
+                        <tr>
+                            <td class="pl-0 text-muted">Start Date:</td>
+                            <td id="detail_start_date">N/A</td>
+                        </tr>
+                        <tr>
+                            <td class="pl-0 text-muted">Expiry Date:</td>
+                            <td id="detail_end_date">N/A</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <h6 class="text-uppercase text-muted small font-weight-bold mb-3">Payment details</h6>
+                <div class="table-responsive">
+                    <table class="table table-borderless table-sm">
+                        <tr>
+                            <td class="pl-0 text-muted" style="width: 140px;">Amount Paid:</td>
+                            <td class="font-weight-bold" id="detail_payment_amount">N/A</td>
+                        </tr>
+                        <tr>
+                            <td class="pl-0 text-muted">Method:</td>
+                            <td id="detail_payment_method">N/A</td>
+                        </tr>
+                        <tr>
+                            <td class="pl-0 text-muted">Payment Status:</td>
+                            <td><span class="badge" id="detail_payment_status">N/A</span></td>
+                        </tr>
+                        <tr>
+                            <td class="pl-0 text-muted">Razorpay ID:</td>
+                            <td id="detail_payment_id">N/A</td>
+                        </tr>
+                        <tr>
+                            <td class="pl-0 text-muted">Payment Date:</td>
+                            <td id="detail_payment_date">N/A</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius: 30px; padding: 8px 20px;">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -544,7 +643,61 @@ $(document).ready(function () {
     // Initialize DataTable
     $('#restaurantTable').DataTable({
         responsive: true,
-        pageLength: 10
+        pageLength: 10,
+        order: []
+    });
+
+    // Show plan details button handler
+    $('.showPlanDetailsBtn').on('click', function () {
+        const planName = $(this).data('plan-name');
+        const planPrice = $(this).data('plan-price');
+        const subStatus = $(this).data('sub-status');
+        const startDate = $(this).data('start-date');
+        const endDate = $(this).data('end-date');
+        const amount = $(this).data('payment-amount');
+        const method = $(this).data('payment-method');
+        const status = $(this).data('payment-status');
+        const paymentId = $(this).data('payment-id');
+        const paymentDate = $(this).data('payment-date');
+
+        $('#detail_plan_name').text(planName);
+        $('#detail_plan_price').text('₹' + planPrice);
+        
+        // Status class mappings
+        let statusBadge = $('#detail_sub_status');
+        statusBadge.text(subStatus.toUpperCase());
+        statusBadge.removeClass('bg-success bg-danger bg-warning');
+        if (subStatus === 'active') {
+            statusBadge.addClass('bg-success text-white');
+        } else {
+            statusBadge.addClass('bg-danger text-white');
+        }
+
+        $('#detail_start_date').text(startDate);
+        $('#detail_end_date').text(endDate);
+        $('#detail_payment_amount').text('₹' + amount);
+        $('#detail_payment_method').text(method ? method.toUpperCase() : 'N/A');
+        
+        let payStatusBadge = $('#detail_payment_status');
+        payStatusBadge.text(status ? status.toUpperCase() : 'N/A');
+        payStatusBadge.removeClass('bg-success bg-danger bg-warning');
+        if (status === 'captured' || status === 'success') {
+            payStatusBadge.addClass('bg-success text-white');
+        } else if (status === 'failed') {
+            payStatusBadge.addClass('bg-danger text-white');
+        } else {
+            payStatusBadge.addClass('bg-warning text-dark');
+        }
+
+        $('#detail_payment_id').text(paymentId);
+        $('#detail_payment_date').text(paymentDate);
+
+        $('#planDetailsModal').modal('show');
+    });
+
+    // Dismiss plan details modal manually
+    $('#planDetailsModal').on('click', '[data-dismiss="modal"]', function() {
+        $('#planDetailsModal').modal('hide');
     });
 
     // Edit button handler

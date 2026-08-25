@@ -171,10 +171,27 @@
         }
 
         .plan-price {
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            color: var(--primary);
+        }
+
+        .plan-price .active-price {
             font-size: 2.2rem;
             font-weight: 800;
-            color: var(--primary);
-            margin: 15px 0;
+            line-height: 1.1;
+        }
+
+        .plan-price .cross-price {
+            text-decoration: line-through;
+            color: #aaa;
+            font-size: 1.1rem;
+            font-weight: normal;
+            line-height: 1;
         }
 
         .plan-price small {
@@ -428,7 +445,11 @@
         @endphp
         <div class="col-md-4 col-lg-4 mb-4">
             <div class="plan-card {{ $isDefault ? 'default-plan' : '' }}">
-                @if($isDefault)
+                @if($plan->label_name)
+                    <div class="default-badge">
+                        <i class="fas fa-star"></i> {{ $plan->label_name }}
+                    </div>
+                @elseif($isDefault)
                     <div class="default-badge">
                         <i class="fas fa-star"></i> Default
                     </div>
@@ -443,13 +464,16 @@
                     <h3 class="plan-name">{{ $plan->name }}</h3>
                     <div class="plan-price">
                         @if($plan->price == 0)
-                            FREE
+                            <span class="active-price">FREE</span>
                         @else
                             @php
                                 $gstPercentage = $plan->gst_percentage ?? 18;
                                 $taxableAmount = $plan->taxable_amount ?? ($plan->price / (1 + ($gstPercentage / 100)));
                             @endphp
-                            <div>₹{{ number_format($plan->price, 2) }}</div>
+                            @if($plan->cross_price)
+                                <span class="cross-price">₹{{ number_format($plan->cross_price, 2) }}</span>
+                            @endif
+                            <span class="active-price">₹{{ number_format($plan->price, 2) }}</span>
                         @endif
                     </div>
                     <div class="plan-duration">
@@ -466,15 +490,28 @@
                         <li><i class="fas fa-folder"></i> {{ $plan->category_number == 0 ? 'Unlimited' : $plan->category_number }} Categories</li>
                         <li><i class="fas fa-utensils"></i> {{ $plan->total_number_of_dishes == 0 ? 'Unlimited' : $plan->total_number_of_dishes }} Dishes</li>
                         <li><i class="fas fa-table"></i> {{ $plan->total_number_of_table == 0 ? 'Unlimited' : $plan->total_number_of_table }} Tables</li>
-                        <li>
-                            <i class="fas fa-boxes"></i> 
-                            Inventory: 
-                            @if($plan->inventory_checkbox == 'Y')
-                                <i class="fas fa-check text-success ms-1"></i>
-                            @else
-                                <i class="fas fa-times text-danger ms-1"></i>
-                            @endif
-                        </li>
+                        
+                        <li><i class="fas fa-check-circle text-success"></i> Menu Availability Management</li>
+                        <li><i class="fas fa-check-circle text-success"></i> Order Management</li>
+                        <li><i class="fas fa-check-circle text-success"></i> Kitchen Panel</li>
+                        <li><i class="fas fa-check-circle text-success"></i> Qr Code Ordering</li>
+                        <li><i class="fas fa-check-circle text-success"></i> Customer Support</li>
+                        <li><i class="fas fa-check-circle text-success"></i> Staff Management</li>
+                        <li><i class="fas fa-check-circle text-success"></i> Reports</li>
+
+                        @if($plan->inventory_checkbox == 'Y')
+                            <li><i class="fas fa-check-circle text-success"></i> Manage Product</li>
+                            <li><i class="fas fa-check-circle text-success"></i> Manage Purchase</li>
+                            <li><i class="fas fa-check-circle text-success"></i> Manage Stockout</li>
+                            <li><i class="fas fa-check-circle text-success"></i> Debit Note</li>
+                            <li><i class="fas fa-check-circle text-success"></i> Inventory</li>
+                        @else
+                            <li><i class="fas fa-times-circle text-danger"></i> Manage Product</li>
+                            <li><i class="fas fa-times-circle text-danger"></i> Manage Purchase</li>
+                            <li><i class="fas fa-times-circle text-danger"></i> Manage Stockout</li>
+                            <li><i class="fas fa-times-circle text-danger"></i> Debit Note</li>
+                            <li><i class="fas fa-times-circle text-danger"></i> Inventory</li>
+                        @endif
                     </ul>
 
                     <a href="{{ route('admin.subscriptions.create', $plan->id) }}" class="btn-select">

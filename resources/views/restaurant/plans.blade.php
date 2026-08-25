@@ -210,14 +210,27 @@
     }
 
     .plan-price {
-        font-size: 1.9rem;
-        font-weight: 800;
-        color: var(--text-primary);
         margin: 10px 0;
         display: flex;
-        align-items: baseline;
+        flex-direction: column;
+        align-items: center;
         justify-content: center;
-        gap: 2px;
+        gap: 4px;
+        color: var(--text-primary);
+    }
+
+    .plan-price .active-price {
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    .plan-price .cross-price {
+        text-decoration: line-through;
+        color: #aaa;
+        font-size: 1.1rem;
+        font-weight: normal;
+        line-height: 1;
     }
 
     .plan-price small {
@@ -462,7 +475,11 @@
                         @endphp
                         <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
                             <div class="plan-card {{ $isDefault ? 'default-plan' : '' }}">
-                                @if($isDefault)
+                                @if($plan->label_name)
+                                    <div class="default-badge">
+                                        <i class="fas fa-star"></i> {{ $plan->label_name }}
+                                    </div>
+                                @elseif($isDefault)
                                     <div class="default-badge">
                                         <i class="fas fa-star"></i> Default Plan
                                     </div>
@@ -483,14 +500,19 @@
                                         <i class="fas {{ $planIcon }}"></i>
                                     </div>
                                     <h4 class="plan-name">{{ $plan->name }}</h4>
-                                    <div class="plan-price">
-                                        @if($plan->price == 0)
-                                            <span style="color: var(--success);">FREE</span>
-                                        @else
-                                            ₹{{ number_format($plan->price, 2) }}
-                                            <small>/ {{ ucfirst($plan->billing_cycle) }}</small>
-                                        @endif
-                                    </div>
+                                     <div class="plan-price">
+                                         @if($plan->price == 0)
+                                             <span class="active-price" style="color: var(--success);">FREE</span>
+                                         @else
+                                             @if($plan->cross_price)
+                                                 <span class="cross-price">₹{{ number_format($plan->cross_price, 2) }}</span>
+                                             @endif
+                                             <span class="active-price">
+                                                 ₹{{ number_format($plan->price, 2) }}
+                                                 <small>/ {{ ucfirst($plan->billing_cycle) }}</small>
+                                             </span>
+                                         @endif
+                                     </div>
                                     <div class="plan-duration">
                                         <i class="fas fa-calendar-alt me-1"></i> {{ $plan->duration_days }} days validity
                                     </div>
@@ -505,15 +527,28 @@
                                         <li><i class="fas fa-folder-open"></i> {{ $plan->category_number == 0 ? 'Unlimited' : number_format($plan->category_number) }} Categories</li>
                                         <li><i class="fas fa-utensils"></i> {{ $plan->total_number_of_dishes == 0 ? 'Unlimited' : number_format($plan->total_number_of_dishes) }} Dishes</li>
                                         <li><i class="fas fa-chair"></i> {{ $plan->total_number_of_table == 0 ? 'Unlimited' : number_format($plan->total_number_of_table) }} Tables</li>
-                                        <li>
-                                            <i class="fas fa-boxes"></i> 
-                                            Inventory: 
-                                            @if($plan->inventory_checkbox == 'Y')
-                                                <i class="fas fa-check text-success ms-1"></i>
-                                            @else
-                                                <i class="fas fa-times text-danger ms-1"></i>
-                                            @endif
-                                        </li>
+                                        
+                                        <li><i class="fas fa-check-circle text-success"></i> Menu Availability Management</li>
+                                        <li><i class="fas fa-check-circle text-success"></i> Order Management</li>
+                                        <li><i class="fas fa-check-circle text-success"></i> Kitchen Panel</li>
+                                        <li><i class="fas fa-check-circle text-success"></i> Qr Code Ordering</li>
+                                        <li><i class="fas fa-check-circle text-success"></i> Customer Support</li>
+                                        <li><i class="fas fa-check-circle text-success"></i> Staff Management</li>
+                                        <li><i class="fas fa-check-circle text-success"></i> Reports</li>
+
+                                        @if($plan->inventory_checkbox == 'Y')
+                                            <li><i class="fas fa-check-circle text-success"></i> Manage Product</li>
+                                            <li><i class="fas fa-check-circle text-success"></i> Manage Purchase</li>
+                                            <li><i class="fas fa-check-circle text-success"></i> Manage Stockout</li>
+                                            <li><i class="fas fa-check-circle text-success"></i> Debit Note</li>
+                                            <li><i class="fas fa-check-circle text-success"></i> Inventory</li>
+                                        @else
+                                            <li><i class="fas fa-times-circle text-danger"></i> Manage Product</li>
+                                            <li><i class="fas fa-times-circle text-danger"></i> Manage Purchase</li>
+                                            <li><i class="fas fa-times-circle text-danger"></i> Manage Stockout</li>
+                                            <li><i class="fas fa-times-circle text-danger"></i> Debit Note</li>
+                                            <li><i class="fas fa-times-circle text-danger"></i> Inventory</li>
+                                        @endif
                                     </ul>
 
                                     @if($isActive)

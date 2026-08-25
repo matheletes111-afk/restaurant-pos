@@ -26,20 +26,37 @@
 
         @if(auth()->user()->role!="RES")
         {{-- admin routes --}}
+        @php
+          $saUser = auth()->user();
+          $saPerms = $saUser->permissions ?? [];
+        @endphp
+
+        <li class="pc-item">
+          <a href="{{route('admin.dashboard')}}" class="pc-link @if(Request::segment(2)=="dashboard") active_class @endif">
+            <span class="pc-micon"><i class="fas fa-sitemap"></i></span>
+            <span class="pc-mtext">Dashboard</span>
+          </a>
+        </li>
+
+        @if($saUser->id == 1 || in_array('restaurant_master', $saPerms))
         <li class="pc-item">
           <a href="{{route('manage.restaurant')}}" class="pc-link @if(Request::segment(2)=="manage-restaurant") active_class @endif">
             <span class="pc-micon"><i class="fas fa-utensils"></i></span>
             <span class="pc-mtext">Restaurant Master</span>
           </a>
         </li>
+        @endif
 
+        @if($saUser->id == 1 || in_array('plan_master', $saPerms))
         <li class="pc-item">
           <a href="{{route('plans.index')}}" class="pc-link @if(Request::segment(2)=="plans") active_class @endif">
             <span class="pc-micon"><i class="fas fa-layer-group"></i></span>
             <span class="pc-mtext">Plan Master</span>
           </a>
         </li>
+        @endif
 
+        @if($saUser->id == 1 || in_array('payment_history', $saPerms))
          <li class="pc-item">
           <a href="{{route('admin.payment.history')}}" class="pc-link @if(Request::segment(2)=="payment-history") active_class @endif">
             <span class="pc-micon">
@@ -48,7 +65,9 @@
             <span class="pc-mtext">Payment History</span>
           </a>
         </li>
+        @endif
 
+        @if($saUser->id == 1 || in_array('admin_crm', $saPerms))
          <li class="pc-item">
           <a href="{{route('admin.crm.index')}}" class="pc-link @if(Request::segment(2)=="crm") active_class @endif">
             <span class="pc-micon">
@@ -57,19 +76,30 @@
             <span class="pc-mtext">Admin CRM</span>
           </a>
         </li>
+        @endif
 
+        @if($saUser->id == 1 || in_array('customer_support', $saPerms))
         <li class="pc-item">
         <a href="{{ route('admin.support.tickets') }}" 
-           class="pc-link @if(Request::segment(2) == 'subscriptions') active_class @endif">
+           class="pc-link @if(Request::segment(2) == 'admin-support') active_class @endif">
           <span class="pc-micon">
             <i class="fas fa-headset"></i>
           </span>
           <span class="pc-mtext">Customer Support</span>
         </a>
       </li>
+      @endif
+
+      @if($saUser->id == 1 || in_array('admin_user_management', $saPerms))
+        <li class="pc-item">
+          <a href="{{route('admin.users.index')}}" class="pc-link @if(Request::segment(2)=="users") active_class @endif">
+            <span class="pc-micon"><i class="fas fa-users-cog"></i></span>
+            <span class="pc-mtext">Admin Users</span>
+          </a>
+        </li>
+      @endif
 
       {{-- end admin routes --}}
-
         @endif
 
 
@@ -152,7 +182,7 @@
 </li>
 @endif
 
-@if(auth()->user()->hasPermission('restro_ai'))
+{{-- @if(auth()->user()->hasPermission('restro_ai'))
 <li class="pc-item {{ $disabledClass }}">
   <a href="{{ route('ask-ai') }}" 
      class="pc-link @if(Request::segment(2) == 'ask-ai') active_class @endif">
@@ -162,7 +192,7 @@
     <span class="pc-mtext">Restro AI</span>
   </a>
 </li>
-@endif
+@endif --}}
 
 @if(auth()->user()->hasPermission('billing_subscription'))
 <li class="pc-item">

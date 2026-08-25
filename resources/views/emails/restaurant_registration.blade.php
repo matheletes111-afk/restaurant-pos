@@ -163,6 +163,7 @@
             
             <div class="warning">
                 ⚠️ <strong>Important:</strong> Please change your password after your first login for security purposes. Keep your credentials safe and do not share them with anyone.
+                <br><strong>Note:</strong> Please change your password after successful onboarding.
             </div>
             
             <center>

@@ -245,6 +245,8 @@ public function store(Request $request)
         $plan = new Plan();
         $plan->name = $request->name;
         $plan->price = $request->price; // Price including GST
+        $plan->label_name = $request->label_name;
+        $plan->cross_price = $request->cross_price;
         $plan->gst_percentage = $gstPercentage;
         $plan->taxable_amount = $taxableAmount;
         $plan->gst_amount = $gstAmount;
@@ -269,11 +271,13 @@ public function store(Request $request)
 
         /* =====================================================
            PLAN HISTORY (for audit trail)
-        ====================================================== */
+         ====================================================== */
 
         $history = new PlanHistory();
         $history->plan_id = $plan->id;
         $history->name = $request->name;
+        $history->label_name = $request->label_name;
+        $history->cross_price = $request->cross_price;
         $history->razorpay_plan_id = $razorpayPlanId;
         $history->status = "C";
         $history->price = $request->price;
@@ -445,6 +449,8 @@ public function update(Request $request, $id)
         $newUpdatedPlan->name = $request->name;
         $newUpdatedPlan->plan_parent_id = $plan->id;
         $newUpdatedPlan->price = $request->price;
+        $newUpdatedPlan->label_name = $request->label_name;
+        $newUpdatedPlan->cross_price = $request->cross_price;
         $newUpdatedPlan->gst_percentage = $gstPercentage;
         $newUpdatedPlan->taxable_amount = $taxableAmount;
         $newUpdatedPlan->gst_amount = $gstAmount;
@@ -477,6 +483,8 @@ public function update(Request $request, $id)
         $insHis = new PlanHistory();
         $insHis->plan_id = $newUpdatedPlan->id;
         $insHis->name = $request->name;
+        $insHis->label_name = $request->label_name;
+        $insHis->cross_price = $request->cross_price;
         $insHis->razorpay_plan_id = $razorpayPlan->id;
         $insHis->status = "U";
         $insHis->price = $request->price;

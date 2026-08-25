@@ -65,6 +65,32 @@ class AdminCrmController extends Controller
     }
 
     /**
+     * Store a newly created lead
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'full_name' => 'required|string|max:255',
+            'restaurant_name' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|string|max:20',
+            'email_address' => 'required|email|max:255',
+            'source' => 'nullable|string|max:255',
+            'status' => 'required|in:Contacted,Qualified,Nurturing,Converted,Lost',
+        ]);
+
+        DemoLead::create([
+            'full_name' => $request->full_name,
+            'restaurant_name' => $request->restaurant_name,
+            'phone_number' => $request->phone_number,
+            'email_address' => $request->email_address,
+            'source' => $request->source,
+            'status' => $request->status,
+        ]);
+
+        return redirect()->back()->with('success', 'Lead created successfully.');
+    }
+
+    /**
      * Update lead status
      */
     public function updateStatus(Request $request, $id)

@@ -498,8 +498,7 @@
                     gap: 30px;
                     max-width: 1000px;
                     margin: 0 auto;
-                }
-                .plan-card {
+                             .plan-card {
                     background: #fff;
                     border-radius: 16px;
                     padding: 40px 30px;
@@ -507,6 +506,9 @@
                     border: 1px solid #eee;
                     transition: all 0.3s ease;
                     position: relative;
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
                 }
                 .plan-card:hover {
                     transform: translateY(-5px);
@@ -541,9 +543,24 @@
                     color: #111;
                 }
                 .plan-price {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 4px;
+                    color: #ff6a00;
+                }
+                .active-price {
                     font-size: 2.5rem;
                     font-weight: 800;
-                    color: #ff6a00;
+                    line-height: 1.1;
+                }
+                .cross-price {
+                    text-decoration: line-through;
+                    color: #aaa;
+                    font-size: 1.2rem;
+                    font-weight: normal;
+                    line-height: 1;
                 }
                 .plan-duration {
                     color: #666;
@@ -554,6 +571,7 @@
                     list-style: none;
                     padding: 0;
                     margin: 0 0 30px 0;
+                    flex-grow: 1;
                 }
                 .plan-features-list li {
                     padding: 10px 0;
@@ -577,29 +595,35 @@
                     font-weight: 600;
                     transition: all 0.3s;
                     text-decoration: none;
+                    margin-top: auto;
                 }
                 .btn-plan:hover, .plan-card.default-plan .btn-plan {
                     background: linear-gradient(135deg, #ff6a00, #ff8c42);
                     color: white;
                 }
             </style>
-
+ 
             <div class="plans-wrapper">
                 @if(isset($defaultPlans) && $defaultPlans->count() > 0)
                     @foreach($defaultPlans as $plan)
                         <div class="plan-card {{ $plan->is_default_plan == 'Y' ? 'default-plan' : '' }}">
-                            @if($plan->is_default_plan == 'Y')
+                            @if($plan->label_name)
+                                <div class="default-badge">{{ $plan->label_name }}</div>
+                            @elseif($plan->is_default_plan == 'Y')
                                 <div class="default-badge">Popular Choice</div>
                             @endif
                             <div class="plan-header">
                                 <h3 class="plan-name">{{ $plan->name }}</h3>
-                                {{-- <div class="plan-price">
+                                <div class="plan-price" style="margin-bottom: 10px;">
                                     @if($plan->price == 0)
-                                        FREE
+                                        <span class="active-price">FREE</span>
                                     @else
-                                        ₹{{ number_format($plan->price, 2) }}
+                                        @if($plan->cross_price)
+                                            <span class="cross-price">₹{{ number_format($plan->cross_price, 2) }}</span>
+                                        @endif
+                                        <span class="active-price">₹{{ number_format($plan->price, 2) }}</span>
                                     @endif
-                                </div> --}}
+                                </div>
                                 <div class="plan-duration">
                                     <i class="ph ph-calendar"></i> {{ $plan->duration_days }} days validity
                                 </div>
@@ -608,9 +632,26 @@
                                 <li><i class="ph-fill ph-check-circle"></i> {{ $plan->category_number == 0 ? 'Unlimited' : $plan->category_number }} Categories</li>
                                 <li><i class="ph-fill ph-check-circle"></i> {{ $plan->total_number_of_dishes == 0 ? 'Unlimited' : $plan->total_number_of_dishes }} Dishes</li>
                                 <li><i class="ph-fill ph-check-circle"></i> {{ $plan->total_number_of_table == 0 ? 'Unlimited' : $plan->total_number_of_table }} Tables</li>
+                                
+                                <li><i class="ph-fill ph-check-circle"></i> Menu Availability Management</li>
+                                <li><i class="ph-fill ph-check-circle"></i> Order Management</li>
+                                <li><i class="ph-fill ph-check-circle"></i> Kitchen Panel</li>
+                                <li><i class="ph-fill ph-check-circle"></i> Qr Code Ordering</li>
+                                <li><i class="ph-fill ph-check-circle"></i> Customer Support</li>
+                                <li><i class="ph-fill ph-check-circle"></i> Staff Management</li>
+                                <li><i class="ph-fill ph-check-circle"></i> Reports</li>
+
                                 @if($plan->inventory_checkbox == 'Y')
+                                    <li><i class="ph-fill ph-check-circle" style="color: #2e7d32;"></i> Manage Product</li>
+                                    <li><i class="ph-fill ph-check-circle" style="color: #2e7d32;"></i> Manage Purchase</li>
+                                    <li><i class="ph-fill ph-check-circle" style="color: #2e7d32;"></i> Manage Stockout</li>
+                                    <li><i class="ph-fill ph-check-circle" style="color: #2e7d32;"></i> Debit Note</li>
                                     <li><i class="ph-fill ph-check-circle" style="color: #2e7d32;"></i> Inventory</li>
                                 @else
+                                    <li><i class="ph-fill ph-x-circle" style="color: #d32f2f;"></i> Manage Product</li>
+                                    <li><i class="ph-fill ph-x-circle" style="color: #d32f2f;"></i> Manage Purchase</li>
+                                    <li><i class="ph-fill ph-x-circle" style="color: #d32f2f;"></i> Manage Stockout</li>
+                                    <li><i class="ph-fill ph-x-circle" style="color: #d32f2f;"></i> Debit Note</li>
                                     <li><i class="ph-fill ph-x-circle" style="color: #d32f2f;"></i> Inventory</li>
                                 @endif
                             </ul>

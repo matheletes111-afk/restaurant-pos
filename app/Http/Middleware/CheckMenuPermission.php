@@ -74,14 +74,22 @@ class CheckMenuPermission
 
         // Restrict Super Admin routes to ONLY role == 'SA'
         $superAdminPatterns = [
-            'manage.restaurant', 'manage-restaurant',
-            'plans.', 'admin.plans', 'admin/plans',
-            'admin.payment.history', 'payment-history',
-            'admin.crm', 'crm',
-            'admin.support.tickets', 'admin-support'
+            'manage.restaurant' => 'restaurant_master', 
+            'manage-restaurant' => 'restaurant_master',
+            'plans.' => 'plan_master', 
+            'admin.plans' => 'plan_master', 
+            'admin/plans' => 'plan_master',
+            'admin.payment.history' => 'payment_history', 
+            'payment-history' => 'payment_history',
+            'admin.crm' => 'admin_crm', 
+            'crm' => 'admin_crm',
+            'admin.support.tickets' => 'customer_support', 
+            'admin-support' => 'customer_support',
+            'admin.users' => 'admin_user_management',
+            'admin/users' => 'admin_user_management'
         ];
 
-        foreach ($superAdminPatterns as $pattern) {
+        foreach ($superAdminPatterns as $pattern => $permission) {
             // Exclude subscription paths/routes from plans restriction
             if ($pattern === 'admin/plans' && str_contains($path, 'subscribe')) {
                 continue;
@@ -89,6 +97,12 @@ class CheckMenuPermission
             if (($routeName && str_starts_with($routeName, $pattern)) || str_contains($path, $pattern)) {
                 if ($user->role !== 'SA') {
                     abort(403, 'Unauthorized. This page is accessible only by Super Administrators.');
+                }
+                if ($user->id != 1) {
+                    $perms = $user->permissions ?? [];
+                    if (!in_array($permission, $perms)) {
+                        abort(403, 'Unauthorized. You do not have permission to access this module.');
+                    }
                 }
                 return $next($request);
             }

@@ -581,13 +581,20 @@
             </div>
 
             <!-- Page Header Card -->
-            <div class="crm-header-card">
-                <div class="crm-header-icon">
-                    <i class="fa-solid fa-sparkles">✨</i>
+            <div class="crm-header-card d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="d-flex align-items-center">
+                    <div class="crm-header-icon">
+                        <i class="fa-solid fa-sparkles">✨</i>
+                    </div>
+                    <div>
+                        <span class="crm-header-tag">OPERATIONS CONTROL + INTERACTIVE BOARD V2</span>
+                        <h2 class="crm-header-title">Admin CRM Control Deck</h2>
+                    </div>
                 </div>
                 <div>
-                    <span class="crm-header-tag">OPERATIONS CONTROL + INTERACTIVE BOARD V2</span>
-                    <h2 class="crm-header-title">Admin CRM Control Deck</h2>
+                    <button type="button" class="btn btn-primary" style="border-radius: 30px; background: linear-gradient(135deg, #ff6a00, #ff8c42); border: none; padding: 12px 28px; font-weight: 700; box-shadow: 0 4px 15px rgba(255, 106, 0, 0.2);" data-bs-toggle="modal" data-bs-target="#addLeadModal">
+                        <i class="fa-solid fa-plus me-2"></i> Add Lead
+                    </button>
                 </div>
             </div>
 
@@ -921,6 +928,65 @@
                         </div>
                     </form>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Lead Modal -->
+    <div class="modal fade" id="addLeadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-white" style="color: white !important;"><i class="fa-solid fa-plus-circle me-2"></i> Add New Lead</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <form method="POST" action="{{ route('admin.crm.store') }}">
+                    @csrf
+                    <div class="modal-body row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label required">Full Name</label>
+                            <input type="text" name="full_name" class="form-control" required placeholder="e.g., John Doe">
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label required">Email Address</label>
+                            <input type="email" name="email_address" class="form-control" required placeholder="e.g., john@example.com">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Phone Number</label>
+                            <input type="text" name="phone_number" class="form-control" placeholder="e.g., +91 9876543210">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Restaurant Name</label>
+                            <input type="text" name="restaurant_name" class="form-control" placeholder="e.g., Spice Garden">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Source</label>
+                            <select name="source" class="form-control">
+                                <option value="">Select Source</option>
+                                <option value="Social Media">Social Media</option>
+                                <option value="Search Engine">Search Engine</option>
+                                <option value="Friend/Colleague">Friend/Colleague</option>
+                                <option value="Direct">Direct</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required">Status</label>
+                            <select name="status" class="form-control" required>
+                                <option value="Contacted">Contacted</option>
+                                <option value="Qualified">Qualified</option>
+                                <option value="Nurturing">Nurturing</option>
+                                <option value="Converted">Converted</option>
+                                <option value="Lost">Lost</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn-gradient" style="border: none; border-radius: 30px; padding: 10px 24px;">Save Lead</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

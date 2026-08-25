@@ -127,7 +127,7 @@ class LoginController extends Controller
 
         // Redirect logic matching previous customLogin
         if ($user->role == "SA") {
-            return redirect()->route('manage.restaurant');
+            return redirect()->route('admin.dashboard');
         }
         
         $active = DB::table('subscriptions')

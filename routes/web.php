@@ -105,6 +105,7 @@ Route::prefix('admin')->group(function () {
 
     // Admin CRM Lead Management
     Route::get('crm', [App\Http\Controllers\Admin\AdminCrmController::class, 'index'])->name('admin.crm.index');
+    Route::post('crm/store', [App\Http\Controllers\Admin\AdminCrmController::class, 'store'])->name('admin.crm.store');
     Route::post('crm/update-status/{id}', [App\Http\Controllers\Admin\AdminCrmController::class, 'updateStatus'])->name('admin.crm.update-status');
     Route::post('crm/update-followup/{id}', [App\Http\Controllers\Admin\AdminCrmController::class, 'updateFollowup'])->name('admin.crm.update-followup');
     Route::get('crm/{id}', [App\Http\Controllers\Admin\AdminCrmController::class, 'show'])->name('admin.crm.show');
@@ -281,6 +282,12 @@ Route::get('admin/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdmin
     ->name('admin.temporder.approve');
 
 // Admin Plan Routes
+
+    Route::get('dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('users', [\App\Http\Controllers\Admin\AdminUserController::class, 'index'])->name('admin.users.index');
+    Route::post('users/store', [\App\Http\Controllers\Admin\AdminUserController::class, 'store'])->name('admin.users.store');
+    Route::post('users/update', [\App\Http\Controllers\Admin\AdminUserController::class, 'update'])->name('admin.users.update');
+    Route::get('users/delete/{id}', [\App\Http\Controllers\Admin\AdminUserController::class, 'delete'])->name('admin.users.delete');
 
     Route::post('plans/update-order', [\App\Http\Controllers\PlanController::class, 'updateOrder'])->name('admin.plans.update-order');
     Route::resource('plans', \App\Http\Controllers\PlanController::class);

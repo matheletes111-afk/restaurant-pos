@@ -18,9 +18,10 @@ class RestaurantController extends Controller
      */
     public function index()
     {
-        // Fetch restaurants with owner details
+        // Fetch restaurants with owner details and subscription details ordered by latest first
         $data['restaurants'] = RestaurantMaster::where('status', '!=', 'D')
-            ->with('owner') // requires relationship in model
+            ->with(['owner', 'active_subscription.plan', 'active_subscription.payments', 'latest_subscription.plan', 'latest_subscription.payments'])
+            ->orderBy('id', 'desc')
             ->get();
 
         return view('restaurant.index', $data);

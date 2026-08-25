@@ -14,6 +14,8 @@ protected $fillable = [
     'plan_parent_id',
     'name',
     'price',
+    'label_name',
+    'cross_price',
     'country_id',
     'currency',
     'billing_cycle',

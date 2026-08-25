@@ -76,6 +76,26 @@
                   </div>
                 </div>
 
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="label_name">Label Name</label>
+                      <input type="text" class="form-control" id="label_name" name="label_name"
+                             value="{{ old('label_name') }}">
+                      <small class="text-muted">e.g. Popular Choice, Recommended, Best Value</small>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="cross_price">Cross Price</label>
+                      <input type="number" class="form-control" id="cross_price" name="cross_price"
+                             step="0.01" min="0" value="{{ old('cross_price') }}">
+                      <small class="text-muted">The original crossed-out price to display next to the active price (e.g. ₹999)</small>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- GST Breakdown Display -->
                 <div class="row">
                   <div class="col-md-4">
