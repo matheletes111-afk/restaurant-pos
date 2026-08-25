@@ -22,7 +22,7 @@ class SubscriptionController extends Controller
 
     public function __construct()
     {
-        $this->razorpay = new Api(env('RAZORPAY_KEY_ID'), env('RAZORPAY_KEY_SECRET'));
+        $this->razorpay = new Api(config('services.razorpay.key_id'), config('services.razorpay.key_secret'));
     }
 
     // Show subscription page for a plan
@@ -329,7 +329,7 @@ class SubscriptionController extends Controller
             'plan' => $plan,
             'user' => $user,
             'payable_amount' => session('payable_amount'),
-            'razorpay_key' => env('RAZORPAY_KEY_ID'),
+            'razorpay_key' => config('services.razorpay.key_id'),
             'existing_subscription_id' => session('existing_subscription_id'),
             'credit_amount' => session('credit_amount')
         ]);

@@ -165,7 +165,7 @@
         var userId = "{{ $user->id }}";
         var csrfToken = "{{ csrf_token() }}";
         var appName = "{{ config('app.name', 'App') }}";
-        var razorpayKey = "{{ env('RAZORPAY_KEY_ID') }}";
+        var razorpayKey = "{{ config('services.razorpay.key_id') }}";
         var existingSubscriptionId = "{{ $existing_subscription_id ?? '' }}";
         var creditAmount = "{{ $credit_amount ?? 0 }}";
         

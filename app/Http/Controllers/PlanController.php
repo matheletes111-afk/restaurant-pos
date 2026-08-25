@@ -197,8 +197,8 @@ public function store(Request $request)
         if ($request->price > 0) {
 
             $api = new Api(
-                env('RAZORPAY_KEY_ID'),
-                env('RAZORPAY_KEY_SECRET')
+                config('services.razorpay.key_id'),
+                config('services.razorpay.key_secret')
             );
 
             $period = 'monthly';
@@ -407,7 +407,7 @@ public function update(Request $request, $id)
 
 
     try {
-        $api = new Api(env('RAZORPAY_KEY_ID'), env('RAZORPAY_KEY_SECRET'));
+        $api = new Api(config('services.razorpay.key_id'), config('services.razorpay.key_secret'));
 
         $billingCycle = $request->billing_cycle;
         $period = 'monthly';
