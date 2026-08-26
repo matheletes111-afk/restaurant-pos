@@ -591,7 +591,10 @@
                         <h2 class="crm-header-title">Admin CRM Control Deck</h2>
                     </div>
                 </div>
-                <div>
+                <div class="d-flex gap-2" style="gap: 10px;">
+                    <a href="{{ route('admin.crm.index', array_merge(request()->all(), ['export' => 'excel'])) }}" class="btn btn-success" style="border-radius: 30px; background: linear-gradient(135deg, #28a745, #218838); border: none; padding: 12px 28px; font-weight: 700; color: white; display: inline-flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-file-excel"></i> Download Full Lead
+                    </a>
                     <button type="button" class="btn btn-primary" style="border-radius: 30px; background: linear-gradient(135deg, #ff6a00, #ff8c42); border: none; padding: 12px 28px; font-weight: 700; box-shadow: 0 4px 15px rgba(255, 106, 0, 0.2);" data-bs-toggle="modal" data-bs-target="#addLeadModal">
                         <i class="fa-solid fa-plus me-2"></i> Add Lead
                     </button>
@@ -603,16 +606,38 @@
                 <form id="crmFilterForm" method="GET" action="{{ route('admin.crm.index') }}">
                     <input type="hidden" name="source" id="sourceFilterVal" value="{{ request('source', 'all') }}">
                     
-                    <div class="row align-items-center g-3">
-                        <div class="col-lg-5">
-                            <div class="search-wrapper">
-                                <i class="fa-solid fa-magnifying-glass"></i>
-                                <input type="text" name="search" class="form-control search-input" 
-                                       placeholder="Search leads by name or email..." value="{{ request('search') }}">
+                    <div class="row align-items-end g-3">
+                        <div class="col-lg-4">
+                            <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 5px; display: block;">Keyword Search</label>
+                            <div class="search-wrapper" style="position: relative;">
+                                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; line-height: 1;"></i>
+                                <input type="text" name="search" class="form-control search-input" style="padding-left: 36px; height: 42px;"
+                                       placeholder="Search name, email, restaurant..." value="{{ request('search') }}">
                             </div>
                         </div>
-                        
-                        <div class="col-lg-7">
+
+                        <div class="col-lg-3">
+                            <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 5px; display: block;">From Date</label>
+                            <input type="date" name="from_date" class="form-control" style="height: 42px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px;" value="{{ request('from_date') }}">
+                        </div>
+
+                        <div class="col-lg-3">
+                            <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 5px; display: block;">To Date</label>
+                            <input type="date" name="to_date" class="form-control" style="height: 42px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px;" value="{{ request('to_date') }}">
+                        </div>
+
+                        <div class="col-lg-2 d-flex gap-2" style="gap: 8px;">
+                            <button type="submit" class="btn btn-primary" style="height: 42px; width: 50%; border-radius: 10px; padding: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #ff6a00, #ff8c42); border: none; color: white;" title="Apply Filters">
+                                <i class="fa fa-filter"></i>
+                            </button>
+                            <a href="{{ route('admin.crm.index') }}" class="btn btn-secondary" style="height: 42px; width: 50%; border-radius: 10px; padding: 0; display: flex; align-items: center; justify-content: center; background: #e2e8f0; border: none; color: #475569;" title="Reset Filters">
+                                <i class="fa fa-sync-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col-12">
                             <div class="source-filters">
                                 <div class="filter-pill {{ request('source', 'all') == 'all' ? 'active' : '' }}" data-source="all">
                                     All Sources
@@ -641,8 +666,13 @@
                         <h4 class="column-title">
                             <span class="status-dot dot-contacted"></span> Contacted
                         </h4>
-                        <div class="column-count">
-                            {{ count($leadsByStatus['Contacted']) }}
+                        <div class="d-flex align-items-center" style="gap: 8px;">
+                            <a href="{{ route('admin.crm.index', array_merge(request()->all(), ['export' => 'excel', 'export_status' => 'Contacted'])) }}" class="text-success" title="Export Contacted Leads" style="font-size: 0.95rem;">
+                                <i class="fa-solid fa-file-excel"></i>
+                            </a>
+                            <div class="column-count">
+                                {{ count($leadsByStatus['Contacted']) }}
+                            </div>
                         </div>
                     </div>
                     
@@ -663,8 +693,13 @@
                         <h4 class="column-title">
                             <span class="status-dot dot-qualified"></span> Qualified
                         </h4>
-                        <div class="column-count">
-                            {{ count($leadsByStatus['Qualified']) }}
+                        <div class="d-flex align-items-center" style="gap: 8px;">
+                            <a href="{{ route('admin.crm.index', array_merge(request()->all(), ['export' => 'excel', 'export_status' => 'Qualified'])) }}" class="text-success" title="Export Qualified Leads" style="font-size: 0.95rem;">
+                                <i class="fa-solid fa-file-excel"></i>
+                            </a>
+                            <div class="column-count">
+                                {{ count($leadsByStatus['Qualified']) }}
+                            </div>
                         </div>
                     </div>
                     
@@ -685,8 +720,13 @@
                         <h4 class="column-title">
                             <span class="status-dot dot-nurturing"></span> Nurturing
                         </h4>
-                        <div class="column-count">
-                            {{ count($leadsByStatus['Nurturing']) }}
+                        <div class="d-flex align-items-center" style="gap: 8px;">
+                            <a href="{{ route('admin.crm.index', array_merge(request()->all(), ['export' => 'excel', 'export_status' => 'Nurturing'])) }}" class="text-success" title="Export Nurturing Leads" style="font-size: 0.95rem;">
+                                <i class="fa-solid fa-file-excel"></i>
+                            </a>
+                            <div class="column-count">
+                                {{ count($leadsByStatus['Nurturing']) }}
+                            </div>
                         </div>
                     </div>
                     
@@ -707,8 +747,13 @@
                         <h4 class="column-title">
                             <span class="status-dot dot-converted"></span> Converted
                         </h4>
-                        <div class="column-count">
-                            {{ count($leadsByStatus['Converted']) }}
+                        <div class="d-flex align-items-center" style="gap: 8px;">
+                            <a href="{{ route('admin.crm.index', array_merge(request()->all(), ['export' => 'excel', 'export_status' => 'Converted'])) }}" class="text-success" title="Export Converted Leads" style="font-size: 0.95rem;">
+                                <i class="fa-solid fa-file-excel"></i>
+                            </a>
+                            <div class="column-count">
+                                {{ count($leadsByStatus['Converted']) }}
+                            </div>
                         </div>
                     </div>
                     
@@ -729,8 +774,13 @@
                         <h4 class="column-title">
                             <span class="status-dot dot-lost"></span> Lost
                         </h4>
-                        <div class="column-count">
-                            {{ count($leadsByStatus['Lost']) }}
+                        <div class="d-flex align-items-center" style="gap: 8px;">
+                            <a href="{{ route('admin.crm.index', array_merge(request()->all(), ['export' => 'excel', 'export_status' => 'Lost'])) }}" class="text-success" title="Export Lost Leads" style="font-size: 0.95rem;">
+                                <i class="fa-solid fa-file-excel"></i>
+                            </a>
+                            <div class="column-count">
+                                {{ count($leadsByStatus['Lost']) }}
+                            </div>
                         </div>
                     </div>
                     

@@ -200,12 +200,61 @@
 
             <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
                 <h5 class="mb-0">Restaurant List</h5>
-                <button class="btn btn-primary" data-toggle="modal" data-target="#addRestaurantModal">
-                    <i class="fa fa-plus"></i> Add Restaurant
-                </button>
+                <div>
+                    <a href="{{ route('manage.restaurant', array_merge(request()->all(), ['export' => 'excel'])) }}" class="btn btn-success me-2">
+                        <i class="fa fa-file-excel"></i> Export Excel
+                    </a>
+                    <button class="btn btn-primary" data-toggle="modal" data-target="#addRestaurantModal">
+                        <i class="fa fa-plus"></i> Add Restaurant
+                    </button>
+                </div>
             </div>
 
             <div class="card-body">
+                <!-- Filters Section -->
+                <div class="filter-card mb-4" style="background: #F8FAFC; border-radius: 12px; padding: 20px; border: 1px solid #E2E8F0;">
+                    <form method="GET" action="{{ route('manage.restaurant') }}" id="filterForm" class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold" style="font-size: 0.85rem; color: var(--dark);">Keyword Search</label>
+                            <input type="text" name="search" class="form-control shadow-none" placeholder="Search name, owner, phone..." value="{{ request('search') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label font-weight-bold" style="font-size: 0.85rem; color: var(--dark);">Status</label>
+                            <select name="status" class="form-control shadow-none">
+                                <option value="all">All Statuses</option>
+                                <option value="A" {{ request('status') === 'A' ? 'selected' : '' }}>Active</option>
+                                <option value="I" {{ request('status') === 'I' ? 'selected' : '' }}>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label font-weight-bold" style="font-size: 0.85rem; color: var(--dark);">Plan</label>
+                            <select name="plan_id" class="form-control shadow-none">
+                                <option value="all">All Plans</option>
+                                <option value="none" {{ request('plan_id') === 'none' ? 'selected' : '' }}>No Plan</option>
+                                @foreach($plans as $p)
+                                    <option value="{{ $p->id }}" {{ request('plan_id') == $p->id ? 'selected' : '' }}>{{ $p->name }} (₹{{ number_format($p->price, 2) }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label font-weight-bold" style="font-size: 0.85rem; color: var(--dark);">From Date</label>
+                            <input type="date" name="from_date" class="form-control shadow-none" value="{{ request('from_date') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label font-weight-bold" style="font-size: 0.85rem; color: var(--dark);">To Date</label>
+                            <input type="date" name="to_date" class="form-control shadow-none" value="{{ request('to_date') }}">
+                        </div>
+                        <div class="col-md-1 d-flex gap-2 justify-content-end" style="gap: 5px;">
+                            <button type="submit" class="btn btn-primary px-3" title="Apply Filters" style="height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+                                <i class="fa fa-filter"></i>
+                            </button>
+                            <a href="{{ route('manage.restaurant') }}" class="btn btn-secondary px-3" title="Reset Filters" style="border-radius: 10px; background-color: #e2e8f0; color: #475569; border: none; display: flex; align-items: center; justify-content: center; height: 42px;">
+                                <i class="fa fa-sync-alt"></i>
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
                 <div class="table-responsive">
                     <table id="restaurantTable" class="table table-striped table-bordered nowrap" style="width:100%">
                         <thead>
@@ -242,6 +291,7 @@
                                             $badgeClass = $sub->status == 'active' && !$isExpired ? 'bg-success' : 'bg-danger';
                                         @endphp
                                         <a href="javascript:void(0)" class="badge {{ $badgeClass }} text-white showPlanDetailsBtn" style="text-decoration:none;"
+                                           data-sub-id="{{ $sub->id }}"
                                            data-plan-name="{{ $plan->name }}"
                                            data-plan-price="{{ $plan->price }}"
                                            data-sub-status="{{ $sub->status }}"
@@ -259,13 +309,18 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <a href="{{ route('manage.restaurant.status', $rest->owner_id) }}"
-                                       onclick="return confirm('Are you sure?')"
-                                       class="btn btn-sm {{ $rest->status == 'A' ? 'btn-success' : 'btn-warning' }}">
+                                    <span class="badge {{ $rest->status == 'A' ? 'bg-success' : 'bg-danger' }} text-white">
                                         {{ $rest->status == 'A' ? 'Active' : 'Inactive' }}
-                                    </a>
+                                    </span>
                                 </td>
                                 <td>
+                                    <a href="{{ route('manage.restaurant.status', $rest->owner_id) }}"
+                                       onclick="return confirm('Are you sure you want to change status?')"
+                                       class="btn btn-sm {{ $rest->status == 'A' ? 'btn-warning' : 'btn-success' }}"
+                                       title="{{ $rest->status == 'A' ? 'Deactivate' : 'Activate' }}">
+                                        <i class="fa {{ $rest->status == 'A' ? 'fa-ban' : 'fa-check-circle' }}"></i>
+                                    </a>
+
                                     <button class="btn btn-sm btn-success editBtn"
                                             data-id="{{ $rest->id }}"
                                             data-owner_id="{{ $rest->owner_id }}"
@@ -276,22 +331,25 @@
                                             data-restaurant_fssai_number="{{ $rest->fssai_number }}"
                                             data-owner_name="{{ @$rest->owner->name }}"
                                             data-owner_email="{{ @$rest->owner->email }}"
-                                            data-owner_phone="{{ @$rest->owner->phone }}">
+                                            data-owner_phone="{{ @$rest->owner->phone }}"
+                                            title="Edit">
                                         <i class="fa fa-edit"></i>
                                     </button>
 
                                     <a href="{{ route('restaurant.analytics', $rest->id) }}"
-                                       class="btn btn-sm btn-primary">
+                                       class="btn btn-sm btn-primary"
+                                       title="Analytics">
                                         <i class="fa fa-handshake"></i>
                                     </a>
 
                                     <a href="{{ route('manage.restaurant.show.plans', $rest->id) }}" class="btn btn-sm btn-info" title="Assign Plans">
-                                        <i class="fas fa-tags"></i> Plans
+                                        <i class="fas fa-tags"></i>
                                     </a>
 
                                     <a href="{{ route('manage.restaurant.delete', $rest->id) }}"
                                        onclick="return confirm('Delete this restaurant?')"
-                                       class="btn btn-sm btn-danger">
+                                       class="btn btn-sm btn-danger"
+                                       title="Delete">
                                         <i class="fa fa-trash"></i>
                                     </a>
                                 </td>
@@ -626,7 +684,10 @@
                     </table>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer d-flex justify-content-between">
+                <a href="#" id="downloadInvoiceBtn" class="btn btn-primary" style="border-radius: 30px; padding: 8px 20px;">
+                    <i class="fas fa-file-download"></i> Download Invoice
+                </a>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius: 30px; padding: 8px 20px;">Close</button>
             </div>
         </div>
@@ -649,6 +710,7 @@ $(document).ready(function () {
 
     // Show plan details button handler
     $('.showPlanDetailsBtn').on('click', function () {
+        const subId = $(this).data('sub-id');
         const planName = $(this).data('plan-name');
         const planPrice = $(this).data('plan-price');
         const subStatus = $(this).data('sub-status');
@@ -659,6 +721,14 @@ $(document).ready(function () {
         const status = $(this).data('payment-status');
         const paymentId = $(this).data('payment-id');
         const paymentDate = $(this).data('payment-date');
+
+        // Set invoice download link
+        if (subId) {
+            let invoiceUrl = "{{ route('admin.subscriptions.invoice', ':id') }}".replace(':id', subId);
+            $('#downloadInvoiceBtn').attr('href', invoiceUrl).show();
+        } else {
+            $('#downloadInvoiceBtn').hide();
+        }
 
         $('#detail_plan_name').text(planName);
         $('#detail_plan_price').text('₹' + planPrice);

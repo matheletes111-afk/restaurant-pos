@@ -11,20 +11,132 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\RestaurantRegistrationMail;
 use App\Models\Plan;
 use App\Models\RestaurantToCustomPlan;
+use App\Models\Subscription;
+use Barryvdh\DomPDF\Facade\Pdf;
 class RestaurantController extends Controller
 {
     /**
      * Display list of restaurants
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Fetch restaurants with owner details and subscription details ordered by latest first
-        $data['restaurants'] = RestaurantMaster::where('status', '!=', 'D')
+        $query = RestaurantMaster::where('status', '!=', 'D')
             ->with(['owner', 'active_subscription.plan', 'active_subscription.payments', 'latest_subscription.plan', 'latest_subscription.payments'])
-            ->orderBy('id', 'desc')
-            ->get();
+            ->orderBy('id', 'desc');
+
+        // Apply filters
+        // 1. Keyword search (restaurant name, owner name, owner email, owner phone, address, pincode, gstin, fssai)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('address', 'like', "%{$search}%")
+                  ->orWhere('pincode', 'like', "%{$search}%")
+                  ->orWhere('gstin', 'like', "%{$search}%")
+                  ->orWhere('fssai_number', 'like', "%{$search}%")
+                  ->orWhereHas('owner', function($uq) use ($search) {
+                      $uq->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // 2. Status filter
+        if ($request->filled('status') && $request->status != 'all') {
+            $query->where('status', $request->status);
+        }
+
+        // 3. Plan filter
+        if ($request->filled('plan_id') && $request->plan_id != 'all') {
+            $planId = $request->plan_id;
+            if ($planId == 'none') {
+                $query->whereDoesntHave('active_subscription');
+            } else {
+                $query->whereHas('active_subscription', function($q) use ($planId) {
+                    $q->where('plan_id', $planId);
+                });
+            }
+        }
+
+        // 4. Date range filter by created_at
+        if ($request->filled('from_date')) {
+            $query->whereDate('created_at', '>=', $request->from_date);
+        }
+        if ($request->filled('to_date')) {
+            $query->whereDate('created_at', '<=', $request->to_date);
+        }
+
+        // Excel Export action
+        if ($request->has('export') && $request->export == 'excel') {
+            return $this->exportExcel($query->get());
+        }
+
+        $data['restaurants'] = $query->get();
+        
+        // Fetch plans that have at least one subscription for filter dropdown
+        $data['plans'] = Plan::whereHas('subscriptions')->orderBy('name', 'asc')->get();
 
         return view('restaurant.index', $data);
+    }
+
+    /**
+     * Export restaurants as CSV
+     */
+    private function exportExcel($restaurants)
+    {
+        $filename = 'restaurants_' . date('Y-m-d_H-i-s') . '.csv';
+        
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = [
+            'Restaurant Name', 
+            'Address', 
+            'Pincode', 
+            'GSTIN', 
+            'FSSAI Number', 
+            'Owner Name', 
+            'Owner Email', 
+            'Owner Phone', 
+            'Active Plan', 
+            'Status', 
+            'Created At'
+        ];
+
+        $callback = function() use($restaurants, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            foreach ($restaurants as $rest) {
+                $sub = $rest->active_subscription ?? $rest->latest_subscription;
+                $planName = $sub && $sub->plan ? $sub->plan->name : 'No Plan';
+                $statusText = $rest->status == 'A' ? 'Active' : 'Inactive';
+
+                fputcsv($file, [
+                    $rest->name,
+                    $rest->address,
+                    $rest->pincode,
+                    $rest->gstin,
+                    $rest->fssai_number,
+                    $rest->owner->name ?? '',
+                    $rest->owner->email ?? '',
+                    $rest->owner->phone ?? '',
+                    $planName,
+                    $statusText,
+                    $rest->created_at ? $rest->created_at->format('Y-m-d H:i') : ''
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**
@@ -103,7 +215,10 @@ class RestaurantController extends Controller
 
             // 4. Send Welcome Email with credentials
             try {
-                Mail::to($user->email)->send(new RestaurantRegistrationMail($user, $plainPassword, $restaurant));
+                $adminEmail = config('mail.admin_email') ?? env('ADMIN_EMAIL', 'sayansrvtechnology@gmail.com');
+                Mail::to($user->email)
+                    ->cc($adminEmail)
+                    ->send(new RestaurantRegistrationMail($user, $plainPassword, $restaurant));
             } catch (\Exception $mailError) {
                 // Log email error but don't rollback the transaction
                 \Log::error('Failed to send registration email: ' . $mailError->getMessage());
@@ -318,5 +433,32 @@ class RestaurantController extends Controller
             DB::rollBack();
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Download subscription invoice as A4 PDF
+     */
+    public function downloadInvoice($subscription_id)
+    {
+        $subscription = Subscription::with(['plan', 'payments', 'restaurant_details.owner'])
+            ->findOrFail($subscription_id);
+
+        $restaurant = $subscription->restaurant_details;
+        $payment = $subscription->payments->first();
+        $plan = $subscription->plan;
+
+        $data = [
+            'subscription' => $subscription,
+            'restaurant' => $restaurant,
+            'payment' => $payment,
+            'plan' => $plan,
+            'invoice_no' => 'INV-' . str_pad($subscription->id, 6, '0', STR_PAD_LEFT),
+            'invoice_date' => $payment ? $payment->created_at->format('Y-m-d') : $subscription->created_at->format('Y-m-d'),
+        ];
+
+        $pdf = Pdf::loadView('emails.subscription_invoice_pdf', $data)
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download('Invoice_' . $data['invoice_no'] . '.pdf');
     }
 }

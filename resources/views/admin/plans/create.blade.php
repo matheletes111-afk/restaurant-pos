@@ -89,8 +89,7 @@
                   <div class="col-md-6">
                     <div class="form-group">
                       <label for="cross_price">Cross Price</label>
-                      <input type="number" class="form-control" id="cross_price" name="cross_price"
-                             step="0.01" min="0" value="{{ old('cross_price') }}">
+                      <input type="text" class="form-control" id="cross_price" name="cross_price" value="{{ old('cross_price') }}">
                       <small class="text-muted">The original crossed-out price to display next to the active price (e.g. ₹999)</small>
                     </div>
                   </div>

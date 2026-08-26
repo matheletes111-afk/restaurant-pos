@@ -534,13 +534,6 @@
                             </div>
                         </div>
                         @endif
-                        <div class="info-item">
-                            <div class="info-icon"><i class="fas fa-credit-card"></i></div>
-                            <div class="info-content">
-                                <div class="info-label">Payment Method</div>
-                                <div class="info-value">{{ $order->payment_method ?? 'Not specified' }}</div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 

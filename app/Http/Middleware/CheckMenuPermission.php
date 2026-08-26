@@ -22,6 +22,11 @@ class CheckMenuPermission
             return $next($request);
         }
 
+        // Default Super Admin ID 1 can do anything by default
+        if ($user->role === 'SA' && $user->id == 1) {
+            return $next($request);
+        }
+
         // Restrict access for restaurant level users without an active subscription
         if ($user->role === 'RES') {
             $hasActiveSubscription = \DB::table('subscriptions')
@@ -40,6 +45,7 @@ class CheckMenuPermission
                     'admin.subscriptions.payment.success.get',
                     'admin.subscriptions.payment.failed',
                     'admin.subscriptions.payment.failed.get',
+                    'admin.subscriptions.invoice',
                     'restaurant.support.tickets',
                     'restaurant-support',
                     'logout',
@@ -57,7 +63,7 @@ class CheckMenuPermission
                     }
                 }
 
-                if (str_contains($path, 'subscribe') || str_contains($path, 'payment') || str_contains($path, 'support') || str_contains($path, 'logout')) {
+                if (str_contains($path, 'subscribe') || str_contains($path, 'payment') || str_contains($path, 'support') || str_contains($path, 'logout') || str_contains($path, 'invoice')) {
                     $isAllowed = true;
                 }
 

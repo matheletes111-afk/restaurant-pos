@@ -160,14 +160,15 @@
                                                 @endif
                                             </td>
                                             <td>
+                                                <a href="{{ route('admin.subscriptions.invoice', $subscription->id) }}" class="btn btn-primary btn-sm" title="Download Invoice">
+                                                    <i class="fas fa-file-download"></i> Invoice
+                                                </a>
                                                 @if($subscription->status == 'active')
                                                 <button class="btn btn-danger btn-sm cancel-btn" 
                                                         data-id="{{ $subscription->id }}" 
                                                         data-plan="{{ $subscription->plan->name ?? 'N/A' }}">
                                                     <i class="fa fa-ban"></i> Cancel
                                                 </button>
-                                                @else
-                                                <span class="text-muted">No actions</span>
                                                 @endif
                                             </td>
                                         </tr>

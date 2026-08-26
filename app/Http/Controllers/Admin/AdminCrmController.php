@@ -34,6 +34,26 @@ class AdminCrmController extends Controller
             $query->where('source', $request->input('source'));
         }
 
+        // Filter by Date Range
+        if ($request->filled('from_date')) {
+            $query->whereDate('created_at', '>=', $request->from_date);
+        }
+        if ($request->filled('to_date')) {
+            $query->whereDate('created_at', '<=', $request->to_date);
+        }
+
+        // Excel Export action
+        if ($request->has('export') && $request->export == 'excel') {
+            $exportStatus = $request->input('export_status');
+            if ($exportStatus) {
+                $query->where('status', $exportStatus);
+                $filename = 'leads_' . strtolower($exportStatus) . '_' . date('Y-m-d') . '.csv';
+            } else {
+                $filename = 'all_leads_' . date('Y-m-d') . '.csv';
+            }
+            return $this->exportLeadsExcel($query->get(), $filename);
+        }
+
         // Get filtered leads
         $leads = $query->orderBy('created_at', 'desc')->get();
 
@@ -291,5 +311,56 @@ class AdminCrmController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Export CRM leads as CSV
+     */
+    private function exportLeadsExcel($leads, $filename)
+    {
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = [
+            'Lead ID',
+            'Full Name',
+            'Email Address',
+            'Phone Number',
+            'Restaurant Name',
+            'Source',
+            'Status',
+            'Followup Date',
+            'Followup Notes',
+            'Created At'
+        ];
+
+        $callback = function() use($leads, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            foreach ($leads as $lead) {
+                fputcsv($file, [
+                    $lead->id,
+                    $lead->full_name,
+                    $lead->email_address,
+                    $lead->phone_number,
+                    $lead->restaurant_name,
+                    $lead->source,
+                    $lead->status,
+                    $lead->followup_date ? \Carbon\Carbon::parse($lead->followup_date)->format('Y-m-d H:i') : '',
+                    $lead->followup_notes,
+                    $lead->created_at ? $lead->created_at->format('Y-m-d H:i') : ''
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

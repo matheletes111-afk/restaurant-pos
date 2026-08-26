@@ -491,6 +491,12 @@ function showToast(message, isError = false) {
 }
 
 function openModal() {
+    let balanceDue = parseFloat($('#paymentAmount').attr('max')) || 0;
+    if (balanceDue > 0) {
+        $('#paymentAmount').val(balanceDue.toFixed(2));
+    } else {
+        $('#paymentAmount').val('');
+    }
     $('#addPaymentModal').addClass('show');
     $('body').css('overflow', 'hidden');
 }

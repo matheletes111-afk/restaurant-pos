@@ -118,6 +118,7 @@ Route::post('manage-restaurant/insert', [RestaurantController::class, 'store'])-
 Route::post('manage-restaurant/update', [RestaurantController::class, 'update'])->name('manage.restaurant.update');
 Route::get('manage-restaurant/status/{id}', [RestaurantController::class, 'status'])->name('manage.restaurant.status');
 Route::get('manage-restaurant/delete/{id}', [RestaurantController::class, 'delete'])->name('manage.restaurant.delete');
+Route::get('admin/subscriptions/invoice/{subscription_id}', [RestaurantController::class, 'downloadInvoice'])->name('admin.subscriptions.invoice');
 // Restaurant Custom Plan Assignment Routes
 Route::get('manage-restaurant/plans/{id}', [RestaurantController::class, 'showPlans'])->name('manage.restaurant.show.plans');
 Route::post('manage-restaurant/save-plans', [RestaurantController::class, 'savePlans'])->name('manage.restaurant.save.plans');
