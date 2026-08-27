@@ -19,7 +19,7 @@ class CategoryController extends Controller
     {
         $data = [];
         $data['data'] = Category::where('status','!=','D')->where('restaurant_id',auth()->user()->restaurant_id)->get();
-        $check_plan = Subscription::where('user_id',auth()->user()->restaurant_id)->where('status','active')->first();
+        $check_plan = Subscription::where('user_id',auth()->user()->restaurant_id)->active()->first();
         $data['plan_details'] = Plan::where('id',$check_plan->plan_id)->first();
         return view('category_admin',$data);
     }

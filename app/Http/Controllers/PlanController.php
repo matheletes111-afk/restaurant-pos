@@ -64,7 +64,7 @@ public function selectPlan()
 
     // Filter plans: if there is an active subscription, only show plans with price > current active plan price
     $activeSubscription = Subscription::where('user_id', $restaurantId)
-        ->where('status', 'active')
+        ->active()
         ->with('plan')
         ->first();
 

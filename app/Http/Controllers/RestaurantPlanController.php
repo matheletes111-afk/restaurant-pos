@@ -55,19 +55,19 @@ public function showPlans()
     
     // Get active subscription plan IDs (only for active parent plans)
     $activeSubscriptionPlanIds = Subscription::where('user_id', $user->restaurant_id)
-        ->where('status', 'active')
+        ->active()
         ->pluck('plan_id')
         ->toArray();
     
     // Get active subscriptions for expiry dates
     $activeSubscriptions = Subscription::where('user_id', $user->restaurant_id)
-        ->where('status', 'active')
+        ->active()
         ->get()
         ->keyBy('plan_id');
 
     // Filter plans: if there is an active subscription, only show plans with price > current active plan price
     $activeSubscription = Subscription::where('user_id', $user->restaurant_id)
-        ->where('status', 'active')
+        ->active()
         ->with('plan')
         ->first();
 
