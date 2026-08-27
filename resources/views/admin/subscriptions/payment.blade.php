@@ -189,6 +189,10 @@
                 "email": "{{ $user->email }}",
                 "contact": "{{ $user->phone ?? '9999999999' }}"
             },
+            "readonly": {
+                "contact": true,
+                "email": true
+            },
             "theme": {
                 "color": "#F37254"
             },
