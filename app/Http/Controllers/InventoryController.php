@@ -24,7 +24,13 @@ class InventoryController extends Controller
             // Get active subscription using restaurant_id
             $active = DB::table('subscriptions')
                 ->where('user_id', auth()->user()->restaurant_id)
-                ->where('status', 'active')
+                ->where(function($query) {
+                    $query->where('status', 'active')
+                          ->orWhere(function($q) {
+                              $q->where('status', 'completed')
+                                ->whereDate('end_date', '>=', now());
+                          });
+                })
                 ->first();
 
             // If no active subscription found

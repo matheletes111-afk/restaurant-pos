@@ -132,7 +132,13 @@ class LoginController extends Controller
         
         $active = DB::table('subscriptions')
             ->where('user_id', $user->restaurant_id)
-            ->where('status', 'active')
+            ->where(function($query) {
+                $query->where('status', 'active')
+                      ->orWhere(function($q) {
+                          $q->where('status', 'completed')
+                            ->whereDate('end_date', '>=', now());
+                      });
+            })
             ->first();
             
         if (@$active == "") {

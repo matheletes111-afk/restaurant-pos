@@ -112,7 +112,7 @@ class CategoryController extends Controller
          if ($data['details']=="") {
            return redirect()->back()->with('error','Unauthorized Access');
         }
-        $check_plan = Subscription::where('user_id',auth()->user()->restaurant_id)->where('status','active')->first();
+        $check_plan = Subscription::where('user_id',auth()->user()->restaurant_id)->active()->first();
         $data['plan_details'] = Plan::where('id',$check_plan->plan_id)->first();
         $data['id'] = $id;
         return view('sub_index',$data);
