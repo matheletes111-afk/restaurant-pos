@@ -147,12 +147,18 @@ class SubscriptionController extends Controller
 
         try {
             // 1. Customer Management
+            $restaurant = RestaurantMaster::find($user->restaurant_id);
+            $owner = $restaurant ? User::find($restaurant->owner_id) : $user;
+            if (!$owner) {
+                $owner = $user;
+            }
+
             $razorpayCustomer = RazorpayCustomer::where('user_id', $user->restaurant_id)->first();
             
             if (!$razorpayCustomer) {
                 // Check if customer exists in Razorpay
                 $customers = $this->razorpay->customer->all([
-                    'email' => $user->email,
+                    'email' => $owner->email,
                     'count' => 1
                 ]);
 
@@ -161,18 +167,18 @@ class SubscriptionController extends Controller
                 } else {
                     // Create new customer in Razorpay
                     $customer = $this->razorpay->customer->create([
-                        'name' => $user->name,
-                        'email' => $user->email,
-                        'contact' => $user->phone ?? '9999999999'
+                        'name' => $owner->name,
+                        'email' => $owner->email,
+                        'contact' => $owner->phone ?? '9999999999'
                     ]);
                     $cust_id = $customer->id;
-
-                    // Store in local DB
-                    $razorpayCustomer = new RazorpayCustomer();
-                    $razorpayCustomer->user_id = $user->restaurant_id;
-                    $razorpayCustomer->rzpay_customer_id = $cust_id;
-                    $razorpayCustomer->save();
                 }
+
+                // Store in local DB (using restaurant_id for consistency)
+                $razorpayCustomer = new RazorpayCustomer();
+                $razorpayCustomer->user_id = $user->restaurant_id;
+                $razorpayCustomer->rzpay_customer_id = $cust_id;
+                $razorpayCustomer->save();
             } else {
                 $cust_id = $razorpayCustomer->rzpay_customer_id;
             }
