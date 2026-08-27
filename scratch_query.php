@@ -3,25 +3,17 @@ require 'vendor/autoload.php';
 $app = require_once 'bootstrap/app.php';
 $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
-$user = DB::table('users')->where('email', 'developersayan2002@gmail.com')->first();
-if ($user) {
-    echo "Logged-in User Email: {$user->email}\n";
-    echo "Logged-in User Phone: {$user->phone}\n";
-    
-    $restaurant = DB::table('restaurant_master')->where('id', $user->restaurant_id)->first();
-    if ($restaurant) {
-        echo "Restaurant Owner ID: {$restaurant->owner_id}\n";
-        $owner = DB::table('users')->where('id', $restaurant->owner_id)->first();
-        if ($owner) {
-            echo "Owner Name: {$owner->name}\n";
-            echo "Owner Email: {$owner->email}\n";
-            echo "Owner Phone: {$owner->phone}\n";
-        } else {
-            echo "Owner user not found!\n";
-        }
-    } else {
-        echo "Restaurant not found!\n";
-    }
+$sub = DB::table('subscriptions')->latest()->first();
+if ($sub) {
+    echo "=== LATEST SUBSCRIPTION ===\n";
+    echo "ID: {$sub->id}\n";
+    echo "User ID (Restaurant ID): {$sub->user_id}\n";
+    echo "Plan ID: {$sub->plan_id}\n";
+    echo "Status: {$sub->status}\n";
+    echo "Start Date: {$sub->start_date}\n";
+    echo "End Date: {$sub->end_date}\n";
+    echo "Renewal Date: {$sub->renewal_date}\n";
+    echo "Razorpay Sub ID: {$sub->razorpay_subscription_id}\n";
 } else {
-    echo "Test user not found!\n";
+    echo "No subscriptions found!\n";
 }

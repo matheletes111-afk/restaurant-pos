@@ -443,13 +443,21 @@ public function paymentSuccess(Request $request)
         );
 
         // 3. Create or update subscription record
-        $start_at_ts = $razorpaySubscription->start_at;
-        $end_at_ts = $razorpaySubscription->end_at;
+        $start_at_ts = $razorpaySubscription->current_start ?? $razorpaySubscription->start_at;
+        $end_at_ts = $razorpaySubscription->current_end ?? $razorpaySubscription->end_at;
         $charge_at_ts = $razorpaySubscription->charge_at;
 
         $startDate = ($start_at_ts && $start_at_ts > 0) ? date('Y-m-d H:i:s', $start_at_ts) : now()->toDateTimeString();
-        $endDate = ($end_at_ts && $end_at_ts > 0) ? date('Y-m-d H:i:s', $end_at_ts) : now()->addDays($plan->duration_days - 1)->endOfDay()->toDateTimeString();
-        $renewalDate = ($charge_at_ts && $charge_at_ts > 0) ? date('Y-m-d H:i:s', $charge_at_ts) : now()->addDays($plan->duration_days)->toDateTimeString();
+        
+        // Ensure endDate is calculated if end_at_ts is missing or is the same/earlier than start_at_ts
+        $endDate = ($end_at_ts && $end_at_ts > $start_at_ts) 
+            ? date('Y-m-d H:i:s', $end_at_ts) 
+            : \Carbon\Carbon::parse($startDate)->addDays($plan->duration_days - 1)->endOfDay()->toDateTimeString();
+            
+        // Ensure renewalDate is calculated if charge_at_ts is missing or is the same/earlier than start_at_ts
+        $renewalDate = ($charge_at_ts && $charge_at_ts > $start_at_ts) 
+            ? date('Y-m-d H:i:s', $charge_at_ts) 
+            : \Carbon\Carbon::parse($startDate)->addDays($plan->duration_days)->toDateTimeString();
 
         $status = $razorpaySubscription->status;
         if (in_array($status, ['authenticated', 'created', 'active'])) {
