@@ -153,7 +153,7 @@ class SubscriptionController extends Controller
                 $owner = $user;
             }
 
-            $razorpayCustomer = RazorpayCustomer::where('user_id', $user->restaurant_id)->first();
+            $razorpayCustomer = RazorpayCustomer::where('user_id', $owner->id)->first();
             
             if (!$razorpayCustomer) {
                 // Check if customer exists in Razorpay
@@ -174,9 +174,9 @@ class SubscriptionController extends Controller
                     $cust_id = $customer->id;
                 }
 
-                // Store in local DB (using restaurant_id for consistency)
+                // Store in local DB (must link to users.id to satisfy foreign key constraint)
                 $razorpayCustomer = new RazorpayCustomer();
-                $razorpayCustomer->user_id = $user->restaurant_id;
+                $razorpayCustomer->user_id = $owner->id;
                 $razorpayCustomer->rzpay_customer_id = $cust_id;
                 $razorpayCustomer->save();
             } else {
