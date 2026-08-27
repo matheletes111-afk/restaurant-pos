@@ -117,7 +117,10 @@ class WebhookController extends Controller
         $subscription = $payload['payload']['subscription']['entity'];
         
         Subscription::where('razorpay_subscription_id', $subscription['id'])
-            ->update(['status' => 'expired']);
+            ->update([
+                'status' => 'completed',
+                'auto_renew' => 0
+            ]);
     }
 
     private function handleSubscriptionActivated($payload)

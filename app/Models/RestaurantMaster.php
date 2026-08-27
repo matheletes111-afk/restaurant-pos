@@ -42,7 +42,14 @@ class RestaurantMaster extends Model
 
     public function active_subscription()
     {
-        return $this->hasOne(Subscription::class, 'user_id')->where('status', 'active');
+        return $this->hasOne(Subscription::class, 'user_id')
+            ->where(function($query) {
+                $query->where('status', 'active')
+                      ->orWhere(function($q) {
+                          $q->where('status', 'completed')
+                            ->whereDate('end_date', '>=', now());
+                      });
+            });
     }
 
     public function latest_subscription()
