@@ -273,7 +273,7 @@ class SubscriptionController extends Controller
                 'subscription_id' => $subscription->id,
                 'customer_id' => $cust_id,
                 'plan' => $plan,
-                'user' => $user,
+                'user' => $owner,
                 'payable_amount' => $payableAmount,
                 'is_upgrade' => isset($existingSubscription),
                 'existing_subscription' => $existingSubscription ?? null,
@@ -329,11 +329,16 @@ class SubscriptionController extends Controller
 
         $plan = Plan::find(session('plan_id'));
         $user = auth()->user();
+        $restaurant = RestaurantMaster::find($user->restaurant_id);
+        $owner = $restaurant ? User::find($restaurant->owner_id) : $user;
+        if (!$owner) {
+            $owner = $user;
+        }
 
         return view('admin.subscriptions.payment', [
             'subscription_id' => session('razorpay_subscription_id'),
             'plan' => $plan,
-            'user' => $user,
+            'user' => $owner,
             'payable_amount' => session('payable_amount'),
             'razorpay_key' => config('services.razorpay.key_id'),
             'existing_subscription_id' => session('existing_subscription_id'),
