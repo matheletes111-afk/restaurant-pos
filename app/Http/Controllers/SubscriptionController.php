@@ -432,6 +432,19 @@ public function paymentSuccess(Request $request)
         );
 
         // 3. Create or update subscription record
+        $start_at_ts = $razorpaySubscription->start_at;
+        $end_at_ts = $razorpaySubscription->end_at;
+        $charge_at_ts = $razorpaySubscription->charge_at;
+
+        $startDate = ($start_at_ts && $start_at_ts > 0) ? date('Y-m-d H:i:s', $start_at_ts) : now()->toDateTimeString();
+        $endDate = ($end_at_ts && $end_at_ts > 0) ? date('Y-m-d H:i:s', $end_at_ts) : now()->addDays($plan->duration_days - 1)->endOfDay()->toDateTimeString();
+        $renewalDate = ($charge_at_ts && $charge_at_ts > 0) ? date('Y-m-d H:i:s', $charge_at_ts) : now()->addDays($plan->duration_days)->toDateTimeString();
+
+        $status = $razorpaySubscription->status;
+        if (in_array($status, ['authenticated', 'created', 'active'])) {
+            $status = 'active';
+        }
+
         $subscription = Subscription::updateOrCreate(
             [
                 'razorpay_subscription_id' => $subscriptionId,
@@ -440,10 +453,10 @@ public function paymentSuccess(Request $request)
             [
                 'plan_id' => $plan->id,
                 'razorpay_plan_id' => $plan->razorpay_plan_id,
-                'status' => $razorpaySubscription->status,
-                'start_date' => date('Y-m-d', $razorpaySubscription->start_at),
-                'end_date' => date('Y-m-d', $razorpaySubscription->end_at),
-                'renewal_date' => date('Y-m-d', $razorpaySubscription->charge_at),
+                'status' => $status,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'renewal_date' => $renewalDate,
                 'auto_renew' => 1,
                 'created_at' => now()
             ]
