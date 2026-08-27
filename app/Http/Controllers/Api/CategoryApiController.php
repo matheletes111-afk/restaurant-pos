@@ -27,7 +27,7 @@ class CategoryApiController extends Controller
             
             // Optional: Include plan details if needed
             $check_plan = Subscription::where('user_id', auth()->user()->restaurant_id)
-                ->where('status', 'active')
+                ->active()
                 ->first();
             
             if ($check_plan) {
