@@ -470,9 +470,15 @@
                                 $gstPercentage = $plan->gst_percentage ?? 18;
                                 $taxableAmount = $plan->taxable_amount ?? ($plan->price / (1 + ($gstPercentage / 100)));
                             @endphp
-                            @if($plan->cross_price)
-                                <span class="cross-price">₹{{ number_format($plan->cross_price, 2) }}</span>
-                            @endif
+                             @if($plan->cross_price)
+                                 <span class="cross-price">
+                                     @if(is_numeric($plan->cross_price))
+                                         ₹{{ number_format($plan->cross_price, 2) }}
+                                     @else
+                                         {{ $plan->cross_price }}
+                                     @endif
+                                 </span>
+                             @endif
                             <span class="active-price">₹{{ number_format($plan->price, 2) }}</span>
                         @endif
                     </div>

@@ -505,7 +505,13 @@
                                              <span class="active-price" style="color: var(--success);">FREE</span>
                                          @else
                                              @if($plan->cross_price)
-                                                 <span class="cross-price">₹{{ number_format($plan->cross_price, 2) }}</span>
+                                                 <span class="cross-price">
+                                                     @if(is_numeric($plan->cross_price))
+                                                         ₹{{ number_format($plan->cross_price, 2) }}
+                                                     @else
+                                                         {{ $plan->cross_price }}
+                                                     @endif
+                                                 </span>
                                              @endif
                                              <span class="active-price">
                                                  ₹{{ number_format($plan->price, 2) }}

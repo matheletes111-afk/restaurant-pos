@@ -339,7 +339,7 @@
                                     <a href="{{ route('restaurant.analytics', $rest->id) }}"
                                        class="btn btn-sm btn-primary"
                                        title="Analytics">
-                                        <i class="fa fa-handshake"></i>
+                                        <i class="fas fa-chart-line"></i>
                                     </a>
 
                                     <a href="{{ route('manage.restaurant.show.plans', $rest->id) }}" class="btn btn-sm btn-info" title="Assign Plans">
