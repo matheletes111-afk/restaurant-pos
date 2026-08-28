@@ -149,31 +149,56 @@ private function processPaidPlan($user, $plan, $request)
         $razorpayCustomer = RazorpayCustomer::where('user_id', $user->id)->first();
         
         if (!$razorpayCustomer) {
-            // Check if customer exists in Razorpay
-            $customers = $this->razorpay->customer->all([
-                'email' => $user->email,
-                'count' => 1
-            ]);
+            $cust_id = null;
+            if (!empty($user->email)) {
+                try {
+                    // Check if customer exists in Razorpay
+                    $customers = $this->razorpay->customer->all([
+                        'email' => $user->email,
+                        'count' => 1
+                    ]);
 
-            if (count($customers['items']) > 0) {
-                $cust_id = $customers['items'][0]['id'];
-            } else {
+                    if (count($customers['items']) > 0) {
+                        $cust_id = $customers['items'][0]['id'];
+                        // Update details in Razorpay
+                        $this->razorpay->customer->fetch($cust_id)->edit([
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'contact' => $user->phone ?? auth()->user()->phone ?? '9999999999'
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Razorpay Customer Search/Update Error: ' . $e->getMessage());
+                }
+            }
+
+            if (!$cust_id) {
                 // Create new customer in Razorpay
                 $customer = $this->razorpay->customer->create([
                     'name' => $user->name,
-                    'email' => $user->email,
-                    'contact' => $user->phone ?? '9999999999'
+                    'email' => $user->email ?? auth()->user()->email,
+                    'contact' => $user->phone ?? auth()->user()->phone ?? '9999999999'
                 ]);
                 $cust_id = $customer->id;
-
-                // Store in local DB
-                $razorpayCustomer = new RazorpayCustomer();
-                $razorpayCustomer->user_id = $user->id;
-                $razorpayCustomer->rzpay_customer_id = $cust_id;
-                $razorpayCustomer->save();
             }
+
+            // Store in local DB
+            $razorpayCustomer = new RazorpayCustomer();
+            $razorpayCustomer->user_id = $user->id;
+            $razorpayCustomer->rzpay_customer_id = $cust_id;
+            $razorpayCustomer->save();
         } else {
             $cust_id = $razorpayCustomer->rzpay_customer_id;
+            // Always update customer details on Razorpay to keep them fresh
+            try {
+                $this->razorpay->customer->fetch($cust_id)->edit([
+                    'name' => $user->name,
+                    'email' => $user->email ?? auth()->user()->email,
+                    'contact' => $user->phone ?? auth()->user()->phone ?? '9999999999'
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Razorpay Customer Always-Update Error: ' . $e->getMessage());
+            }
         }
 
         // 2. Check for existing subscription
@@ -572,10 +597,10 @@ private function calculateProrationForRefund($subscription, $oldPlan)
     private function getTotalCount($billingCycle)
     {
         switch ($billingCycle) {
-            case 'monthly': return 12;
-            case 'quarterly': return 4;
-            case 'half-yearly': return 2;
-            default: return 1; // yearly
+            case 'monthly': return 24;       // 2 years
+            case 'quarterly': return 8;       // 2 years
+            case 'half-yearly': return 4;     // 2 years
+            default: return 1;                // 1 year
         }
     }
 

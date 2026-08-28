@@ -464,7 +464,7 @@
   </ul>
 </div>
 <!-- [Mobile Media Block end] -->
-<div class="ms-auto">
+{{-- <div class="ms-auto">
   <ul class="list-unstyled">
     <li class="dropdown pc-h-item">
       <a
@@ -574,6 +574,6 @@
       </div>
     </li>
   </ul>
-</div>
+</div> --}}
  </div>
 </header>

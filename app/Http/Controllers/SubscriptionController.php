@@ -156,20 +156,35 @@ class SubscriptionController extends Controller
             $razorpayCustomer = RazorpayCustomer::where('user_id', $owner->id)->first();
             
             if (!$razorpayCustomer) {
-                // Check if customer exists in Razorpay
-                $customers = $this->razorpay->customer->all([
-                    'email' => $owner->email,
-                    'count' => 1
-                ]);
+                $cust_id = null;
+                if (!empty($owner->email)) {
+                    try {
+                        // Check if customer exists in Razorpay
+                        $customers = $this->razorpay->customer->all([
+                            'email' => $owner->email,
+                            'count' => 1
+                        ]);
 
-                if (count($customers['items']) > 0) {
-                    $cust_id = $customers['items'][0]['id'];
-                } else {
+                        if (count($customers['items']) > 0) {
+                            $cust_id = $customers['items'][0]['id'];
+                            // Update details in Razorpay
+                            $this->razorpay->customer->fetch($cust_id)->edit([
+                                'name' => $owner->name,
+                                'email' => $owner->email,
+                                'contact' => $owner->phone ?? auth()->user()->phone ?? '9999999999'
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Razorpay Customer Search/Update Error: ' . $e->getMessage());
+                    }
+                }
+
+                if (!$cust_id) {
                     // Create new customer in Razorpay
                     $customer = $this->razorpay->customer->create([
                         'name' => $owner->name,
-                        'email' => $owner->email,
-                        'contact' => $owner->phone ?? '9999999999'
+                        'email' => $owner->email ?? auth()->user()->email,
+                        'contact' => $owner->phone ?? auth()->user()->phone ?? '9999999999'
                     ]);
                     $cust_id = $customer->id;
                 }
@@ -181,6 +196,16 @@ class SubscriptionController extends Controller
                 $razorpayCustomer->save();
             } else {
                 $cust_id = $razorpayCustomer->rzpay_customer_id;
+                // Always update customer details on Razorpay to keep them fresh
+                try {
+                    $this->razorpay->customer->fetch($cust_id)->edit([
+                        'name' => $owner->name,
+                        'email' => $owner->email ?? auth()->user()->email,
+                        'contact' => $owner->phone ?? auth()->user()->phone ?? '9999999999'
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Razorpay Customer Always-Update Error: ' . $e->getMessage());
+                }
             }
 
             // 2. Check for existing subscription
@@ -876,10 +901,10 @@ public function paymentSuccess(Request $request)
     private function getTotalCount($billingCycle)
     {
         switch ($billingCycle) {
-            case 'monthly': return 12;
-            case 'quarterly': return 4;
-            case 'half-yearly': return 2;
-            default: return 1; // yearly
+            case 'monthly': return 24;       // 2 years
+            case 'quarterly': return 8;       // 2 years
+            case 'half-yearly': return 4;     // 2 years
+            default: return 1;                // 1 year
         }
     }
 

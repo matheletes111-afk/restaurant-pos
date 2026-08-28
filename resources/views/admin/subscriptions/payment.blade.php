@@ -186,12 +186,8 @@
             "description": "Subscription for {{ $plan->name }}",
             "prefill": {
                 "name": "{{ $user->name }}",
-                "email": "{{ $user->email }}",
-                "contact": "{{ $user->phone ?? '9999999999' }}"
-            },
-            "readonly": {
-                "contact": true,
-                "email": true
+                "email": "{{ $user->email ?? auth()->user()->email ?? '' }}",
+                "contact": "{{ $user->phone ?? auth()->user()->phone ?? '' }}"
             },
             "theme": {
                 "color": "#F37254"
