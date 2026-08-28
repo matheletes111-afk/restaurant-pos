@@ -464,10 +464,10 @@
   </ul>
 </div>
 <!-- [Mobile Media Block end] -->
-{{-- <div class="ms-auto">
+<div class="ms-auto">
   <ul class="list-unstyled">
     <li class="dropdown pc-h-item">
-      <a
+      {{-- <a
         class="pc-head-link dropdown-toggle arrow-none me-0"
         data-bs-toggle="dropdown"
         href="#"
@@ -476,7 +476,7 @@
         aria-expanded="false"
       >
         <i class="ti ti-mail"></i>
-      </a>
+      </a> --}}
       <div class="dropdown-menu dropdown-notification dropdown-menu-end pc-h-dropdown">
         <div class="dropdown-header d-flex align-items-center justify-content-between">
           <h5 class="m-0">Message</h5>
@@ -574,6 +574,6 @@
       </div>
     </li>
   </ul>
-</div> --}}
+</div>
  </div>
 </header>
