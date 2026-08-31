@@ -32,13 +32,7 @@ class RedirectIfAuthenticated
                     
                     $active = DB::table('subscriptions')
                         ->where('user_id', $user->restaurant_id)
-                        ->where(function($query) {
-                            $query->where('status', 'active')
-                                  ->orWhere(function($q) {
-                                      $q->where('status', 'completed')
-                                        ->whereDate('end_date', '>=', now());
-                                  });
-                        })
+                        ->whereIn('status', ['active', 'completed'])
                         ->first();
                         
                     if (@$active == "") {

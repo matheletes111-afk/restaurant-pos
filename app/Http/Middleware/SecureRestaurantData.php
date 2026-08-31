@@ -38,6 +38,10 @@ class SecureRestaurantData
         $modelMapping = [
             'restaurant-staff' => ['table' => 'users', 'column' => 'id', 'restro_col' => 'restaurant_id'],
             'manage-menu-category' => ['table' => 'category', 'column' => 'id', 'restro_col' => 'restaurant_id'],
+            'manage-category/manage-food-items/delete-sub-category' => ['table' => 'sub_category', 'column' => 'id', 'restro_col' => 'restaurant_id'],
+            'manage-category/manage-food-items/status-sub-category' => ['table' => 'sub_category', 'column' => 'id', 'restro_col' => 'restaurant_id'],
+            'manage-category/manage-food-items' => ['table' => 'category', 'column' => 'id', 'restro_col' => 'restaurant_id'],
+            'manage-category/bulk-upload-template' => ['table' => 'category', 'column' => 'id', 'restro_col' => 'restaurant_id'],
             'manage-category' => ['table' => 'sub_category', 'column' => 'id', 'restro_col' => 'restaurant_id'],
             'table-manage' => ['table' => 'table_management', 'column' => 'id', 'restro_col' => 'restaurant_id'],
             'products' => ['table' => 'products', 'column' => 'id', 'restro_col' => 'restaurant_id'],
