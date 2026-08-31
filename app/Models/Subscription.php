@@ -48,12 +48,6 @@ class Subscription extends Model
 
     public function scopeActive($query)
     {
-        return $query->where(function($q) {
-            $q->where('status', 'active')
-              ->orWhere(function($sq) {
-                  $sq->where('status', 'completed')
-                     ->whereDate('end_date', '>=', now());
-              });
-        });
+        return $query->whereIn('status', ['active', 'completed']);
     }
 }
