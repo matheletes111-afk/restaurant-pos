@@ -1,8 +1,10 @@
 name: Deploy to VPS
 
+# Disabled auto-trigger on push: this workflow deploys to /var/www/restaurant,
+# which was retired (billnbite.cloud now redirects to billnbite.com). It was
+# failing on every push to main. Kept as workflow_dispatch in case it's ever
+# needed again for that folder.
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:  # Allows manual trigger
 
 jobs:
