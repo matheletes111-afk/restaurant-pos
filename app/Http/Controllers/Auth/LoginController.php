@@ -48,7 +48,7 @@ class LoginController extends Controller
 
     public function customLogin(Request $request)
     {
-       $userDataEmail=User::where('email',$request->email)->where('status','A')->first();
+       $userDataEmail=User::where('email',$request->email)->whereIn('status',['A','Active'])->first();
         // return $request;
         if ($userDataEmail) {
            if (!\Hash::check($request->password,$userDataEmail->password)) {
