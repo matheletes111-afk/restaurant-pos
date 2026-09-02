@@ -116,9 +116,11 @@
                 </td>
                 <td class="company-info">
                     <span class="title" style="font-size: 24px; display: block; margin-bottom: 5px;">INVOICE</span>
-                    <strong>Bill & Bite POS</strong><br>
-                    Siliguri, India<br>
-                    Email: info@billnbite.com
+                    <strong>SRV Technology</strong><br>
+                    B.T Ranadeep Colony, Matigara<br>
+                    Siliguri - 734010, West Bengal, India.<br>
+                    Contact : info@billnbite.com<br>
+                    GSTIN: 19AEKFS8887F1Z4
                 </td>
             </tr>
         </table>

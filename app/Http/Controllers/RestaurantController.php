@@ -25,16 +25,21 @@ class RestaurantController extends Controller
             ->orderBy('id', 'desc');
 
         // Apply filters
-        // 1. Keyword search (restaurant name, owner name, owner email, owner phone, address, pincode, gstin, fssai)
+        // 1. Keyword search (restaurant ID, unique code, restaurant name, owner name, owner email, owner phone, address, pincode, gstin, fssai)
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $search = trim($request->search);
+            $cleanSearch = ltrim($search, '#');
+            $query->where(function($q) use ($search, $cleanSearch) {
                 $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('id', $cleanSearch)
+                  ->orWhere('id', 'like', "%{$cleanSearch}%")
+                  ->orWhere('restaurant_id_unique', 'like', "%{$search}%")
+                  ->orWhere('restaurant_id_unique', 'like', "%{$cleanSearch}%")
                   ->orWhere('address', 'like', "%{$search}%")
                   ->orWhere('pincode', 'like', "%{$search}%")
                   ->orWhere('gstin', 'like', "%{$search}%")
                   ->orWhere('fssai_number', 'like', "%{$search}%")
-                  ->orWhereHas('owner', function($uq) use ($search) {
+                  ->orWhereHas('owner', function($uq) use ($search, $cleanSearch) {
                       $uq->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
                         ->orWhere('phone', 'like', "%{$search}%");
@@ -96,6 +101,7 @@ class RestaurantController extends Controller
         ];
 
         $columns = [
+            'Restaurant ID',
             'Restaurant Name', 
             'Address', 
             'Pincode', 
@@ -119,6 +125,7 @@ class RestaurantController extends Controller
                 $statusText = $rest->status == 'A' ? 'Active' : 'Inactive';
 
                 fputcsv($file, [
+                    $rest->restaurant_id_unique ?? ('BILL-BITE-' . str_pad($rest->id, 3, '0', STR_PAD_LEFT)),
                     $rest->name,
                     $rest->address,
                     $rest->pincode,
