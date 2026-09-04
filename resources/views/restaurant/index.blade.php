@@ -451,7 +451,7 @@
                 <!-- Filters Section -->
                 <div class="filter-card mb-4" style="background: #F8FAFC; border-radius: 12px; padding: 18px; border: 1px solid #E2E8F0;">
                     <form method="GET" action="{{ route('manage.restaurant') }}" id="filterForm" class="row g-3 align-items-end">
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label font-weight-bold" style="font-size: 0.85rem; color: var(--dark);">Keyword Search</label>
                             <input type="text" name="search" class="form-control shadow-none" placeholder="Search ID, name, owner, phone..." value="{{ request('search') }}">
                         </div>
@@ -463,7 +463,7 @@
                                 <option value="I" {{ request('status') === 'I' ? 'selected' : '' }}>Inactive</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <label class="form-label font-weight-bold" style="font-size: 0.85rem; color: var(--dark);">Plan</label>
                             <select name="plan_id" class="form-control shadow-none">
                                 <option value="all">All Plans</option>
@@ -473,21 +473,39 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label font-weight-bold" style="font-size: 0.85rem; color: var(--dark);">From Date</label>
+                        <div class="col-md-3 d-flex gap-2 justify-content-end" style="gap: 8px;">
+                            <button type="submit" class="btn btn-primary w-50" title="Apply Filters" style="height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 10px; gap: 6px;">
+                                <i class="fa fa-filter"></i> <span>Filter</span>
+                            </button>
+                            <a href="{{ route('manage.restaurant') }}" class="btn btn-secondary w-50" title="Reset Filters" style="border-radius: 10px; background-color: #e2e8f0; color: #475569; border: none; display: flex; align-items: center; justify-content: center; height: 42px; gap: 6px;">
+                                <i class="fa fa-sync-alt"></i> <span>Reset</span>
+                            </a>
+                        </div>
+
+                        <!-- Date Range Filters -->
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold" style="font-size: 0.85rem; color: var(--dark);">
+                                <i class="far fa-clock text-muted me-1"></i> Reg. From Date
+                            </label>
                             <input type="date" name="from_date" class="form-control shadow-none" value="{{ request('from_date') }}">
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label font-weight-bold" style="font-size: 0.85rem; color: var(--dark);">To Date</label>
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold" style="font-size: 0.85rem; color: var(--dark);">
+                                <i class="far fa-clock text-muted me-1"></i> Reg. To Date
+                            </label>
                             <input type="date" name="to_date" class="form-control shadow-none" value="{{ request('to_date') }}">
                         </div>
-                        <div class="col-md-1 d-flex gap-2 justify-content-end" style="gap: 5px;">
-                            <button type="submit" class="btn btn-primary px-3" title="Apply Filters" style="height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
-                                <i class="fa fa-filter"></i>
-                            </button>
-                            <a href="{{ route('manage.restaurant') }}" class="btn btn-secondary px-3" title="Reset Filters" style="border-radius: 10px; background-color: #e2e8f0; color: #475569; border: none; display: flex; align-items: center; justify-content: center; height: 42px;">
-                                <i class="fa fa-sync-alt"></i>
-                            </a>
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold" style="font-size: 0.85rem; color: var(--dark);">
+                                <i class="far fa-calendar-alt text-muted me-1"></i> Plan Start From
+                            </label>
+                            <input type="date" name="sub_from_date" class="form-control shadow-none" value="{{ request('sub_from_date') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold" style="font-size: 0.85rem; color: var(--dark);">
+                                <i class="far fa-calendar-alt text-muted me-1"></i> Plan Start To
+                            </label>
+                            <input type="date" name="sub_to_date" class="form-control shadow-none" value="{{ request('sub_to_date') }}">
                         </div>
                     </form>
                 </div>
@@ -536,6 +554,11 @@
                                                 @endif
                                             </div>
                                         @endif
+                                        @if($rest->created_at)
+                                            <div class="mt-1" style="font-size: 0.74rem; color: #64748b;">
+                                                <i class="far fa-clock text-secondary me-1"></i><strong>Created:</strong> {{ $rest->created_at->format('d M Y, h:i A') }}
+                                            </div>
+                                        @endif
                                     </div>
                                 </td>
 
@@ -567,25 +590,32 @@
                                             $badgeClass = $isActive ? 'plan-badge-active' : 'plan-badge-expired';
                                         @endphp
                                         <div class="d-flex flex-column align-items-start">
-                                            <a href="javascript:void(0)" class="badge {{ $badgeClass }} showPlanDetailsBtn"
+                                            <a href="javascript:void(0)" class="badge {{ $badgeClass }} showPlanDetailsBtn mb-1"
                                                data-sub-id="{{ $sub->id }}"
                                                data-plan-name="{{ $plan->name }}"
                                                data-plan-price="{{ $plan->price }}"
                                                data-sub-status="{{ $sub->status }}"
-                                               data-start-date="{{ $sub->start_date ? $sub->start_date->format('Y-m-d H:i') : 'N/A' }}"
-                                               data-end-date="{{ $sub->end_date ? $sub->end_date->format('Y-m-d H:i') : 'N/A' }}"
+                                               data-start-date="{{ $sub->start_date ? $sub->start_date->format('d M Y, h:i A') : 'N/A' }}"
+                                               data-end-date="{{ $sub->end_date ? $sub->end_date->format('d M Y, h:i A') : 'N/A' }}"
                                                data-payment-amount="{{ $payment ? $payment->amount : 'N/A' }}"
                                                data-payment-method="{{ $payment ? $payment->payment_method : 'N/A' }}"
                                                data-payment-status="{{ $payment ? $payment->status : 'N/A' }}"
                                                data-payment-id="{{ $payment ? $payment->razorpay_payment_id : 'N/A' }}"
-                                               data-payment-date="{{ $payment ? $payment->created_at->format('Y-m-d H:i') : 'N/A' }}"
+                                               data-payment-date="{{ $payment && $payment->created_at ? $payment->created_at->format('d M Y, h:i A') : 'N/A' }}"
                                                title="View Subscription & Payment Details">
                                                 <i class="fas fa-crown" style="font-size: 0.68rem;"></i> {{ $plan->name }} @if(!$isActive) (Expired) @endif
                                             </a>
-                                            <div class="small mt-1" style="font-size: 0.75rem; color: #64748b;">
-                                                <span class="fw-semibold text-dark">₹{{ number_format($plan->price, 0) }}</span>
-                                                @if($sub->end_date)
-                                                    <span class="ms-1">• Exp: {{ \Carbon\Carbon::parse($sub->end_date)->format('d M Y') }}</span>
+                                            <div class="small mt-1" style="font-size: 0.76rem; color: #475569; line-height: 1.45;">
+                                                <div class="fw-semibold text-dark">₹{{ number_format($plan->price, 2) }}</div>
+                                                @if($sub->start_date || $sub->end_date)
+                                                    <div class="mt-1 d-flex flex-column gap-1" style="font-size: 0.74rem;">
+                                                        @if($sub->start_date)
+                                                            <span class="text-muted"><i class="far fa-calendar-check text-success me-1"></i><strong>Start:</strong> {{ \Carbon\Carbon::parse($sub->start_date)->format('d M Y') }}</span>
+                                                        @endif
+                                                        @if($sub->end_date)
+                                                            <span class="text-muted"><i class="far fa-calendar-times {{ $isExpired ? 'text-danger' : 'text-primary' }} me-1"></i><strong>End:</strong> {{ \Carbon\Carbon::parse($sub->end_date)->format('d M Y') }}</span>
+                                                        @endif
+                                                    </div>
                                                 @endif
                                             </div>
                                         </div>
@@ -1008,8 +1038,8 @@ $(document).ready(function () {
     // Initialize Tooltips
     $('[title]').tooltip();
 
-    // Show plan details button handler
-    $('.showPlanDetailsBtn').on('click', function () {
+    // Show plan details button handler (delegated for DataTable pagination)
+    $(document).on('click', '.showPlanDetailsBtn', function () {
         const subId = $(this).data('sub-id');
         const planName = $(this).data('plan-name');
         const planPrice = $(this).data('plan-price');
@@ -1066,12 +1096,12 @@ $(document).ready(function () {
     });
 
     // Dismiss plan details modal manually
-    $('#planDetailsModal').on('click', '[data-dismiss="modal"]', function() {
+    $(document).on('click', '#planDetailsModal [data-dismiss="modal"]', function() {
         $('#planDetailsModal').modal('hide');
     });
 
-    // Edit button handler
-    $('.editBtn').on('click', function () {
+    // Edit button handler (delegated for DataTable pagination)
+    $(document).on('click', '.editBtn', function () {
         $('#edit_id').val($(this).data('id'));
         $('#edit_owner_id').val($(this).data('owner_id'));
         $('#edit_restaurant_name').val($(this).data('restaurant_name'));

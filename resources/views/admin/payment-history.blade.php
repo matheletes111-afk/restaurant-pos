@@ -5,7 +5,6 @@
     @include('includes.style')
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <style>
         .stats-card {
             background: white;
@@ -86,13 +85,6 @@
         .table td {
             vertical-align: middle;
         }
-        .modal-header .close {
-            color: white;
-            opacity: 0.8;
-        }
-        .modal-header .close:hover {
-            opacity: 1;
-        }
         .badge-auto-renew-yes {
             background: #10b981;
             color: white;
@@ -129,7 +121,7 @@
                                 <h5 class="m-b-10">Payment History</h5>
                             </div>
                             <ul class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="">Home</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
                                 <li class="breadcrumb-item" aria-current="page">Payment History</li>
                             </ul>
                         </div>
@@ -137,9 +129,6 @@
                 </div>
             </div>
             <!-- Breadcrumb end -->
-
-            <!-- Statistics Cards -->
-
 
             <div class="row">
                 <div class="col-sm-12">
@@ -159,7 +148,7 @@
                                         <label class="form-label">To Date</label>
                                         <input type="date" name="to_date" class="form-control" value="{{ request('to_date') }}">
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-3">
                                         <label class="form-label">Restaurant</label>
                                         <select name="restaurant_id" class="form-control">
                                             <option value="">All Restaurants</option>
@@ -170,7 +159,7 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-3">
                                         <label class="form-label">Plan</label>
                                         <select name="plan_id" class="form-control">
                                             <option value="">All Plans</option>
@@ -192,8 +181,8 @@
 
                             @include('includes.message')
                             
-                            <div class="dt-responsive table-responsive">
-                                <table id="paymentTable" class="table table-striped table-bordered nowrap">
+                            <div class="table-responsive">
+                                <table id="paymentTable" class="table table-hover table-striped table-bordered align-middle mb-0">
                                     <thead>
                                         <tr>
                                             <th>ID</th>
@@ -219,34 +208,34 @@
                                             }
                                         @endphp
                                         <tr>
-                                            <td>{{ $payment->id }}</div>
+                                            <td><strong>#{{ $payment->id }}</strong></td>
                                             <td>
                                                 <strong>{{ $restaurantName }}</strong>
                                                 <br>
                                                 <small class="text-muted">Owner: {{ $restaurantOwner }}</small>
-                                             </div>
-                                            <td>{{ $payment->plan->name ?? 'N/A' }}</div>
+                                            </td>
+                                            <td>{{ $payment->plan->name ?? 'N/A' }}</td>
                                             <td>
                                                 <strong>₹{{ number_format($payment->amount ?? 0, 2) }}</strong>
                                                 <br>
                                                 <small class="text-muted">{{ $payment->currency ?? 'INR' }}</small>
-                                             </div>
+                                            </td>
                                             <td>
                                                 <span class="payment-id">{{ $payment->razorpay_payment_id ?? 'N/A' }}</span>
-                                             </div>
+                                            </td>
                                             <td>
                                                 <span class="payment-status status-{{ $payment->status }}">
                                                     {{ ucfirst($payment->status) }}
                                                 </span>
-                                             </div>
-                                            <td>{{ $payment->created_at->format('d M Y, h:i A') }}</div>
+                                            </td>
+                                            <td>{{ $payment->created_at->format('d M Y, h:i A') }}</td>
                                             <td>
-                                                <button class="btn btn-sm btn-info view-btn" 
+                                                <button class="btn btn-sm btn-info view-btn text-white" 
                                                         data-id="{{ $payment->id }}"
                                                         title="View Details">
-                                                    <i class="fas fa-eye"></i>
+                                                    <i class="fas fa-eye me-1"></i> View
                                                 </button>
-                                             </div>
+                                            </td>
                                         </tr>
                                         @empty
                                         <tr>
@@ -256,7 +245,7 @@
                                                     <h5 class="mt-3">No Payment Records Found</h5>
                                                     <p class="text-muted">No payment transactions match your criteria.</p>
                                                 </div>
-                                            </div>
+                                            </td>
                                         </tr>
                                         @endforelse
                                     </tbody>
@@ -265,7 +254,7 @@
 
                             <!-- Pagination -->
                             @if($payments->hasPages())
-                                <div class="mt-4 d-flex justify-content-end">
+                                <div class="mt-4 pt-3 border-top">
                                     {{ $payments->appends(request()->query())->links() }}
                                 </div>
                             @endif
@@ -284,47 +273,39 @@
                     <h5 class="modal-title text-white" id="viewModalLabel">
                         <i class="fas fa-receipt me-2"></i> Payment Details
                     </h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                        <span>&times;</span>
-                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" id="modalContent">
                     <div class="text-center py-4">
                         <div class="spinner-border text-primary" role="status">
-                            <span class="sr-only">Loading...</span>
+                            <span class="visually-hidden">Loading...</span>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
     </div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+@include('includes.script')
 
 <script>
     $(document).ready(function() {
-        $('#paymentTable').DataTable({
-            order: [[0, 'desc']],
-            responsive: true,
-            pageLength: 15,
-            language: {
-                search: "Search:",
-                lengthMenu: "Show _MENU_ entries",
-                info: "Showing _START_ to _END_ of _TOTAL_ entries"
-            }
-        });
-
         // View Details
-        $('.view-btn').on('click', function() {
+        $(document).on('click', '.view-btn', function() {
             let id = $(this).data('id');
             
-            $('#modalContent').html('<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="sr-only">Loading...</span></div></div>');
-            $('#viewModal').modal('show');
+            $('#modalContent').html('<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+            
+            let modalEl = document.getElementById('viewModal');
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            } else {
+                $('#viewModal').modal('show');
+            }
             
             $.ajax({
                 url: "{{ url('admin/payment-history') }}/" + id,
@@ -493,23 +474,7 @@
                 }
             });
         });
-        
-        // Close modal button - using Bootstrap's modal methods
-        // Method 1: Close via data-dismiss (already works with proper Bootstrap JS)
-        // Method 2: Manual close if needed
-        $('.close, [data-dismiss="modal"]').on('click', function() {
-            $('#viewModal').modal('hide');
-        });
-        
-        // Optional: Close modal when clicking outside (default Bootstrap behavior)
-        $('#viewModal').on('click', function(e) {
-            if (e.target === this) {
-                $(this).modal('hide');
-            }
-        });
     });
 </script>
-    
-    @include('includes.script')
 </body>
 </html>
