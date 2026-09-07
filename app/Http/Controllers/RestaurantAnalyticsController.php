@@ -5,18 +5,37 @@ namespace App\Http\Controllers;
 use App\Models\OrderManage;
 use App\Models\OrderItems;
 use App\Models\Category;
-use App\Models\Subcategory;
+use App\Models\SubCategory;
 use App\Models\TableManage;
+use App\Models\RestaurantMaster;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class RestaurantAnalyticsController extends Controller
 {
-    public function dashboard($id)
+    /**
+     * Helper to resolve valid restaurant ID
+     */
+    private function resolveRestaurantId($id = null)
     {
-        $restaurantId = $id;
-        
+        if ($id && is_numeric($id)) {
+            return (int) $id;
+        }
+
+        if (auth()->check() && auth()->user()->restaurant_id) {
+            return (int) auth()->user()->restaurant_id;
+        }
+
+        $firstRest = RestaurantMaster::first();
+        return $firstRest ? (int) $firstRest->id : 0;
+    }
+
+    public function dashboard($id = null)
+    {
+        $restaurantId = $this->resolveRestaurantId($id);
+        $restaurant = RestaurantMaster::find($restaurantId);
+
         // Today's date range
         $today = Carbon::today();
         $startOfMonth = Carbon::now()->startOfMonth();
@@ -61,7 +80,7 @@ class RestaurantAnalyticsController extends Controller
         
         // Category and Dish Statistics
         $totalCategories = Category::where('restaurant_id', $restaurantId)->count();
-        $totalDishes = Subcategory::where('restaurant_id', $restaurantId)->count();
+        $totalDishes = SubCategory::where('restaurant_id', $restaurantId)->count();
         
         // Table Statistics
         $totalTables = TableManage::where('restaurant_id', $restaurantId)->count();
@@ -76,10 +95,8 @@ class RestaurantAnalyticsController extends Controller
                 DB::raw('SUM(total_amount) as total_revenue'),
                 DB::raw('COUNT(DISTINCT order_id) as order_count')
             )
-            ->whereHas('order', function($q) use ($restaurantId) {
-                $q->where('restaurant_id', $restaurantId)
-                  ->where('created_at', '>=', Carbon::now()->subDays(7));
-            })
+            ->where('restaurant_id', $restaurantId)
+            ->where('created_at', '>=', Carbon::now()->subDays(7))
             ->with('subcategory')
             ->groupBy('subcategory_id')
             ->orderByDesc('total_quantity')
@@ -120,6 +137,7 @@ class RestaurantAnalyticsController extends Controller
             ->get();
         
         return view('restaurant.analytics', compact(
+            'restaurant',
             'restaurantId',
             'totalRevenue',
             'totalOrders',
@@ -141,14 +159,15 @@ class RestaurantAnalyticsController extends Controller
         ));
     }
     
-    public function filter(Request $request, $id)
+    public function filter(Request $request, $id = null)
     {
         $request->validate([
             'from_date' => 'required|date',
             'to_date' => 'required|date|after_or_equal:from_date',
         ]);
         
-        $restaurantId = $id;
+        $restaurantId = $this->resolveRestaurantId($id);
+        $restaurant = RestaurantMaster::find($restaurantId);
         $fromDate = Carbon::parse($request->from_date);
         $toDate = Carbon::parse($request->to_date)->endOfDay();
         
@@ -179,10 +198,8 @@ class RestaurantAnalyticsController extends Controller
                 DB::raw('SUM(total_amount) as total_revenue'),
                 DB::raw('COUNT(DISTINCT order_id) as order_count')
             )
-            ->whereHas('order', function($q) use ($restaurantId, $fromDate, $toDate) {
-                $q->where('restaurant_id', $restaurantId)
-                  ->whereBetween('created_at', [$fromDate, $toDate]);
-            })
+            ->where('restaurant_id', $restaurantId)
+            ->whereBetween('created_at', [$fromDate, $toDate])
             ->with('subcategory')
             ->groupBy('subcategory_id')
             ->orderByDesc('total_quantity')
@@ -216,11 +233,79 @@ class RestaurantAnalyticsController extends Controller
             ->groupBy('date')
             ->orderBy('date')
             ->get();
+
+        // Baseline Today / Month stats to ensure view always renders cleanly
+        $today = Carbon::today();
+        $startOfMonth = Carbon::now()->startOfMonth();
+        $endOfMonth = Carbon::now()->endOfMonth();
+
+        $totalRevenue = OrderManage::where('restaurant_id', $restaurantId)
+            ->whereIn('payment_status', ['PAID', 'MISCORDER'])
+            ->sum('amount_paid') ?? 0;
+            
+        $totalOrders = OrderManage::where('restaurant_id', $restaurantId)->count();
+
+        $todayRevenue = OrderManage::where('restaurant_id', $restaurantId)
+            ->whereIn('payment_status', ['PAID', 'MISCORDER'])
+            ->whereDate('created_at', $today)
+            ->sum('amount_paid') ?? 0;
+            
+        $todayOrders = OrderManage::where('restaurant_id', $restaurantId)
+            ->whereDate('created_at', $today)
+            ->count();
+            
+        $todayPaidOrders = OrderManage::where('restaurant_id', $restaurantId)
+            ->where('payment_status', 'PAID')
+            ->whereDate('created_at', $today)
+            ->count();
+            
+        $todayMiscOrders = OrderManage::where('restaurant_id', $restaurantId)
+            ->where('payment_status', 'MISCORDER')
+            ->whereDate('created_at', $today)
+            ->count();
+
+        $monthRevenue = OrderManage::where('restaurant_id', $restaurantId)
+            ->whereIn('payment_status', ['PAID', 'MISCORDER'])
+            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            ->sum('amount_paid') ?? 0;
+            
+        $monthOrders = OrderManage::where('restaurant_id', $restaurantId)
+            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            ->count();
+
+        $totalCategories = Category::where('restaurant_id', $restaurantId)->count();
+        $totalDishes = SubCategory::where('restaurant_id', $restaurantId)->count();
+        $totalTables = TableManage::where('restaurant_id', $restaurantId)->count();
+        $occupiedTables = TableManage::where('restaurant_id', $restaurantId)
+            ->where('table_status', 'OCCUPIED')
+            ->count();
+
+        $trendingDishes = $filteredTrendingDishes;
+        $recentOrders = $filteredOrdersList;
+        $paymentMethods = $filteredPaymentMethods;
+        $dailyRevenue = $filteredDailyRevenue;
         
         return view('restaurant.analytics', compact(
+            'restaurant',
             'restaurantId',
             'fromDate',
             'toDate',
+            'totalRevenue',
+            'totalOrders',
+            'todayRevenue',
+            'todayOrders',
+            'todayPaidOrders',
+            'todayMiscOrders',
+            'monthRevenue',
+            'monthOrders',
+            'totalCategories',
+            'totalDishes',
+            'totalTables',
+            'occupiedTables',
+            'trendingDishes',
+            'recentOrders',
+            'paymentMethods',
+            'dailyRevenue',
             'filteredRevenue',
             'filteredOrders',
             'filteredPaidOrders',
@@ -232,9 +317,10 @@ class RestaurantAnalyticsController extends Controller
         ))->with('isFiltered', true);
     }
     
-    public function dailyRevenue($id)
+    public function dailyRevenue($id = null)
     {
-        $revenueData = OrderManage::where('restaurant_id', $id)
+        $restaurantId = $this->resolveRestaurantId($id);
+        $revenueData = OrderManage::where('restaurant_id', $restaurantId)
             ->whereIn('payment_status', ['PAID', 'MISCORDER'])
             ->where('created_at', '>=', Carbon::now()->subDays(30))
             ->select(
@@ -248,17 +334,16 @@ class RestaurantAnalyticsController extends Controller
         return response()->json($revenueData);
     }
     
-    public function topItems($id)
+    public function topItems($id = null)
     {
+        $restaurantId = $this->resolveRestaurantId($id);
         $topItems = OrderItems::select(
                 'subcategory_id',
                 DB::raw('SUM(quantity) as total_quantity'),
                 DB::raw('SUM(total_amount) as total_revenue')
             )
-            ->whereHas('order', function($q) use ($id) {
-                $q->where('restaurant_id', $id)
-                  ->where('created_at', '>=', Carbon::now()->subDays(7));
-            })
+            ->where('restaurant_id', $restaurantId)
+            ->where('created_at', '>=', Carbon::now()->subDays(7))
             ->with('subcategory')
             ->groupBy('subcategory_id')
             ->orderByDesc('total_quantity')

@@ -278,8 +278,8 @@
         <div class="page-header">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2 class="mb-2 text-white"><i class="fas fa-chart-line me-2"></i>Restaurant Analytics Dashboard</h2>
-                    <p class="mb-0 opacity-75">Comprehensive analytics and insights for restaurant performance</p>
+                    <h2 class="mb-2 text-white"><i class="fas fa-chart-line me-2"></i>{{ $restaurant->name ?? 'Restaurant' }} Analytics Dashboard</h2>
+                    <p class="mb-0 opacity-75">Comprehensive analytics and insights for {{ $restaurant->name ?? 'restaurant' }} performance</p>
                 </div>
                 
             </div>
@@ -575,7 +575,7 @@
                                                 </span>
                                             @endif
                                         </td>
-                                        <td>{{ $order->created_at->format('h:i A') }}</td>
+                                        <td>{{ $order->created_at ? $order->created_at->format('h:i A') : 'N/A' }}</td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -641,178 +641,183 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script>
 // Revenue Chart
-// Revenue Chart - Changed to Bar Graph
-const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-const revenueData = @json(isset($isFiltered) ? $filteredDailyRevenue : $dailyRevenue);
+const revenueCanvas = document.getElementById('revenueChart');
+if (revenueCanvas) {
+    const revenueCtx = revenueCanvas.getContext('2d');
+    const revenueData = @json(isset($isFiltered) ? $filteredDailyRevenue : $dailyRevenue);
 
-const revenueChart = new Chart(revenueCtx, {
-    type: 'bar',
-    data: {
-        labels: revenueData.map(item => {
-            // Format date to be more readable (e.g., "Jan 15")
-            const date = new Date(item.date);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }),
-        datasets: [{
-            label: 'Daily Revenue',
-            data: revenueData.map(item => item.revenue),
-            backgroundColor: revenueData.map((item, index) => {
-                // Gradient colors for better visualization
-                return index % 2 === 0 ? 'rgba(52, 152, 219, 0.8)' : 'rgba(41, 128, 185, 0.8)';
+    new Chart(revenueCtx, {
+        type: 'bar',
+        data: {
+            labels: (revenueData || []).map(item => {
+                const date = new Date(item.date);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             }),
-            borderColor: '#2980b9',
-            borderWidth: 1,
-            borderRadius: 6, // Rounded corners for bars
-            hoverBackgroundColor: '#3498db',
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false, // Hide legend for cleaner look
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        return 'Revenue: ₹' + context.parsed.y.toLocaleString();
-                    },
-                    afterLabel: function(context) {
-                        const item = revenueData[context.dataIndex];
-                        return `Orders: ${item.orders || 0}`;
-                    }
-                },
-                backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                titleFont: { size: 14 },
-                bodyFont: { size: 13 },
-                padding: 12,
-                cornerRadius: 6
-            }
+            datasets: [{
+                label: 'Daily Revenue',
+                data: (revenueData || []).map(item => item.revenue),
+                backgroundColor: (revenueData || []).map((item, index) => {
+                    return index % 2 === 0 ? 'rgba(52, 152, 219, 0.8)' : 'rgba(41, 128, 185, 0.8)';
+                }),
+                borderColor: '#2980b9',
+                borderWidth: 1,
+                borderRadius: 6,
+                hoverBackgroundColor: '#3498db',
+            }]
         },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: {
-                    color: 'rgba(0, 0, 0, 0.05)'
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false,
                 },
-                ticks: {
-                    callback: function(value) {
-                        return '₹' + value.toLocaleString();
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Revenue: ₹' + (context.parsed.y || 0).toLocaleString();
+                        },
+                        afterLabel: function(context) {
+                            const item = (revenueData || [])[context.dataIndex];
+                            return `Orders: ${item ? (item.orders || 0) : 0}`;
+                        }
                     },
-                    font: {
-                        size: 11
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    titleFont: { size: 14 },
+                    bodyFont: { size: 13 },
+                    padding: 12,
+                    cornerRadius: 6
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return '₹' + value.toLocaleString();
+                        },
+                        font: {
+                            size: 11
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Revenue (₹)',
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        }
                     }
                 },
-                title: {
-                    display: true,
-                    text: 'Revenue (₹)',
-                    font: {
-                        size: 12,
-                        weight: 'bold'
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 11
+                        },
+                        maxRotation: 45,
+                        minRotation: 45
                     }
                 }
             },
-            x: {
-                grid: {
-                    display: false
-                },
-                ticks: {
-                    font: {
-                        size: 11
-                    },
-                    maxRotation: 45,
-                    minRotation: 45
-                }
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
             }
-        },
-        interaction: {
-            intersect: false,
-            mode: 'index'
-        },
-        animation: {
-            duration: 1000,
-            easing: 'easeOutQuart'
         }
-    }
-});
+    });
+}
+
 // Payment Methods Chart
-const paymentCtx = document.getElementById('paymentMethodChart').getContext('2d');
-const paymentData = @json(isset($isFiltered) ? $filteredPaymentMethods : $paymentMethods);
+const paymentCanvas = document.getElementById('paymentMethodChart');
+if (paymentCanvas) {
+    const paymentCtx = paymentCanvas.getContext('2d');
+    const paymentData = @json(isset($isFiltered) ? $filteredPaymentMethods : $paymentMethods);
 
-const paymentChart = new Chart(paymentCtx, {
-    type: 'doughnut',
-    data: {
-        labels: paymentData.map(item => item.payment_method),
-        datasets: [{
-            data: paymentData.map(item => item.total),
-            backgroundColor: [
-                '#3498db',
-                '#2ecc71',
-                '#9b59b6',
-                '#e74c3c',
-                '#f39c12',
-                '#1abc9c'
-            ]
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'right',
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        const value = context.parsed;
-                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                        const percentage = Math.round((value / total) * 100);
-                        return `${context.label}: ₹${value.toLocaleString()} (${percentage}%)`;
+    new Chart(paymentCtx, {
+        type: 'doughnut',
+        data: {
+            labels: (paymentData || []).map(item => item.payment_method || 'Unknown'),
+            datasets: [{
+                data: (paymentData || []).map(item => item.total || 0),
+                backgroundColor: [
+                    '#3498db',
+                    '#2ecc71',
+                    '#9b59b6',
+                    '#e74c3c',
+                    '#f39c12',
+                    '#1abc9c'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                            return `${context.label}: ₹${value.toLocaleString()} (${percentage}%)`;
+                        }
                     }
                 }
             }
         }
-    }
-});
+    });
+}
 
-// Order Status Chart
-const statusCtx = document.getElementById('orderStatusChart').getContext('2d');
-const statusData = @json($orderStatus ?? []);
+// Order Status Chart (if present)
+const statusCanvas = document.getElementById('orderStatusChart');
+if (statusCanvas) {
+    const statusCtx = statusCanvas.getContext('2d');
+    const statusData = @json($orderStatus ?? []);
 
-const statusChart = new Chart(statusCtx, {
-    type: 'pie',
-    data: {
-        labels: statusData.map(item => item.payment_status),
-        datasets: [{
-            data: statusData.map(item => item.count),
-            backgroundColor: [
-                '#2ecc71', // PAID
-                '#f39c12', // PENDING
-                '#e74c3c', // MISCORDER
-                '#3498db', // Others
-                '#9b59b6'
-            ]
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'right',
+    new Chart(statusCtx, {
+        type: 'pie',
+        data: {
+            labels: (statusData || []).map(item => item.order_status || item.payment_status || 'Unknown'),
+            datasets: [{
+                data: (statusData || []).map(item => item.count || 0),
+                backgroundColor: [
+                    '#2ecc71',
+                    '#f39c12',
+                    '#e74c3c',
+                    '#3498db',
+                    '#9b59b6'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                }
             }
         }
-    }
-});
+    });
+}
 
 // Auto-refresh data every 5 minutes
 setTimeout(() => {
     window.location.reload();
-}, 300000); // 5 minutes
-
-
+}, 300000);
 </script>
 </body>
 </html>

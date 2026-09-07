@@ -25,16 +25,21 @@ class RestaurantController extends Controller
             ->orderBy('id', 'desc');
 
         // Apply filters
-        // 1. Keyword search (restaurant name, owner name, owner email, owner phone, address, pincode, gstin, fssai)
+        // 1. Keyword search (restaurant ID, unique code, restaurant name, owner name, owner email, owner phone, address, pincode, gstin, fssai)
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $search = trim($request->search);
+            $cleanSearch = ltrim($search, '#');
+            $query->where(function($q) use ($search, $cleanSearch) {
                 $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('id', $cleanSearch)
+                  ->orWhere('id', 'like', "%{$cleanSearch}%")
+                  ->orWhere('restaurant_id_unique', 'like', "%{$search}%")
+                  ->orWhere('restaurant_id_unique', 'like', "%{$cleanSearch}%")
                   ->orWhere('address', 'like', "%{$search}%")
                   ->orWhere('pincode', 'like', "%{$search}%")
                   ->orWhere('gstin', 'like', "%{$search}%")
                   ->orWhere('fssai_number', 'like', "%{$search}%")
-                  ->orWhereHas('owner', function($uq) use ($search) {
+                  ->orWhereHas('owner', function($uq) use ($search, $cleanSearch) {
                       $uq->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
                         ->orWhere('phone', 'like', "%{$search}%");
@@ -67,6 +72,18 @@ class RestaurantController extends Controller
             $query->whereDate('created_at', '<=', $request->to_date);
         }
 
+        // 5. Subscription date range filter by plan start_date
+        if ($request->filled('sub_from_date') || $request->filled('sub_to_date')) {
+            $query->whereHas('subscriptions', function($q) use ($request) {
+                if ($request->filled('sub_from_date')) {
+                    $q->whereDate('start_date', '>=', $request->sub_from_date);
+                }
+                if ($request->filled('sub_to_date')) {
+                    $q->whereDate('start_date', '<=', $request->sub_to_date);
+                }
+            });
+        }
+
         // Excel Export action
         if ($request->has('export') && $request->export == 'excel') {
             return $this->exportExcel($query->get());
@@ -96,6 +113,7 @@ class RestaurantController extends Controller
         ];
 
         $columns = [
+            'Restaurant ID',
             'Restaurant Name', 
             'Address', 
             'Pincode', 
@@ -105,6 +123,8 @@ class RestaurantController extends Controller
             'Owner Email', 
             'Owner Phone', 
             'Active Plan', 
+            'Plan Start Date',
+            'Plan End Date',
             'Status', 
             'Created At'
         ];
@@ -116,9 +136,12 @@ class RestaurantController extends Controller
             foreach ($restaurants as $rest) {
                 $sub = $rest->active_subscription ?? $rest->latest_subscription;
                 $planName = $sub && $sub->plan ? $sub->plan->name : 'No Plan';
+                $planStartDate = $sub && $sub->start_date ? \Carbon\Carbon::parse($sub->start_date)->format('Y-m-d') : '';
+                $planEndDate = $sub && $sub->end_date ? \Carbon\Carbon::parse($sub->end_date)->format('Y-m-d') : '';
                 $statusText = $rest->status == 'A' ? 'Active' : 'Inactive';
 
                 fputcsv($file, [
+                    $rest->restaurant_id_unique ?? ('BILL-BITE-' . str_pad($rest->id, 3, '0', STR_PAD_LEFT)),
                     $rest->name,
                     $rest->address,
                     $rest->pincode,
@@ -128,6 +151,8 @@ class RestaurantController extends Controller
                     $rest->owner->email ?? '',
                     $rest->owner->phone ?? '',
                     $planName,
+                    $planStartDate,
+                    $planEndDate,
                     $statusText,
                     $rest->created_at ? $rest->created_at->format('Y-m-d H:i') : ''
                 ]);

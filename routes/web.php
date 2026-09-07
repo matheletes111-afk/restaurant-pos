@@ -154,12 +154,12 @@ Route::get('/restaurant/table/{table_id}/{restaurant_id}', function($table_id,$r
 
 
     // Restaurant Analytics Dashboard
-    Route::get('/restaurant/analytics/{id}', [App\Http\Controllers\RestaurantAnalyticsController::class, 'dashboard'])->name('restaurant.analytics');
-    Route::post('/restaurant/analytics/filter/{id}', [App\Http\Controllers\RestaurantAnalyticsController::class, 'filter'])->name('restaurant.analytics.filter');
+    Route::get('/restaurant/analytics/{id?}', [App\Http\Controllers\RestaurantAnalyticsController::class, 'dashboard'])->name('restaurant.analytics');
+    Route::post('/restaurant/analytics/filter/{id?}', [App\Http\Controllers\RestaurantAnalyticsController::class, 'filter'])->name('restaurant.analytics.filter');
     
     // Restaurant API endpoints
-    Route::get('/api/restaurant/daily-revenue/{id}', [App\Http\Controllers\RestaurantAnalyticsController::class, 'dailyRevenue'])->name('restaurant.daily.revenue');
-    Route::get('/api/restaurant/top-items/{id}', [App\Http\Controllers\RestaurantAnalyticsController::class, 'topItems'])->name('restaurant.top.items');
+    Route::get('/api/restaurant/daily-revenue/{id?}', [App\Http\Controllers\RestaurantAnalyticsController::class, 'dailyRevenue'])->name('restaurant.daily.revenue');
+    Route::get('/api/restaurant/top-items/{id?}', [App\Http\Controllers\RestaurantAnalyticsController::class, 'topItems'])->name('restaurant.top.items');
     
 
 
