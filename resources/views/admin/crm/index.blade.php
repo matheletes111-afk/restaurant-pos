@@ -591,15 +591,34 @@
                         <h2 class="crm-header-title">Admin CRM Control Deck</h2>
                     </div>
                 </div>
-                <div class="d-flex gap-2" style="gap: 10px;">
-                    <a href="{{ route('admin.crm.index', array_merge(request()->all(), ['export' => 'excel'])) }}" class="btn btn-success" style="border-radius: 30px; background: linear-gradient(135deg, #28a745, #218838); border: none; padding: 12px 28px; font-weight: 700; color: white; display: inline-flex; align-items: center; gap: 8px;">
+                <div class="d-flex gap-2 flex-wrap" style="gap: 10px;">
+                    <button type="button" class="btn btn-info text-white" style="border-radius: 30px; background: linear-gradient(135deg, #0284c7, #0369a1); border: none; padding: 12px 24px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.25);" data-bs-toggle="modal" data-bs-target="#bulkUploadLeadModal">
+                        <i class="fa-solid fa-file-import"></i> Bulk Upload Leads
+                    </button>
+                    <a href="{{ route('admin.crm.index', array_merge(request()->all(), ['export' => 'excel'])) }}" class="btn btn-success" style="border-radius: 30px; background: linear-gradient(135deg, #28a745, #218838); border: none; padding: 12px 24px; font-weight: 700; color: white; display: inline-flex; align-items: center; gap: 8px;">
                         <i class="fa-solid fa-file-excel"></i> Download Full Lead
                     </a>
-                    <button type="button" class="btn btn-primary" style="border-radius: 30px; background: linear-gradient(135deg, #ff6a00, #ff8c42); border: none; padding: 12px 28px; font-weight: 700; box-shadow: 0 4px 15px rgba(255, 106, 0, 0.2);" data-bs-toggle="modal" data-bs-target="#addLeadModal">
+                    <button type="button" class="btn btn-primary" style="border-radius: 30px; background: linear-gradient(135deg, #ff6a00, #ff8c42); border: none; padding: 12px 24px; font-weight: 700; box-shadow: 0 4px 15px rgba(255, 106, 0, 0.2);" data-bs-toggle="modal" data-bs-target="#addLeadModal">
                         <i class="fa-solid fa-plus me-2"></i> Add Lead
                     </button>
                 </div>
             </div>
+
+            @if(session('import_errors') && count(session('import_errors')) > 0)
+                <div class="alert alert-danger alert-dismissible fade show mb-4 border-0 shadow-sm" role="alert" style="border-radius: 12px; background: #fef2f2; border-left: 4px solid #ef4444 !important;">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fa-solid fa-circle-xmark text-danger fs-5 me-2"></i>
+                        <strong class="text-dark" style="font-size: 0.95rem;">Bulk Upload Cancelled — No records were saved into the database:</strong>
+                    </div>
+                    <p class="mb-2 text-muted" style="font-size: 0.82rem;">Please correct the errors listed below in your Excel sheet and re-upload:</p>
+                    <ul class="mb-0 ps-3" style="font-size: 0.88rem; color: #991b1b; max-height: 250px; overflow-y: auto;">
+                        @foreach(session('import_errors') as $err)
+                            <li class="mb-1">{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
 
             <!-- Control Card (Search & Source Filters) -->
             <div class="crm-controls-card">
@@ -1035,6 +1054,78 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                         <button type="submit" class="btn-gradient" style="border: none; border-radius: 30px; padding: 10px 24px;">Save Lead</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Upload Leads Modal -->
+    <div class="modal fade" id="bulkUploadLeadModal" tabindex="-1" aria-labelledby="bulkUploadLeadModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 20px; border: none; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.15);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; padding: 18px 24px; border: none;">
+                    <h5 class="modal-title text-white" id="bulkUploadLeadModalLabel" style="font-weight: 700;">
+                        <i class="fa-solid fa-file-excel me-2"></i> Bulk Upload Leads (Excel / CSV)
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <form method="POST" action="{{ route('admin.crm.bulk-upload') }}" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body p-4">
+                        <!-- Step 1: Download Template Callout -->
+                        <div class="p-3 mb-4 rounded-3 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: #f0f9ff; border: 1px dashed #7dd3fc;">
+                            <div>
+                                <h6 class="mb-1 fw-bold text-dark" style="font-size: 0.95rem;">
+                                    <i class="fa-solid fa-cloud-arrow-down text-primary me-2"></i> Step 1: Download Sample Excel Template
+                                </h6>
+                                <p class="mb-0 text-muted" style="font-size: 0.8rem;">
+                                    Download and fill the pre-structured Excel template with your lead information.
+                                </p>
+                            </div>
+                            <a href="{{ route('admin.crm.download-sample') }}" class="btn btn-sm btn-primary" style="border-radius: 20px; font-weight: 600; padding: 8px 18px; background: linear-gradient(135deg, #0284c7, #0369a1); border: none; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);">
+                                <i class="fa-solid fa-download me-1"></i> Download Sample (.xlsx)
+                            </a>
+                        </div>
+
+                        <!-- Notice Badge -->
+                        <div class="alert alert-info py-2 px-3 mb-3 border-0 d-flex align-items-center gap-2" style="border-radius: 10px; background: #e0f2fe; color: #0369a1; font-size: 0.82rem; font-weight: 600;">
+                            <i class="fa-solid fa-circle-info fs-6"></i>
+                            <span>All imported leads will automatically be added into the <strong>"Contacted"</strong> pipeline stage.</span>
+                        </div>
+
+                        <!-- Step 2: Upload File -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark" style="font-size: 0.88rem;">
+                                Select Excel / CSV File <span class="text-danger">*</span>
+                            </label>
+                            <input type="file" name="excel_file" class="form-control" required accept=".xlsx,.xls,.csv" style="border-radius: 10px; padding: 10px 14px; border: 1px solid #cbd5e1;">
+                            <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">Supported formats: .xlsx, .xls, .csv (Max size: 5MB)</small>
+                        </div>
+
+                        <!-- Default Source Selection -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark" style="font-size: 0.88rem;">
+                                Default Lead Source <span class="text-muted" style="font-size: 0.75rem;">(Used if left blank in file)</span>
+                            </label>
+                            <select name="default_source" class="form-control" style="border-radius: 10px; padding: 10px 14px; border: 1px solid #cbd5e1;">
+                                <option value="Bulk Upload">Bulk Upload (Default)</option>
+                                <option value="Social Media">Social Media</option>
+                                <option value="Search Engine">Search Engine</option>
+                                <option value="Friend/Colleague">Friend/Colleague</option>
+                                <option value="Direct">Direct</option>
+                                <option value="Event/Exhibition">Event/Exhibition</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer p-3 bg-light border-top d-flex justify-content-between">
+                        <button type="button" class="btn btn-secondary" style="border-radius: 20px; padding: 8px 20px;" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success" style="border-radius: 20px; padding: 8px 26px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669); border: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                            <i class="fa-solid fa-cloud-arrow-up me-1"></i> Upload & Import Leads
+                        </button>
                     </div>
                 </form>
             </div>

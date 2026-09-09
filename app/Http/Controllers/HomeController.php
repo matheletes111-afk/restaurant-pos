@@ -23,7 +23,11 @@ class HomeController extends Controller
      */
     public function index()
     {
+        $user = auth()->user();
+        if ($user && method_exists($user, 'getDashboardRedirectUrl')) {
+            return redirect($user->getDashboardRedirectUrl());
+        }
+
         return redirect()->route('dashboard');
-        
     }
 }

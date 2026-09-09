@@ -104,6 +104,8 @@ Route::prefix('admin')->group(function () {
     Route::post('/fcm/unregister', [FcmController::class, 'unregisterToken']);
 
     // Admin CRM Lead Management
+    Route::get('crm/download-sample', [App\Http\Controllers\Admin\AdminCrmController::class, 'downloadSample'])->name('admin.crm.download-sample');
+    Route::post('crm/bulk-upload', [App\Http\Controllers\Admin\AdminCrmController::class, 'bulkUpload'])->name('admin.crm.bulk-upload');
     Route::get('crm', [App\Http\Controllers\Admin\AdminCrmController::class, 'index'])->name('admin.crm.index');
     Route::post('crm/store', [App\Http\Controllers\Admin\AdminCrmController::class, 'store'])->name('admin.crm.store');
     Route::post('crm/update-status/{id}', [App\Http\Controllers\Admin\AdminCrmController::class, 'updateStatus'])->name('admin.crm.update-status');
