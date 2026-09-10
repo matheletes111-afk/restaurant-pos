@@ -27,13 +27,22 @@ class CategoryController extends Controller
     public function insert(Request $request)
     {
         \Log::info('Category Insert Request Data:', $request->except('image'));
+        $request->validate([
+            'name'  => 'required|string|max:255',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+        ], [
+            'image.image' => 'The category file must be an image.',
+            'image.mimes' => 'The category image must be a file of type: jpg, jpeg, png, webp, gif.',
+            'image.max'   => 'The category image must not be greater than 5MB.',
+        ]);
+
         try {
             $new = new Category;
             $new->name = $request->name;
             $new->user_id = auth()->user()->id;
             $new->restaurant_id = auth()->user()->restaurant_id;
-            if ($request->image) {
-                $image = $request->image;
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
                 $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
                 \Log::info('Category Insert: Uploading image', ['filename' => $filename]);
                 //real image
@@ -57,18 +66,30 @@ class CategoryController extends Controller
     public function update(Request $request)
     {
         \Log::info('Category Update Request Data:', $request->except('image'));
+        $request->validate([
+            'id'    => 'required',
+            'name'  => 'required|string|max:255',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+        ], [
+            'image.image' => 'The category file must be an image.',
+            'image.mimes' => 'The category image must be a file of type: jpg, jpeg, png, webp, gif.',
+            'image.max'   => 'The category image must not be greater than 5MB.',
+        ]);
+
         try {
             $upd = [];
             $upd['name'] = $request->name;
             $upd['slug'] = Str::slug($request->name).'-'.$request->id;
-            if ($request->image) {
+            if ($request->hasFile('image')) {
                 $check = Category::where('id',$request->id)->first();
                 if ($check && $check->image) {
                     $oldImagePath = storage_path('app/public/category/'.$check->image);
                     \Log::info('Category Update: Unlinking old image', ['path' => $oldImagePath]);
-                    @unlink($oldImagePath);
+                    if (file_exists($oldImagePath)) {
+                        @unlink($oldImagePath);
+                    }
                 }
-                $image = $request->image;
+                $image = $request->file('image');
                 $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
                 \Log::info('Category Update: Uploading image', ['filename' => $filename]);
                 //real image
@@ -91,7 +112,7 @@ class CategoryController extends Controller
         try {
             $check = Category::where('id',$id)->where('restaurant_id',auth()->user()->restaurant_id)->first();
             if ($check) {
-                if ($check->image) {
+                if ($check->image && file_exists(storage_path('app/public/category/'.$check->image))) {
                     @unlink(storage_path('app/public/category/'.$check->image));
                 }
                 Category::where('id',$id)->update(['status'=>'D']);
@@ -121,6 +142,18 @@ class CategoryController extends Controller
     public function subCategoryinsert(Request $request)
     {
         \Log::info('SubCategory Insert Request Data:', $request->except('image'));
+        $request->validate([
+            'name'        => 'required|string|max:255',
+            'price'       => 'required|numeric|min:0',
+            'food_type'   => 'required',
+            'category_id' => 'required',
+            'image'       => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+        ], [
+            'image.image' => 'The food item file must be an image.',
+            'image.mimes' => 'The food item image must be a file of type: jpg, jpeg, png, webp, gif.',
+            'image.max'   => 'The food item image must not be greater than 5MB.',
+        ]);
+
         try {
             $new = new SubCategory;
             $new->name = $request->name;
@@ -130,8 +163,8 @@ class CategoryController extends Controller
             $new->category_id = $request->category_id;
             $new->user_id = auth()->user()->id;
             $new->restaurant_id = auth()->user()->restaurant_id;
-            if ($request->image) {
-                $image = $request->image;
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
                 $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
                 \Log::info('SubCategory Insert: Uploading image', ['filename' => $filename]);
                 //real image
@@ -152,20 +185,34 @@ class CategoryController extends Controller
     public function subCategoryupdate(Request $request)
     {
         \Log::info('SubCategory Update Request Data:', $request->except('image'));
+        $request->validate([
+            'id'        => 'required',
+            'name'      => 'required|string|max:255',
+            'price'     => 'required|numeric|min:0',
+            'food_type' => 'required',
+            'image'     => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+        ], [
+            'image.image' => 'The food item file must be an image.',
+            'image.mimes' => 'The food item image must be a file of type: jpg, jpeg, png, webp, gif.',
+            'image.max'   => 'The food item image must not be greater than 5MB.',
+        ]);
+
         try {
             $upd = [];
             $upd['name'] = $request->name;
             $upd['price'] = $request->price;
             $upd['gst_rate'] = $request->gst_rate ?? 0;
             $upd['food_type'] = $request->food_type;
-            if ($request->image) {
+            if ($request->hasFile('image')) {
                 $check = SubCategory::where('id',$request->id)->first();
                 if ($check && $check->image) {
                     $oldImagePath = storage_path('app/public/category/'.$check->image);
                     \Log::info('SubCategory Update: Unlinking old image', ['path' => $oldImagePath]);
-                    @unlink($oldImagePath);
+                    if (file_exists($oldImagePath)) {
+                        @unlink($oldImagePath);
+                    }
                 }
-                $image = $request->image;
+                $image = $request->file('image');
                 $filename = time() . '-' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
                 \Log::info('SubCategory Update: Uploading image', ['filename' => $filename]);
                 //real image

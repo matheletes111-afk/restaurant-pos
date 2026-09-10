@@ -107,7 +107,7 @@ class DishApiController extends Controller
                 'price' => 'required|numeric|min:0',
                 // 'gst_rate' => 'nullable|numeric|min:0|max:100',
                 'food_type' => 'required|in:Veg,Non-Veg,Egg',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             ]);
             
             // Verify category belongs to this restaurant
@@ -165,7 +165,7 @@ class DishApiController extends Controller
                 'price' => 'required|numeric|min:0',
                 
                 'food_type' => 'required|in:Veg,Non-Veg,Egg',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
                 
             ]);
             
