@@ -972,6 +972,7 @@
                     <ul>
                         <li><a href="{{ route('privacy.policy') }}">Privacy Policy</a></li>
                         <li><a href="{{ route('terms.conditions') }}">Terms & Conditions</a></li>
+                        <li><a href="{{ route('login') }}">Restaurant Login</a></li>
                     </ul>
                 </div>
                 <div class="footer-contact">

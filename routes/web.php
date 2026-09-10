@@ -120,7 +120,7 @@ Route::post('manage-restaurant/insert', [RestaurantController::class, 'store'])-
 Route::post('manage-restaurant/update', [RestaurantController::class, 'update'])->name('manage.restaurant.update');
 Route::get('manage-restaurant/status/{id}', [RestaurantController::class, 'status'])->name('manage.restaurant.status');
 Route::get('manage-restaurant/delete/{id}', [RestaurantController::class, 'delete'])->name('manage.restaurant.delete');
-Route::get('admin/subscriptions/invoice/{subscription_id}', [RestaurantController::class, 'downloadInvoice'])->name('admin.subscriptions.invoice');
+Route::get('subscriptions/invoice/{subscription_id}', [RestaurantController::class, 'downloadInvoice'])->name('admin.subscriptions.invoice');
 // Restaurant Custom Plan Assignment Routes
 Route::get('manage-restaurant/plans/{id}', [RestaurantController::class, 'showPlans'])->name('manage.restaurant.show.plans');
 Route::post('manage-restaurant/save-plans', [RestaurantController::class, 'savePlans'])->name('manage.restaurant.save.plans');
@@ -308,6 +308,8 @@ Route::get('admin/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdmin
 
     // Subscription routes
     Route::get('subscriptions', [\App\Http\Controllers\SubscriptionController::class, 'index'])->name('admin.subscriptions.index');
+    Route::get('subscriptions/{id}/details', [\App\Http\Controllers\SubscriptionController::class, 'show'])->name('admin.subscriptions.show')->where('id', '[0-9]+');
+    Route::get('subscriptions/{id}', [\App\Http\Controllers\SubscriptionController::class, 'show'])->name('admin.subscriptions.details')->where('id', '[0-9]+');
     Route::get('plans/{plan}/subscribe', [\App\Http\Controllers\SubscriptionController::class, 'create'])->name('admin.subscriptions.create');
     Route::post('plans/{plan}/subscribe', [\App\Http\Controllers\SubscriptionController::class, 'store'])->name('admin.subscriptions.store');
     Route::get('subscriptions/payment', [\App\Http\Controllers\SubscriptionController::class, 'payment'])->name('admin.subscriptions.payment');

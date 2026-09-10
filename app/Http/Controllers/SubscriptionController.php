@@ -805,9 +805,9 @@ public function paymentSuccess(Request $request)
     {
         $user = auth()->user();
         $subscriptions = Subscription::where('user_id', $user->restaurant_id)
-            ->with('plan')
+            ->with(['plan', 'payments'])
             ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->get();
 
         // Check if user has used free trial
         $hasUsedFreeTrial = Subscription::where('user_id', $user->restaurant_id)
@@ -817,6 +817,93 @@ public function paymentSuccess(Request $request)
             ->exists();
 
         return view('admin.subscriptions.index', compact('subscriptions', 'hasUsedFreeTrial'));
+    }
+
+    // Get subscription details for modal view
+    public function show($id)
+    {
+        try {
+            $user = auth()->user();
+            $subscription = Subscription::with([
+                'plan',
+                'payments' => function($q) {
+                    $q->orderBy('created_at', 'desc');
+                },
+                'restaurant_details.owner'
+            ])
+            ->where('user_id', $user->restaurant_id)
+            ->findOrFail($id);
+
+            $plan = $subscription->plan;
+            $payment = $subscription->payments->first();
+
+            $formattedData = [
+                'id' => $subscription->id,
+                'status' => $subscription->status,
+                'status_badge' => ucfirst($subscription->status),
+                'start_date' => $subscription->start_date ? $subscription->start_date->format('d M Y, h:i A') : 'N/A',
+                'end_date' => $subscription->end_date ? $subscription->end_date->format('d M Y, h:i A') : 'N/A',
+                'renewal_date' => $subscription->renewal_date ? $subscription->renewal_date->format('d M Y') : 'N/A',
+                'auto_renew' => (bool)$subscription->auto_renew,
+                'refund_amount' => (float)($subscription->refund_amount ?? 0),
+                'razorpay_subscription_id' => $subscription->razorpay_subscription_id ?: 'N/A',
+                'created_at' => $subscription->created_at ? $subscription->created_at->format('d M Y, h:i A') : 'N/A',
+                'invoice_url' => route('admin.subscriptions.invoice', $subscription->id),
+
+                'plan' => $plan ? [
+                    'id' => $plan->id,
+                    'name' => $plan->name,
+                    'label_name' => $plan->label_name,
+                    'price' => (float)$plan->price,
+                    'formatted_price' => $plan->price == 0 ? 'FREE' : '₹' . number_format($plan->price, 2),
+                    'cross_price' => $plan->cross_price ? (is_numeric($plan->cross_price) ? '₹' . number_format($plan->cross_price, 2) : $plan->cross_price) : null,
+                    'billing_cycle' => ucfirst($plan->billing_cycle ?? 'monthly'),
+                    'duration_days' => $plan->duration_days ?? 30,
+                    'description' => $plan->description ?? 'No description provided for this plan.',
+                    'category_number' => (int)$plan->category_number,
+                    'category_display' => $plan->category_number == 0 ? 'Unlimited' : number_format($plan->category_number) . ' Categories',
+                    'dish_number' => (int)$plan->total_number_of_dishes,
+                    'dish_display' => $plan->total_number_of_dishes == 0 ? 'Unlimited' : number_format($plan->total_number_of_dishes) . ' Dishes',
+                    'table_number' => (int)$plan->total_number_of_table,
+                    'table_display' => $plan->total_number_of_table == 0 ? 'Unlimited' : number_format($plan->total_number_of_table) . ' Tables',
+                    'inventory_enabled' => ($plan->inventory_checkbox === 'Y'),
+                    'gst_percentage' => $plan->gst_percentage ?? 18,
+                ] : null,
+
+                'payment' => [
+                    'id' => $payment ? $payment->id : null,
+                    'amount' => $payment ? (float)$payment->amount : ($plan ? (float)$plan->price : 0),
+                    'formatted_amount' => $payment ? '₹' . number_format($payment->amount, 2) : ($plan && $plan->price == 0 ? 'FREE' : 'N/A'),
+                    'status' => $payment ? ucfirst($payment->status) : ($subscription->status == 'active' ? 'Success' : ucfirst($subscription->status)),
+                    'payment_method' => ($payment && $payment->payment_method) ? strtoupper($payment->payment_method) : ($plan && $plan->price == 0 ? 'Free Trial / Free Plan' : 'Online / Gateway'),
+                    'razorpay_payment_id' => ($payment && $payment->razorpay_payment_id) ? $payment->razorpay_payment_id : 'N/A',
+                    'razorpay_order_id' => ($payment && $payment->razorpay_order_id) ? $payment->razorpay_order_id : ($subscription->razorpay_subscription_id ?: 'N/A'),
+                    'payment_date' => ($payment && $payment->created_at) ? $payment->created_at->format('d M Y, h:i A') : ($subscription->start_date ? $subscription->start_date->format('d M Y, h:i A') : 'N/A'),
+                    'description' => $payment ? $payment->description : 'Subscription: ' . ($plan->name ?? 'Plan'),
+                    'gst_percentage' => $payment ? ($payment->gst_percentage ?? '18') : '18',
+                    'refund_amount' => $payment ? (float)$payment->refund_amount : (float)($subscription->refund_amount ?? 0),
+                ],
+
+                'restaurant' => $subscription->restaurant_details ? [
+                    'name' => $subscription->restaurant_details->name,
+                    'owner_name' => $subscription->restaurant_details->owner->name ?? 'N/A',
+                    'email' => $subscription->restaurant_details->owner->email ?? 'N/A',
+                    'phone' => $subscription->restaurant_details->owner->phone ?? 'N/A',
+                    'gstin' => $subscription->restaurant_details->gstin ?? 'N/A',
+                ] : null,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedData
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Subscription Details Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load subscription details: ' . $e->getMessage()
+            ], 404);
+        }
     }
 
     // Toggle auto-renew status of subscription
