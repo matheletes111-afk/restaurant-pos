@@ -281,8 +281,9 @@ Route::post('/ask-ai/send', [AIChatController::class, 'send'])->name('ask-ai.sen
 Route::get('/pending-temp-orders', [App\Http\Controllers\TempOrderAdminController::class, 'index'])->name('temp.orders');
 Route::get('/pending-temp-orders/{id}', [App\Http\Controllers\TempOrderAdminController::class, 'view'])->name('temp.orders.view');
 Route::get('/pending-temp-orders/delete-item/{id}', [App\Http\Controllers\TempOrderAdminController::class, 'deleteItem'])->name('temp.orders.view.delete.item');
-Route::get('admin/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdminController::class, 'approveOrder'])
+Route::get('/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdminController::class, 'approveOrder'])
     ->name('admin.temporder.approve');
+Route::get('admin/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdminController::class, 'approveOrder']);
 
 // Admin Plan Routes
 

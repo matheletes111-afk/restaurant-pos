@@ -36,6 +36,9 @@ class SecureRestaurantData
 
         // Map URL path segments to their database tables
         $modelMapping = [
+            'pending-temp-orders/delete-item' => ['table' => 'temp_order_items', 'column' => 'id', 'restro_col' => 'restaurant_id'],
+            'pending-temp-orders' => ['table' => 'temp_orders', 'column' => 'id', 'restro_col' => 'restaurant_id'],
+            'temp-order' => ['table' => 'temp_orders', 'column' => 'id', 'restro_col' => 'restaurant_id'],
             'restaurant-staff' => ['table' => 'users', 'column' => 'id', 'restro_col' => 'restaurant_id'],
             'manage-menu-category' => ['table' => 'category', 'column' => 'id', 'restro_col' => 'restaurant_id'],
             'manage-category/manage-food-items/delete-sub-category' => ['table' => 'sub_category', 'column' => 'id', 'restro_col' => 'restaurant_id'],
@@ -89,7 +92,9 @@ class SecureRestaurantData
 
             // Fallback for general 'id' parameter if no segment matched
             if (!$target && $key === 'id') {
-                if (str_contains($path, 'order')) {
+                if (str_contains($path, 'temp-order') || str_contains($path, 'pending-temp-orders')) {
+                    $target = ['table' => 'temp_orders', 'column' => 'id', 'restro_col' => 'restaurant_id'];
+                } elseif (str_contains($path, 'order')) {
                     $target = ['table' => 'orders', 'column' => 'id', 'restro_col' => 'restaurant_id'];
                 } elseif (str_contains($path, 'staff')) {
                     $target = ['table' => 'users', 'column' => 'id', 'restro_col' => 'restaurant_id'];

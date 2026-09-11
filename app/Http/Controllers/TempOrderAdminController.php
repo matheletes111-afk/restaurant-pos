@@ -26,9 +26,11 @@ class TempOrderAdminController extends Controller
 
     public function view($id)
     {
-        $order = TempOrder::with(['items.menuItem', 'table_details'])->findOrFail($id);
-        $table = TableManage::where('id',$order->table_id)->first();
-        return view('temp_orders.view', compact('order','table'));
+        $order = TempOrder::with(['items.menuItem', 'table_details'])
+            ->where('restaurant_id', auth()->user()->restaurant_id)
+            ->findOrFail($id);
+        $table = TableManage::where('id', $order->table_id)->first();
+        return view('temp_orders.view', compact('order', 'table'));
     }
 
 public function deleteItem($id)

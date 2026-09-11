@@ -126,7 +126,7 @@ class CheckMenuPermission
             'table_master' => ['table-manage', 'table.manage'],
             'order_master' => ['order-management-dashboard', 'order.management.dashboard', 'order-create', 'order.create', 'order-edit', 'order.edit', 'order-save', 'order.save', 'order-update', 'order.update', 'order/payment', 'order.payment', 'order/print', 'order.print', 'order/receipt', 'order.receipt.pdf', 'order-item-delete', 'order.item.delete', 'add-payment', 'order.add.payment', 'delete-payment', 'order.delete.payment', 'get-payments', 'order.get.payments', 'invoice', 'order.invoice'],
             'kitchen_order' => ['kitchen-panel', 'manage.kitchen-panel', 'update-kitchen-status', 'update.kitchen.status', 'kitchen/orders/refresh', 'kitchen.orders.refresh'],
-            'pending_order' => ['pending-temp-orders', 'temp.orders'],
+            'pending_order' => ['pending-temp-orders', 'temp.orders', 'temp-order', 'admin.temporder'],
             'restro_ai' => ['ask-ai'],
             'billing_subscription' => ['subscriptions', 'admin.subscriptions.index', 'plans/subscribe', 'admin.subscriptions.create', 'subscriptions/payment', 'admin.subscriptions.payment', 'razorpay/webhook'],
             'customer_support' => ['restaurant-support', 'restaurant.support.tickets'],
