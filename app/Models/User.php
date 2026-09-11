@@ -22,6 +22,12 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'email',
         'password',
+        'role',
+        'role_type',
+        'restaurant_id',
+        'phone',
+        'status',
+        'permissions',
     ];
 
     /**
@@ -78,5 +84,36 @@ class User extends Authenticatable implements JWTSubject
     public function getJWTCustomClaims()
     {
         return [];
+    }
+
+    /**
+     * Get the appropriate dashboard/destination URL based on user role and subscription status.
+     *
+     * @return string
+     */
+    public function getDashboardRedirectUrl()
+    {
+        if ($this->role === 'SA') {
+            return route('admin.dashboard');
+        }
+
+        if (!empty($this->restaurant_id)) {
+            $active = \Illuminate\Support\Facades\DB::table('subscriptions')
+                ->where('user_id', $this->restaurant_id)
+                ->where(function ($query) {
+                    $query->where('status', 'active')
+                          ->orWhere(function ($q) {
+                              $q->where('status', 'completed')
+                                ->whereDate('end_date', '>=', now());
+                          });
+                })
+                ->first();
+
+            if (!$active) {
+                return route('select.plan.page');
+            }
+        }
+
+        return route('dashboard');
     }
 }

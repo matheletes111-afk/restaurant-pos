@@ -40,6 +40,14 @@ class FrontendController extends Controller
 
     public function create()
     {
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user && method_exists($user, 'getDashboardRedirectUrl')) {
+                return redirect($user->getDashboardRedirectUrl());
+            }
+            return redirect()->route('dashboard');
+        }
+
         return view('register_restaurant');
     }
 

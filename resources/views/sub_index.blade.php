@@ -369,14 +369,15 @@
                       </div>
                       
                       <!-- Action Buttons -->
-                       <div class="product-card-actions">
+                        <div class="product-card-actions">
                         @if(auth()->user()->hasPermission('menu_master', 'edit'))
                         <!-- Edit Button -->
                         <button class="btn btn-outline-success edit-btn"
                                 data-id="{{ $value->id }}"
                                 data-name="{{ $value->name }}"
                                 data-price="{{ $value->price }}"
-                                data-type="{{ $value->food_type }}">
+                                data-type="{{ $value->food_type }}"
+                                data-image="{{ $value->image }}">
                          <i class="fa fa-edit"></i>
                         </button>
                         
@@ -439,7 +440,7 @@
                       <td>{{ $value->food_type }}</td>
                       <td>{{ $value->status == 'A' ? 'Active' : 'Inactive' }}</td>
                       <td>
-                        <button class="btn btn-success edit-btn" data-id="{{ $value->id }}" data-name="{{ $value->name }}" data-price="{{ $value->price }}" data-type="{{ $value->food_type }}">Edit</button>
+                        <button class="btn btn-success edit-btn" data-id="{{ $value->id }}" data-name="{{ $value->name }}" data-price="{{ $value->price }}" data-type="{{ $value->food_type }}" data-image="{{ $value->image }}">Edit</button>
                         <a href="{{ route('manage.subcategory.category.delete', $value->id) }}" class="btn btn-danger">Delete</a>
                        </td>
                     </tr>
@@ -492,7 +493,8 @@
 
             <div class="form-group">
               <label>Product Image</label>
-              <input type="file" name="image" class="form-control" accept="image/*">
+              <input type="file" name="image" class="form-control" accept="image/jpeg,image/png,image/jpg,image/webp,image/gif">
+              <small class="form-text text-muted">Allowed formats: JPG, JPEG, PNG, WEBP, GIF (Max: 5MB)</small>
             </div>
           </div>
           <div class="modal-footer">
@@ -540,7 +542,9 @@
 
             <div class="form-group">
               <label>Product Image</label>
-              <input type="file" name="image" class="form-control" accept="image/*">
+              <input type="file" name="image" class="form-control" accept="image/jpeg,image/png,image/jpg,image/webp,image/gif">
+              <small class="form-text text-muted">Allowed formats: JPG, JPEG, PNG, WEBP, GIF (Max: 5MB)</small>
+              <img id="edit_image_preview" src="" class="mt-2" width="70" height="70" style="object-fit: cover; border-radius: 6px; display: none;">
             </div>
           </div>
           <div class="modal-footer">
@@ -648,6 +652,12 @@
         $('#edit_name').val($(this).data('name'));
         $('#edit_price').val($(this).data('price'));
         $('#edit_food_type').val($(this).data('type'));
+        let image = $(this).data('image');
+        if (image) {
+          $('#edit_image_preview').attr('src', '{{ URL::to("storage/category") }}/' + image).show();
+        } else {
+          $('#edit_image_preview').hide();
+        }
         $('#editProductModal').modal('show');
       });
       

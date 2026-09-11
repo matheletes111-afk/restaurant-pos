@@ -16,3 +16,5 @@ yarn-error.log
 /.vscode
 public/admin_template/
 public/firebase/firebase-credentials.json
+
+public/storage/*

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Subscription;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\RestaurantMaster;
 use Razorpay\Api\Api;
 
 class WebhookController extends Controller
@@ -64,6 +65,19 @@ class WebhookController extends Controller
         $subscription = $payload['payload']['subscription']['entity'];
         $payment = $payload['payload']['payment']['entity'];
         $notes = $subscription['notes'] ?? [];
+        $userId = $notes['user_id'] ?? null;
+
+        // Check if existing subscription belongs to a deleted restaurant
+        $existingSub = Subscription::where('razorpay_subscription_id', $subscription['id'])->first();
+        $targetRestaurantId = $userId ?? ($existingSub ? $existingSub->user_id : null);
+
+        if ($targetRestaurantId) {
+            $restaurant = RestaurantMaster::find($targetRestaurantId);
+            if ($restaurant && $restaurant->status === 'D') {
+                Log::warning("Ignored subscription.charged webhook for deleted restaurant ID: {$targetRestaurantId}");
+                return;
+            }
+        }
 
         $plan = Plan::where('razorpay_plan_id', $subscription['plan_id'])->first();
         if (!$plan) return;
@@ -72,7 +86,7 @@ class WebhookController extends Controller
         $sub = Subscription::updateOrCreate(
             ['razorpay_subscription_id' => $subscription['id']],
             [
-                'user_id' => $notes['user_id'] ?? null,
+                'user_id' => $targetRestaurantId,
                 'plan_id' => $plan->id,
                 'razorpay_plan_id' => $subscription['plan_id'],
                 'status' => 'active',
@@ -127,6 +141,15 @@ class WebhookController extends Controller
     {
         $subscription = $payload['payload']['subscription']['entity'];
         
+        $sub = Subscription::where('razorpay_subscription_id', $subscription['id'])->first();
+        if ($sub && $sub->user_id) {
+            $restaurant = RestaurantMaster::find($sub->user_id);
+            if ($restaurant && $restaurant->status === 'D') {
+                Log::warning("Ignored subscription.activated webhook for deleted restaurant ID: {$sub->user_id}");
+                return;
+            }
+        }
+
         Subscription::where('razorpay_subscription_id', $subscription['id'])
             ->update(['status' => 'active']);
     }

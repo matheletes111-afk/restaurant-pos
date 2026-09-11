@@ -49,7 +49,7 @@ class CategoryApiController extends Controller
         try {
             $request->validate([
                 'name' => 'required|string|max:255',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120'
             ]);
             
             $new = new Category;
@@ -116,7 +116,7 @@ class CategoryApiController extends Controller
         try {
             $request->validate([
                 'name' => 'required|string|max:255',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120'
             ]);
             
             $category = Category::where('id', $id)

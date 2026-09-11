@@ -26,20 +26,32 @@ class RedirectIfAuthenticated
             if (Auth::guard($guard)->check()) {
                 $user = Auth::guard($guard)->user();
                 if ($user) {
-                    if ($user->role == "SA") {
-                        return redirect()->route('manage.restaurant');
+                    if (method_exists($user, 'getDashboardRedirectUrl')) {
+                        return redirect($user->getDashboardRedirectUrl());
                     }
-                    
-                    $active = DB::table('subscriptions')
-                        ->where('user_id', $user->restaurant_id)
-                        ->whereIn('status', ['active', 'completed'])
-                        ->first();
-                        
-                    if (@$active == "") {
-                        return redirect()->route('select.plan.page');
-                    } else {
-                        return redirect()->route('dashboard');
+
+                    if (isset($user->role) && $user->role === 'SA') {
+                        return redirect()->route('admin.dashboard');
                     }
+
+                    if (!empty($user->restaurant_id)) {
+                        $active = DB::table('subscriptions')
+                            ->where('user_id', $user->restaurant_id)
+                            ->where(function ($query) {
+                                $query->where('status', 'active')
+                                      ->orWhere(function ($q) {
+                                          $q->where('status', 'completed')
+                                            ->whereDate('end_date', '>=', now());
+                                      });
+                            })
+                            ->first();
+
+                        if (!$active) {
+                            return redirect()->route('select.plan.page');
+                        }
+                    }
+
+                    return redirect()->route('dashboard');
                 }
                 return redirect(RouteServiceProvider::HOME);
             }

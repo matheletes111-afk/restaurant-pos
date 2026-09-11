@@ -29,11 +29,36 @@ class LoginController extends Controller
     use AuthenticatesUsers;
 
     /**
-     * Where to redirect users after login.
+     * Get the post-login redirect path.
      *
-     * @var string
+     * @return string
      */
-    protected $redirectTo = RouteServiceProvider::HOME;
+    public function redirectTo()
+    {
+        $user = Auth::user();
+        if ($user && method_exists($user, 'getDashboardRedirectUrl')) {
+            return $user->getDashboardRedirectUrl();
+        }
+        return route('dashboard');
+    }
+
+    /**
+     * Show the application's login form.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable|\Illuminate\Http\RedirectResponse
+     */
+    public function showLoginForm()
+    {
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user && method_exists($user, 'getDashboardRedirectUrl')) {
+                return redirect($user->getDashboardRedirectUrl());
+            }
+            return redirect()->route('dashboard');
+        }
+
+        return view('auth.login');
+    }
 
     /**
      * Create a new controller instance.
@@ -87,6 +112,14 @@ class LoginController extends Controller
 
     public function showVerifyForm(Request $request)
     {
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user && method_exists($user, 'getDashboardRedirectUrl')) {
+                return redirect($user->getDashboardRedirectUrl());
+            }
+            return redirect()->route('dashboard');
+        }
+
         if (!session()->has('login_2fa_user_id')) {
             return redirect()->route('login')->with('error', 'Session expired. Please log in again.');
         }
@@ -125,17 +158,27 @@ class LoginController extends Controller
         // Clear 2FA session variables
         session()->forget(['login_2fa_user_id', 'login_2fa_otp', 'login_2fa_otp_expires_at']);
 
-        // Redirect logic matching previous customLogin
+        // Redirect logic matching respective destination
+        if (method_exists($user, 'getDashboardRedirectUrl')) {
+            return redirect($user->getDashboardRedirectUrl());
+        }
+
         if ($user->role == "SA") {
             return redirect()->route('admin.dashboard');
         }
         
         $active = DB::table('subscriptions')
             ->where('user_id', $user->restaurant_id)
-            ->whereIn('status', ['active', 'completed'])
+            ->where(function ($query) {
+                $query->where('status', 'active')
+                      ->orWhere(function ($q) {
+                          $q->where('status', 'completed')
+                            ->whereDate('end_date', '>=', now());
+                      });
+            })
             ->first();
             
-        if (@$active == "") {
+        if (!$active) {
             return redirect()->route('select.plan.page');
         } else {
             return redirect()->route('dashboard');
@@ -186,8 +229,16 @@ class LoginController extends Controller
         return redirect('/login');
     }
 
-            public function forgetPassword()
+    public function forgetPassword()
     {
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user && method_exists($user, 'getDashboardRedirectUrl')) {
+                return redirect($user->getDashboardRedirectUrl());
+            }
+            return redirect()->route('dashboard');
+        }
+
         return view('auth.forget_password');
     }
 

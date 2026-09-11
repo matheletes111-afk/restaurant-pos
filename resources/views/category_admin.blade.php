@@ -328,7 +328,8 @@
             </div>
             <div class="form-group">
               <label>Category Image</label>
-              <input type="file" name="image" class="form-control">
+              <input type="file" name="image" class="form-control" accept="image/jpeg,image/png,image/jpg,image/webp,image/gif">
+              <small class="form-text text-muted">Allowed formats: JPG, JPEG, PNG, WEBP, GIF (Max: 5MB)</small>
             </div>
           </div>
           <div class="modal-footer">
@@ -360,7 +361,8 @@
             </div>
             <div class="form-group">
               <label>Category Image</label>
-              <input type="file" name="image" class="form-control">
+              <input type="file" name="image" class="form-control" accept="image/jpeg,image/png,image/jpg,image/webp,image/gif">
+              <small class="form-text text-muted">Allowed formats: JPG, JPEG, PNG, WEBP, GIF (Max: 5MB)</small>
               <img id="edit_image_preview" src="" class="mt-2" width="70" height="70" style="object-fit: cover; border-radius: 6px;">
             </div>
           </div>
