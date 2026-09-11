@@ -13,6 +13,9 @@ use App\Models\Plan;
 use App\Models\RestaurantToCustomPlan;
 use App\Models\Subscription;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Razorpay\Api\Api;
+use Illuminate\Support\Facades\Log;
+
 class RestaurantController extends Controller
 {
     /**
@@ -347,6 +350,7 @@ class RestaurantController extends Controller
 
     /**
      * Delete restaurant (Soft delete - status 'D')
+     * Also immediately expires active subscriptions and cancels Razorpay recurring subscriptions / disables autopay.
      */
     public function delete($id)
     {
@@ -370,6 +374,50 @@ class RestaurantController extends Controller
                     'status' => 'D'
                 ]);
             }
+
+            // Immediately expire all active subscriptions and disable autopay (cancel Razorpay recurring)
+            $subscriptions = Subscription::where(function($query) use ($restaurant) {
+                $query->where('user_id', $restaurant->id);
+                if ($restaurant->owner_id) {
+                    $query->orWhere('user_id', $restaurant->owner_id);
+                }
+            })->whereIn('status', ['active', 'completed', 'authenticated', 'created'])->get();
+
+            $keyId = config('services.razorpay.key_id');
+            $keySecret = config('services.razorpay.key_secret');
+            $razorpay = ($keyId && $keySecret) ? new Api($keyId, $keySecret) : null;
+
+            foreach ($subscriptions as $sub) {
+                // Cancel Razorpay recurring subscription immediately to disable autopay
+                if ($sub->razorpay_subscription_id && $razorpay) {
+                    try {
+                        $rzSubscription = $razorpay->subscription->fetch($sub->razorpay_subscription_id);
+                        $rzSubscription->cancel(['cancel_at_cycle_end' => 0]);
+                        Log::info("Cancelled Razorpay recurring subscription {$sub->razorpay_subscription_id} for deleted restaurant {$restaurant->id}");
+                    } catch (\Exception $rzEx) {
+                        Log::warning("Could not cancel Razorpay subscription {$sub->razorpay_subscription_id}: " . $rzEx->getMessage());
+                    }
+                }
+
+                // Immediately expire local subscription record and disable autopay
+                $sub->update([
+                    'status' => 'expired',
+                    'auto_renew' => 0,
+                    'end_date' => now(),
+                    'renewal_date' => null,
+                ]);
+            }
+
+            // Also ensure any remaining non-expired subscriptions for this restaurant have auto_renew disabled
+            Subscription::where(function($query) use ($restaurant) {
+                $query->where('user_id', $restaurant->id);
+                if ($restaurant->owner_id) {
+                    $query->orWhere('user_id', $restaurant->owner_id);
+                }
+            })->where('auto_renew', 1)->update([
+                'auto_renew' => 0,
+                'renewal_date' => null
+            ]);
 
             DB::commit();
             return back()->with('success', 'Restaurant deleted successfully.');
