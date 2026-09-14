@@ -76,11 +76,11 @@ public function approveOrder($id)
             ->where('restaurant_id', auth()->user()->restaurant_id)
             ->firstOrFail();
 
-        // Check if table exists and is available
+        // Check if table exists and is active (if dine-in)
         if ($tempOrder->table_id) {
-            $table = TableManage::find($tempOrder->table_id);
-            if ($table && $table->table_status != 'AVAILABLE') {
-                return redirect()->back()->with('error', 'Table not available');
+            $table = TableManage::where('restaurant_id', auth()->user()->restaurant_id)->find($tempOrder->table_id);
+            if ($table && ($table->table_status == 'INACTIVE' || $table->status == 'I' || $table->status == 'D')) {
+                return redirect()->back()->with('error', 'Table is currently inactive or under maintenance.');
             }
         }
 

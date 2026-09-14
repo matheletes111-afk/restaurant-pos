@@ -286,7 +286,18 @@
                 <div class="info-icon"><i class="fas fa-table"></i></div>
                 <div class="info-content">
                     <div class="info-label">Table Number</div>
-                    <div class="info-value">{{ $order->table_details->name ?? 'Takeaway' }}</div>
+                    <div class="info-value">
+                        {{ $order->table_details->name ?? 'Takeaway' }}
+                        @if($order->table_details)
+                            @if($order->table_details->table_status == 'INACTIVE' || $order->table_details->status == 'I' || $order->table_details->status == 'D')
+                                <span class="badge bg-danger ms-1" style="font-size: 0.7rem;">Inactive</span>
+                            @elseif($order->table_details->table_status == 'OCCUPIED')
+                                <span class="badge bg-warning text-dark ms-1" style="font-size: 0.7rem;">Occupied</span>
+                            @else
+                                <span class="badge bg-success ms-1" style="font-size: 0.7rem;">Available</span>
+                            @endif
+                        @endif
+                    </div>
                 </div>
             </div>
             <div class="info-item">
@@ -465,10 +476,10 @@
     <!-- Approve Order Section -->
     <div class="text-center mt-4">
         @php
-            $tableAvailable = !$order->table_id || ($order->table_details && $order->table_details->table_status == 'AVAILABLE');
+            $tableInactive = $order->table_details && ($order->table_details->table_status == 'INACTIVE' || $order->table_details->status == 'I' || $order->table_details->status == 'D');
         @endphp
         
-        @if($tableAvailable)
+        @if(!$tableInactive)
             <div class="action-buttons">
                 <a href="{{ route('admin.temporder.approve', $order->id) }}"
                    class="btn-approve"
@@ -480,9 +491,9 @@
                 </a>
             </div>
         @else
-            <div class="alert alert-warning d-inline-flex align-items-center gap-2 px-4 py-3 rounded-lg">
+            <div class="alert alert-danger d-inline-flex align-items-center gap-2 px-4 py-3 rounded-lg">
                 <i class="fas fa-exclamation-triangle fa-lg"></i>
-                <strong>Table is not available!</strong> The table is currently occupied. Please check table status.
+                <strong>Table is inactive!</strong> The table is currently inactive or under maintenance.
             </div>
             <div class="mt-3">
                 <a href="{{ route('temp.orders') }}" class="btn btn-secondary btn-lg">
