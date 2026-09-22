@@ -39,7 +39,8 @@ class RestaurantProfileController extends Controller
             'fssai_number' => 'nullable|string|max:50',
             'gst_percentage' => 'nullable|numeric|min:0|max:100',
             'upi_id' => 'nullable|string|max:100',
-            'qr_code_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'qr_code_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp,svg,gif|max:3072'
         ]);
         
         if ($validator->fails()) {
@@ -55,22 +56,36 @@ class RestaurantProfileController extends Controller
             $restaurant = RestaurantMaster::where('id', auth()->user()->restaurant_id)->firstOrFail();
             
             // Get user (owner)
-            $user = User::find($restaurant->owner_id);
+            $user = User::find($restaurant->owner_id) ?: Auth::user();
             
             // Update User Table (Phone only - email is readonly)
-            $user->phone = $request->phone;
-            $user->save();
+            if ($user) {
+                $user->phone = $request->phone;
+                $user->save();
+            }
+
+            // Ensure directory exists
+            $targetDir = storage_path('app/public/restaurant');
+            if (!file_exists($targetDir)) {
+                mkdir($targetDir, 0755, true);
+            }
             
+            // Handle Logo image upload
+            if ($request->hasFile('logo')) {
+                $logoImage = $request->file('logo');
+                $logoFilename = 'logo_' . time() . '_' . rand(1000, 9999) . '.' . $logoImage->getClientOriginalExtension();
+                
+                if ($restaurant->logo && file_exists($targetDir . '/' . $restaurant->logo)) {
+                    @unlink($targetDir . '/' . $restaurant->logo);
+                }
+                $logoImage->move($targetDir, $logoFilename);
+                $restaurant->logo = $logoFilename;
+            }
+
             // Handle QR Code image upload
             if ($request->hasFile('qr_code_image')) {
                 $image = $request->file('qr_code_image');
                 $filename = 'qr_' . time() . '_' . rand(1000, 9999) . '.' . $image->getClientOriginalExtension();
-                
-                // Ensure directory exists
-                $targetDir = storage_path('app/public/restaurant');
-                if (!file_exists($targetDir)) {
-                    mkdir($targetDir, 0755, true);
-                }
 
                 if ($restaurant->qr_code_image && file_exists($targetDir . '/' . $restaurant->qr_code_image)) {
                     @unlink($targetDir . '/' . $restaurant->qr_code_image);

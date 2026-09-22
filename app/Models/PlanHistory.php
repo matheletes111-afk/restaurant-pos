@@ -20,6 +20,9 @@ class PlanHistory extends Model
         'billing_cycle',
         'duration_days',
         'description',
+        'inventory_checkbox',
+        'multi_outlet_checkbox',
+        'total_number_of_outlets',
         'is_default_free',
         'is_default_paid'
     ];

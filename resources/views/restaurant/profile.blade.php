@@ -59,12 +59,21 @@
         <!-- Profile Header -->
         <div class="profile-header">
             <div class="row align-items-center">
-                <div class="col-md-12">
-                    <h3 class="mb-2 text-white"><i class="fas fa-store me-2"></i>{{ $restaurant->name }}</h3>
-                    <p class="mb-0 text-white">
+                <div class="col-auto">
+                    <div class="rounded-circle overflow-hidden shadow-sm d-flex align-items-center justify-content-center bg-white" style="width: 85px; height: 85px; border: 3px solid rgba(255,255,255,0.35);">
+                        @if($restaurant->logo && file_exists(storage_path('app/public/restaurant/' . $restaurant->logo)))
+                            <img id="header_logo_preview" src="{{ asset('storage/restaurant/' . $restaurant->logo) }}" alt="Restaurant Logo" style="width: 100%; height: 100%; object-fit: cover;">
+                        @else
+                            <i class="fas fa-utensils text-primary" style="font-size: 2rem; color: #ff6a00 !important;"></i>
+                        @endif
+                    </div>
+                </div>
+                <div class="col">
+                    <h3 class="mb-1 text-white fw-bold"><i class="fas fa-store me-2"></i>{{ $restaurant->name }}</h3>
+                    <p class="mb-1 text-white opacity-75">
                         <i class="fas fa-map-marker-alt me-1"></i> {{ $restaurant->address }}
                     </p>
-                    <p class="mb-0 text-white">
+                    <p class="mb-0 text-white opacity-75">
                         <i class="fas fa-envelope me-1"></i> {{ $restaurant->owner->email ?? 'N/A' }}
                     </p>
                 </div>
@@ -107,11 +116,24 @@
                         @csrf
                         
                         <div class="row">
-                            <div class="col-md-12">
+                            <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Restaurant Name <span class="text-danger">*</span></label>
                                     <input type="text" name="restaurant_name" class="form-control" 
                                            value="{{ old('restaurant_name', $restaurant->name) }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Restaurant Logo</label>
+                                    <input type="file" name="logo" id="restaurant_logo_input" class="form-control" accept="image/*" onchange="previewRestaurantLogo(this)">
+                                    <small class="info-text">Upload brand logo (PNG, JPG, WebP, SVG - Max 3MB)</small>
+                                    <div class="mt-2" id="logo_preview_container" style="display: {{ $restaurant->logo ? 'block' : 'none' }};">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <img id="logo_preview_img" src="{{ $restaurant->logo ? asset('storage/restaurant/' . $restaurant->logo) : '' }}" alt="Logo Preview" style="max-height: 70px; max-width: 120px; border-radius: 8px; border: 1px solid #ddd; padding: 3px; background: #fff; object-fit: contain;">
+                                            <span class="text-muted small">Current Logo</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -192,13 +214,14 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Payment QR Code Image</label>
-                                    <input type="file" name="qr_code_image" class="form-control" accept="image/*">
-                                    @if($restaurant->qr_code_image)
-                                        <div class="mt-2">
-                                            <img src="{{ asset('storage/restaurant/' . $restaurant->qr_code_image) }}" alt="QR Code" style="max-height: 100px; border-radius: 8px; border: 1px solid #ccc;">
+                                    <input type="file" name="qr_code_image" id="qr_code_input" class="form-control" accept="image/*" onchange="previewQRCode(this)">
+                                    <small class="info-text">Upload a QR Code image for UPI payments (Max 2MB)</small>
+                                    <div class="mt-2" id="qr_preview_container" style="display: {{ $restaurant->qr_code_image ? 'block' : 'none' }};">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <img id="qr_preview_img" src="{{ $restaurant->qr_code_image ? asset('storage/restaurant/' . $restaurant->qr_code_image) : '' }}" alt="QR Code" style="max-height: 70px; max-width: 120px; border-radius: 8px; border: 1px solid #ddd; padding: 3px; background: #fff; object-fit: contain;">
+                                            <span class="text-muted small">Current QR Code</span>
                                         </div>
-                                    @endif
-                                    <small class="info-text">Upload a QR Code image for UPI payments</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -346,6 +369,46 @@ gstPercentage.addEventListener('input', function () {
         this.value = 100;
     }
 });
+
+// Logo live preview
+function previewRestaurantLogo(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 3 * 1024 * 1024) {
+            alert('File size exceeds 3MB limit. Please choose a smaller image.');
+            input.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('logo_preview_img').src = e.target.result;
+            document.getElementById('logo_preview_container').style.display = 'block';
+            const headerPreview = document.getElementById('header_logo_preview');
+            if (headerPreview) {
+                headerPreview.src = e.target.result;
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// QR Code live preview
+function previewQRCode(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 2 * 1024 * 1024) {
+            alert('File size exceeds 2MB limit. Please choose a smaller image.');
+            input.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('qr_preview_img').src = e.target.result;
+            document.getElementById('qr_preview_container').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
 </script>
 
 </body>

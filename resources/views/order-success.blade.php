@@ -351,9 +351,15 @@
     
     <!-- Branding Header -->
     <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 24px;">
-        <div style="background-color: #ffffff; padding: 8px 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; border: 1px solid var(--rim); height: 48px;">
-            <img src="{{ asset('logo.png') }}" alt="Bill & Bite Logo" style="height: 30px; width: auto; display: block;">
-        </div>
+        @if(!empty($restaurant_details) && $restaurant_details->hasLogo())
+            <div style="background-color: #ffffff; padding: 8px 18px; border-radius: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; border: 1px solid var(--rim); height: 54px;">
+                <img src="{{ $restaurant_details->logo_url }}" alt="{{ $restaurant_details->name }}" style="max-height: 38px; max-width: 140px; width: auto; object-fit: contain; display: block;">
+            </div>
+        @else
+            <div style="background-color: #ffffff; padding: 8px 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; border: 1px solid var(--rim); height: 48px;">
+                <img src="{{ asset('logo.png') }}" alt="Bill & Bite Logo" style="height: 30px; width: auto; display: block;">
+            </div>
+        @endif
     </div>
 
     <div class="success-card">
@@ -370,6 +376,11 @@
 
         <!-- Title Section -->
         <div class="title-section">
+            @if(!empty($restaurant_details))
+                <div style="font-size: 0.95rem; font-weight: 600; color: var(--gold); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 4px;">
+                    {{ $restaurant_details->name }}
+                </div>
+            @endif
             <h1 class="title">Order Received</h1>
             <div class="order-id">
                 <span><i class="fas fa-hashtag"></i> ORDER NUMBER</span>
@@ -391,6 +402,12 @@
 
         <!-- Order Details Preview -->
         <div class="details-section">
+            @if(isset($table_details) && !empty($table_details->name))
+                <div class="detail-row">
+                    <span class="detail-label"><i class="fas fa-chair"></i> Table</span>
+                    <span class="detail-value" style="font-weight: 600; color: var(--gold);">{{ $table_details->name }}</span>
+                </div>
+            @endif
             <div class="detail-row">
                 <span class="detail-label"><i class="far fa-calendar-alt"></i> Date</span>
                 <span class="detail-value">{{ now()->format('d M Y, h:i A') }}</span>

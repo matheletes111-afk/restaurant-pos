@@ -78,6 +78,17 @@
         </li>
         @endif
 
+        @if($saUser->id == 1 || in_array('marketing_notifications', $saPerms))
+         <li class="pc-item">
+          <a href="{{route('admin.marketing.index')}}" class="pc-link @if(Request::segment(2)=="marketing") active_class @endif">
+            <span class="pc-micon">
+              <i class="fas fa-paper-plane"></i>
+            </span>
+            <span class="pc-mtext">Send Notification</span>
+          </a>
+        </li>
+        @endif
+
         @if($saUser->id == 1 || in_array('customer_support', $saPerms))
         <li class="pc-item">
         <a href="{{ route('admin.support.tickets') }}" 
@@ -105,8 +116,9 @@
 
 
 @php
+  $subRestId = method_exists(auth()->user(), 'getSubscriptionRestaurantId') ? auth()->user()->getSubscriptionRestaurantId() : auth()->user()->restaurant_id;
   $active = DB::table('subscriptions')
-    ->where('user_id', auth()->user()->restaurant_id)
+    ->where('user_id', $subRestId)
     ->where(function($query) {
         $query->where('status', 'active')
               ->orWhere(function($q) {
@@ -232,6 +244,15 @@
   <a href="{{route('restaurant.staff.index')}}" class="pc-link @if(Request::segment(2)=="restaurant-staff") active_class @endif">
     <span class="pc-micon"><i class="fas fa-users"></i></span>
     <span class="pc-mtext">Staff</span>
+  </a>
+</li>
+@endif
+
+@if(auth()->user()->isOwner())
+<li class="pc-item {{ $disabledClass }}">
+  <a href="{{ route('restaurant.outlets.index') }}" class="pc-link @if(Request::segment(1)=="outlets") active_class @endif">
+    <span class="pc-micon"><i class="fas fa-store-alt"></i></span>
+    <span class="pc-mtext">Outlets / Branches</span>
   </a>
 </li>
 @endif
@@ -541,6 +562,45 @@
         </div>
       </div>
     </li>
+    @if(auth()->user()->role === 'RES' && auth()->user()->isOwner())
+    @php
+      $availableOutlets = auth()->user()->getAvailableOutlets();
+      $currRest = \App\Models\RestaurantMaster::find(auth()->user()->restaurant_id);
+    @endphp
+    @if($availableOutlets->count() > 1 || auth()->user()->hasMultiOutletAccess())
+    <li class="dropdown pc-h-item me-2 d-none d-sm-inline-flex">
+      <a class="btn btn-outline-warning btn-sm dropdown-toggle d-flex align-items-center gap-2" 
+         href="#" 
+         data-bs-toggle="dropdown" 
+         style="border-radius: 20px; font-weight: 600; padding: 6px 14px; background: rgba(255, 106, 0, 0.08); border-color: #ff6a00; color: #e65100;">
+        <i class="fas fa-store-alt text-primary"></i>
+        <span class="text-truncate" style="max-width: 160px;">{{ $currRest ? $currRest->name : 'Select Outlet' }}</span>
+      </a>
+      <div class="dropdown-menu dropdown-menu-end shadow border-0 p-2" style="min-width: 250px; border-radius: 12px;">
+        <div class="dropdown-header text-muted text-uppercase fw-bold pb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+          <i class="fas fa-exchange-alt me-1"></i> Switch Working Outlet
+        </div>
+        @foreach($availableOutlets as $outItem)
+          <a class="dropdown-item d-flex align-items-center justify-content-between py-2 rounded mb-1 {{ $outItem->id == auth()->user()->restaurant_id ? 'bg-light-primary text-primary fw-bold' : '' }}" 
+             href="{{ route('restaurant.outlets.switch', $outItem->id) }}">
+            <div class="d-flex align-items-center text-truncate">
+              <i class="fas fa-{{ $outItem->isMainRestaurant() ? 'crown text-warning' : 'store text-secondary' }} me-2"></i>
+              <span class="text-truncate">{{ $outItem->name }}</span>
+            </div>
+            @if($outItem->id == auth()->user()->restaurant_id)
+              <i class="fas fa-check-circle text-primary ms-2"></i>
+            @endif
+          </a>
+        @endforeach
+        <div class="dropdown-divider my-1"></div>
+        <a class="dropdown-item text-primary fw-semibold py-2 text-center" href="{{ route('restaurant.outlets.index') }}">
+          <i class="fas fa-cog me-1"></i> Manage All Outlets
+        </a>
+      </div>
+    </li>
+    @endif
+    @endif
+
     <li class="dropdown pc-h-item header-user-profile">
       @if(auth()->user()->role=="RES")
       <a

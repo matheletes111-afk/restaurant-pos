@@ -10,6 +10,7 @@ use App\Models\TempOrderItem;
 use App\Models\RestaurantMaster;
 use App\Models\OrderManage;
 use App\Models\OrderItems;
+use App\Models\TableManage;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 class TempOrderController extends Controller
@@ -19,8 +20,9 @@ class TempOrderController extends Controller
         $categories = Category::where('restaurant_id', $restaurant_id)
                                 ->with('subcategories')
                                 ->get();
-        $restaurant_details = RestaurantMaster::where('id',$restaurant_id)->first();                      
-        return view('temp_order', compact('categories', 'table_id', 'restaurant_id','restaurant_details'));
+        $restaurant_details = RestaurantMaster::where('id', $restaurant_id)->first();
+        $table_details = TableManage::where('restaurant_id', $restaurant_id)->find($table_id);
+        return view('temp_order', compact('categories', 'table_id', 'restaurant_id', 'restaurant_details', 'table_details'));
     }
 
 public function store(Request $request)
@@ -156,10 +158,11 @@ public function store(Request $request)
     {
         $tempOrder = TempOrder::findOrFail($id);
         $restaurant_details = RestaurantMaster::find($tempOrder->restaurant_id);
+        $table_details = $tempOrder->table_id ? TableManage::where('restaurant_id', $tempOrder->restaurant_id)->find($tempOrder->table_id) : null;
         $orderId = $tempOrder->order_id ?? ('#' . $tempOrder->id);
         $customerName = $tempOrder->customer_name;
         
-        return view('order-success', compact('tempOrder', 'restaurant_details', 'orderId', 'customerName'));
+        return view('order-success', compact('tempOrder', 'restaurant_details', 'table_details', 'orderId', 'customerName'));
     }
 
     public function approveOrder($id)

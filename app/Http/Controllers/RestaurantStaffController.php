@@ -11,39 +11,54 @@ class RestaurantStaffController extends Controller
     // SHOW PAGE
     public function index()
     {
-        $data = User::where('restaurant_id', auth()->user()->restaurant_id)
+        $user = auth()->user();
+        $availableOutlets = $user->getAvailableOutlets();
+        $outletIds = $availableOutlets->isNotEmpty() ? $availableOutlets->pluck('id')->toArray() : [$user->restaurant_id];
+
+        $data = User::whereIn('restaurant_id', $outletIds)
                 ->where('role_type','!=','ADMIN')
-                ->orderBy('id', 'DESC')
                 ->where('status','!=','D')
+                ->with('restaurant')
+                ->orderBy('id', 'DESC')
                 ->get();
 
-        return view('staff', compact('data'));
+        return view('staff', compact('data', 'availableOutlets'));
     }
 
     // INSERT
     public function insert(Request $request)
     {
         $request->validate([
-            'name'      => 'required',
-            'email'     => 'required|email|unique:users,email',
-            'phone'     => 'required',
-            'role_type' => 'required',
-            'password'  => 'required',
+            'name'          => 'required',
+            'email'         => 'required|email|unique:users,email',
+            'phone'         => 'required',
+            'role_type'     => 'required',
+            'password'      => 'required',
+            'restaurant_id' => 'nullable|integer',
         ]);
 
-        $user = new User;
-        $user->name      = $request->name;
-        $user->email     = $request->email;
-        $user->role      = 'RES';
-        $user->phone     = $request->phone;
-        $user->role_type = $request->role_type;
-        $user->restaurant_id = auth()->user()->restaurant_id;
-        $user->address   = $request->address;
-        $user->pincode   = $request->pincode;
-        $user->status    = $request->status;
-        $user->password  = Hash::make($request->password);
+        $user = auth()->user();
+        $targetRestaurantId = $request->restaurant_id ?: $user->restaurant_id;
 
-        $user->save();
+        // Verify target restaurant belongs to this owner
+        $availableOutlets = $user->getAvailableOutlets();
+        if ($availableOutlets->isNotEmpty() && !$availableOutlets->contains('id', $targetRestaurantId)) {
+            return back()->with('error', 'Invalid outlet selected.');
+        }
+
+        $newUser = new User;
+        $newUser->name          = $request->name;
+        $newUser->email         = $request->email;
+        $newUser->role          = 'RES';
+        $newUser->phone         = $request->phone;
+        $newUser->role_type     = $request->role_type;
+        $newUser->restaurant_id = $targetRestaurantId;
+        $newUser->address       = $request->address;
+        $newUser->pincode       = $request->pincode;
+        $newUser->status        = $request->status ?? 'A';
+        $newUser->password      = Hash::make($request->password);
+
+        $newUser->save();
 
         return back()->with('success','Staff added successfully!');
     }
@@ -52,25 +67,38 @@ class RestaurantStaffController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'name'      => 'required',
-            'email'     => 'required|email',
-            'phone'     => 'required',
-            'role_type' => 'required',
+            'name'          => 'required',
+            'email'         => 'required|email',
+            'phone'         => 'required',
+            'role_type'     => 'required',
+            'restaurant_id' => 'nullable|integer',
         ]);
 
-        $user = User::find($request->id);
+        $user = auth()->user();
+        $availableOutlets = $user->getAvailableOutlets();
+        $outletIds = $availableOutlets->isNotEmpty() ? $availableOutlets->pluck('id')->toArray() : [$user->restaurant_id];
 
-        if(!$user){ return back()->with('error','Staff not found!'); }
+        $staffUser = User::where('id', $request->id)
+            ->whereIn('restaurant_id', $outletIds)
+            ->first();
 
-        $user->name      = $request->name;
-        $user->email     = $request->email;
-        $user->phone     = $request->phone;
-        $user->role_type = $request->role_type;
-        $user->address   = $request->address;
-        $user->pincode   = $request->pincode;
-        $user->status    = $request->status;
+        if(!$staffUser){ return back()->with('error','Staff not found!'); }
 
-        $user->save();
+        $targetRestaurantId = $request->restaurant_id ?: $staffUser->restaurant_id;
+        if ($availableOutlets->isNotEmpty() && !$availableOutlets->contains('id', $targetRestaurantId)) {
+            return back()->with('error', 'Invalid outlet selected.');
+        }
+
+        $staffUser->name          = $request->name;
+        $staffUser->email         = $request->email;
+        $staffUser->phone         = $request->phone;
+        $staffUser->role_type     = $request->role_type;
+        $staffUser->restaurant_id = $targetRestaurantId;
+        $staffUser->address       = $request->address;
+        $staffUser->pincode       = $request->pincode;
+        $staffUser->status        = $request->status;
+
+        $staffUser->save();
 
         return back()->with('success','Staff updated successfully!');
     }
@@ -78,19 +106,30 @@ class RestaurantStaffController extends Controller
     // DELETE
     public function delete($id)
     {
-        User::where('id', $id)->update(['status'=>'D']);
+        $user = auth()->user();
+        $availableOutlets = $user->getAvailableOutlets();
+        $outletIds = $availableOutlets->isNotEmpty() ? $availableOutlets->pluck('id')->toArray() : [$user->restaurant_id];
+
+        User::where('id', $id)
+            ->whereIn('restaurant_id', $outletIds)
+            ->update(['status'=>'D']);
+
         return back()->with('success','Staff deleted successfully!');
     }
 
     public function status($id)
     {
-        $check = User::where('id', $id)->first();
-        if (@$check->status=="A") {
-            User::where('id', $id)->update(['status'=>'I']);
-        }else{
-            User::where('id', $id)->update(['status'=>'A']);
+        $user = auth()->user();
+        $availableOutlets = $user->getAvailableOutlets();
+        $outletIds = $availableOutlets->isNotEmpty() ? $availableOutlets->pluck('id')->toArray() : [$user->restaurant_id];
+
+        $check = User::where('id', $id)->whereIn('restaurant_id', $outletIds)->first();
+        if ($check) {
+            $newStatus = ($check->status == "A") ? "I" : "A";
+            User::where('id', $id)->update(['status' => $newStatus]);
+            return back()->with('success','Staff status changed successfully!');
         }
-        return back()->with('success','Staff status changed successfully!');
+        return back()->with('error', 'Staff member not found.');
     }
 
     public function permissions($id)
@@ -99,8 +138,12 @@ class RestaurantStaffController extends Controller
             abort(403, 'Only restaurant administrators can manage staff permissions.');
         }
 
+        $user = auth()->user();
+        $availableOutlets = $user->getAvailableOutlets();
+        $outletIds = $availableOutlets->isNotEmpty() ? $availableOutlets->pluck('id')->toArray() : [$user->restaurant_id];
+
         $staff = User::where('id', $id)
-            ->where('restaurant_id', auth()->user()->restaurant_id)
+            ->whereIn('restaurant_id', $outletIds)
             ->firstOrFail();
 
         $menus = [
@@ -189,8 +232,12 @@ class RestaurantStaffController extends Controller
             abort(403, 'Only restaurant administrators can manage staff permissions.');
         }
 
+        $user = auth()->user();
+        $availableOutlets = $user->getAvailableOutlets();
+        $outletIds = $availableOutlets->isNotEmpty() ? $availableOutlets->pluck('id')->toArray() : [$user->restaurant_id];
+
         $staff = User::where('id', $id)
-            ->where('restaurant_id', auth()->user()->restaurant_id)
+            ->whereIn('restaurant_id', $outletIds)
             ->firstOrFail();
 
         $staff->permissions = $request->input('permissions', []);

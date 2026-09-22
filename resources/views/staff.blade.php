@@ -41,6 +41,9 @@
                 <thead>
                     <tr>
                         <th>Name</th><th>Email</th><th>Phone</th>
+                        @if(isset($availableOutlets) && $availableOutlets->count() > 1)
+                        <th>Assigned Outlet</th>
+                        @endif
                         <th>Role</th><th>Status</th><th>Action</th>
                     </tr>
                 </thead>
@@ -51,6 +54,13 @@
                         <td>{{ $value->name }}</td>
                         <td>{{ $value->email }}</td>
                         <td>{{ $value->phone }}</td>
+                        @if(isset($availableOutlets) && $availableOutlets->count() > 1)
+                        <td>
+                          <span class="badge bg-light text-dark border">
+                            <i class="fas fa-store me-1 text-primary"></i> {{ $value->restaurant ? $value->restaurant->name : 'N/A' }}
+                          </span>
+                        </td>
+                        @endif
                         <td>{{ $value->role_type }}</td>
 
                         <td>
@@ -77,6 +87,7 @@
                                 data-email="{{ $value->email }}"
                                 data-phone="{{ $value->phone }}"
                                 data-role="{{ $value->role_type }}"
+                                data-restaurant_id="{{ $value->restaurant_id }}"
                                 data-address="{{ $value->address }}"
                                 data-pincode="{{ $value->pincode }}"
                                 data-status="{{ $value->status }}">
@@ -151,6 +162,19 @@
             <option value="Kitchen Staff">Kitchen Staff</option>
         </select>
     </div>
+
+    @if(isset($availableOutlets) && $availableOutlets->count() > 1)
+    <div class="col-md-6">
+        <label>Assign Outlet Branch <span class="text-danger">*</span></label>
+        <select name="restaurant_id" class="form-control" required>
+            @foreach($availableOutlets as $outlet)
+                <option value="{{ $outlet->id }}" {{ $outlet->id == auth()->user()->restaurant_id ? 'selected' : '' }}>
+                    {{ $outlet->name }} {{ $outlet->isMainRestaurant() ? '(Main Branch)' : '' }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+    @endif
 
     <div class="col-md-12">
         <label>Address</label>
@@ -230,6 +254,19 @@
         </select>
     </div>
 
+    @if(isset($availableOutlets) && $availableOutlets->count() > 1)
+    <div class="col-md-6">
+        <label>Assign Outlet Branch <span class="text-danger">*</span></label>
+        <select class="form-control" id="edit_restaurant_id" name="restaurant_id" required>
+            @foreach($availableOutlets as $outlet)
+                <option value="{{ $outlet->id }}">
+                    {{ $outlet->name }} {{ $outlet->isMainRestaurant() ? '(Main Branch)' : '' }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+    @endif
+
     <div class="col-md-12">
         <label>Address</label>
         <textarea class="form-control" id="edit_address" name="address"></textarea>
@@ -278,6 +315,7 @@
             $("#edit_email").val($(this).data("email"));
             $("#edit_phone").val($(this).data("phone"));
             $("#edit_role").val($(this).data("role"));
+            $("#edit_restaurant_id").val($(this).data("restaurant_id"));
             $("#edit_address").val($(this).data("address"));
             $("#edit_pincode").val($(this).data("pincode"));
             $("#edit_status").val($(this).data("status"));

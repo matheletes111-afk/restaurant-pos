@@ -93,6 +93,49 @@
       font-size: 1.8rem;
     }
 
+    .restaurant-logo-card {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      padding: 12px 24px;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      margin-bottom: 20px;
+      max-width: 240px;
+      height: 90px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .restaurant-logo-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.09);
+    }
+
+    .restaurant-logo-card img {
+      max-height: 68px;
+      max-width: 200px;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    .table-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 106, 0, 0.08);
+      color: var(--primary);
+      border: 1px solid rgba(255, 106, 0, 0.2);
+      border-radius: 50px;
+      padding: 6px 16px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+
     .restaurant-header h1 {
       font-family: 'Playfair Display', serif;
       font-weight: 700;
@@ -610,6 +653,8 @@
     @media (max-width: 768px) {
       .restaurant-header { padding: 40px 20px; }
       .restaurant-header h1 { font-size: 2.2rem; }
+      .restaurant-logo-card { max-width: 200px; height: 76px; padding: 8px 16px; margin-bottom: 16px; }
+      .restaurant-logo-card img { max-height: 56px; max-width: 170px; }
       .customer-card, .order-summary-card { padding: 24px; }
       .controls-bar { flex-direction: column; align-items: stretch; }
       .search-container { max-width: 100%; }
@@ -622,26 +667,70 @@
   
   <!-- Branding Header -->
   <div class="d-flex justify-content-between align-items-center mb-4 pt-3 pb-2 border-bottom">
-    <div class="bg-white px-3 py-2 rounded shadow-sm d-flex align-items-center justify-content-center" style="border: 1px solid var(--border); height: 48px;">
-      <img src="{{ asset('logo.png') }}" alt="Bill & Bite Logo" style="height: 30px; width: auto; display: block;">
+    <div class="d-flex align-items-center">
+      <div class="bg-white px-3 py-1 rounded shadow-sm d-flex align-items-center justify-content-center" style="border: 1px solid var(--border); height: 44px;">
+        @if(!empty($restaurant_details) && $restaurant_details->hasLogo())
+          <img src="{{ $restaurant_details->logo_url }}" alt="{{ $restaurant_details->name }}" style="max-height: 32px; max-width: 120px; width: auto; object-fit: contain; display: block;">
+        @else
+          <img src="{{ asset('logo.png') }}" alt="Bill & Bite Logo" style="height: 28px; width: auto; display: block;">
+        @endif
+      </div>
     </div>
-    <span class="badge badge-light px-3 py-2 text-secondary font-weight-bold" style="border: 1px solid var(--border); border-radius: 30px; font-size: 0.8rem; background-color: #f1f5f9;">
-      <i class="fas fa-mobile-alt me-1" style="color: #ff6a00;"></i> Self Ordering Portal
-    </span>
+    <div class="d-flex align-items-center gap-2">
+      @if(isset($table_details) && !empty($table_details->name))
+        <span class="badge badge-light px-3 py-2 text-primary font-weight-bold mr-2" style="border: 1px solid rgba(255, 106, 0, 0.25); border-radius: 30px; font-size: 0.82rem; background-color: rgba(255, 106, 0, 0.08);">
+          <i class="fas fa-chair me-1"></i> {{ $table_details->name }}
+        </span>
+      @endif
+      <span class="badge badge-light px-3 py-2 text-secondary font-weight-bold" style="border: 1px solid var(--border); border-radius: 30px; font-size: 0.8rem; background-color: #f1f5f9;">
+        <i class="fas fa-mobile-alt me-1" style="color: #ff6a00;"></i> Digital Menu
+      </span>
+    </div>
   </div>
 
   <!-- Restaurant Header -->
   <div class="restaurant-header">
-    <div class="header-icon-ring"><i class="fas fa-utensils"></i></div>
-    <h1>{{ $restaurant_details->name ?? 'Premium Dining' }}</h1>
-    <p class="header-tagline">Exquisite flavors crafted with passion.</p>
-    @if($restaurant_details->gstin)
-      <div class="gst-info-badge">
-        <i class="fas fa-file-invoice-dollar"></i> GSTIN: {{ $restaurant_details->gstin }} &nbsp;|&nbsp; GST: {{ $restaurant_details->gst_percentage ?? 0 }}%
+    @if(!empty($restaurant_details) && $restaurant_details->hasLogo())
+      <div class="restaurant-logo-card">
+        <img src="{{ $restaurant_details->logo_url }}" alt="{{ $restaurant_details->name ?? 'Restaurant Logo' }}" class="restaurant-logo-img">
       </div>
     @else
-      <div class="gst-info-badge"><i class="fas fa-receipt"></i> Non-GST Bill</div>
+      <div class="header-icon-ring"><i class="fas fa-utensils"></i></div>
     @endif
+
+    @if(isset($table_details) && !empty($table_details->name))
+      <div>
+        <span class="table-badge">
+          <i class="fas fa-chair me-1"></i> Table: {{ $table_details->name }}
+        </span>
+      </div>
+    @endif
+
+    <h1>{{ $restaurant_details->name ?? 'Premium Dining' }}</h1>
+
+    @if(!empty($restaurant_details->address))
+      <p class="text-muted mb-3" style="font-size: 0.95rem;">
+        <i class="fas fa-map-marker-alt text-danger me-1"></i> {{ $restaurant_details->address }}
+      </p>
+    @else
+      <p class="header-tagline">Exquisite flavors crafted with passion.</p>
+    @endif
+
+    <div class="d-flex flex-wrap justify-content-center align-items-center" style="gap: 8px;">
+      @if($restaurant_details->gstin)
+        <div class="gst-info-badge">
+          <i class="fas fa-file-invoice-dollar"></i> GSTIN: {{ $restaurant_details->gstin }} &nbsp;|&nbsp; GST: {{ $restaurant_details->gst_percentage ?? 0 }}%
+        </div>
+      @else
+        <div class="gst-info-badge"><i class="fas fa-receipt"></i> Non-GST Bill</div>
+      @endif
+
+      @if(!empty($restaurant_details->fssai_number))
+        <div class="gst-info-badge">
+          <i class="fas fa-shield-alt"></i> FSSAI: {{ $restaurant_details->fssai_number }}
+        </div>
+      @endif
+    </div>
   </div>
 
   <!-- Customer Details -->

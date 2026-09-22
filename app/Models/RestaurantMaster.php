@@ -12,8 +12,10 @@ class RestaurantMaster extends Model
     protected $table = 'restaurant_master';
     
     protected $fillable = [
+        'parent_id',
         'restaurant_id_unique',
         'name',
+        'logo',
         'address',
         'pincode',
         'gstin',
@@ -65,6 +67,36 @@ class RestaurantMaster extends Model
         return 'BILL-BITE-' . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
     }
     
+    public function parent()
+    {
+        return $this->belongsTo(RestaurantMaster::class, 'parent_id');
+    }
+
+    public function outlets()
+    {
+        return $this->hasMany(RestaurantMaster::class, 'parent_id')->where('status', '!=', 'D');
+    }
+
+    public function isMainRestaurant(): bool
+    {
+        return empty($this->parent_id);
+    }
+
+    public function getMainRestaurant()
+    {
+        return $this->parent_id ? $this->parent : $this;
+    }
+
+    public function getMainRestaurantId(): int
+    {
+        return (int) ($this->parent_id ?: $this->id);
+    }
+
+    public function getOutletCount(): int
+    {
+        return $this->outlets()->count();
+    }
+
     public function owner()
     {
         return $this->belongsTo(User::class, 'owner_id');
@@ -99,5 +131,53 @@ class RestaurantMaster extends Model
     public function latest_subscription()
     {
         return $this->hasOne(Subscription::class, 'user_id')->latestOfMany();
+    }
+
+    /**
+     * Check if the restaurant has an active, existing logo file.
+     */
+    public function hasLogo(): bool
+    {
+        if (empty($this->logo)) {
+            return false;
+        }
+
+        if (filter_var($this->logo, FILTER_VALIDATE_URL)) {
+            return true;
+        }
+
+        if (file_exists(storage_path('app/public/restaurant/' . $this->logo)) || file_exists(public_path('storage/restaurant/' . $this->logo))) {
+            return true;
+        }
+
+        if (file_exists(public_path($this->logo))) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Get the accessible public URL for the restaurant logo.
+     */
+    public function getLogoUrlAttribute(): ?string
+    {
+        if (empty($this->logo)) {
+            return null;
+        }
+
+        if (filter_var($this->logo, FILTER_VALIDATE_URL)) {
+            return $this->logo;
+        }
+
+        if (file_exists(storage_path('app/public/restaurant/' . $this->logo)) || file_exists(public_path('storage/restaurant/' . $this->logo))) {
+            return asset('storage/restaurant/' . $this->logo);
+        }
+
+        if (file_exists(public_path($this->logo))) {
+            return asset($this->logo);
+        }
+
+        return null;
     }
 }

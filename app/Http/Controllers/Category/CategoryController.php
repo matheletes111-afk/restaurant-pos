@@ -19,7 +19,8 @@ class CategoryController extends Controller
     {
         $data = [];
         $data['data'] = Category::where('status','!=','D')->where('restaurant_id',auth()->user()->restaurant_id)->get();
-        $check_plan = Subscription::where('user_id',auth()->user()->restaurant_id)->active()->first();
+        $subRestaurantId = auth()->user()->getSubscriptionRestaurantId() ?? auth()->user()->restaurant_id;
+        $check_plan = Subscription::where('user_id', $subRestaurantId)->active()->first();
         $data['plan_details'] = Plan::where('id',$check_plan->plan_id)->first();
         return view('category_admin',$data);
     }
@@ -133,7 +134,8 @@ class CategoryController extends Controller
          if ($data['details']=="") {
            return redirect()->back()->with('error','Unauthorized Access');
         }
-        $check_plan = Subscription::where('user_id',auth()->user()->restaurant_id)->active()->first();
+        $subRestaurantId = auth()->user()->getSubscriptionRestaurantId() ?? auth()->user()->restaurant_id;
+        $check_plan = Subscription::where('user_id', $subRestaurantId)->active()->first();
         $data['plan_details'] = Plan::where('id',$check_plan->plan_id)->first();
         $data['id'] = $id;
         return view('sub_index',$data);

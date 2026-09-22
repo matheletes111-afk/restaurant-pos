@@ -262,6 +262,8 @@ public function store(Request $request)
         $plan->total_number_of_dishes = $request->total_number_of_dishes ?? 0;
         $plan->total_number_of_table = $request->total_number_of_table ?? 0;
         $plan->inventory_checkbox = $request->inventory_checkbox ?? 'N';
+        $plan->multi_outlet_checkbox = $request->multi_outlet_checkbox ?? 'N';
+        $plan->total_number_of_outlets = ($request->multi_outlet_checkbox === 'Y') ? (int) ($request->total_number_of_outlets ?? 1) : 1;
         $plan->is_default_plan = $request->is_default_plan ?? 'N';
         $plan->is_delete = 'N';
         $plan->plan_status = 'A';
@@ -295,6 +297,8 @@ public function store(Request $request)
         $history->total_number_of_dishes = $request->total_number_of_dishes ?? 0;
         $history->total_number_of_table = $request->total_number_of_table ?? 0;
         $history->inventory_checkbox = $request->inventory_checkbox ?? 'N';
+        $history->multi_outlet_checkbox = $request->multi_outlet_checkbox ?? 'N';
+        $history->total_number_of_outlets = ($request->multi_outlet_checkbox === 'Y') ? (int) ($request->total_number_of_outlets ?? 1) : 1;
         $history->save();
 
         return redirect()->route('plans.index')
@@ -466,7 +470,10 @@ public function update(Request $request, $id)
         $newUpdatedPlan->total_number_of_dishes = $request->total_number_of_dishes;
         $newUpdatedPlan->total_number_of_table = $request->total_number_of_table;
         $newUpdatedPlan->inventory_checkbox = $request->inventory_checkbox;
+        $newUpdatedPlan->multi_outlet_checkbox = $request->multi_outlet_checkbox ?? 'N';
+        $newUpdatedPlan->total_number_of_outlets = ($request->multi_outlet_checkbox === 'Y') ? (int) ($request->total_number_of_outlets ?? 1) : 1;
         $newUpdatedPlan->is_default_plan = $request->is_default_plan;
+        $newUpdatedPlan->sort_order = $plan->sort_order ?? 0;
         $newUpdatedPlan->plan_status = 'A';
         $newUpdatedPlan->save();
 
@@ -502,6 +509,8 @@ public function update(Request $request, $id)
         $insHis->total_number_of_dishes = $request->total_number_of_dishes;
         $insHis->total_number_of_table = $request->total_number_of_table;
         $insHis->inventory_checkbox = $request->inventory_checkbox;
+        $insHis->multi_outlet_checkbox = $request->multi_outlet_checkbox ?? 'N';
+        $insHis->total_number_of_outlets = ($request->multi_outlet_checkbox === 'Y') ? (int) ($request->total_number_of_outlets ?? 1) : 1;
         $insHis->save();
 
         return redirect()->route('plans.index')

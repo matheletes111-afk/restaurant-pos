@@ -50,6 +50,30 @@ class WebhookController extends Controller
                 case 'subscription.activated':
                     $this->handleSubscriptionActivated($payload);
                     break;
+
+                case 'subscription.resumed':
+                    $this->handleSubscriptionResumed($payload);
+                    break;
+
+                case 'subscription.updated':
+                    $this->handleSubscriptionUpdated($payload);
+                    break;
+
+                case 'subscription.authenticated':
+                    $this->handleSubscriptionAuthenticated($payload);
+                    break;
+
+                case 'subscription.pending':
+                    $this->handleSubscriptionPending($payload);
+                    break;
+
+                case 'subscription.halted':
+                    $this->handleSubscriptionHalted($payload);
+                    break;
+
+                case 'subscription.paused':
+                    $this->handleSubscriptionPaused($payload);
+                    break;
             }
 
             return response()->json(['status' => 'success']);
@@ -152,5 +176,105 @@ class WebhookController extends Controller
 
         Subscription::where('razorpay_subscription_id', $subscription['id'])
             ->update(['status' => 'active']);
+    }
+
+    private function handleSubscriptionResumed($payload)
+    {
+        $subscription = $payload['payload']['subscription']['entity'];
+        Log::info('Subscription Resumed via webhook: ' . $subscription['id']);
+
+        $sub = Subscription::where('razorpay_subscription_id', $subscription['id'])->first();
+        if ($sub && $sub->user_id) {
+            $restaurant = RestaurantMaster::find($sub->user_id);
+            if ($restaurant && $restaurant->status === 'D') {
+                Log::warning("Ignored subscription.resumed webhook for deleted restaurant ID: {$sub->user_id}");
+                return;
+            }
+        }
+
+        Subscription::where('razorpay_subscription_id', $subscription['id'])
+            ->update([
+                'status' => 'active',
+                'auto_renew' => 1
+            ]);
+    }
+
+    private function handleSubscriptionUpdated($payload)
+    {
+        $subscription = $payload['payload']['subscription']['entity'];
+        Log::info('Subscription Updated via webhook: ' . $subscription['id']);
+
+        $sub = Subscription::where('razorpay_subscription_id', $subscription['id'])->first();
+        if (!$sub) return;
+
+        $updateData = [];
+        if (isset($subscription['status'])) {
+            $status = $subscription['status'];
+            if (in_array($status, ['authenticated', 'active'])) {
+                $status = 'active';
+            }
+            $updateData['status'] = $status;
+        }
+
+        if (isset($subscription['charge_at']) && $subscription['charge_at'] > 0) {
+            $updateData['renewal_date'] = date('Y-m-d H:i:s', $subscription['charge_at']);
+        }
+
+        if (!empty($updateData)) {
+            $sub->update($updateData);
+        }
+    }
+
+    private function handleSubscriptionAuthenticated($payload)
+    {
+        $subscription = $payload['payload']['subscription']['entity'];
+        Log::info('Subscription Authenticated (Mandate/Payment Method Verified): ' . $subscription['id']);
+
+        $sub = Subscription::where('razorpay_subscription_id', $subscription['id'])->first();
+        if ($sub) {
+            $sub->update([
+                'status' => 'active',
+                'auto_renew' => 1
+            ]);
+        }
+    }
+
+    private function handleSubscriptionPending($payload)
+    {
+        $subscription = $payload['payload']['subscription']['entity'];
+        Log::warning('Subscription Payment Pending / Failed retry: ' . $subscription['id']);
+
+        $sub = Subscription::where('razorpay_subscription_id', $subscription['id'])->first();
+        if ($sub) {
+            $sub->update([
+                'status' => 'pending'
+            ]);
+        }
+    }
+
+    private function handleSubscriptionHalted($payload)
+    {
+        $subscription = $payload['payload']['subscription']['entity'];
+        Log::error('Subscription Halted (Retries exhausted / Bank issue): ' . $subscription['id']);
+
+        $sub = Subscription::where('razorpay_subscription_id', $subscription['id'])->first();
+        if ($sub) {
+            $sub->update([
+                'status' => 'halted'
+            ]);
+        }
+    }
+
+    private function handleSubscriptionPaused($payload)
+    {
+        $subscription = $payload['payload']['subscription']['entity'];
+        Log::info('Subscription Paused: ' . $subscription['id']);
+
+        $sub = Subscription::where('razorpay_subscription_id', $subscription['id'])->first();
+        if ($sub) {
+            $sub->update([
+                'status' => 'paused'
+            ]);
+        }
     }
 }

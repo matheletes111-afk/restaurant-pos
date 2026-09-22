@@ -15,7 +15,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // 1. Process scheduled marketing notification campaigns
+        $schedule->command('marketing:send-scheduled-emails')->everyMinute()->withoutOverlapping();
+
+        // 2. Process database queue worker in background every minute
+        $schedule->command('queue:work --stop-when-empty --tries=3')->everyMinute()->withoutOverlapping();
     }
 
     /**

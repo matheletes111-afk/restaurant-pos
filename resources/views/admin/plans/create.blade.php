@@ -146,13 +146,12 @@
                 <div class="row">
                   <div class="col-md-6">
                     <div class="form-group">
-                      <label for="billing_cycle">Billing Cycle *</label>
+                      <label for="billing_cycle">Plan Timeframe (Monthly / Yearly) *</label>
                       <select class="form-control" id="billing_cycle" name="billing_cycle" required>
-                        <option value="monthly" {{ old('billing_cycle') == 'monthly' ? 'selected' : '' }}>Monthly (30 days)</option>
-                        <option value="quarterly" {{ old('billing_cycle') == 'quarterly' ? 'selected' : '' }}>Quarterly (90 days)</option>
-                        <option value="half-yearly" {{ old('billing_cycle') == 'half-yearly' ? 'selected' : '' }}>Half Yearly (180 days)</option>
-                        <option value="yearly" {{ old('billing_cycle') == 'yearly' ? 'selected' : '' }}>Yearly (365 days)</option>
+                        <option value="monthly" {{ old('billing_cycle', 'monthly') == 'monthly' ? 'selected' : '' }}>Monthly (30 Days)</option>
+                        <option value="yearly" {{ old('billing_cycle') == 'yearly' ? 'selected' : '' }}>Yearly (365 Days)</option>
                       </select>
+                      <small class="text-muted">Choose whether this plan is billed Monthly or Yearly</small>
                     </div>
                   </div>
 
@@ -161,6 +160,7 @@
                       <label for="duration_days">Duration (Days) *</label>
                       <input type="number" class="form-control" id="duration_days" name="duration_days"
                              min="1" value="{{ old('duration_days', 30) }}" required>
+                      <small class="text-muted">Auto-filled based on timeframe (e.g. 30 for Monthly, 365 for Yearly)</small>
                     </div>
                   </div>
                 </div>
@@ -252,6 +252,27 @@
                       </select>
                     </div>
                   </div>
+
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="multi_outlet_checkbox">Multi-Outlet Support</label>
+                      <select class="form-control" id="multi_outlet_checkbox" name="multi_outlet_checkbox">
+                        <option value="N" {{ old('multi_outlet_checkbox','N')=='N' ? 'selected' : '' }}>Disabled (Single Outlet Only)</option>
+                        <option value="Y" {{ old('multi_outlet_checkbox')=='Y' ? 'selected' : '' }}>Enabled (Multiple Outlets)</option>
+                      </select>
+                      <small class="text-muted">Allow this restaurant to create multiple branch outlets</small>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6" id="outlet_limit_wrapper" style="{{ old('multi_outlet_checkbox', 'N') == 'Y' ? '' : 'display: none;' }}">
+                    <div class="form-group">
+                      <label for="total_number_of_outlets">Maximum Outlets Allowed</label>
+                      <input type="number" class="form-control" id="total_number_of_outlets"
+                             name="total_number_of_outlets"
+                             value="{{ old('total_number_of_outlets', 2) }}" min="1">
+                      <small class="text-muted">Maximum number of branch outlets permitted (e.g. 2, 5, 10, or 0 for Unlimited)</small>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="form-group">
@@ -277,26 +298,10 @@
   <script>
     $(document).ready(function () {
 
-      // Auto set duration based on billing cycle
+      // Auto set duration based on billing cycle timeframe
       $('#billing_cycle').on('change', function () {
         var cycle = $(this).val();
-        var days = 30;
-
-        switch (cycle) {
-          case 'monthly':
-            days = 30;
-            break;
-          case 'quarterly':
-            days = 90;
-            break;
-          case 'half-yearly':
-            days = 180;
-            break;
-          case 'yearly':
-            days = 365;
-            break;
-        }
-
+        var days = (cycle === 'yearly') ? 365 : 30;
         $('#duration_days').val(days);
       });
 
@@ -361,6 +366,15 @@
           $('#is_default_plan_value').val('Y');
         } else {
           $('#is_default_plan_value').val('N');
+        }
+      });
+
+      // Toggle outlet limit input based on multi-outlet checkbox selection
+      $('#multi_outlet_checkbox').on('change', function () {
+        if ($(this).val() === 'Y') {
+          $('#outlet_limit_wrapper').slideDown();
+        } else {
+          $('#outlet_limit_wrapper').slideUp();
         }
       });
 

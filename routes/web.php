@@ -115,6 +115,16 @@ Route::prefix('admin')->group(function () {
     Route::post('crm/{id}/add-task', [App\Http\Controllers\Admin\AdminCrmController::class, 'addTask'])->name('admin.crm.add-task');
     Route::post('crm/tasks/{taskId}/toggle', [App\Http\Controllers\Admin\AdminCrmController::class, 'toggleTask'])->name('admin.crm.toggle-task');
 
+    // Admin Marketing Notifications Broadcasts
+    Route::get('marketing', [App\Http\Controllers\Admin\AdminMarketingController::class, 'index'])->name('admin.marketing.index');
+    Route::get('marketing/create', [App\Http\Controllers\Admin\AdminMarketingController::class, 'create'])->name('admin.marketing.create');
+    Route::post('marketing/store', [App\Http\Controllers\Admin\AdminMarketingController::class, 'store'])->name('admin.marketing.store');
+    Route::get('marketing/{id}', [App\Http\Controllers\Admin\AdminMarketingController::class, 'show'])->name('admin.marketing.show')->where('id', '[0-9]+');
+    Route::get('marketing/{id}/status-ajax', [App\Http\Controllers\Admin\AdminMarketingController::class, 'recipientStatusAjax'])->name('admin.marketing.status.ajax')->where('id', '[0-9]+');
+    Route::post('marketing/send-test', [App\Http\Controllers\Admin\AdminMarketingController::class, 'sendTest'])->name('admin.marketing.send-test');
+    Route::post('marketing/{id}/retry', [App\Http\Controllers\Admin\AdminMarketingController::class, 'retryFailed'])->name('admin.marketing.retry')->where('id', '[0-9]+');
+    Route::delete('marketing/{id}', [App\Http\Controllers\Admin\AdminMarketingController::class, 'destroy'])->name('admin.marketing.destroy')->where('id', '[0-9]+');
+
 Route::get('manage-restaurant', [RestaurantController::class, 'index'])->name('manage.restaurant');
 Route::post('manage-restaurant/insert', [RestaurantController::class, 'store'])->name('manage.restaurant.insert');
 Route::post('manage-restaurant/update', [RestaurantController::class, 'update'])->name('manage.restaurant.update');
@@ -147,6 +157,8 @@ Route::get('manage-category/bulk-upload-template/{id}', [App\Http\Controllers\Ca
 Route::get('table-manage', [TableManageController::class, 'index'])->name('table.manage');
 Route::post('table-manage/insert', [TableManageController::class, 'store'])->name('table.manage.insert');
 Route::post('table-manage/update', [TableManageController::class, 'update'])->name('table.manage.update');
+Route::get('table-manage/regenerate-qr/{id}', [TableManageController::class, 'regenerateQr'])->name('table.manage.regenerate.qr');
+Route::get('table-manage/regenerate-all', [TableManageController::class, 'regenerateAllQr'])->name('table.manage.regenerate.all');
 Route::get('table-manage/status/{id}', [TableManageController::class, 'status'])->name('table.manage.status');
 Route::get('table-manage/delete/{id}', [TableManageController::class, 'delete'])->name('table.manage.delete');
 Route::get('/restaurant/table/{table_id}/{restaurant_id}', function($table_id,$restaurant_id){
@@ -272,6 +284,17 @@ Route::prefix('restaurant-staff')->group(function () {
     Route::post('/permissions/{id}', [RestaurantStaffController::class, 'updatePermissions'])
         ->name('restaurant.staff.update-permissions');
 });
+
+// Restaurant Outlets / Branches Management
+Route::prefix('outlets')->group(function () {
+    Route::get('/', [\App\Http\Controllers\RestaurantOutletController::class, 'index'])->name('restaurant.outlets.index');
+    Route::post('/store', [\App\Http\Controllers\RestaurantOutletController::class, 'store'])->name('restaurant.outlets.store');
+    Route::post('/update/{id}', [\App\Http\Controllers\RestaurantOutletController::class, 'update'])->name('restaurant.outlets.update');
+    Route::get('/status/{id}', [\App\Http\Controllers\RestaurantOutletController::class, 'status'])->name('restaurant.outlets.status');
+    Route::get('/delete/{id}', [\App\Http\Controllers\RestaurantOutletController::class, 'delete'])->name('restaurant.outlets.delete');
+    Route::get('/switch/{id}', [\App\Http\Controllers\RestaurantOutletController::class, 'switchOutlet'])->name('restaurant.outlets.switch');
+});
+
 Route::get('/ask-ai', [AIChatController::class, 'index'])->name('ask-ai');
 Route::post('/ask-ai/send', [AIChatController::class, 'send'])->name('ask-ai.send');
 
@@ -320,6 +343,7 @@ Route::get('admin/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdmin
     Route::get('subscriptions/payment-failed', [\App\Http\Controllers\SubscriptionController::class, 'paymentFailed'])->name('admin.subscriptions.payment.failed.get');
     Route::delete('subscriptions/{id}/cancel', [\App\Http\Controllers\SubscriptionController::class, 'cancel'])->name('admin.subscriptions.cancel');
     Route::post('subscriptions/{id}/toggle-auto-renew', [\App\Http\Controllers\SubscriptionController::class, 'toggleAutoRenew'])->name('admin.subscriptions.toggleAutoRenew');
+    Route::get('subscriptions/{id}/change-payment-method', [\App\Http\Controllers\SubscriptionController::class, 'changePaymentMethod'])->name('admin.subscriptions.changePaymentMethod')->where('id', '[0-9]+');
     Route::post('razorpay/webhook', [\App\Http\Controllers\Admin\WebhookController::class, 'handle']);
     
     // Restaurant Plans View

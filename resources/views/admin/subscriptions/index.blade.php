@@ -204,8 +204,26 @@
             <div class="row">
                 <div class="col-sm-12">
                     <div class="card">
-                        <div class="card-header">
-                            <a href="{{ route('restaurant.plans') }}" class="btn btn-primary" style="float: right;">
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <ul class="nav nav-pills" id="subscriptionTimeframeTabs" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active sub-timeframe-filter-btn" data-filter="all" href="javascript:void(0)" style="border-radius: 20px; padding: 6px 16px; font-size: 0.85rem; font-weight: 600;">
+                                        <i class="fas fa-layer-group me-1"></i> All ({{ $subscriptions->count() }})
+                                    </a>
+                                </li>
+                                <li class="nav-item ms-1">
+                                    <a class="nav-link sub-timeframe-filter-btn" data-filter="monthly" href="javascript:void(0)" style="border-radius: 20px; padding: 6px 16px; font-size: 0.85rem; font-weight: 600;">
+                                        <i class="fas fa-calendar-alt me-1"></i> Monthly ({{ $subscriptions->filter(fn($s) => strtolower($s->plan->billing_cycle ?? '') == 'monthly')->count() }})
+                                    </a>
+                                </li>
+                                <li class="nav-item ms-1">
+                                    <a class="nav-link sub-timeframe-filter-btn" data-filter="yearly" href="javascript:void(0)" style="border-radius: 20px; padding: 6px 16px; font-size: 0.85rem; font-weight: 600;">
+                                        <i class="fas fa-calendar-check me-1"></i> Yearly ({{ $subscriptions->filter(fn($s) => strtolower($s->plan->billing_cycle ?? '') == 'yearly')->count() }})
+                                    </a>
+                                </li>
+                            </ul>
+
+                            <a href="{{ route('restaurant.plans') }}" class="btn btn-primary" style="border-radius: 20px;">
                                 <i class="fa fa-plus"></i> Upgrade Plan
                             </a>
                         </div>
@@ -218,6 +236,7 @@
                                         <tr>
                                             <th>ID</th>
                                             <th>Plan</th>
+                                            <th>Timeframe</th>
                                             <th>Price</th>
                                             <th>Status</th>
                                             <th>Start Date</th>
@@ -229,12 +248,26 @@
                                     </thead>
                                     <tbody>
                                         @foreach($subscriptions as $subscription)
-                                        <tr>
+                                        @php
+                                            $subTf = strtolower($subscription->plan->billing_cycle ?? 'monthly');
+                                        @endphp
+                                        <tr data-timeframe="{{ $subTf }}">
                                             <td>{{ $subscription->id }}</td>
                                             <td>
                                                 <strong>{{ $subscription->plan->name ?? 'N/A' }}</strong>
                                                 @if(isset($subscription->plan->label_name) && $subscription->plan->label_name)
                                                     <span class="badge badge-warning text-dark ml-1" style="font-size: 0.65rem;">{{ $subscription->plan->label_name }}</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($subTf == 'yearly')
+                                                    <span class="badge bg-success text-white px-2 py-1" style="font-size: 0.78rem; border-radius: 12px;">
+                                                        <i class="fas fa-calendar-check me-1"></i> Yearly
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-primary text-white px-2 py-1" style="font-size: 0.78rem; border-radius: 12px;">
+                                                        <i class="fas fa-calendar-alt me-1"></i> Monthly
+                                                    </span>
                                                 @endif
                                             </td>
                                             <td>
@@ -248,7 +281,9 @@
                                                 <span class="btn btn-{{ 
                                                     $subscription->status == 'active' ? 'success' : 
                                                      ($subscription->status == 'cancelled' ? 'danger' : 
-                                                     ($subscription->status == 'expired' ? 'warning' : 'secondary')) 
+                                                     ($subscription->status == 'expired' ? 'secondary' : 
+                                                     ($subscription->status == 'pending' ? 'warning' : 
+                                                     ($subscription->status == 'halted' ? 'danger' : 'info')))) 
                                                 }} btn-sm" style="padding: 2px 8px; font-size: 0.78rem;">
                                                     {{ ucfirst($subscription->status) }}
                                                 </span>
@@ -267,6 +302,15 @@
                                                             {{ $subscription->auto_renew ? 'ON' : 'OFF' }}
                                                         </span>
                                                     </div>
+                                                    @if(($subscription->plan->price ?? 0) > 0 && $subscription->payments->first())
+                                                        @php 
+                                                            $latestPay = $subscription->payments->first(); 
+                                                            $payMethodText = $latestPay->payment_method ?: 'Card/Bank';
+                                                        @endphp
+                                                        <small class="d-block text-muted mt-1" style="font-size: 0.73rem; white-space: nowrap;">
+                                                            <i class="fas fa-university text-warning me-1"></i> {{ strlen($payMethodText) > 22 ? substr($payMethodText, 0, 20).'...' : $payMethodText }}
+                                                        </small>
+                                                    @endif
                                                 @else
                                                     <span class="badge badge-secondary">
                                                         {{ $subscription->auto_renew ? 'Yes' : 'No' }}
@@ -283,6 +327,15 @@
                                                 <a href="{{ route('admin.subscriptions.invoice', $subscription->id) }}" class="btn btn-primary btn-sm" title="Download Invoice">
                                                     <i class="fas fa-file-download"></i> Invoice
                                                 </a>
+                                                @if(($subscription->plan->price ?? 0) > 0 && in_array($subscription->status, ['active', 'completed', 'pending', 'halted', 'authenticated']))
+                                                <a href="{{ route('admin.subscriptions.changePaymentMethod', $subscription->id) }}" 
+                                                   class="btn btn-warning btn-sm change-bank-btn" 
+                                                   data-plan="{{ $subscription->plan->name ?? 'Plan' }}"
+                                                   title="Change Bank Account / Card for AutoPay" 
+                                                   style="background: linear-gradient(135deg, #f59e0b, #d97706); border: none; color: white;">
+                                                    <i class="fas fa-university"></i> Change Bank
+                                                </a>
+                                                @endif
                                                 @if($subscription->status == 'active')
                                                 <button class="btn btn-danger btn-sm cancel-btn" 
                                                         data-id="{{ $subscription->id }}" 
@@ -395,7 +448,40 @@
                             </div>
                         </div>
 
-                        <!-- 3. Payment Details -->
+                        <!-- 3. Active Bank Account / AutoPay Card (Prominent) -->
+                        <div class="detail-section-card" id="modalBankCardSection" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #e2e8f0; border-left: 4px solid #f59e0b; display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                <h6 class="detail-label mb-0" style="color: #0f172a; font-weight: 700; font-size: 0.95rem;">
+                                    <i class="fas fa-university text-warning mr-1"></i> Active AutoPay Bank / Payment Method
+                                </h6>
+                                <span id="modalAutoPayBadge" class="badge bg-success text-white px-2 py-1" style="font-size: 0.75rem; border-radius: 12px;">
+                                    <i class="fas fa-check-circle me-1"></i> Auto-Debit Active
+                                </span>
+                            </div>
+                            
+                            <div class="d-flex align-items-center justify-content-between p-3 bg-white rounded border flex-wrap gap-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div style="width: 46px; height: 46px; border-radius: 10px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); display: flex; align-items: center; justify-content: center; color: #d97706; font-size: 1.35rem;">
+                                        <i id="modalBankIcon" class="fas fa-credit-card"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-weight-bold text-dark" id="modalBankType" style="font-size: 1.05rem;">Visa Credit Card</div>
+                                        <div class="text-muted" id="modalBankAccount" style="font-size: 0.92rem; font-family: monospace; letter-spacing: 0.5px;">•••• •••• •••• 4366</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-muted small">Issuing Bank / Network</div>
+                                    <div class="font-weight-bold text-dark" id="modalBankIssuer">Axis Bank (UTIB)</div>
+                                </div>
+                                <div class="text-end">
+                                    <a id="modalChangeBankCardBtn" href="#" class="btn btn-warning btn-sm change-bank-btn" style="background: linear-gradient(135deg, #f59e0b, #d97706); border: none; color: white; border-radius: 8px; font-weight: 600; padding: 6px 14px;">
+                                        <i class="fas fa-exchange-alt me-1"></i> Change Bank
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Payment Details -->
                         <div class="detail-section-card">
                             <h6 class="detail-label mb-3"><i class="fas fa-receipt text-primary mr-1"></i> Payment Information</h6>
                             <div class="row">
@@ -533,10 +619,15 @@
                     </div>
                 </div>
                 
-                <div class="modal-footer d-flex justify-content-between align-items-center" style="background: #ffffff; padding: 1rem 1.75rem;">
-                    <a href="#" id="modalInvoiceDownloadBtn" class="btn btn-primary btn-sm" target="_blank" style="padding: 0.6rem 1.4rem; border-radius: 30px;">
-                        <i class="fas fa-file-download mr-1"></i> Download Invoice
-                    </a>
+                <div class="modal-footer d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: #ffffff; padding: 1rem 1.75rem;">
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="#" id="modalInvoiceDownloadBtn" class="btn btn-primary btn-sm" target="_blank" style="padding: 0.6rem 1.4rem; border-radius: 30px;">
+                            <i class="fas fa-file-download mr-1"></i> Download Invoice
+                        </a>
+                        <a href="#" id="modalChangePaymentBtn" class="btn btn-warning btn-sm" style="background: linear-gradient(135deg, #f59e0b, #d97706); border: none; color: white; padding: 0.6rem 1.4rem; border-radius: 30px; display: none;">
+                            <i class="fas fa-university mr-1"></i> Change Bank / Card
+                        </a>
+                    </div>
                     <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" data-bs-dismiss="modal" style="padding: 0.6rem 1.4rem; border-radius: 30px;">
                         Close
                     </button>
@@ -580,8 +671,24 @@
     
     <script>
         $(document).ready(function() {
-            $('#subscriptionsTable').DataTable({
+            var subTable = $('#subscriptionsTable').DataTable({
                 order: [[0, 'desc']]
+            });
+
+            // Subscription timeframe tab filtering
+            $('.sub-timeframe-filter-btn').on('click', function(e) {
+                e.preventDefault();
+                $('.sub-timeframe-filter-btn').removeClass('active');
+                $(this).addClass('active');
+
+                var filter = $(this).data('filter');
+                if (filter === 'all') {
+                    subTable.column(2).search('').draw();
+                } else if (filter === 'monthly') {
+                    subTable.column(2).search('Monthly').draw();
+                } else if (filter === 'yearly') {
+                    subTable.column(2).search('Yearly').draw();
+                }
             });
 
             // View Details Modal Handler
@@ -668,6 +775,27 @@
                             $('#modalPaymentDate').text(payment.payment_date || 'N/A');
                             $('#modalRazorpayPaymentId').text(payment.razorpay_payment_id || 'N/A');
 
+                            // AutoPay Bank Account / Card Card
+                            if (payment && payment.has_active_autopay) {
+                                $('#modalBankType').text(payment.method_type || 'Active Card / Bank');
+                                $('#modalBankAccount').text(payment.account_number || '•••• •••• •••• 4366');
+                                $('#modalBankIssuer').text(payment.bank_name || 'Payment Gateway');
+                                
+                                let iconClass = payment.method_icon || 'fa-credit-card';
+                                $('#modalBankIcon').attr('class', 'fas ' + iconClass);
+
+                                if (data.auto_renew) {
+                                    $('#modalAutoPayBadge').html('<i class="fas fa-check-circle me-1"></i> Auto-Debit Active').removeClass('bg-secondary bg-danger').addClass('bg-success text-white');
+                                } else {
+                                    $('#modalAutoPayBadge').html('<i class="fas fa-pause-circle me-1"></i> Auto-Debit Disabled').removeClass('bg-success').addClass('bg-secondary text-white');
+                                }
+
+                                $('#modalChangeBankCardBtn').attr('href', payment.change_bank_url || '{{ url("admin/subscriptions") }}/' + data.id + '/change-payment-method');
+                                $('#modalBankCardSection').show();
+                            } else {
+                                $('#modalBankCardSection').hide();
+                            }
+
                             if (payment.refund_amount && payment.refund_amount > 0) {
                                 $('#modalRefundAmount').text('₹' + parseFloat(payment.refund_amount).toFixed(2));
                                 $('#modalRefundRow').show();
@@ -695,6 +823,16 @@
                             // Invoice download button
                             $('#modalInvoiceDownloadBtn').attr('href', data.invoice_url || '#');
 
+                            // Change Payment Method button in modal
+                            if (plan && plan.price > 0 && ['active', 'completed', 'pending', 'halted', 'authenticated'].indexOf(data.status) !== -1) {
+                                $('#modalChangePaymentBtn')
+                                    .attr('href', '{{ url("admin/subscriptions") }}/' + data.id + '/change-payment-method')
+                                    .data('plan', plan.name || 'Plan')
+                                    .show();
+                            } else {
+                                $('#modalChangePaymentBtn').hide();
+                            }
+
                             // Hide loader & display content
                             $('#modalLoadingState').hide();
                             $('#modalContentState').fadeIn(200);
@@ -706,6 +844,14 @@
                         $('#modalLoadingState').html('<div class="alert alert-danger"><i class="fas fa-exclamation-circle mr-1"></i> Error loading subscription details. Please try again.</div>');
                     }
                 });
+            });
+
+            // Change Bank / Card button confirmation
+            $(document).on('click', '.change-bank-btn, #modalChangePaymentBtn', function(e) {
+                let plan = $(this).data('plan') || 'your subscription';
+                if (!confirm('You are about to update the AutoPay Bank Account / Card for ' + plan + '.\n\nYour current plan validity and remaining days will remain intact. All future renewals will be automatically charged from your new payment method.\n\nDo you want to continue to Razorpay authentication?')) {
+                    e.preventDefault();
+                }
             });
 
             // Cancel button

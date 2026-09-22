@@ -166,6 +166,27 @@
     }
 
     /* Actions */
+    .btn-regenerate-action {
+      background: rgba(14, 165, 233, 0.1);
+      color: #0284c7;
+      border: 1px solid rgba(14, 165, 233, 0.2);
+      border-radius: 8px;
+      width: 34px;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .btn-regenerate-action:hover {
+      background: #0284c7;
+      color: white;
+      transform: translateY(-1px);
+    }
+
     .btn-edit-action {
       background: rgba(255, 106, 0, 0.1);
       color: #ff6a00;
@@ -215,17 +236,32 @@
     
     <!-- Header -->
     <div class="page-header">
-      <h5><i class="fas fa-table text-success me-2"></i> Manage Tables</h5>
-      @if(
-          auth()->user()->hasPermission('table_master', 'add')
-          && isset($plan_details)
-          && isset($plan_details->total_number_of_table)
-          && count($tables ?? []) < $plan_details->total_number_of_table
-      )
-        <button class="btn btn-add-table" data-toggle="modal" data-target="#addTableModal">
-          <i class="fa fa-plus-circle me-1"></i> Add Table
-        </button>
-      @endif
+      <div>
+        <h5><i class="fas fa-table text-success me-2"></i> Manage Tables</h5>
+        @if(isset($restaurant))
+          <small class="text-muted"><i class="fas fa-store me-1"></i> {{ $restaurant->name }} @if($restaurant->logo) &bull; <span class="text-success"><i class="fas fa-check-circle"></i> Custom Logo Active</span>@endif</small>
+        @endif
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        @if(count($tables ?? []) > 0 && auth()->user()->hasPermission('table_master', 'edit'))
+          <a href="{{ route('table.manage.regenerate.all') }}" 
+             onclick="return confirm('Regenerate QR codes for all tables with latest logo and restaurant name?')"
+             class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-1 shadow-sm"
+             title="Delete old and regenerate all QR codes">
+             <i class="fas fa-sync-alt"></i> Regenerate All QRs
+          </a>
+        @endif
+        @if(
+            auth()->user()->hasPermission('table_master', 'add')
+            && isset($plan_details)
+            && isset($plan_details->total_number_of_table)
+            && count($tables ?? []) < $plan_details->total_number_of_table
+        )
+          <button class="btn btn-add-table" data-toggle="modal" data-target="#addTableModal">
+            <i class="fa fa-plus-circle me-1"></i> Add Table
+          </button>
+        @endif
+      </div>
     </div>
 
     @include('includes.message')
@@ -239,7 +275,7 @@
                 <th>#</th>
                 <th>Name</th>
                 <th>Description</th>
-                <th>QR Code</th>
+                <th>Branded QR Standee</th>
                 <th>Status</th>
                 <th>Action</th>
               </tr>
@@ -253,12 +289,17 @@
                 <td>
                   <div class="qr-container">
                     @if($table->qr_code)
-                      <img src="{{ asset('qrcodes/'.$table->qr_code) }}" class="qr-img" width="80" alt="Table QR">
-                      <a href="{{ asset('qrcodes/'.$table->qr_code) }}" download class="btn-download-qr">
+                      <a href="{{ asset('qrcodes/'.$table->qr_code) }}" target="_blank" title="Click to view full standee">
+                        <img src="{{ asset('qrcodes/'.$table->qr_code) }}" class="qr-img" width="85" alt="Table QR">
+                      </a>
+                      <a href="{{ asset('qrcodes/'.$table->qr_code) }}" download="{{ Str::slug($table->name) }}-qr.svg" class="btn-download-qr">
                         <i class="fas fa-download me-1"></i> Download
                       </a>
                     @else
                       <span class="badge bg-light-danger text-danger"><i class="fas fa-times-circle"></i> No QR Code</span>
+                      <a href="{{ route('table.manage.regenerate.qr', $table->id) }}" class="btn-download-qr mt-1" style="background:#0284c7;">
+                        <i class="fas fa-magic me-1"></i> Generate
+                      </a>
                     @endif
                   </div>
                 </td>
@@ -280,17 +321,25 @@
                 <td>
                   <div class="d-flex gap-2">
                     @if(auth()->user()->hasPermission('table_master', 'edit'))
+                    <a href="{{ route('table.manage.regenerate.qr', $table->id) }}"
+                       onclick="return confirm('Re-generate QR code for this table? This will delete the old QR and create a fresh one with current logo &amp; table details.')"
+                       class="btn-regenerate-action"
+                       title="Re-generate QR Code (Delete old, generate new)">
+                      <i class="fas fa-sync-alt"></i>
+                    </a>
                     <button class="btn-edit-action editBtn"
                             data-id="{{ $table->id }}"
                             data-name="{{ $table->name }}"
-                            data-description="{{ $table->description }}">
+                            data-description="{{ $table->description }}"
+                            title="Edit Table">
                       <i class="fa fa-edit"></i>
                     </button>
                     @endif
                     @if(auth()->user()->hasPermission('table_master', 'delete'))
                     <a href="{{ route('table.manage.delete', $table->id) }}"
                        onclick="return confirm('Are you sure you want to delete this table?')"
-                       class="btn-delete-action"><i class="fa fa-trash"></i></a>
+                       class="btn-delete-action"
+                       title="Delete Table"><i class="fa fa-trash"></i></a>
                     @endif
                   </div>
                 </td>
@@ -317,7 +366,13 @@
 
         <div class="modal-body row g-3">
           <div class="col-md-12">
-            <label>Name</label>
+            <div class="alert alert-info py-2 px-3 small mb-2 d-flex align-items-center gap-2">
+              <i class="fas fa-qrcode text-primary fa-lg"></i>
+              <span>A branded QR Code standee with your <strong>Restaurant Logo</strong> on top and <strong>Restaurant Name - Table Number</strong> below will be generated automatically.</span>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <label>Name <span class="text-danger">*</span></label>
             <input type="text" name="name" class="form-control" required placeholder="e.g. Table 5">
           </div>
           <div class="col-md-12">
@@ -349,7 +404,13 @@
 
         <div class="modal-body row g-3">
           <div class="col-md-12">
-            <label>Name</label>
+            <div class="alert alert-info py-2 px-3 small mb-2 d-flex align-items-center gap-2">
+              <i class="fas fa-sync-alt text-primary fa-lg"></i>
+              <span>Updating the table name will automatically re-generate the QR Code standee with updated table details.</span>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <label>Name <span class="text-danger">*</span></label>
             <input type="text" name="name" id="edit_name" class="form-control" required>
           </div>
           <div class="col-md-12">

@@ -63,6 +63,7 @@
                     if (in_array('plan_master', $perms)) $permissionsList[] = 'Plan Master';
                     if (in_array('payment_history', $perms)) $permissionsList[] = 'Payment History';
                     if (in_array('admin_crm', $perms)) $permissionsList[] = 'Admin CRM';
+                    if (in_array('marketing_notifications', $perms)) $permissionsList[] = 'Send Notification';
                     if (in_array('customer_support', $perms)) $permissionsList[] = 'Customer Support';
                     if (in_array('admin_user_management', $perms)) $permissionsList[] = 'Admin Users';
                   @endphp
@@ -162,6 +163,12 @@
                   </div>
                   <div class="col-md-4 mt-2">
                     <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="permissions[]" value="marketing_notifications" id="perm_marketing_notifications">
+                      <label class="form-check-label" for="perm_marketing_notifications">Send Notification</label>
+                    </div>
+                  </div>
+                  <div class="col-md-4 mt-2">
+                    <div class="form-check">
                       <input class="form-check-input" type="checkbox" name="permissions[]" value="customer_support" id="perm_customer_support">
                       <label class="form-check-label" for="perm_customer_support">Customer Support</label>
                     </div>
@@ -241,6 +248,12 @@
                     <div class="form-check">
                       <input class="form-check-input edit-perm-checkbox" type="checkbox" name="permissions[]" value="admin_crm" id="edit_perm_admin_crm">
                       <label class="form-check-label" for="edit_perm_admin_crm">Admin CRM</label>
+                    </div>
+                  </div>
+                  <div class="col-md-4 mt-2">
+                    <div class="form-check">
+                      <input class="form-check-input edit-perm-checkbox" type="checkbox" name="permissions[]" value="marketing_notifications" id="edit_perm_marketing_notifications">
+                      <label class="form-check-label" for="edit_perm_marketing_notifications">Send Notification</label>
                     </div>
                   </div>
                   <div class="col-md-4 mt-2">

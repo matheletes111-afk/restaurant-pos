@@ -61,12 +61,12 @@
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <div class="page-header-title">
-                                <h5 class="m-b-10">Complete Payment</h5>
+                                <h5 class="m-b-10">{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Update AutoPay Bank / Card' : 'Complete Payment' }}</h5>
                             </div>
                             <ul class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="">Home</a></li>
                                 <li class="breadcrumb-item"><a href="{{ route('plans.index') }}">Plans</a></li>
-                                <li class="breadcrumb-item" aria-current="page">Payment</li>
+                                <li class="breadcrumb-item" aria-current="page">{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Update Bank Details' : 'Payment' }}</li>
                             </ul>
                         </div>
                     </div>
@@ -78,43 +78,51 @@
                 <div class="col-sm-12">
                     <div class="card">
                         <div class="card-header">
-                            <h5>Payment Information</h5>
+                            <h5>{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Update AutoPay Payment Method' : 'Payment Information' }}</h5>
                         </div>
                         <div class="card-body">
                             @include('includes.message')
                             
                             <!-- Payment Status Messages -->
                             <div id="paymentSuccess" class="payment-status payment-success" style="display: none;">
-                                <h4><i class="fa fa-check-circle"></i> Payment Successful!</h4>
+                                <h4><i class="fa fa-check-circle"></i> {{ isset($is_payment_method_update) && $is_payment_method_update ? 'Bank / Card Updated Successfully!' : 'Payment Successful!' }}</h4>
                                 <p>Redirecting to subscriptions page...</p>
                             </div>
                             
                             <div id="paymentError" class="payment-status payment-error" style="display: none;">
-                                <h4><i class="fa fa-exclamation-circle"></i> Payment Failed</h4>
+                                <h4><i class="fa fa-exclamation-circle"></i> {{ isset($is_payment_method_update) && $is_payment_method_update ? 'Bank Update Failed' : 'Payment Failed' }}</h4>
                                 <p id="errorMessage"></p>
-                                <a href="{{ route('plans.index') }}" class="btn btn-secondary">Go Back to Plans</a>
+                                <a href="{{ route('admin.subscriptions.index') }}" class="btn btn-secondary">Go Back to Subscriptions</a>
                             </div>
                             
                             <div id="paymentForm">
                                 <div class="row">
                                     <div class="col-md-8 offset-md-2">
+                                        @if(isset($is_payment_method_update) && $is_payment_method_update)
+                                        <div class="alert alert-warning mb-4" style="border-radius: 10px;">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="fas fa-university fa-2x text-warning me-2"></i>
+                                                <div>
+                                                    <strong>Changing AutoPay Bank Account / Card</strong>
+                                                    <p class="mb-0 small text-dark">Your current active subscription validity and remaining days will not change. Authenticating with your new bank details will set them for all future renewals.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @endif
+
                                         <div class="payment-summary">
-                                            <h4 class="text-center mb-4">Payment Summary</h4>
+                                            <h4 class="text-center mb-4">{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Bank Update & Authorization Summary' : 'Payment Summary' }}</h4>
                                             
                                             <table class="table table-bordered">
                                                 <tr>
                                                     <th>Plan Name:</th>
-                                                    <td>{{ $plan->name }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Duration:</th>
-                                                    <td>{{ $plan->duration_days }} days</td>
+                                                    <td><strong>{{ $plan->name }}</strong></td>
                                                 </tr>
                                                 <tr>
                                                     <th>Billing Cycle:</th>
                                                     <td>{{ ucfirst($plan->billing_cycle) }}</td>
                                                 </tr>
-                                                @if($is_upgrade && $existing_subscription)
+                                                @if(isset($is_upgrade) && $is_upgrade && isset($existing_subscription) && $existing_subscription)
                                                 <tr>
                                                     <th>Previous Plan:</th>
                                                     <td>{{ $existing_subscription->plan->name ?? 'N/A' }}</td>
@@ -125,24 +133,24 @@
                                                 </tr>
                                                 @endif
                                                 <tr>
-                                                    <th>Amount Payable:</th>
-                                                    <td class="font-weight-bold">₹{{ number_format($payable_amount, 2) }}</td>
+                                                    <th>{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Renewal Rate / Auth Amount:' : 'Amount Payable:' }}</th>
+                                                    <td class="font-weight-bold text-success">₹{{ number_format($payable_amount, 2) }}</td>
                                                 </tr>
                                             </table>
                                             
                                             <div class="text-center mt-4">
                                                 <button id="rzp-button" class="btn btn-primary btn-lg">
-                                                    <i class="fa fa-credit-card"></i> Pay Now (₹{{ number_format($payable_amount, 2) }})
+                                                    <i class="fa fa-credit-card"></i> {{ isset($is_payment_method_update) && $is_payment_method_update ? 'Authorize New Bank / Card (₹' . number_format($payable_amount, 2) . ')' : 'Pay Now (₹' . number_format($payable_amount, 2) . ')' }}
                                                 </button>
                                                 
-                                                <a href="{{ route('plans.index') }}" class="btn btn-secondary">
+                                                <a href="{{ route('admin.subscriptions.index') }}" class="btn btn-secondary">
                                                     <i class="fa fa-times"></i> Cancel
                                                 </a>
                                             </div>
                                             
                                             <div class="alert alert-info mt-3">
                                                 <i class="fa fa-info-circle"></i> 
-                                                You will be redirected to Razorpay's secure payment gateway.
+                                                You will be redirected to Razorpay's secure payment gateway to authenticate your new bank details.
                                             </div>
                                         </div>
                                     </div>
@@ -168,6 +176,8 @@
         var razorpayKey = "{{ config('services.razorpay.key_id') }}";
         var existingSubscriptionId = "{{ $existing_subscription_id ?? '' }}";
         var creditAmount = "{{ $credit_amount ?? 0 }}";
+        var isPaymentMethodUpdate = "{{ isset($is_payment_method_update) && $is_payment_method_update ? '1' : '' }}";
+        var oldSubscriptionId = "{{ $old_subscription_id ?? '' }}";
         
         console.log('Subscription ID:', subscriptionId);
         console.log('Plan ID:', planId);
@@ -183,7 +193,7 @@
             "key": razorpayKey,
             "subscription_id": subscriptionId,
             "name": appName,
-            "description": "Subscription for {{ $plan->name }}",
+            "description": isPaymentMethodUpdate ? "Update AutoPay Bank for {{ $plan->name }}" : "Subscription for {{ $plan->name }}",
             "prefill": {
                 "name": "{{ $user->name }}",
                 "email": "{{ $user->email ?? auth()->user()->email ?? '' }}",
@@ -211,6 +221,12 @@
                 if (existingSubscriptionId) {
                     formData.append('existing_subscription_id', existingSubscriptionId);
                     formData.append('credit_amount', creditAmount);
+                }
+
+                // Add payment method update flag
+                if (isPaymentMethodUpdate) {
+                    formData.append('is_payment_method_update', '1');
+                    formData.append('old_subscription_id', oldSubscriptionId);
                 }
                 
                 formData.append('all_response', JSON.stringify(response));
@@ -281,10 +297,10 @@
                                 reason: 'user_cancelled'
                             },
                             success: function() {
-                                window.location.href = "{{ route('plans.index') }}";
+                                window.location.href = isPaymentMethodUpdate ? "{{ route('admin.subscriptions.index') }}" : "{{ route('plans.index') }}";
                             },
                             error: function() {
-                                window.location.href = "{{ route('plans.index') }}";
+                                window.location.href = isPaymentMethodUpdate ? "{{ route('admin.subscriptions.index') }}" : "{{ route('plans.index') }}";
                             }
                         });
                     }

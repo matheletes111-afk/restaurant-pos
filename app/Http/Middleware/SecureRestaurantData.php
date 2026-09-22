@@ -123,8 +123,14 @@ class SecureRestaurantData
 
                 if ($record) {
                     $restroCol = $target['restro_col'];
-                    if (property_exists($record, $restroCol) && $record->$restroCol != $user->restaurant_id) {
-                        abort(403, 'Unauthorized access to this restaurant resource.');
+                    if (property_exists($record, $restroCol)) {
+                        $allowedRestroIds = [$user->restaurant_id];
+                        if (method_exists($user, 'isOwner') && $user->isOwner() && method_exists($user, 'getAvailableOutlets')) {
+                            $allowedRestroIds = $user->getAvailableOutlets()->pluck('id')->toArray();
+                        }
+                        if (!in_array($record->$restroCol, $allowedRestroIds)) {
+                            abort(403, 'Unauthorized access to this restaurant resource.');
+                        }
                     }
                 }
             }

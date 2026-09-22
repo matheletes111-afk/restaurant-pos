@@ -29,7 +29,8 @@ class RestaurantProfileApiController extends Controller
                 'address' => 'required|string',
                 'pincode' => 'required|string|max:10',
                 'gstin' => 'nullable|string|max:50',
-                'gst_percentage' => 'nullable|numeric|min:0|max:100'
+                'gst_percentage' => 'nullable|numeric|min:0|max:100',
+                'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp,svg,gif|max:3072'
             ]);
             
             if ($validator->fails()) {
@@ -49,8 +50,26 @@ class RestaurantProfileApiController extends Controller
             $user = User::find($restaurant->owner_id);
             
             // Update User Table (Phone only - email is readonly)
-            $user->phone = $request->phone;
-            $user->save();
+            if ($user) {
+                $user->phone = $request->phone;
+                $user->save();
+            }
+
+            // Handle logo upload
+            if ($request->hasFile('logo')) {
+                $targetDir = storage_path('app/public/restaurant');
+                if (!file_exists($targetDir)) {
+                    mkdir($targetDir, 0755, true);
+                }
+
+                if ($restaurant->logo && file_exists($targetDir . '/' . $restaurant->logo)) {
+                    @unlink($targetDir . '/' . $restaurant->logo);
+                }
+                $logoImage = $request->file('logo');
+                $logoFilename = 'logo_' . time() . '_' . rand(1000, 9999) . '.' . $logoImage->getClientOriginalExtension();
+                $logoImage->move($targetDir, $logoFilename);
+                $restaurant->logo = $logoFilename;
+            }
             
             // Update Restaurant Master
             $restaurant->name = $request->restaurant_name;
@@ -67,6 +86,7 @@ class RestaurantProfileApiController extends Controller
                 'restaurant' => [
                     'id' => $restaurant->id,
                     'name' => $restaurant->name,
+                    'logo' => $restaurant->logo ? asset('storage/restaurant/' . $restaurant->logo) : null,
                     'address' => $restaurant->address,
                     'pincode' => $restaurant->pincode,
                     'gstin' => $restaurant->gstin,

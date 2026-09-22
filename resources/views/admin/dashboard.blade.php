@@ -463,25 +463,13 @@
 
         <!-- Top Hero Row -->
         <div class="row mb-4">
-            <div class="col-lg-8 mb-3 mb-lg-0">
-                <div class="welcome-card-custom">
+            <div class="col-12 col-md-12">
+                <div class="welcome-card-custom mb-0">
                     <span class="hero-badge">
                         <i class="fas fa-bolt text-warning"></i> Super Admin Control Center
                     </span>
                     <h1 class="welcome-title">Hi {{ $saUser->name }}, welcome back!</h1>
                     <p class="welcome-subtitle">Here is real-time performance, restaurant onboarding health, CRM leads funnel, and subscription analytics for your platform.</p>
-                </div>
-            </div>
-            <div class="col-lg-4">
-                <div class="quote-card-custom">
-                    <div style="height: 4px; background: linear-gradient(90deg, #ff6a00, #ff8c42);"></div>
-                    <div class="card-body p-4 position-relative">
-                        <i class="fas fa-quote-right quote-icon"></i>
-                        <span style="color: #64748b; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; display: block; margin-bottom: 8px;">Daily Inspiration</span>
-                        <blockquote style="margin: 0; position: relative; z-index: 2;">
-                            <p class="quote-text">"{{ $quote }}"</p>
-                        </blockquote>
-                    </div>
                 </div>
             </div>
         </div>

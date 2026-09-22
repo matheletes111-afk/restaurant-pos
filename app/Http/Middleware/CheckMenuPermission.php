@@ -29,9 +29,16 @@ class CheckMenuPermission
 
         // Restrict access for restaurant level users without an active subscription
         if ($user->role === 'RES') {
+            $subRestaurantId = method_exists($user, 'getSubscriptionRestaurantId') ? $user->getSubscriptionRestaurantId() : $user->restaurant_id;
             $hasActiveSubscription = \DB::table('subscriptions')
-                ->where('user_id', $user->restaurant_id)
-                ->whereIn('status', ['active', 'completed'])
+                ->where('user_id', $subRestaurantId)
+                ->where(function ($query) {
+                    $query->where('status', 'active')
+                          ->orWhere(function ($q) {
+                              $q->where('status', 'completed')
+                                ->whereDate('end_date', '>=', now());
+                          });
+                })
                 ->exists();
 
             if (!$hasActiveSubscription) {
@@ -45,6 +52,7 @@ class CheckMenuPermission
                     'admin.subscriptions.payment.success.get',
                     'admin.subscriptions.payment.failed',
                     'admin.subscriptions.payment.failed.get',
+                    'admin.subscriptions.changePaymentMethod',
                     'admin.subscriptions.invoice',
                     'restaurant.support.tickets',
                     'restaurant-support',
@@ -89,6 +97,8 @@ class CheckMenuPermission
             'payment-history' => 'payment_history',
             'admin.crm' => 'admin_crm', 
             'crm' => 'admin_crm',
+            'admin.marketing' => 'marketing_notifications',
+            'admin/marketing' => 'marketing_notifications',
             'admin.support.tickets' => 'customer_support', 
             'admin-support' => 'customer_support',
             'admin.users' => 'admin_user_management',
@@ -111,6 +121,13 @@ class CheckMenuPermission
                     }
                 }
                 return $next($request);
+            }
+        }
+
+        // Prevent staff / non-admin from accessing outlet management routes
+        if ($user->role === 'RES' && $user->role_type !== 'ADMIN') {
+            if (($routeName && str_starts_with($routeName, 'restaurant.outlets')) || str_contains($path, 'outlets')) {
+                abort(403, 'Unauthorized. Only restaurant administrators can access outlet management.');
             }
         }
 

@@ -124,8 +124,26 @@
         <div class="col-sm-12">
           <div class="card">
             @include('includes.message')
-            <div class="card-header">
-              <a href="{{ route('plans.create') }}" class="btn btn-primary" style="float: right;">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <ul class="nav nav-pills" id="planTimeframeTabs" role="tablist">
+                <li class="nav-item">
+                  <a class="nav-link active timeframe-filter-btn" data-filter="all" href="javascript:void(0)" style="border-radius: 20px; padding: 6px 16px; font-size: 0.85rem; font-weight: 600;">
+                    <i class="fas fa-layer-group me-1"></i> All Plans ({{ $plans->count() }})
+                  </a>
+                </li>
+                <li class="nav-item ms-1">
+                  <a class="nav-link timeframe-filter-btn" data-filter="monthly" href="javascript:void(0)" style="border-radius: 20px; padding: 6px 16px; font-size: 0.85rem; font-weight: 600;">
+                    <i class="fas fa-calendar-alt me-1"></i> Monthly ({{ $plans->where('billing_cycle', 'monthly')->count() }})
+                  </a>
+                </li>
+                <li class="nav-item ms-1">
+                  <a class="nav-link timeframe-filter-btn" data-filter="yearly" href="javascript:void(0)" style="border-radius: 20px; padding: 6px 16px; font-size: 0.85rem; font-weight: 600;">
+                    <i class="fas fa-calendar-check me-1"></i> Yearly ({{ $plans->where('billing_cycle', 'yearly')->count() }})
+                  </a>
+                </li>
+              </ul>
+
+              <a href="{{ route('plans.create') }}" class="btn btn-primary" style="border-radius: 20px;">
                 <i class="fa fa-plus"></i> Add Plan
               </a>
             </div>
@@ -139,8 +157,9 @@
                       <th>Name</th>
                       <th>Price</th>
                       <th>Currency</th>
-                      <th>Billing Cycle</th>
+                      <th>Timeframe</th>
                       <th>Duration (Days)</th>
+                      <th>Multi-Outlet</th>
                       <th>Default Plan</th>
                       <th>Status</th>
                      
@@ -159,18 +178,45 @@
                       } elseif (!$isDefault && $isActive) {
                           $rankClass = 'rank-1-row';
                       }
+                      $timeframe = strtolower($plan->billing_cycle ?? 'monthly');
                     @endphp
-                    <tr class="plan-row {{ $rankClass }}" data-id="{{ $plan->id }}" data-default="{{ $plan->is_default_plan }}">
+                    <tr class="plan-row {{ $rankClass }}" data-id="{{ $plan->id }}" data-default="{{ $plan->is_default_plan }}" data-timeframe="{{ $timeframe }}">
                       <td>{{ $plan->id }}</td>
-                      <td>{{ $plan->name }}</td>
-                      <td>{{ number_format($plan->price, 2) }}</td>
+                      <td>
+                        <strong>{{ $plan->name }}</strong>
+                        @if($plan->label_name)
+                          <br><span class="badge bg-warning text-dark" style="font-size: 0.65rem;">{{ $plan->label_name }}</span>
+                        @endif
+                      </td>
+                      <td>
+                        @if($plan->price == 0)
+                          <span class="badge bg-success">FREE</span>
+                        @else
+                          ₹{{ number_format($plan->price, 2) }}
+                        @endif
+                      </td>
                       <td>{{ $plan->currency }}</td>
                       <td>
-                        <span class="btn btn-{{ $plan->billing_cycle == 'monthly' ? 'primary' : ($plan->billing_cycle == 'yearly' ? 'success' : 'info') }}">
-                          {{ ucfirst($plan->billing_cycle) }}
-                        </span>
+                        @if($timeframe == 'yearly')
+                          <span class="badge bg-success px-2 py-1" style="font-size: 0.8rem; border-radius: 12px;">
+                            <i class="fas fa-calendar-check me-1"></i> Yearly
+                          </span>
+                        @else
+                          <span class="badge bg-primary px-2 py-1" style="font-size: 0.8rem; border-radius: 12px;">
+                            <i class="fas fa-calendar-alt me-1"></i> Monthly
+                          </span>
+                        @endif
                       </td>
                       <td>{{ $plan->duration_days }}</td>
+                      <td>
+                        @if($plan->multi_outlet_checkbox == 'Y')
+                          <span class="badge bg-info text-dark" style="font-size: 0.75rem;">
+                            <i class="fas fa-store-alt me-1"></i> {{ $plan->total_number_of_outlets == 0 ? 'Unlimited' : $plan->total_number_of_outlets }} Outlets
+                          </span>
+                        @else
+                          <span class="badge bg-light text-muted border" style="font-size: 0.75rem;">Single</span>
+                        @endif
+                      </td>
                       <td>@if(@$plan->is_default_plan=="Y") Yes @else No @endif</td>
                       <td>
                         @if($plan->plan_status == 'A')
@@ -282,8 +328,24 @@
 
   <script>
     $(document).ready(function() {
-      $('#planTable').DataTable({
+      var table = $('#planTable').DataTable({
         ordering: false
+      });
+
+      // Timeframe tab filtering
+      $('.timeframe-filter-btn').on('click', function(e) {
+        e.preventDefault();
+        $('.timeframe-filter-btn').removeClass('active');
+        $(this).addClass('active');
+
+        var filter = $(this).data('filter');
+        if (filter === 'all') {
+          table.column(4).search('').draw();
+        } else if (filter === 'monthly') {
+          table.column(4).search('Monthly').draw();
+        } else if (filter === 'yearly') {
+          table.column(4).search('Yearly').draw();
+        }
       });
 
       // Delete button

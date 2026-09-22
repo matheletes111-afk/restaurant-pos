@@ -18,3 +18,5 @@ public/admin_template/
 public/firebase/firebase-credentials.json
 
 public/storage/*
+public/*
+/public

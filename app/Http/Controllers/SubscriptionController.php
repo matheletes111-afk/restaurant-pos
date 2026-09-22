@@ -32,8 +32,10 @@ class SubscriptionController extends Controller
         $user = auth()->user();
 
         
+        $subRestaurantId = $user->getSubscriptionRestaurantId() ?? $user->restaurant_id;
+
         // Check if user already has this plan active
-        $existingSubscription = Subscription::where('user_id', $user->restaurant_id)
+        $existingSubscription = Subscription::where('user_id', $subRestaurantId)
             ->where('plan_id', $planId)
             ->where('status', 'active')
             ->first();
@@ -51,9 +53,10 @@ class SubscriptionController extends Controller
     {
         $plan = Plan::where('is_delete', 'N')->findOrFail($planId);
         $user = auth()->user();
+        $subRestaurantId = $user->getSubscriptionRestaurantId() ?? $user->restaurant_id;
         
         // Check if user already has this plan active
-        $existingSubscription = Subscription::where('user_id', $user->restaurant_id)
+        $existingSubscription = Subscription::where('user_id', $subRestaurantId)
             ->where('plan_id', $planId)
             ->where('status', 'active')
             ->first();
@@ -75,8 +78,10 @@ class SubscriptionController extends Controller
     // Activate free plan with trial check
     private function activateFreePlan($user, $plan)
     {
+        $subRestaurantId = $user->getSubscriptionRestaurantId() ?? $user->restaurant_id;
+
         // Check if user has already used a free trial
-        $hasUsedFreeTrial = Subscription::where('user_id', $user->restaurant_id)
+        $hasUsedFreeTrial = Subscription::where('user_id', $subRestaurantId)
             ->whereHas('plan', function($query) {
                 $query->where('price', 0);
             })
@@ -92,7 +97,7 @@ class SubscriptionController extends Controller
         try {
             // 1. Create subscription record
             $subscription = new Subscription();
-            $subscription->user_id = $user->restaurant_id;
+            $subscription->user_id = $subRestaurantId;
             $subscription->plan_id = $plan->id;
             $subscription->razorpay_plan_id = $plan->razorpay_plan_id;
             $subscription->razorpay_subscription_id = null; // No Razorpay ID for free plans
@@ -105,7 +110,7 @@ class SubscriptionController extends Controller
 
             // 2. Create payment record for free plan
             $payment = new Payment();
-            $payment->user_id = $user->restaurant_id;
+            $payment->user_id = $subRestaurantId;
             $payment->plan_id = $plan->id;
             $payment->subscription_id = $subscription->id;
             $payment->razorpay_payment_id = null;
@@ -146,70 +151,22 @@ class SubscriptionController extends Controller
         }
 
         try {
-            // 1. Customer Management
-            $restaurant = RestaurantMaster::find($user->restaurant_id);
+            $subRestaurantId = $user->getSubscriptionRestaurantId() ?? $user->restaurant_id;
+
+            // 1. Customer Management (Self-healing & verified with Razorpay API)
+            $restaurant = RestaurantMaster::find($subRestaurantId);
             $owner = $restaurant ? User::find($restaurant->owner_id) : $user;
             if (!$owner) {
                 $owner = $user;
             }
 
-            $razorpayCustomer = RazorpayCustomer::where('user_id', $owner->id)->first();
-            
-            if (!$razorpayCustomer) {
-                $cust_id = null;
-                if (!empty($owner->email)) {
-                    try {
-                        // Check if customer exists in Razorpay
-                        $customers = $this->razorpay->customer->all([
-                            'email' => $owner->email,
-                            'count' => 1
-                        ]);
+            $cust_id = $this->ensureRazorpayCustomer($owner);
 
-                        if (count($customers['items']) > 0) {
-                            $cust_id = $customers['items'][0]['id'];
-                            // Update details in Razorpay
-                            $this->razorpay->customer->fetch($cust_id)->edit([
-                                'name' => $owner->name,
-                                'email' => $owner->email,
-                                'contact' => $owner->phone ?? auth()->user()->phone ?? '9999999999'
-                            ]);
-                        }
-                    } catch (\Exception $e) {
-                        Log::error('Razorpay Customer Search/Update Error: ' . $e->getMessage());
-                    }
-                }
-
-                if (!$cust_id) {
-                    // Create new customer in Razorpay
-                    $customer = $this->razorpay->customer->create([
-                        'name' => $owner->name,
-                        'email' => $owner->email ?? auth()->user()->email,
-                        'contact' => $owner->phone ?? auth()->user()->phone ?? '9999999999'
-                    ]);
-                    $cust_id = $customer->id;
-                }
-
-                // Store in local DB (must link to users.id to satisfy foreign key constraint)
-                $razorpayCustomer = new RazorpayCustomer();
-                $razorpayCustomer->user_id = $owner->id;
-                $razorpayCustomer->rzpay_customer_id = $cust_id;
-                $razorpayCustomer->save();
-            } else {
-                $cust_id = $razorpayCustomer->rzpay_customer_id;
-                // Always update customer details on Razorpay to keep them fresh
-                try {
-                    $this->razorpay->customer->fetch($cust_id)->edit([
-                        'name' => $owner->name,
-                        'email' => $owner->email ?? auth()->user()->email,
-                        'contact' => $owner->phone ?? auth()->user()->phone ?? '9999999999'
-                    ]);
-                } catch (\Exception $e) {
-                    Log::error('Razorpay Customer Always-Update Error: ' . $e->getMessage());
-                }
-            }
+            // Ensure plan exists and is valid on current Razorpay account
+            $razorpayPlanId = $this->ensureRazorpayPlan($plan);
 
             // 2. Check for existing subscription
-            $existingSubscription = Subscription::where('user_id', $user->restaurant_id)
+            $existingSubscription = Subscription::where('user_id', $subRestaurantId)
                 ->whereDate('start_date', '<=', now())
                 ->whereDate('end_date', '>=', now())
                 ->where('status', 'active')
@@ -239,11 +196,10 @@ class SubscriptionController extends Controller
                 $payableAmount = $plan->price;
 
                 // Create subscription with notes about previous plan
-                $subscription = $this->razorpay->subscription->create([
-                    'plan_id' => $plan->razorpay_plan_id,
+                $subPayload = [
+                    'plan_id' => $razorpayPlanId,
                     'customer_notify' => 1,
                     'total_count' => $totalCount,
-                    'customer_id' => $cust_id,
                     'notes' => [
                         'user_id' => (string)$user->restaurant_id,
                         'previous_plan' => (string)$oldPlan->id,
@@ -252,20 +208,31 @@ class SubscriptionController extends Controller
                         'proration_refund_amount' => (string)$refundAmount,
                         'is_upgrade_with_refund' => true
                     ]
-                ]);
+                ];
+
+                if ($cust_id) {
+                    $subPayload['customer_id'] = $cust_id;
+                }
+
+                $subscription = $this->razorpay->subscription->create($subPayload);
             } else {
                 // New subscription
                 $payableAmount = $plan->price;
-                $subscription = $this->razorpay->subscription->create([
-                    'plan_id' => $plan->razorpay_plan_id,
+                $subPayload = [
+                    'plan_id' => $razorpayPlanId,
                     'customer_notify' => 1,
                     'total_count' => $totalCount,
-                    'customer_id' => $cust_id,
                     'notes' => [
                         'user_id' => (string)$user->restaurant_id,
                         'is_initial' => true
                     ]
-                ]);
+                ];
+
+                if ($cust_id) {
+                    $subPayload['customer_id'] = $cust_id;
+                }
+
+                $subscription = $this->razorpay->subscription->create($subPayload);
             }
 
             // 4. Create payment record for new plan
@@ -344,6 +311,97 @@ class SubscriptionController extends Controller
         ];
     }
 
+    // Change / Update Bank Account / Payment Method for existing subscription
+    public function changePaymentMethod($id)
+    {
+        $user = auth()->user();
+        $subscription = Subscription::with('plan')
+            ->where('user_id', $user->restaurant_id)
+            ->findOrFail($id);
+
+        $plan = $subscription->plan;
+
+        if (!$plan || $plan->price == 0) {
+            return redirect()->route('admin.subscriptions.index')
+                ->with('error', 'Bank details cannot be updated for a Free plan.');
+        }
+
+        try {
+            // 1. Customer Management (Self-healing & verified with Razorpay API)
+            $restaurant = RestaurantMaster::find($user->restaurant_id);
+            $owner = $restaurant ? User::find($restaurant->owner_id) : $user;
+            if (!$owner) {
+                $owner = $user;
+            }
+
+            $cust_id = $this->ensureRazorpayCustomer($owner);
+
+            // Ensure plan exists and is valid on current Razorpay account
+            $razorpayPlanId = $this->ensureRazorpayPlan($plan);
+
+            // 2. Create new Razorpay subscription for this plan
+            $totalCount = $this->getTotalCount($plan->billing_cycle);
+            
+            $subPayload = [
+                'plan_id' => $razorpayPlanId,
+                'customer_notify' => 1,
+                'total_count' => $totalCount,
+                'notes' => [
+                    'user_id' => (string)$user->restaurant_id,
+                    'is_payment_method_update' => '1',
+                    'old_subscription_id' => (string)$subscription->id,
+                    'old_razorpay_subscription_id' => (string)$subscription->razorpay_subscription_id
+                ]
+            ];
+
+            if ($cust_id) {
+                $subPayload['customer_id'] = $cust_id;
+            }
+
+            $newRzpSub = $this->razorpay->subscription->create($subPayload);
+
+            // 3. Create a pending payment record
+            $payment = new Payment();
+            $payment->user_id = $user->restaurant_id;
+            $payment->plan_id = $plan->id;
+            $payment->razorpay_order_id = $newRzpSub->id;
+            $payment->amount = $plan->price;
+            $payment->gst_percentage = '18';
+            $payment->currency = 'INR';
+            $payment->status = 'pending';
+            $payment->description = "Update Payment Method / Bank for {$plan->name}";
+            $payment->save();
+
+            // 4. Save session data
+            session([
+                'razorpay_subscription_id' => $newRzpSub->id,
+                'plan_id' => $plan->id,
+                'user_id' => $user->restaurant_id,
+                'payable_amount' => $plan->price,
+                'is_payment_method_update' => true,
+                'old_subscription_id' => $subscription->id,
+                'old_razorpay_subscription_id' => $subscription->razorpay_subscription_id
+            ]);
+
+            return view('admin.subscriptions.payment', [
+                'subscription_id' => $newRzpSub->id,
+                'customer_id' => $cust_id,
+                'plan' => $plan,
+                'user' => $owner,
+                'payable_amount' => $plan->price,
+                'is_upgrade' => false,
+                'is_payment_method_update' => true,
+                'existing_subscription' => $subscription,
+                'old_subscription_id' => $subscription->id
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Change Payment Method Error: ' . $e->getMessage());
+            return redirect()->route('admin.subscriptions.index')
+                ->with('error', 'Failed to initiate bank account update: ' . $e->getMessage());
+        }
+    }
+
     // Show payment page
     public function payment()
     {
@@ -367,223 +425,290 @@ class SubscriptionController extends Controller
             'payable_amount' => session('payable_amount'),
             'razorpay_key' => config('services.razorpay.key_id'),
             'existing_subscription_id' => session('existing_subscription_id'),
-            'credit_amount' => session('credit_amount')
+            'credit_amount' => session('credit_amount'),
+            'is_payment_method_update' => session('is_payment_method_update', false),
+            'old_subscription_id' => session('old_subscription_id')
         ]);
     }
 
+    public function paymentSuccess(Request $request)
+    {
+        DB::beginTransaction();
+        
+        try {
+            Log::info('Payment Success Request:', $request->all());
+            
+            // Get subscription ID from multiple possible sources
+            $subscriptionId = $request->razorpay_subscription_id ?? 
+                             session('razorpay_subscription_id') ?? 
+                             $request->subscription_id;
+            
+            if (!$subscriptionId) {
+                throw new \Exception('Subscription ID not found in request or session');
+            }
+            
+            $plan = Plan::find(session('plan_id') ?? $request->plan_id);
+            $user = auth()->user() ?? User::find($request->user_id);
+            
+            if (!$plan || !$user) {
+                throw new \Exception('Plan or User not found');
+            }
 
-
-
-public function paymentSuccess(Request $request)
-{
-    DB::beginTransaction();
-    
-    try {
-        Log::info('Payment Success Request:', $request->all());
-        
-        // Get subscription ID from multiple possible sources
-        $subscriptionId = $request->razorpay_subscription_id ?? 
-                         session('razorpay_subscription_id') ?? 
-                         $request->subscription_id;
-        
-        if (!$subscriptionId) {
-            throw new \Exception('Subscription ID not found in request or session');
-        }
-        
-        $plan = Plan::find(session('plan_id') ?? $request->plan_id);
-        $user = auth()->user() ?? User::find($request->user_id);
-        
-        if (!$plan || !$user) {
-            throw new \Exception('Plan or User not found');
-        }
-
-        // Get restaurant details
-        $restaurant = RestaurantMaster::where('owner_id', $user->id)->first();
-        
-        // Verify payment signature for subscription payment
-        if ($request->razorpay_payment_id && $request->razorpay_signature) {
-            try {
-                $attributes = [
-                    'razorpay_payment_id' => $request->razorpay_payment_id,
-                    'razorpay_subscription_id' => $subscriptionId,
-                    'razorpay_signature' => $request->razorpay_signature
-                ];
-                $this->razorpay->utility->verifyPaymentSignature($attributes);
-                Log::info('Payment signature verified successfully');
-            } catch (\Exception $e) {
-                Log::warning('Payment signature verification failed: ' . $e->getMessage());
-                // Don't throw exception for signature failure in development
-                if (env('APP_ENV') === 'production') {
-                    throw new \Exception('Payment verification failed');
+            // Get restaurant details
+            $restaurant = RestaurantMaster::where('owner_id', $user->id)->first();
+            
+            // Verify payment signature for subscription payment
+            if ($request->razorpay_payment_id && $request->razorpay_signature) {
+                try {
+                    $attributes = [
+                        'razorpay_payment_id' => $request->razorpay_payment_id,
+                        'razorpay_subscription_id' => $subscriptionId,
+                        'razorpay_signature' => $request->razorpay_signature
+                    ];
+                    $this->razorpay->utility->verifyPaymentSignature($attributes);
+                    Log::info('Payment signature verified successfully');
+                } catch (\Exception $e) {
+                    Log::warning('Payment signature verification failed: ' . $e->getMessage());
+                    // Don't throw exception for signature failure in development
+                    if (env('APP_ENV') === 'production') {
+                        throw new \Exception('Payment verification failed');
+                    }
                 }
             }
-        }
 
-        // 1. Fetch subscription from Razorpay to check its status
-        try {
-            $razorpaySubscription = $this->razorpay->subscription->fetch($subscriptionId);
-            Log::info('Razorpay Subscription Status: ' . $razorpaySubscription->status);
-            
-            // Check if subscription is in created state
-            if ($razorpaySubscription->status === 'created') {
-                // Wait a moment for Razorpay to process
-                sleep(2);
-                $razorpaySubscription = $this->razorpay->subscription->fetch($subscriptionId);
-            }
-            
-        } catch (\Exception $e) {
-            Log::error('Failed to fetch subscription from Razorpay: ' . $e->getMessage());
-            throw new \Exception('Unable to verify subscription status with payment gateway');
-        }
-
-        // 2. Fetch payment details from Razorpay to get method
-        $paymentMethod = 'N/A';
-        if ($request->razorpay_payment_id) {
+            // 1. Fetch subscription from Razorpay to check its status
             try {
-                $razorpayPayment = $this->razorpay->payment->fetch($request->razorpay_payment_id);
-                $paymentMethod = $razorpayPayment->method ?? 'N/A';
+                $razorpaySubscription = $this->razorpay->subscription->fetch($subscriptionId);
+                Log::info('Razorpay Subscription Status: ' . $razorpaySubscription->status);
+                
+                // Check if subscription is in created state
+                if ($razorpaySubscription->status === 'created') {
+                    // Wait a moment for Razorpay to process
+                    sleep(2);
+                    $razorpaySubscription = $this->razorpay->subscription->fetch($subscriptionId);
+                }
+                
             } catch (\Exception $e) {
-                Log::warning('Failed to fetch payment method from Razorpay: ' . $e->getMessage());
+                Log::error('Failed to fetch subscription from Razorpay: ' . $e->getMessage());
+                throw new \Exception('Unable to verify subscription status with payment gateway');
             }
-        }
 
-        // Create or update payment record
-        $payment = Payment::updateOrCreate(
-            [
-                'razorpay_order_id' => $subscriptionId,
-                'user_id' => $user->restaurant_id
-            ],
-            [
-                'plan_id' => $plan->id,
-                'razorpay_payment_id' => $request->razorpay_payment_id,
-                'razorpay_signature' => $request->razorpay_signature,
-                'razorpay_response' => json_encode($request->all()),
-                'amount' => session('payable_amount') ?? $plan->price,
-                'currency' => 'INR',
-                'status' => 'success',
-                'description' => 'Subscription payment for ' . $plan->name,
-                'payment_method' => $paymentMethod,
-                'created_at' => now()
-            ]
-        );
-
-        // 3. Create or update subscription record
-        $start_at_ts = $razorpaySubscription->current_start ?? $razorpaySubscription->start_at;
-        $end_at_ts = $razorpaySubscription->current_end ?? $razorpaySubscription->end_at;
-        $charge_at_ts = $razorpaySubscription->charge_at;
-
-        $startDate = ($start_at_ts && $start_at_ts > 0) ? date('Y-m-d H:i:s', $start_at_ts) : now()->toDateTimeString();
-        
-        // Ensure endDate is calculated if end_at_ts is missing or is the same/earlier than start_at_ts
-        $endDate = ($end_at_ts && $end_at_ts > $start_at_ts) 
-            ? date('Y-m-d H:i:s', $end_at_ts) 
-            : \Carbon\Carbon::parse($startDate)->addDays($plan->duration_days - 1)->endOfDay()->toDateTimeString();
-            
-        // Ensure renewalDate is calculated if charge_at_ts is missing or is the same/earlier than start_at_ts
-        $renewalDate = ($charge_at_ts && $charge_at_ts > $start_at_ts) 
-            ? date('Y-m-d H:i:s', $charge_at_ts) 
-            : \Carbon\Carbon::parse($startDate)->addDays($plan->duration_days)->toDateTimeString();
-
-        $status = $razorpaySubscription->status;
-        if (in_array($status, ['authenticated', 'created', 'active'])) {
-            $status = 'active';
-        }
-
-        $subscription = Subscription::updateOrCreate(
-            [
-                'razorpay_subscription_id' => $subscriptionId,
-                'user_id' => $user->restaurant_id
-            ],
-            [
-                'plan_id' => $plan->id,
-                'razorpay_plan_id' => $plan->razorpay_plan_id,
-                'status' => $status,
-                'start_date' => $startDate,
-                'end_date' => $endDate,
-                'renewal_date' => $renewalDate,
-                'auto_renew' => 1,
-                'created_at' => now()
-            ]
-        );
-
-        // 4. Update payment with subscription ID
-        $payment->subscription_id = $subscription->id;
-        $payment->save();
-
-        DB::commit();
-
-        // 5. Send email notification (continue even if email fails)
-        try {
-            \Mail::to($user->email)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $subscription, $payment, $restaurant));
-            Log::info('Subscription success email sent to customer: ' . $user->email);
-
-            // Send copy to admin also
-            $adminEmail = config('mail.admin_email') ?? env('ADMIN_EMAIL');
-            if ($adminEmail) {
-                \Mail::to($adminEmail)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $subscription, $payment, $restaurant));
-                Log::info('Subscription success email sent to admin: ' . $adminEmail);
+            // 2. Fetch payment details from Razorpay to get rich method & account info
+            $paymentMethod = 'Online / Gateway';
+            if ($request->razorpay_payment_id) {
+                try {
+                    $razorpayPayment = $this->razorpay->payment->fetch($request->razorpay_payment_id);
+                    $rawMethod = strtolower($razorpayPayment->method ?? '');
+                    if ($rawMethod === 'card' && isset($razorpayPayment->card)) {
+                        $network = $razorpayPayment->card->network ?? 'Card';
+                        $last4 = $razorpayPayment->card->last4 ?? '';
+                        $cardType = ucfirst($razorpayPayment->card->type ?? 'Card');
+                        $paymentMethod = "{$network} {$cardType} (•••• {$last4})";
+                    } elseif ($rawMethod === 'netbanking') {
+                        $bank = $razorpayPayment->bank ?? 'Bank';
+                        $paymentMethod = "Net Banking ({$bank})";
+                    } elseif ($rawMethod === 'upi') {
+                        $vpa = $razorpayPayment->vpa ?? 'UPI';
+                        $paymentMethod = "UPI ({$vpa})";
+                    } elseif ($rawMethod === 'emandate' || $rawMethod === 'nach') {
+                        $bank = $razorpayPayment->bank ?? 'Bank';
+                        $paymentMethod = "e-Mandate Bank A/C ({$bank})";
+                    } else {
+                        $paymentMethod = ucfirst($rawMethod ?: 'Online');
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Failed to fetch payment method from Razorpay: ' . $e->getMessage());
+                }
             }
-        } catch (\Exception $e) {
-            Log::error('Failed to send subscription success email: ' . $e->getMessage());
-            // Continue execution - don't throw exception
-        }
 
-        // 6. Handle upgrade scenario - Process refund asynchronously
-        $existingSubscriptionId = session('existing_subscription_id') ?? $request->existing_subscription_id;
-        $creditAmount = session('credit_amount') ?? $request->credit_amount ?? 0;
-        
-        if ($existingSubscriptionId && $creditAmount > 0) {
-            // Process refund immediately but handle timing issues
-            $this->processImmediateRefund($existingSubscriptionId, $creditAmount);
+            $isPaymentMethodUpdate = session('is_payment_method_update') || $request->is_payment_method_update;
+            $oldSubscriptionId = session('old_subscription_id') ?? $request->old_subscription_id;
+            $oldRazorpaySubId = session('old_razorpay_subscription_id') ?? $request->old_razorpay_subscription_id;
+
+            // Create or update payment record
+            $payment = Payment::updateOrCreate(
+                [
+                    'razorpay_order_id' => $subscriptionId,
+                    'user_id' => $user->restaurant_id
+                ],
+                [
+                    'plan_id' => $plan->id,
+                    'razorpay_payment_id' => $request->razorpay_payment_id,
+                    'razorpay_signature' => $request->razorpay_signature,
+                    'razorpay_response' => json_encode($request->all()),
+                    'amount' => session('payable_amount') ?? $plan->price,
+                    'currency' => 'INR',
+                    'status' => 'success',
+                    'description' => $isPaymentMethodUpdate 
+                        ? 'Updated AutoPay Bank/Card for ' . $plan->name 
+                        : 'Subscription payment for ' . $plan->name,
+                    'payment_method' => $paymentMethod,
+                    'created_at' => now()
+                ]
+            );
+
+            // 3. Create or update subscription record
+            $start_at_ts = $razorpaySubscription->current_start ?? $razorpaySubscription->start_at;
+            $end_at_ts = $razorpaySubscription->current_end ?? $razorpaySubscription->end_at;
+            $charge_at_ts = $razorpaySubscription->charge_at;
+
+            $startDate = ($start_at_ts && $start_at_ts > 0) ? date('Y-m-d H:i:s', $start_at_ts) : now()->toDateTimeString();
             
-            $successMessage = 'Subscription activated successfully! Refund of ₹' . $creditAmount . ' will be processed shortly.';
-        } else {
-            $successMessage = 'Subscription activated successfully!';
-        }
+            $endDate = ($end_at_ts && $end_at_ts > $start_at_ts) 
+                ? date('Y-m-d H:i:s', $end_at_ts) 
+                : \Carbon\Carbon::parse($startDate)->addDays($plan->duration_days - 1)->endOfDay()->toDateTimeString();
+                
+            $renewalDate = ($charge_at_ts && $charge_at_ts > $start_at_ts) 
+                ? date('Y-m-d H:i:s', $charge_at_ts) 
+                : \Carbon\Carbon::parse($startDate)->addDays($plan->duration_days)->toDateTimeString();
 
-        // 7. Clear session data
-        session()->forget([
-            'razorpay_subscription_id',
-            'plan_id',
-            'user_id',
-            'payable_amount',
-            'existing_subscription_id',
-            'credit_amount',
-            'refund_amount'
-        ]);
+            $status = $razorpaySubscription->status;
+            if (in_array($status, ['authenticated', 'created', 'active'])) {
+                $status = 'active';
+            }
 
-        // Return JSON response for AJAX or redirect
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => $successMessage,
-                'subscription' => $subscription,
-                'razorpay_status' => $razorpaySubscription->status,
-                'redirect' => route('admin.subscriptions.index')
+            if ($isPaymentMethodUpdate && $oldSubscriptionId) {
+                // Handle Bank Account / Payment Method update on existing subscription
+                $existingSub = Subscription::find($oldSubscriptionId);
+                if ($existingSub) {
+                    // Cancel old subscription in Razorpay safely to prevent double debits
+                    $targetOldRzpId = $oldRazorpaySubId ?: $existingSub->razorpay_subscription_id;
+                    if ($targetOldRzpId && $targetOldRzpId !== $subscriptionId) {
+                        try {
+                            $this->razorpay->subscription->fetch($targetOldRzpId)->cancel(['cancel_at_cycle_end' => 0]);
+                            Log::info("Old Razorpay subscription {$targetOldRzpId} cancelled after payment method update.");
+                        } catch (\Exception $e) {
+                            Log::warning("Failed to cancel old Razorpay subscription {$targetOldRzpId}: " . $e->getMessage());
+                        }
+                    }
+
+                    // Update existing record with new Razorpay Sub ID, synchronized plan ID, renewal date and active status
+                    $existingSub->update([
+                        'razorpay_subscription_id' => $subscriptionId,
+                        'razorpay_plan_id' => $plan->razorpay_plan_id,
+                        'status' => 'active',
+                        'auto_renew' => 1,
+                        'renewal_date' => $renewalDate
+                    ]);
+
+                    $subscription = $existingSub;
+                } else {
+                    $subscription = Subscription::updateOrCreate(
+                        [
+                            'razorpay_subscription_id' => $subscriptionId,
+                            'user_id' => $user->restaurant_id
+                        ],
+                        [
+                            'plan_id' => $plan->id,
+                            'razorpay_plan_id' => $plan->razorpay_plan_id,
+                            'status' => $status,
+                            'start_date' => $startDate,
+                            'end_date' => $endDate,
+                            'renewal_date' => $renewalDate,
+                            'auto_renew' => 1,
+                            'created_at' => now()
+                        ]
+                    );
+                }
+            } else {
+                // Standard new or upgrade subscription
+                $subscription = Subscription::updateOrCreate(
+                    [
+                        'razorpay_subscription_id' => $subscriptionId,
+                        'user_id' => $user->restaurant_id
+                    ],
+                    [
+                        'plan_id' => $plan->id,
+                        'razorpay_plan_id' => $plan->razorpay_plan_id,
+                        'status' => $status,
+                        'start_date' => $startDate,
+                        'end_date' => $endDate,
+                        'renewal_date' => $renewalDate,
+                        'auto_renew' => 1,
+                        'created_at' => now()
+                    ]
+                );
+            }
+
+            // 4. Update payment with subscription ID
+            $payment->subscription_id = $subscription->id;
+            $payment->save();
+
+            DB::commit();
+
+            // 5. Send email notification (continue even if email fails)
+            try {
+                \Mail::to($user->email)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $subscription, $payment, $restaurant));
+                Log::info('Subscription success email sent to customer: ' . $user->email);
+
+                $adminEmail = config('mail.admin_email') ?? env('ADMIN_EMAIL');
+                if ($adminEmail) {
+                    \Mail::to($adminEmail)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $subscription, $payment, $restaurant));
+                    Log::info('Subscription success email sent to admin: ' . $adminEmail);
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to send subscription success email: ' . $e->getMessage());
+            }
+
+            // 6. Set success message and handle refund if upgrade
+            $existingSubscriptionId = session('existing_subscription_id') ?? $request->existing_subscription_id;
+            $creditAmount = session('credit_amount') ?? $request->credit_amount ?? 0;
+            
+            if ($isPaymentMethodUpdate) {
+                $successMessage = 'AutoPay Bank / Payment Method updated successfully! Future renewals will be automatically charged from your new payment method.';
+            } elseif ($existingSubscriptionId && $creditAmount > 0) {
+                $this->processImmediateRefund($existingSubscriptionId, $creditAmount);
+                $successMessage = 'Subscription activated successfully! Refund of ₹' . $creditAmount . ' will be processed shortly.';
+            } else {
+                $successMessage = 'Subscription activated successfully!';
+            }
+
+            // 7. Clear session data
+            session()->forget([
+                'razorpay_subscription_id',
+                'plan_id',
+                'user_id',
+                'payable_amount',
+                'existing_subscription_id',
+                'credit_amount',
+                'refund_amount',
+                'is_payment_method_update',
+                'old_subscription_id',
+                'old_razorpay_subscription_id'
             ]);
+
+            // Return JSON response for AJAX or redirect
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $successMessage,
+                    'subscription' => $subscription,
+                    'razorpay_status' => $razorpaySubscription->status,
+                    'redirect' => route('admin.subscriptions.index')
+                ]);
+            }
+
+            return redirect()->route('admin.subscriptions.index')
+                ->with('success', $successMessage)
+                ->with('subscription', $subscription)
+                ->with('razorpay_status', $razorpaySubscription->status);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Payment Success Error: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
+            
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Payment processing failed: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->route('admin.subscriptions.payment.failed')
+                ->with('error', 'Payment processing failed: ' . $e->getMessage());
         }
-
-        return redirect()->route('admin.subscriptions.index')
-            ->with('success', $successMessage)
-            ->with('subscription', $subscription)
-            ->with('razorpay_status', $razorpaySubscription->status);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        
-        Log::error('Payment Success Error: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
-        
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Payment processing failed: ' . $e->getMessage()
-            ], 500);
-        }
-
-        return redirect()->route('admin.subscriptions.payment.failed')
-            ->with('error', 'Payment processing failed: ' . $e->getMessage());
     }
-}
 
 
 
@@ -768,6 +893,7 @@ public function paymentSuccess(Request $request)
     {
         try {
             $subscriptionId = $request->razorpay_subscription_id ?? session('razorpay_subscription_id');
+            $isPaymentMethodUpdate = session('is_payment_method_update', false);
             
             if ($subscriptionId) {
                 Payment::where('razorpay_order_id', $subscriptionId)
@@ -787,16 +913,24 @@ public function paymentSuccess(Request $request)
                 'payable_amount',
                 'existing_subscription_id',
                 'credit_amount',
-                'refund_amount'
+                'refund_amount',
+                'is_payment_method_update',
+                'old_subscription_id',
+                'old_razorpay_subscription_id'
             ]);
+
+            if ($isPaymentMethodUpdate) {
+                return redirect()->route('admin.subscriptions.index')
+                    ->with('warning', 'Payment method update was cancelled or failed. Your current active subscription remains unchanged.');
+            }
 
             return redirect()->route('plans.index')
                 ->with('error', 'Payment failed. Please try again.');
 
         } catch (\Exception $e) {
             Log::error('Payment Failed Error: ' . $e->getMessage());
-            return redirect()->route('plans.index')
-                ->with('error', 'Error processing payment failure.');
+            return redirect()->route('admin.subscriptions.index')
+                ->with('error', 'Error processing payment failure: ' . $e->getMessage());
         }
     }
 
@@ -804,13 +938,15 @@ public function paymentSuccess(Request $request)
     public function index()
     {
         $user = auth()->user();
-        $subscriptions = Subscription::where('user_id', $user->restaurant_id)
+        $subRestaurantId = $user->getSubscriptionRestaurantId() ?? $user->restaurant_id;
+
+        $subscriptions = Subscription::where('user_id', $subRestaurantId)
             ->with(['plan', 'payments'])
             ->orderBy('created_at', 'desc')
             ->get();
 
         // Check if user has used free trial
-        $hasUsedFreeTrial = Subscription::where('user_id', $user->restaurant_id)
+        $hasUsedFreeTrial = Subscription::where('user_id', $subRestaurantId)
             ->whereHas('plan', function($query) {
                 $query->where('price', 0);
             })
@@ -824,6 +960,8 @@ public function paymentSuccess(Request $request)
     {
         try {
             $user = auth()->user();
+            $subRestaurantId = $user->getSubscriptionRestaurantId() ?? $user->restaurant_id;
+
             $subscription = Subscription::with([
                 'plan',
                 'payments' => function($q) {
@@ -831,11 +969,12 @@ public function paymentSuccess(Request $request)
                 },
                 'restaurant_details.owner'
             ])
-            ->where('user_id', $user->restaurant_id)
+            ->where('user_id', $subRestaurantId)
             ->findOrFail($id);
 
             $plan = $subscription->plan;
             $payment = $subscription->payments->first();
+            $methodDetails = $this->getPaymentMethodDetails($payment);
 
             $formattedData = [
                 'id' => $subscription->id,
@@ -875,7 +1014,13 @@ public function paymentSuccess(Request $request)
                     'amount' => $payment ? (float)$payment->amount : ($plan ? (float)$plan->price : 0),
                     'formatted_amount' => $payment ? '₹' . number_format($payment->amount, 2) : ($plan && $plan->price == 0 ? 'FREE' : 'N/A'),
                     'status' => $payment ? ucfirst($payment->status) : ($subscription->status == 'active' ? 'Success' : ucfirst($subscription->status)),
-                    'payment_method' => ($payment && $payment->payment_method) ? strtoupper($payment->payment_method) : ($plan && $plan->price == 0 ? 'Free Trial / Free Plan' : 'Online / Gateway'),
+                    'payment_method' => $methodDetails['full_title'],
+                    'method_type' => $methodDetails['type'],
+                    'account_number' => $methodDetails['account_number'],
+                    'bank_name' => $methodDetails['bank_name'],
+                    'method_icon' => $methodDetails['icon'],
+                    'has_active_autopay' => (in_array($subscription->status, ['active', 'completed', 'pending', 'halted', 'authenticated']) && ($plan->price ?? 0) > 0),
+                    'change_bank_url' => route('admin.subscriptions.changePaymentMethod', $subscription->id),
                     'razorpay_payment_id' => ($payment && $payment->razorpay_payment_id) ? $payment->razorpay_payment_id : 'N/A',
                     'razorpay_order_id' => ($payment && $payment->razorpay_order_id) ? $payment->razorpay_order_id : ($subscription->razorpay_subscription_id ?: 'N/A'),
                     'payment_date' => ($payment && $payment->created_at) ? $payment->created_at->format('d M Y, h:i A') : ($subscription->start_date ? $subscription->start_date->format('d M Y, h:i A') : 'N/A'),
@@ -963,8 +1108,12 @@ public function paymentSuccess(Request $request)
 
             // Only cancel Razorpay subscriptions (not free plans)
             if ($subscription->razorpay_subscription_id) {
-                $this->razorpay->subscription->fetch($subscription->razorpay_subscription_id)
-                    ->cancel(['cancel_at_cycle_end' => 0]);
+                try {
+                    $this->razorpay->subscription->fetch($subscription->razorpay_subscription_id)
+                        ->cancel(['cancel_at_cycle_end' => 0]);
+                } catch (\Exception $e) {
+                    Log::warning('Razorpay cancel subscription warning: ' . $e->getMessage());
+                }
             }
 
             // Update local record
@@ -988,10 +1137,11 @@ public function paymentSuccess(Request $request)
     private function getTotalCount($billingCycle)
     {
         switch ($billingCycle) {
-            case 'monthly': return 24;       // 2 years
-            case 'quarterly': return 8;       // 2 years
-            case 'half-yearly': return 4;     // 2 years
-            default: return 1;                // 1 year
+            case 'monthly': return 24;       // 2 years (24 months)
+            case 'quarterly': return 8;       // 2 years (8 quarters)
+            case 'half-yearly': return 4;     // 2 years (4 half-years)
+            case 'yearly': return 1;          // 1 year (1 cycle)
+            default: return 12;
         }
     }
 
@@ -1006,5 +1156,200 @@ public function paymentSuccess(Request $request)
         } catch (\Exception $e) {
             Log::error('Cancel Old Subscription Error: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Ensure the given Plan exists and is valid on Razorpay.
+     * If missing or invalid on the current account, auto-creates it and updates the DB.
+     */
+    private function ensureRazorpayPlan($plan)
+    {
+        if (!empty($plan->razorpay_plan_id)) {
+            try {
+                $rzpPlan = $this->razorpay->plan->fetch($plan->razorpay_plan_id);
+                if ($rzpPlan && isset($rzpPlan->id)) {
+                    return $rzpPlan->id;
+                }
+            } catch (\Exception $e) {
+                Log::warning("Razorpay Plan {$plan->razorpay_plan_id} invalid/not found on account: " . $e->getMessage() . ". Auto-recreating plan on Razorpay...");
+            }
+        }
+
+        $period = 'monthly';
+        $interval = 1;
+        if ($plan->billing_cycle == 'quarterly') {
+            $interval = 3;
+        } elseif ($plan->billing_cycle == 'half-yearly') {
+            $interval = 6;
+        } elseif ($plan->billing_cycle == 'yearly') {
+            $period = 'yearly';
+        }
+
+        $razorpayAmountInPaise = max((int)round($plan->price * 100), 100);
+
+        $newPlan = $this->razorpay->plan->create([
+            'period' => $period,
+            'interval' => $interval,
+            'item' => [
+                'name' => $plan->name,
+                'amount' => $razorpayAmountInPaise,
+                'currency' => $plan->currency ?? 'INR',
+                'description' => $plan->description ?? 'POS Subscription Plan',
+            ]
+        ]);
+
+        $plan->razorpay_plan_id = $newPlan->id;
+        $plan->save();
+
+        Log::info("Created and synchronized new Razorpay Plan {$newPlan->id} for Plan #{$plan->id} ({$plan->name}).");
+
+        return $newPlan->id;
+    }
+
+    /**
+     * Ensure the given User/Owner exists and is valid as a Customer on Razorpay.
+     * If missing or invalid, creates customer on Razorpay and updates local record.
+     */
+    private function ensureRazorpayCustomer($owner)
+    {
+        $razorpayCustomer = RazorpayCustomer::where('user_id', $owner->id)->first();
+
+        if ($razorpayCustomer && !empty($razorpayCustomer->rzpay_customer_id)) {
+            try {
+                $rzpCust = $this->razorpay->customer->fetch($razorpayCustomer->rzpay_customer_id);
+                if ($rzpCust && isset($rzpCust->id)) {
+                    try {
+                        $this->razorpay->customer->fetch($rzpCust->id)->edit([
+                            'name' => $owner->name,
+                            'email' => $owner->email ?? 'customer_' . $owner->id . '@example.com',
+                            'contact' => $owner->phone ?? '9999999999'
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::warning("Razorpay customer edit warning: " . $e->getMessage());
+                    }
+                    return $rzpCust->id;
+                }
+            } catch (\Exception $e) {
+                Log::warning("Razorpay Customer {$razorpayCustomer->rzpay_customer_id} invalid/not found on account: " . $e->getMessage() . ". Re-creating customer on Razorpay...");
+            }
+        }
+
+        $cust_id = null;
+        if (!empty($owner->email)) {
+            try {
+                $customers = $this->razorpay->customer->all([
+                    'email' => $owner->email,
+                    'count' => 1
+                ]);
+                if (isset($customers['items']) && count($customers['items']) > 0) {
+                    $cust_id = $customers['items'][0]['id'];
+                }
+            } catch (\Exception $e) {
+                Log::warning("Razorpay customer search error: " . $e->getMessage());
+            }
+        }
+
+        if (!$cust_id) {
+            $customer = $this->razorpay->customer->create([
+                'name' => $owner->name,
+                'email' => $owner->email ?? 'customer_' . $owner->id . '@example.com',
+                'contact' => $owner->phone ?? '9999999999'
+            ]);
+            $cust_id = $customer->id;
+        }
+
+        if (!$razorpayCustomer) {
+            $razorpayCustomer = new RazorpayCustomer();
+            $razorpayCustomer->user_id = $owner->id;
+        }
+        $razorpayCustomer->rzpay_customer_id = $cust_id;
+        $razorpayCustomer->save();
+
+        Log::info("Created/Synchronized Razorpay Customer {$cust_id} for User #{$owner->id} ({$owner->email}).");
+
+        return $cust_id;
+    }
+
+    /**
+     * Helper to extract rich payment method & bank account details.
+     */
+    private function getPaymentMethodDetails($payment)
+    {
+        if (!$payment) {
+            return [
+                'type' => 'No active method',
+                'account_number' => 'Not Available',
+                'bank_name' => 'N/A',
+                'full_title' => 'N/A',
+                'icon' => 'fa-credit-card'
+            ];
+        }
+
+        $method = $payment->payment_method ?? '';
+        $type = 'Card / Online';
+        $accountNumber = $method ?: 'Online Payment';
+        $bankName = 'Payment Gateway';
+        $icon = 'fa-credit-card';
+
+        // Check if payment_method already has rich info (e.g. "Visa Credit Card (•••• 4366)")
+        if (str_contains($method, '••••')) {
+            $type = explode('(', $method)[0] ?? 'Card';
+            $accountNumber = str_replace(['(', ')'], '', strstr($method, '••••') ?: $method);
+            return [
+                'type' => trim($type),
+                'account_number' => trim($accountNumber),
+                'bank_name' => trim($type),
+                'full_title' => $method,
+                'icon' => 'fa-credit-card'
+            ];
+        }
+
+        // If we have razorpay_payment_id, fetch rich details from Razorpay API
+        if (!empty($payment->razorpay_payment_id)) {
+            try {
+                $rzpPayment = $this->razorpay->payment->fetch($payment->razorpay_payment_id);
+                if ($rzpPayment) {
+                    $rawMethod = strtolower($rzpPayment->method ?? '');
+                    if ($rawMethod === 'card' && isset($rzpPayment->card)) {
+                        $network = $rzpPayment->card->network ?? 'Card';
+                        $last4 = $rzpPayment->card->last4 ?? '••••';
+                        $cardType = ucfirst($rzpPayment->card->type ?? 'Card');
+                        $issuer = $rzpPayment->card->issuer ?? '';
+                        $type = "{$network} {$cardType}";
+                        $accountNumber = "•••• •••• •••• {$last4}";
+                        $bankName = $issuer ? $issuer . ' (' . $network . ')' : $network;
+                        $icon = 'fa-credit-card';
+                    } elseif ($rawMethod === 'netbanking') {
+                        $bank = $rzpPayment->bank ?? 'Bank Account';
+                        $type = 'Net Banking';
+                        $accountNumber = "Bank: {$bank}";
+                        $bankName = $bank;
+                        $icon = 'fa-university';
+                    } elseif ($rawMethod === 'upi') {
+                        $vpa = $rzpPayment->vpa ?? 'UPI AutoPay';
+                        $type = 'UPI AutoPay';
+                        $accountNumber = $vpa;
+                        $bankName = 'UPI Mandate';
+                        $icon = 'fa-mobile-alt';
+                    } elseif ($rawMethod === 'emandate' || $rawMethod === 'nach') {
+                        $bank = $rzpPayment->bank ?? 'Bank Account';
+                        $type = 'e-Mandate / Bank Account';
+                        $accountNumber = "Bank: {$bank}";
+                        $bankName = $bank;
+                        $icon = 'fa-university';
+                    }
+                }
+            } catch (\Exception $e) {
+                // Fallback to local DB record
+            }
+        }
+
+        return [
+            'type' => $type,
+            'account_number' => $accountNumber,
+            'bank_name' => $bankName,
+            'full_title' => "{$type} - {$accountNumber}",
+            'icon' => $icon
+        ];
     }
 }
