@@ -16,8 +16,10 @@ class TempOrderAdminController extends Controller
 {
     public function index()
     {
-        $orders = TempOrder::with('table_details')->where('restaurant_id',auth()->user()->restaurant_id)
-            ->orderBy('id', 'DESC')   // OR created_at
+        $orders = TempOrder::with('table_details')
+            ->where('restaurant_id', auth()->user()->restaurant_id)
+            ->where('order_status', 'PENDING')
+            ->orderBy('id', 'DESC')
             ->get();
 
         return view('temp_orders.index', compact('orders'));
@@ -171,12 +173,34 @@ public function approveOrder($id)
             ]);
         }
 
-        // Delete temp order
-        $tempOrder->delete();
+        // Update temp order status to APPROVED
+        $tempOrder->order_status = 'APPROVED';
+        $tempOrder->order_id = $order->id;
+        $tempOrder->save();
 
         DB::commit();
         return redirect()->route('temp.orders')->with('success', 'Order approved and moved to main orders. Order Number: ' . $orderNo);
         
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()->with('error', 'Something went wrong: ' . $e->getMessage());
+    }
+}
+
+public function rejectOrder($id)
+{
+    DB::beginTransaction();
+
+    try {
+        $tempOrder = TempOrder::where('id', $id)
+            ->where('restaurant_id', auth()->user()->restaurant_id)
+            ->firstOrFail();
+
+        $tempOrder->order_status = 'REJECTED';
+        $tempOrder->save();
+
+        DB::commit();
+        return redirect()->route('temp.orders')->with('success', 'Order #' . ($tempOrder->order_id ?? $tempOrder->id) . ' has been rejected.');
     } catch (\Exception $e) {
         DB::rollBack();
         return redirect()->back()->with('error', 'Something went wrong: ' . $e->getMessage());

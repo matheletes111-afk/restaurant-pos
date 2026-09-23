@@ -20,11 +20,19 @@ class Expense extends Model
         'created_by'
     ];
 
-   
-
     protected $casts = [
         'amount' => 'decimal:2',
-        
+        'expense_date' => 'date',
+    ];
+
+    // Standard Payment Modes matching Invoice & Supplier Deposit
+    const PAYMENT_MODES = [
+        'CASH' => 'Cash',
+        'UPI' => 'UPI',
+        'CARD' => 'Card',
+        'BANK_TRANSFER' => 'Bank Transfer',
+        'CHEQUE' => 'Cheque',
+        'OTHER' => 'Other'
     ];
 
     public function restaurant()

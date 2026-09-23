@@ -435,14 +435,14 @@
     <!-- Timeframe Filter Tabs -->
     <div class="timeframe-tabs-container text-center mb-4">
         <div class="timeframe-toggle-pill" style="display: inline-flex; background: #ffffff; padding: 6px; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; gap: 6px;">
-            <button type="button" class="btn-timeframe-tab active" data-filter="all" style="border:none; background:transparent; padding: 8px 22px; border-radius: 40px; font-size: 0.9rem; font-weight: 600; color: #475569; cursor: pointer; transition: all 0.25s;">
-                <i class="fas fa-layer-group me-1"></i> All Plans
+            <button type="button" class="btn-timeframe-tab active" data-filter="yearly" style="border:none; background:transparent; padding: 8px 22px; border-radius: 40px; font-size: 0.9rem; font-weight: 600; color: #475569; cursor: pointer; transition: all 0.25s;">
+                <i class="fas fa-calendar-check me-1"></i> Yearly <span class="badge bg-success ms-1" style="font-size:0.65rem; vertical-align: middle;">Annual</span>
             </button>
             <button type="button" class="btn-timeframe-tab" data-filter="monthly" style="border:none; background:transparent; padding: 8px 22px; border-radius: 40px; font-size: 0.9rem; font-weight: 600; color: #475569; cursor: pointer; transition: all 0.25s;">
                 <i class="fas fa-calendar-alt me-1"></i> Monthly
             </button>
-            <button type="button" class="btn-timeframe-tab" data-filter="yearly" style="border:none; background:transparent; padding: 8px 22px; border-radius: 40px; font-size: 0.9rem; font-weight: 600; color: #475569; cursor: pointer; transition: all 0.25s;">
-                <i class="fas fa-calendar-check me-1"></i> Yearly <span class="badge bg-success ms-1" style="font-size:0.65rem; vertical-align: middle;">Annual</span>
+            <button type="button" class="btn-timeframe-tab" data-filter="all" style="border:none; background:transparent; padding: 8px 22px; border-radius: 40px; font-size: 0.9rem; font-weight: 600; color: #475569; cursor: pointer; transition: all 0.25s;">
+                <i class="fas fa-layer-group me-1"></i> All Plans
             </button>
         </div>
     </div>
@@ -459,7 +459,7 @@
             $showSubscribe = !$isAssigned;
             $planTf = strtolower($plan->billing_cycle ?? 'monthly');
         @endphp
-        <div class="col-md-4 col-lg-4 mb-4 plan-item-col" data-timeframe="{{ $planTf }}">
+        <div class="col-md-4 col-lg-4 mb-4 plan-item-col" data-timeframe="{{ $planTf }}" style="{{ $planTf === 'yearly' ? '' : 'display: none;' }}">
             <div class="plan-card {{ $isDefault ? 'default-plan' : '' }}">
                 @if($plan->label_name)
                     <div class="default-badge">
@@ -550,6 +550,12 @@
             </div>
         </div>
     @endforeach
+    <div id="noFilterPlansMsg" class="col-12 text-center my-4" style="display: none;">
+        <div class="p-4 bg-white rounded shadow-sm text-muted">
+            <i class="fas fa-info-circle fa-2x mb-2 text-warning"></i>
+            <p class="mb-0">No plans available for this timeframe. Please choose <strong>Monthly</strong> or <strong>All Plans</strong>.</p>
+        </div>
+    </div>
 </div>
 @else
 <div class="row w-100 justify-content-center">
@@ -601,22 +607,35 @@
         const filterBtns = document.querySelectorAll('.btn-timeframe-tab');
         const planCols = document.querySelectorAll('.plan-item-col');
 
+        function applyTimeframeFilter(filter) {
+            let visibleCount = 0;
+            planCols.forEach(col => {
+                const colTf = col.getAttribute('data-timeframe');
+                if (filter === 'all' || colTf === filter) {
+                    col.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    col.style.display = 'none';
+                }
+            });
+            const emptyMsg = document.getElementById('noFilterPlansMsg');
+            if (emptyMsg) {
+                emptyMsg.style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+        }
+
         filterBtns.forEach(btn => {
             btn.addEventListener('click', function() {
                 filterBtns.forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
 
                 const filter = this.getAttribute('data-filter');
-                planCols.forEach(col => {
-                    const colTf = col.getAttribute('data-timeframe');
-                    if (filter === 'all' || colTf === filter) {
-                        col.style.display = 'block';
-                    } else {
-                        col.style.display = 'none';
-                    }
-                });
+                applyTimeframeFilter(filter);
             });
         });
+
+        // Initialize with default Yearly/Annual filter on load
+        applyTimeframeFilter('yearly');
     });
 </script>
 

@@ -208,6 +208,18 @@ class RestaurantStaffController extends Controller
                 'icon' => 'fas fa-users'
             ],
             [
+                'key' => 'cash_drawer',
+                'title' => 'Cash Drawer Management',
+                'description' => 'Access cash drawer ledger, record cash in / cash out, and monitor live balance.',
+                'icon' => 'fas fa-cash-register'
+            ],
+            [
+                'key' => 'expense_management',
+                'title' => 'Expense Management',
+                'description' => 'Record daily restaurant expenses with payment modes and track spending.',
+                'icon' => 'fas fa-wallet'
+            ],
+            [
                 'key' => 'inventory_setting',
                 'title' => 'Inventory Setting',
                 'description' => 'Access to units, products, suppliers, purchases, stockouts, and debit notes.',

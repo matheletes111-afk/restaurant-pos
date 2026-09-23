@@ -486,7 +486,13 @@
                    onclick="return confirm('Approve this order? It will be moved to main orders with a new order number.')">
                     <i class="fas fa-check-circle"></i> Approve Order
                 </a>
-                <a href="{{ route('temp.orders') }}" class="btn btn-secondary btn-lg">
+                <a href="{{ route('admin.temporder.reject', $order->id) }}"
+                   class="btn btn-danger btn-lg rounded-pill px-4"
+                   style="display: inline-flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 600;"
+                   onclick="return confirm('Reject this order? The customer will see the rejected status on their screen.')">
+                    <i class="fas fa-times-circle"></i> Reject Order
+                </a>
+                <a href="{{ route('temp.orders') }}" class="btn btn-secondary btn-lg rounded-pill px-4" style="display: inline-flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 600;">
                     <i class="fas fa-arrow-left"></i> Back to Pending Orders
                 </a>
             </div>

@@ -1,38 +1,230 @@
 <style type="text/css">
-   .active_class{
-    background: #ff6a00 !important;
-    color: white !important;
-   }
-   .sidebar-disabled-item {
+  /* =========================================================
+     PREMIUM SIDEBAR THEME & ACTIVE MENU BACKGROUND
+     ========================================================= */
+  .pc-sidebar {
+    background: #0f172a !important;
+    background: linear-gradient(180deg, #0f172a 0%, #111827 50%, #090d16 100%) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.07) !important;
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.18) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  .pc-sidebar .navbar-wrapper {
+    background: transparent !important;
+  }
+  
+  /* Brand Header Container */
+  .pc-sidebar .m-header {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+    padding: 14px 18px !important;
+    height: auto !important;
+    min-height: 70px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .pc-sidebar .m-header .b-brand {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+  .pc-sidebar .m-header img {
+    max-height: 42px !important;
+    width: auto !important;
+    object-fit: contain !important;
+    background: #ffffff;
+    padding: 6px 14px;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Section Captions */
+  .pc-sidebar .pc-caption {
+    padding: 16px 16px 6px 16px !important;
+  }
+  .pc-sidebar .pc-caption label {
+    color: #64748b !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.8px !important;
+  }
+
+  /* Navigation Items & Links */
+  .pc-sidebar .pc-navbar {
+    padding: 12px 10px 40px 10px !important;
+  }
+  .pc-sidebar .pc-item {
+    margin-bottom: 3px !important;
+    position: relative !important;
+  }
+  .pc-sidebar .pc-link {
+    color: #94a3b8 !important;
+    padding: 10px 14px !important;
+    border-radius: 10px !important;
+    font-size: 13.5px !important;
+    font-weight: 500 !important;
+    display: flex !important;
+    align-items: center !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border: 1px solid transparent !important;
+    text-decoration: none !important;
+    position: relative !important;
+  }
+  .pc-sidebar .pc-link:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    transform: translateX(3px) !important;
+  }
+  .pc-sidebar .pc-link:hover .pc-micon {
+    color: #ff8c42 !important;
+    transform: scale(1.1) !important;
+  }
+  .pc-sidebar .pc-micon {
+    color: #94a3b8 !important;
+    margin-right: 12px !important;
+    width: 22px !important;
+    text-align: center !important;
+    font-size: 15.5px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+  }
+  .pc-sidebar .pc-micon i, .pc-sidebar .pc-micon svg {
+    color: inherit !important;
+    font-size: 15.5px !important;
+  }
+  .pc-sidebar .pc-mtext {
+    flex: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    letter-spacing: 0.2px !important;
+  }
+  .pc-sidebar .pc-arrow {
+    color: #64748b !important;
+    font-size: 12px !important;
+    transition: transform 0.22s ease !important;
+  }
+
+  /* =========================================================
+     ACTIVE MENU HIGHLIGHT (GLOWING BRAND ORANGE PILL)
+     ========================================================= */
+  .active_class,
+  .pc-sidebar .pc-link.active_class,
+  .pc-sidebar .pc-navbar > .pc-item.active > .pc-link:not(.pc-hasmenu > .pc-link) {
+    background: linear-gradient(135deg, #ff6a00 0%, #ff8533 100%) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 18px rgba(255, 106, 0, 0.45) !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    transform: none !important;
+  }
+  .active_class .pc-micon,
+  .active_class .pc-micon i,
+  .active_class .pc-mtext,
+  .pc-sidebar .pc-link.active_class .pc-micon,
+  .pc-sidebar .pc-link.active_class .pc-micon i,
+  .pc-sidebar .pc-link.active_class .pc-mtext {
+    color: #ffffff !important;
+  }
+  .pc-sidebar .pc-link.active_class::before,
+  .active_class::before {
+    display: none !important;
+  }
+
+  /* Active Parent Dropdown Menu Trigger */
+  .pc-sidebar .pc-item.pc-hasmenu.pc-trigger > .pc-link,
+  .pc-sidebar .pc-link.active-parent {
+    background: rgba(255, 106, 0, 0.14) !important;
+    color: #ff8c42 !important;
+    border: 1px solid rgba(255, 106, 0, 0.28) !important;
+    border-radius: 10px !important;
+  }
+  .pc-sidebar .pc-item.pc-hasmenu.pc-trigger > .pc-link .pc-micon,
+  .pc-sidebar .pc-item.pc-hasmenu.pc-trigger > .pc-link .pc-arrow,
+  .pc-sidebar .pc-link.active-parent .pc-micon,
+  .pc-sidebar .pc-link.active-parent .pc-arrow {
+    color: #ff8c42 !important;
+  }
+
+  /* Submenu Dropdown Container */
+  .pc-sidebar .pc-submenu {
+    background: rgba(0, 0, 0, 0.32) !important;
+    border-radius: 10px !important;
+    margin: 4px 4px 8px 4px !important;
+    padding: 6px 4px !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    list-style: none !important;
+  }
+  .pc-sidebar .pc-submenu .pc-item {
+    margin-bottom: 2px !important;
+  }
+  .pc-sidebar .pc-submenu .pc-link {
+    padding: 8px 12px 8px 20px !important;
+    font-size: 13px !important;
+    color: #94a3b8 !important;
+    border-radius: 8px !important;
+  }
+  .pc-sidebar .pc-submenu .pc-link:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+    transform: translateX(2px) !important;
+  }
+  .pc-sidebar .pc-submenu .pc-link.active_class {
+    background: linear-gradient(135deg, #ff6a00 0%, #ff8533 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 12px rgba(255, 106, 0, 0.35) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  }
+
+  /* Disabled State */
+  .sidebar-disabled-item {
     pointer-events: none !important;
-    opacity: 0.55 !important;
-    filter: blur(1.2px) !important;
+    opacity: 0.45 !important;
+    filter: grayscale(80%) blur(0.6px) !important;
     user-select: none !important;
-   }
- </style>
+  }
+
+  /* Custom Sleek Scrollbar */
+  .pc-sidebar .navbar-content::-webkit-scrollbar {
+    width: 4px;
+  }
+  .pc-sidebar .navbar-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .pc-sidebar .navbar-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+  }
+  .pc-sidebar .navbar-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+</style>
+
 <nav class="pc-sidebar">
   <div class="navbar-wrapper">
     <div class="m-header">
       <a href="#" class="b-brand text-primary">
-        
-        <img src="{{asset('logo.png')}}" class="img-fluid logo-lg mt-3" alt="logo">
+        <img src="{{asset('logo.png')}}" class="img-fluid logo-lg" alt="logo">
       </a>
     </div>
     <div class="navbar-content">
-      <ul class="pc-navbar mt-3">
-        
+      <ul class="pc-navbar">
 
-        
-
-        @if(auth()->user()->role!="RES")
-        {{-- admin routes --}}
+        @if(auth()->user()->role != "RES")
+        {{-- ==================== ADMIN ROUTES ==================== --}}
         @php
           $saUser = auth()->user();
           $saPerms = $saUser->permissions ?? [];
         @endphp
 
         <li class="pc-item">
-          <a href="{{route('admin.dashboard')}}" class="pc-link @if(Request::segment(2)=="dashboard") active_class @endif">
+          <a href="{{route('admin.dashboard')}}" class="pc-link @if(Request::is('admin/dashboard*') || request()->routeIs('admin.dashboard')) active_class @endif">
             <span class="pc-micon"><i class="fas fa-sitemap"></i></span>
             <span class="pc-mtext">Dashboard</span>
           </a>
@@ -40,7 +232,7 @@
 
         @if($saUser->id == 1 || in_array('restaurant_master', $saPerms))
         <li class="pc-item">
-          <a href="{{route('manage.restaurant')}}" class="pc-link @if(Request::segment(2)=="manage-restaurant") active_class @endif">
+          <a href="{{route('manage.restaurant')}}" class="pc-link @if(Request::is('*manage-restaurant*')) active_class @endif">
             <span class="pc-micon"><i class="fas fa-utensils"></i></span>
             <span class="pc-mtext">Restaurant Master</span>
           </a>
@@ -49,7 +241,7 @@
 
         @if($saUser->id == 1 || in_array('plan_master', $saPerms))
         <li class="pc-item">
-          <a href="{{route('plans.index')}}" class="pc-link @if(Request::segment(2)=="plans") active_class @endif">
+          <a href="{{route('plans.index')}}" class="pc-link @if(Request::is('*plans*') && !Request::is('*manage-restaurant/plans*')) active_class @endif">
             <span class="pc-micon"><i class="fas fa-layer-group"></i></span>
             <span class="pc-mtext">Plan Master</span>
           </a>
@@ -57,33 +249,27 @@
         @endif
 
         @if($saUser->id == 1 || in_array('payment_history', $saPerms))
-         <li class="pc-item">
-          <a href="{{route('admin.payment.history')}}" class="pc-link @if(Request::segment(2)=="payment-history") active_class @endif">
-            <span class="pc-micon">
-              <i class="fas fa-receipt"></i>
-            </span>
+        <li class="pc-item">
+          <a href="{{route('admin.payment.history')}}" class="pc-link @if(Request::is('*payment-history*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-receipt"></i></span>
             <span class="pc-mtext">Payment History</span>
           </a>
         </li>
         @endif
 
         @if($saUser->id == 1 || in_array('admin_crm', $saPerms))
-         <li class="pc-item">
-          <a href="{{route('admin.crm.index')}}" class="pc-link @if(Request::segment(2)=="crm") active_class @endif">
-            <span class="pc-micon">
-              <i class="fas fa-address-book"></i>
-            </span>
+        <li class="pc-item">
+          <a href="{{route('admin.crm.index')}}" class="pc-link @if(Request::is('*crm*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-address-book"></i></span>
             <span class="pc-mtext">Admin CRM</span>
           </a>
         </li>
         @endif
 
         @if($saUser->id == 1 || in_array('marketing_notifications', $saPerms))
-         <li class="pc-item">
-          <a href="{{route('admin.marketing.index')}}" class="pc-link @if(Request::segment(2)=="marketing") active_class @endif">
-            <span class="pc-micon">
-              <i class="fas fa-paper-plane"></i>
-            </span>
+        <li class="pc-item">
+          <a href="{{route('admin.marketing.index')}}" class="pc-link @if(Request::is('*marketing*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-paper-plane"></i></span>
             <span class="pc-mtext">Send Notification</span>
           </a>
         </li>
@@ -91,346 +277,296 @@
 
         @if($saUser->id == 1 || in_array('customer_support', $saPerms))
         <li class="pc-item">
-        <a href="{{ route('admin.support.tickets') }}" 
-           class="pc-link @if(Request::segment(2) == 'admin-support') active_class @endif">
-          <span class="pc-micon">
-            <i class="fas fa-headset"></i>
-          </span>
-          <span class="pc-mtext">Customer Support</span>
-        </a>
-      </li>
-      @endif
+          <a href="{{ route('admin.support.tickets') }}" class="pc-link @if(Request::is('*admin-support*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-headset"></i></span>
+            <span class="pc-mtext">Customer Support</span>
+          </a>
+        </li>
+        @endif
 
-      @if($saUser->id == 1 || in_array('admin_user_management', $saPerms))
+        @if($saUser->id == 1 || in_array('admin_user_management', $saPerms))
         <li class="pc-item">
-          <a href="{{route('admin.users.index')}}" class="pc-link @if(Request::segment(2)=="users") active_class @endif">
+          <a href="{{route('admin.users.index')}}" class="pc-link @if(Request::is('admin/users*') || Request::is('users*')) active_class @endif">
             <span class="pc-micon"><i class="fas fa-users-cog"></i></span>
             <span class="pc-mtext">Admin Users</span>
           </a>
         </li>
-      @endif
-
-      {{-- end admin routes --}}
+        @endif
+        {{-- ==================== END ADMIN ROUTES ==================== --}}
         @endif
 
 
+        @php
+          $subRestId = method_exists(auth()->user(), 'getSubscriptionRestaurantId') ? auth()->user()->getSubscriptionRestaurantId() : auth()->user()->restaurant_id;
+          $active = DB::table('subscriptions')
+            ->where('user_id', $subRestId)
+            ->where(function($query) {
+                $query->where('status', 'active')
+                      ->orWhere(function($q) {
+                          $q->where('status', 'completed')
+                            ->whereDate('end_date', '>=', now());
+                      });
+            })
+            ->first();
+          $plan_details = DB::table('plans')->where('id',@$active->plan_id)->first();
+          $disabledClass = $active == "" ? 'sidebar-disabled-item' : '';
+        @endphp
 
-@php
-  $subRestId = method_exists(auth()->user(), 'getSubscriptionRestaurantId') ? auth()->user()->getSubscriptionRestaurantId() : auth()->user()->restaurant_id;
-  $active = DB::table('subscriptions')
-    ->where('user_id', $subRestId)
-    ->where(function($query) {
-        $query->where('status', 'active')
-              ->orWhere(function($q) {
-                  $q->where('status', 'completed')
-                    ->whereDate('end_date', '>=', now());
-              });
-    })
-    ->first();
-  $plan_details = DB::table('plans')->where('id',@$active->plan_id)->first();
-  $disabledClass = $active == "" ? 'sidebar-disabled-item' : '';
-@endphp
-@if(auth()->user()->role == "RES" || $active != "")
+        @if(auth()->user()->role == "RES" || $active != "")
+        {{-- ==================== RESTAURANT ROUTES ==================== --}}
 
-
-{{-- restaurant routes --}}
-
-<li class="pc-item {{ $disabledClass }}">
-          <a href="{{route('dashboard')}}" class="pc-link @if(Request::segment(1)=="dashboard") active_class @endif">
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{route('dashboard')}}" class="pc-link @if(request()->routeIs('dashboard') || (Request::is('dashboard*') && !Request::is('admin/dashboard*'))) active_class @endif">
             <span class="pc-micon"><i class="fas fa-sitemap"></i></span>
             <span class="pc-mtext">Dashboard</span>
           </a>
         </li>
 
-@if(auth()->user()->hasPermission('menu_master'))
-<li class="pc-item {{ $disabledClass }}">
-  <a href="{{route('manage.category')}}" class="pc-link @if(Request::segment(2)=="manage-menu-category") active_class @endif">
-    <span class="pc-micon"><i class="fas fa-concierge-bell"></i></span>
-    <span class="pc-mtext">Menu Master</span>
-  </a>
-</li>
-@endif
+        @if(auth()->user()->hasPermission('menu_master'))
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{route('manage.category')}}" class="pc-link @if(Request::is('*manage-menu-category*') || Request::is('*manage-category*') || Request::is('*manage-food-items*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-concierge-bell"></i></span>
+            <span class="pc-mtext">Menu Master</span>
+          </a>
+        </li>
+        @endif
 
-@if(auth()->user()->hasPermission('menu_availability'))
-<li class="pc-item {{ $disabledClass }}">
-  <a href="{{route('menu.availability')}}" class="pc-link @if(Request::segment(2)=="menu-availability") active_class @endif">
-    <span class="pc-micon"><i class="fas fa-clipboard-list"></i></span>
-    <span class="pc-mtext">Menu Avilability</span>
-  </a>
-</li>
-@endif
+        @if(auth()->user()->hasPermission('menu_availability'))
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{route('menu.availability')}}" class="pc-link @if(Request::is('*menu-availability*') || Request::is('*menu-discount*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-clipboard-list"></i></span>
+            <span class="pc-mtext">Menu Availability</span>
+          </a>
+        </li>
+        @endif
 
-@if(auth()->user()->hasPermission('table_master'))
-<li class="pc-item {{ $disabledClass }}">
-  <a href="{{route('table.manage')}}" class="pc-link @if(Request::segment(2)=="table-manage") active_class @endif">
-    <span class="pc-micon"><i class="fas fa-chair"></i></span>
-    <span class="pc-mtext">Table Master</span>
-  </a>
-</li>
-@endif
+        @if(auth()->user()->hasPermission('table_master'))
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{route('table.manage')}}" class="pc-link @if(Request::is('*table-manage*') || Request::is('*table*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-chair"></i></span>
+            <span class="pc-mtext">Table Master</span>
+          </a>
+        </li>
+        @endif
 
-@if(auth()->user()->hasPermission('order_master'))
-<li class="pc-item {{ $disabledClass }}">
-  <a href="{{route('order.management.dashboard')}}" class="pc-link @if(Request::segment(2)=="order-management-dashboard") active_class @endif">
-    <span class="pc-micon"><i class="fas fa-receipt"></i></span>
-    <span class="pc-mtext">Order Master</span>
-  </a>
-</li>
-@endif
+        @if(auth()->user()->hasPermission('order_master'))
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{route('order.management.dashboard')}}" class="pc-link @if(Request::is('*order-management*') || Request::is('*order-management-dashboard*') || Request::is('admin/order*') || Request::is('order/*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-receipt"></i></span>
+            <span class="pc-mtext">Order Master</span>
+          </a>
+        </li>
+        @endif
 
+        @if(auth()->user()->hasPermission('kitchen_order'))
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{route('manage.kitchen-panel')}}" class="pc-link @if(Request::is('*kitchen*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-utensils"></i></span>
+            <span class="pc-mtext">Kitchen Order</span>
+          </a>
+        </li>
+        @endif
 
+        @if(auth()->user()->hasPermission('pending_order'))
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{ route('temp.orders') }}" class="pc-link @if(Request::is('*pending-temp-orders*') || Request::is('*temp-orders*') || Request::is('*temp-order*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-clock"></i></span>
+            <span class="pc-mtext">Pending Order</span>
+          </a>
+        </li>
+        @endif
 
+        @if(auth()->user()->hasPermission('billing_subscription'))
+        <li class="pc-item">
+          <a href="{{ route('admin.subscriptions.index') }}" class="pc-link @if(Request::is('*subscriptions*') || Request::is('*plans/*/subscribe*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-credit-card"></i></span>
+            <span class="pc-mtext">Billing & Subscription</span>
+          </a>
+        </li>
+        @endif
 
+        @if(auth()->user()->hasPermission('customer_support'))
+        <li class="pc-item">
+          <a href="{{ route('restaurant.support.tickets') }}" class="pc-link @if(Request::is('*restaurant-support*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-headset"></i></span>
+            <span class="pc-mtext">Customer Support</span>
+          </a>
+        </li>
+        @endif
 
-@if(auth()->user()->hasPermission('kitchen_order'))
-<li class="pc-item {{ $disabledClass }}">
-  <a href="{{route('manage.kitchen-panel')}}" class="pc-link @if(Request::segment(2)=="kitchen-panel") active_class @endif">
-    <span class="pc-micon"><i class="fas fa-users"></i></span>
-    <span class="pc-mtext">Kitchen Order</span>
-  </a>
-</li>
-@endif
+        @if(auth()->user()->hasPermission('staff'))
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{route('restaurant.staff.index')}}" class="pc-link @if(Request::is('*restaurant-staff*') || Request::is('*manage-staff*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-users"></i></span>
+            <span class="pc-mtext">Staff</span>
+          </a>
+        </li>
+        @endif
 
-@if(auth()->user()->hasPermission('pending_order'))
-<li class="pc-item {{ $disabledClass }}">
-  <a href="{{ route('temp.orders') }}" 
-     class="pc-link @if(Request::segment(2) == 'pending-temp-orders') active_class @endif">
-    <span class="pc-micon">
-      <i class="fas fa-clock"></i>
-    </span>
-    <span class="pc-mtext">Pending Order</span>
-  </a>
-</li>
-@endif
+        @if(auth()->user()->hasPermission('cash_drawer'))
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{ route('cash.drawer.index') }}" class="pc-link @if(Request::is('*cash-drawer*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-cash-register"></i></span>
+            <span class="pc-mtext">Cash Drawer</span>
+          </a>
+        </li>
+        @endif
 
-{{-- @if(auth()->user()->hasPermission('restro_ai'))
-<li class="pc-item {{ $disabledClass }}">
-  <a href="{{ route('ask-ai') }}" 
-     class="pc-link @if(Request::segment(2) == 'ask-ai') active_class @endif">
-    <span class="pc-micon">
-      <i class="fas fa-robot"></i>
-    </span>
-    <span class="pc-mtext">Restro AI</span>
-  </a>
-</li>
-@endif --}}
+        @if(auth()->user()->hasPermission('expense_management'))
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{ route('expense.index') }}" class="pc-link @if(Request::is('*expense*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-wallet"></i></span>
+            <span class="pc-mtext">Expense Management</span>
+          </a>
+        </li>
+        @endif
 
-@if(auth()->user()->hasPermission('billing_subscription'))
-<li class="pc-item">
-  <a href="{{ route('admin.subscriptions.index') }}" 
-     class="pc-link @if(Request::segment(2) == 'subscriptions') active_class @endif">
-    <span class="pc-micon">
-      <i class="fas fa-credit-card"></i>
-    </span>
-    <span class="pc-mtext">Billing & Subscription</span>
-  </a>
-</li>
-@endif
+        @if(auth()->user()->isOwner())
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{ route('restaurant.outlets.index') }}" class="pc-link @if(Request::is('*outlets*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-store-alt"></i></span>
+            <span class="pc-mtext">Outlets / Branches</span>
+          </a>
+        </li>
+        @endif
 
-@if(auth()->user()->hasPermission('customer_support'))
-<li class="pc-item">
-  <a href="{{ route('restaurant.support.tickets') }}" 
-     class="pc-link @if(Request::segment(2) == 'restaurant-support') active_class @endif">
-    <span class="pc-micon">
-      <i class="fas fa-headset"></i>
-    </span>
-    <span class="pc-mtext">Customer Support</span>
-  </a>
-</li>
-@endif
+        {{-- Inventory Setting Dropdown --}}
+        @if(auth()->user()->hasPermission('inventory_setting'))
+        @if(@$plan_details->inventory_checkbox=="Y" || $active == "")
+        @php
+          $isInvActive = Request::is('*manage-units*') || Request::is('*units*') || Request::is('*products*') || Request::is('*product*') || (Request::is('*supplier*') && !Request::is('*debit-note*')) || Request::is('*purchase*') || Request::is('*stock-out*') || Request::is('*debit-note*');
+        @endphp
+        <li class="pc-item pc-hasmenu {{ $isInvActive ? 'pc-trigger active' : '' }} {{ $disabledClass }}">
+          <a href="#!" class="pc-link {{ $isInvActive ? 'active-parent' : '' }}">
+            <span class="pc-micon">
+              <i class="fas fa-boxes"></i>
+            </span>
+            <span class="pc-mtext">Inventory Setting</span>
+            <span class="pc-arrow">
+              <i data-feather="chevron-right"></i>
+            </span>
+          </a>
 
-@if(auth()->user()->hasPermission('staff'))
-<li class="pc-item {{ $disabledClass }}">
-  <a href="{{route('restaurant.staff.index')}}" class="pc-link @if(Request::segment(2)=="restaurant-staff") active_class @endif">
-    <span class="pc-micon"><i class="fas fa-users"></i></span>
-    <span class="pc-mtext">Staff</span>
-  </a>
-</li>
-@endif
+          <ul class="pc-submenu" style="{{ $isInvActive ? 'display: block;' : '' }}">
+            <!-- Manage Units -->
+            <li class="pc-item">
+              <a href="{{ route('manage.units') }}" class="pc-link @if(Request::is('*manage-units*') || Request::is('*units*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-ruler-combined"></i></span>
+                <span class="pc-mtext">Manage Units</span>
+              </a>
+            </li>
 
-@if(auth()->user()->isOwner())
-<li class="pc-item {{ $disabledClass }}">
-  <a href="{{ route('restaurant.outlets.index') }}" class="pc-link @if(Request::segment(1)=="outlets") active_class @endif">
-    <span class="pc-micon"><i class="fas fa-store-alt"></i></span>
-    <span class="pc-mtext">Outlets / Branches</span>
-  </a>
-</li>
-@endif
+            <!-- Manage Products -->
+            <li class="pc-item">
+              <a href="{{ route('products.manage') }}" class="pc-link @if(Request::is('*products*') || Request::is('*product*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-th-list"></i></span>
+                <span class="pc-mtext">Manage Products</span>
+              </a>
+            </li>
 
+            <!-- Manage Suppliers -->
+            <li class="pc-item">
+              <a href="{{ route('suppliers.index') }}" class="pc-link @if((Request::is('*supplier*') || Request::is('*suppliers*')) && !Request::is('*debit-note*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-truck"></i></span>
+                <span class="pc-mtext">Manage Suppliers</span>
+              </a>
+            </li>
 
-@if(auth()->user()->hasPermission('inventory_setting'))
-@if(@$plan_details->inventory_checkbox=="Y" || $active == "")
-<li class="pc-item pc-hasmenu {{ $disabledClass }}">
-  <a href="#!" class="pc-link">
-    <span class="pc-micon">
-      <i class="ti ti-menu"></i>
-    </span>
-    <span class="pc-mtext">Inventory Setting</span>
-    <span class="pc-arrow">
-      <i data-feather="chevron-right"></i>
-    </span>
-  </a>
+            <!-- Manage Purchases -->
+            <li class="pc-item">
+              <a href="{{ route('purchases.index') }}" class="pc-link @if(Request::is('*purchases*') || Request::is('*purchase*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-file-invoice-dollar"></i></span>
+                <span class="pc-mtext">Manage Purchases</span>
+              </a>
+            </li>
 
-  <ul class="pc-submenu">
+            <!-- Manage Stockout -->
+            <li class="pc-item">
+              <a href="{{ route('stock-outs.index') }}" class="pc-link @if(Request::is('*stock-outs*') || Request::is('*stock-out*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-box-open"></i></span>
+                <span class="pc-mtext">Manage Stockout</span>
+              </a>
+            </li>
 
-    <!-- Manage Units -->
-    <li class="pc-item">
-      <a href="{{ route('manage.units') }}" class="pc-link">
-        <span class="pc-micon">
-          <i class="fas fa-ruler-combined"></i>
-        </span>
-        <span class="pc-mtext">Manage Units</span>
-      </a>
-    </li>
+            <!-- Supplier Debit Note -->
+            <li class="pc-item">
+              <a href="{{ route('debit-notes.index') }}" class="pc-link @if(Request::is('*debit-notes*') || Request::is('*debit-note*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-file-invoice"></i></span>
+                <span class="pc-mtext">Supplier Debit Note</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+        @endif
+        @endif
 
-<li class="pc-item">
-    <a href="{{ route('products.manage') }}" class="pc-link">
-        <span class="pc-micon">
-            <i class="fas fa-th-list"></i> <!-- or fa-th-large -->
-        </span>
-        <span class="pc-mtext">Manage Products</span>
-    </a>
-</li>
+        {{-- Reports Dropdown --}}
+        @if(auth()->user()->hasPermission('reports'))
+        @php
+          $isReportsActive = Request::is('*report*') || Request::is('*item-gst-summary*') || Request::is('*inventory/live*');
+        @endphp
+        <li class="pc-item pc-hasmenu {{ $isReportsActive ? 'pc-trigger active' : '' }} {{ $disabledClass }}">
+          <a href="#!" class="pc-link {{ $isReportsActive ? 'active-parent' : '' }}">
+            <span class="pc-micon">
+              <i class="ti ti-report-analytics"></i>
+            </span>
+            <span class="pc-mtext">Reports</span>
+            <span class="pc-arrow">
+              <i data-feather="chevron-right"></i>
+            </span>
+          </a>
 
-    <!-- Manage Suppliers -->
-    <li class="pc-item">
-      <a href="{{ route('suppliers.index') }}" class="pc-link">
-        <span class="pc-micon">
-          <i class="fas fa-truck"></i>
-        </span>
-        <span class="pc-mtext">Manage Suppliers</span>
-      </a>
-    </li>
+          <ul class="pc-submenu" style="{{ $isReportsActive ? 'display: block;' : '' }}">
+            <li class="pc-item">
+              <a href="{{ route('order.report.management') }}" class="pc-link @if(Request::is('*report-order-management*')) active_class @endif">
+                <span class="pc-micon"><i class="ti ti-file-text"></i></span>
+                <span class="pc-mtext">Order Report</span>
+              </a>
+            </li>
 
-    <!-- Manage Purchases -->
-    <li class="pc-item">
-      <a href="{{ route('purchases.index') }}" class="pc-link">
-        <span class="pc-micon">
-          <i class="fas fa-file-invoice-dollar"></i>
-        </span>
-        <span class="pc-mtext">Manage Purchases</span>
-      </a>
-    </li>
+            <li class="pc-item">
+              <a href="{{ route('report.item.gst.summary') }}" class="pc-link @if(Request::is('*item-gst-summary*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-file-invoice-dollar"></i></span>
+                <span class="pc-mtext">Item-Wise GST</span>
+              </a>
+            </li>
 
-    <!-- Manage Stockout -->
-    <li class="pc-item">
-      <a href="{{ route('stock-outs.index') }}" class="pc-link">
-        <span class="pc-micon">
-          <i class="fas fa-box-open"></i>
-        </span>
-        <span class="pc-mtext">Manage Stockout</span>
-      </a>
-    </li>
+            <li class="pc-item">
+              <a href="{{ route('order.report.top.analysis') }}" class="pc-link @if(Request::is('*report-top-analysis*')) active_class @endif">
+                <span class="pc-micon"><i class="ti ti-trophy"></i></span>
+                <span class="pc-mtext">Top Cust. / Dish</span>
+              </a>
+            </li>
 
-      <li class="pc-item">
-  <a href="{{ route('debit-notes.index') }}" class="pc-link">
-    <span class="pc-micon">
-      <i class="fas fa-file-invoice-dollar"></i>
-    </span>
-    <span class="pc-mtext">Supplier Debit Note</span>
-  </a>
-</li>
-</ul>
-</li>
-@endif
-@endif
+            <li class="pc-item">
+              <a href="{{ route('order.report.analysis') }}" class="pc-link @if(Request::is('*report-order-analysis*')) active_class @endif">
+                <span class="pc-micon"><i class="ti ti-chart-line"></i></span>
+                <span class="pc-mtext">Order Analysis</span>
+              </a>
+            </li>
 
+            <!-- Live Stocks -->
+            @if(@$plan_details->inventory_checkbox=="Y" || $active == "")
+            <li class="pc-item">
+              <a href="{{ route('inventory.live') }}" class="pc-link @if(Request::is('*inventory/live*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-warehouse"></i></span>
+                <span class="pc-mtext">Live Stocks</span>
+              </a>
+            </li>
+            @endif
+          </ul>
+        </li>
+        @endif
 
-@if(auth()->user()->hasPermission('reports'))
-<li class="pc-item pc-hasmenu {{ $disabledClass }}">
-  <a href="#!" class="pc-link">
-    <span class="pc-micon">
-      <i class="ti ti-report-analytics"></i>
-    </span>
-    <span class="pc-mtext">Reports</span>
-    <span class="pc-arrow">
-      <i data-feather="chevron-right"></i>
-    </span>
-  </a>
+        {{-- ==================== END RESTAURANT ROUTES ==================== --}}
+        @endif
 
-  <ul class="pc-submenu">
-
-    <li class="pc-item">
-      <a href="{{ route('order.report.management') }}" class="pc-link">
-        <span class="pc-micon">
-          <i class="ti ti-file-text"></i>
-        </span>
-        <span class="pc-mtext">Order Report</span>
-      </a>
-    </li>
-
-    <li class="pc-item">
-    <a href="{{ route('report.item.gst.summary') }}" class="pc-link">
-      <span class="pc-micon">
-        <i class="fas fa-file-invoice-dollar"></i>
-      </span>
-      <span class="pc-mtext">Item-Wise</span>
-    </a>
-  </li>
-
-    <li class="pc-item">
-      <a href="{{ route('order.report.top.analysis') }}" class="pc-link">
-        <span class="pc-micon">
-          <i class="ti ti-trophy"></i>
-        </span>
-        <span class="pc-mtext">Top Cust. / Dish</span>
-      </a>
-    </li>
-
-    <li class="pc-item">
-      <a href="{{ route('order.report.analysis') }}" class="pc-link">
-        <span class="pc-micon">
-          <i class="ti ti-chart-line"></i>
-        </span>
-        <span class="pc-mtext">Order Analysis</span>
-      </a>
-    </li>
-
-    <!-- Live Stocks -->
-    @if(@$plan_details->inventory_checkbox=="Y" || $active == "")
-    <li class="pc-item">
-      <a href="{{ route('inventory.live') }}" class="pc-link">
-        <span class="pc-micon">
-          <i class="fas fa-warehouse"></i>
-        </span>
-        <span class="pc-mtext">Live Stocks</span>
-      </a>
-    </li>
-    @endif
-
-  </ul>
-</li>
-
-
-{{-- end restaurant routes --}}
-@endif
-@endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<li class="pc-item">
-        <a href="{{route('logout')}}" class="pc-link">
-          <span class="pc-micon"><i class="fa fa-sign-out-alt fa-3x"></i></span>
-          <span class="pc-mtext">Logout</span>
-        </a>
-      </li>
-
-
-       
-
-       
+        <li class="pc-item mt-2">
+          <a href="{{route('logout')}}" class="pc-link text-danger">
+            <span class="pc-micon"><i class="fas fa-sign-out-alt text-danger"></i></span>
+            <span class="pc-mtext text-danger fw-semibold">Logout</span>
+          </a>
+        </li>
         
       </ul>
       

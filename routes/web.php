@@ -62,6 +62,7 @@ Route::get('/login/verify/resend', [LoginController::class, 'resendOtp'])->name(
     Route::get('order-customer/{table_id}/{restaurant_id}', [App\Http\Controllers\TempOrderController::class, 'create'])->name('temp.order.create');
     Route::post('order/store', [App\Http\Controllers\TempOrderController::class, 'store'])->name('temp.order.store');
     Route::get('/order-success/{id}', [App\Http\Controllers\TempOrderController::class, 'success'])->name('order.success');
+    Route::get('/order-status-check/{id}', [App\Http\Controllers\TempOrderController::class, 'checkStatus'])->name('order.status.check');
 Route::group(['middleware' => ['auth', 'menu.permission', 'secure.restro.data']], function () {
 
  Route::get('/select-plans', [App\Http\Controllers\PlanController::class, 'selectPlan'])->name('select.plan.page');
@@ -307,6 +308,9 @@ Route::get('/pending-temp-orders/delete-item/{id}', [App\Http\Controllers\TempOr
 Route::get('/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdminController::class, 'approveOrder'])
     ->name('admin.temporder.approve');
 Route::get('admin/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdminController::class, 'approveOrder']);
+Route::get('/temp-order/reject/{id}', [App\Http\Controllers\TempOrderAdminController::class, 'rejectOrder'])
+    ->name('admin.temporder.reject');
+Route::get('admin/temp-order/reject/{id}', [App\Http\Controllers\TempOrderAdminController::class, 'rejectOrder']);
 
 // Admin Plan Routes
 
@@ -426,6 +430,16 @@ Route::get('admin/temp-order/approve/{id}', [App\Http\Controllers\TempOrderAdmin
         Route::get('/export', [App\Http\Controllers\ExpenseController::class, 'export'])->name('expense.export');
     });
 
+    // Cash Drawer Management Routes
+    Route::prefix('cash-drawer')->group(function () {
+        Route::get('/', [App\Http\Controllers\CashDrawerController::class, 'index'])->name('cash.drawer.index');
+        Route::post('/opening', [App\Http\Controllers\CashDrawerController::class, 'storeOpening'])->name('cash.drawer.opening');
+        Route::post('/cash-in', [App\Http\Controllers\CashDrawerController::class, 'storeCashIn'])->name('cash.drawer.cashin');
+        Route::post('/cash-out', [App\Http\Controllers\CashDrawerController::class, 'storeCashOut'])->name('cash.drawer.cashout');
+        Route::delete('/{id}', [App\Http\Controllers\CashDrawerController::class, 'destroy'])->name('cash.drawer.destroy');
+        Route::get('/export', [App\Http\Controllers\CashDrawerController::class, 'export'])->name('cash.drawer.export');
+    });
+
 
     Route::prefix('debit-notes')->group(function () {
     Route::get('/', [App\Http\Controllers\DebitNoteController::class, 'index'])->name('debit-notes.index');
@@ -494,4 +508,11 @@ Route::prefix('restaurant/profile')->name('restaurant.profile.')->group(function
 
 });
 
+// Root Aliases for Expense and Cash Drawer
+Route::get('/expense', function() {
+    return redirect()->route('expense.index');
+});
+Route::get('/cash-drawer', function() {
+    return redirect()->route('cash.drawer.index');
+});
 

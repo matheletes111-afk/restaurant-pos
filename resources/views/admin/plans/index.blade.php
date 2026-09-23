@@ -132,13 +132,13 @@
                   </a>
                 </li>
                 <li class="nav-item ms-1">
-                  <a class="nav-link timeframe-filter-btn" data-filter="monthly" href="javascript:void(0)" style="border-radius: 20px; padding: 6px 16px; font-size: 0.85rem; font-weight: 600;">
-                    <i class="fas fa-calendar-alt me-1"></i> Monthly ({{ $plans->where('billing_cycle', 'monthly')->count() }})
+                  <a class="nav-link timeframe-filter-btn" data-filter="yearly" href="javascript:void(0)" style="border-radius: 20px; padding: 6px 16px; font-size: 0.85rem; font-weight: 600;">
+                    <i class="fas fa-calendar-check me-1"></i> Yearly ({{ $plans->where('billing_cycle', 'yearly')->count() }})
                   </a>
                 </li>
                 <li class="nav-item ms-1">
-                  <a class="nav-link timeframe-filter-btn" data-filter="yearly" href="javascript:void(0)" style="border-radius: 20px; padding: 6px 16px; font-size: 0.85rem; font-weight: 600;">
-                    <i class="fas fa-calendar-check me-1"></i> Yearly ({{ $plans->where('billing_cycle', 'yearly')->count() }})
+                  <a class="nav-link timeframe-filter-btn" data-filter="monthly" href="javascript:void(0)" style="border-radius: 20px; padding: 6px 16px; font-size: 0.85rem; font-weight: 600;">
+                    <i class="fas fa-calendar-alt me-1"></i> Monthly ({{ $plans->where('billing_cycle', 'monthly')->count() }})
                   </a>
                 </li>
               </ul>

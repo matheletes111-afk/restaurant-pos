@@ -15,6 +15,7 @@ use App\Models\RestaurantMaster;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Services\CashDrawerService;
 
 class OrderApiController extends Controller
 {
@@ -691,6 +692,11 @@ class OrderApiController extends Controller
                 'payment_date' => now(),
                 'created_by' => $userId
             ]);
+
+            // Sync with Cash Drawer if CASH payment
+            if (strtoupper($payment->payment_method) === 'CASH') {
+                app(CashDrawerService::class)->recordOrderPayment($payment, $order);
+            }
             
             // Update order payment status
             $totalPaid = OrderToPayment::where('order_id', $order_id)->sum('amount');
@@ -753,6 +759,12 @@ class OrderApiController extends Controller
         DB::beginTransaction();
         try {
             $order = OrderManage::findOrFail($payment->order_id);
+
+            // If cash payment, remove from Cash Drawer
+            if (strtoupper($payment->payment_method) === 'CASH') {
+                app(CashDrawerService::class)->removeOrderPayment($payment->id);
+            }
+
             $payment->delete();
             
             // Update order payment status

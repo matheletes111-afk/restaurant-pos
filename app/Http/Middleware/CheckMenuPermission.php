@@ -148,6 +148,8 @@ class CheckMenuPermission
             'billing_subscription' => ['subscriptions', 'admin.subscriptions.index', 'plans/subscribe', 'admin.subscriptions.create', 'subscriptions/payment', 'admin.subscriptions.payment', 'razorpay/webhook'],
             'customer_support' => ['restaurant-support', 'restaurant.support.tickets'],
             'staff' => ['restaurant-staff', 'restaurant.staff.index'],
+            'cash_drawer' => ['cash-drawer', 'cash.drawer'],
+            'expense_management' => ['expense', 'expense.index', 'expense.store', 'expense.update', 'expense.destroy', 'expense.show', 'expense.export'],
             'inventory_setting' => ['manage-units', 'manage.units', 'products/manage', 'products.manage', 'suppliers', 'suppliers.index', 'purchases', 'purchases.index', 'stock-outs', 'stock-outs.index', 'debit-notes', 'debit-notes.index', 'inventory/manage', 'inventory.manage', 'inventory/stock-report', 'inventory.stock-report', 'inventory.delete', 'products/store', 'products.store', 'products/update', 'products.update', 'products/delete', 'products.delete', 'products/import', 'products.import', 'products/export', 'products.export', 'products/download-sample', 'products.download-sample'],
             'reports' => ['report-top-analysis', 'order.report.top.analysis', 'report-order-analysis', 'order.report.analysis', 'report-order-management', 'order.report.management', 'item-gst-summary', 'report.item.gst.summary', 'inventory/live', 'inventory.live', 'order-report', 'order.report']
         ];

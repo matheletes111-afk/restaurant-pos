@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\FirebasePushService;
+use App\Services\CashDrawerService;
 
 class OrderManagementController extends Controller
 {
@@ -647,6 +648,11 @@ public function addPayment(Request $request, $order_id)
             'payment_date' => now(),
             'created_by' => auth()->id()
         ]);
+
+        // Sync with Cash Drawer if CASH payment
+        if (strtoupper($payment->payment_method) === 'CASH') {
+            app(CashDrawerService::class)->recordOrderPayment($payment, $order);
+        }
         
         // Update order payment status
         $totalPaid = OrderToPayment::where('order_id', $order_id)->sum('amount');
@@ -696,6 +702,11 @@ public function deletePayment($payment_id)
         $payment = OrderToPayment::findOrFail($payment_id);
         $order = OrderManage::findOrFail($payment->order_id);
         
+        // If cash payment, remove from Cash Drawer
+        if (strtoupper($payment->payment_method) === 'CASH') {
+            app(CashDrawerService::class)->removeOrderPayment($payment->id);
+        }
+
         $payment->delete();
         
         // Update order payment status

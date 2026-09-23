@@ -491,14 +491,14 @@
                 <p>Simple and transparent pricing for restaurants of all sizes.</p>
             </div>
 
-            <!-- Timeframe Tabs (Monthly / Yearly) -->
+            <!-- Timeframe Tabs (Annual / Monthly) -->
             <div class="pricing-tabs-wrapper text-center" style="margin-bottom: 45px;">
                 <div class="pricing-toggle-container">
-                    <button type="button" class="pricing-tab-btn active" id="btn-tab-monthly" onclick="switchPricingTab('monthly')">
-                        <i class="ph ph-calendar"></i> Monthly Billing
-                    </button>
-                    <button type="button" class="pricing-tab-btn" id="btn-tab-yearly" onclick="switchPricingTab('yearly')">
+                    <button type="button" class="pricing-tab-btn active" id="btn-tab-yearly" onclick="switchPricingTab('yearly')">
                         <i class="ph ph-calendar-check"></i> Annual Billing <span class="badge-save">Save More</span>
+                    </button>
+                    <button type="button" class="pricing-tab-btn" id="btn-tab-monthly" onclick="switchPricingTab('monthly')">
+                        <i class="ph ph-calendar"></i> Monthly Billing
                     </button>
                 </div>
             </div>
@@ -689,7 +689,7 @@
                         @php
                             $pTimeframe = strtolower($plan->billing_cycle ?? 'monthly');
                         @endphp
-                        <div class="plan-card {{ $plan->is_default_plan == 'Y' ? 'default-plan' : '' }}" data-timeframe="{{ $pTimeframe }}">
+                        <div class="plan-card {{ $plan->is_default_plan == 'Y' ? 'default-plan' : '' }}" data-timeframe="{{ $pTimeframe }}" style="{{ $pTimeframe === 'yearly' ? '' : 'display: none;' }}">
                             @if($plan->label_name)
                                 <div class="default-badge">{{ $plan->label_name }}</div>
                             @elseif($plan->is_default_plan == 'Y')
@@ -1455,9 +1455,9 @@
             }
         }
 
-        // Initialize with default monthly tab on page load
+        // Initialize with default yearly tab on page load
         document.addEventListener('DOMContentLoaded', function() {
-            switchPricingTab('monthly');
+            switchPricingTab('yearly');
         });
     </script>
 </body>

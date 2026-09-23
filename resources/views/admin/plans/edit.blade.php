@@ -152,12 +152,12 @@
                 <div class="row">
                   <div class="col-md-6">
                     <div class="form-group">
-                      <label for="billing_cycle">Plan Timeframe (Monthly / Yearly) *</label>
+                      <label for="billing_cycle">Plan Timeframe (Yearly / Monthly) *</label>
                       <select class="form-control" id="billing_cycle" name="billing_cycle" required>
-                        <option value="monthly" {{ old('billing_cycle', $plan->billing_cycle) == 'monthly' ? 'selected' : '' }}>Monthly (30 Days)</option>
                         <option value="yearly" {{ old('billing_cycle', $plan->billing_cycle) == 'yearly' ? 'selected' : '' }}>Yearly (365 Days)</option>
+                        <option value="monthly" {{ old('billing_cycle', $plan->billing_cycle) == 'monthly' ? 'selected' : '' }}>Monthly (30 Days)</option>
                       </select>
-                      <small class="text-muted">Choose whether this plan is billed Monthly or Yearly</small>
+                      <small class="text-muted">Choose whether this plan is billed Yearly or Monthly</small>
                     </div>
                   </div>
                   

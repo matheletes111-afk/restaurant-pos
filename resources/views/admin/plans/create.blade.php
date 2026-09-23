@@ -146,12 +146,12 @@
                 <div class="row">
                   <div class="col-md-6">
                     <div class="form-group">
-                      <label for="billing_cycle">Plan Timeframe (Monthly / Yearly) *</label>
+                      <label for="billing_cycle">Plan Timeframe (Yearly / Monthly) *</label>
                       <select class="form-control" id="billing_cycle" name="billing_cycle" required>
-                        <option value="monthly" {{ old('billing_cycle', 'monthly') == 'monthly' ? 'selected' : '' }}>Monthly (30 Days)</option>
-                        <option value="yearly" {{ old('billing_cycle') == 'yearly' ? 'selected' : '' }}>Yearly (365 Days)</option>
+                        <option value="yearly" {{ old('billing_cycle', 'yearly') == 'yearly' ? 'selected' : '' }}>Yearly (365 Days)</option>
+                        <option value="monthly" {{ old('billing_cycle') == 'monthly' ? 'selected' : '' }}>Monthly (30 Days)</option>
                       </select>
-                      <small class="text-muted">Choose whether this plan is billed Monthly or Yearly</small>
+                      <small class="text-muted">Choose whether this plan is billed Yearly or Monthly</small>
                     </div>
                   </div>
 
@@ -159,8 +159,8 @@
                     <div class="form-group">
                       <label for="duration_days">Duration (Days) *</label>
                       <input type="number" class="form-control" id="duration_days" name="duration_days"
-                             min="1" value="{{ old('duration_days', 30) }}" required>
-                      <small class="text-muted">Auto-filled based on timeframe (e.g. 30 for Monthly, 365 for Yearly)</small>
+                             min="1" value="{{ old('duration_days', 365) }}" required>
+                      <small class="text-muted">Auto-filled based on timeframe (e.g. 365 for Yearly, 30 for Monthly)</small>
                     </div>
                   </div>
                 </div>

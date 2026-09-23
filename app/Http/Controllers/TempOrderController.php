@@ -156,13 +156,99 @@ public function store(Request $request)
 
     public function success($id)
     {
-        $tempOrder = TempOrder::findOrFail($id);
-        $restaurant_details = RestaurantMaster::find($tempOrder->restaurant_id);
-        $table_details = $tempOrder->table_id ? TableManage::where('restaurant_id', $tempOrder->restaurant_id)->find($tempOrder->table_id) : null;
-        $orderId = $tempOrder->order_id ?? ('#' . $tempOrder->id);
-        $customerName = $tempOrder->customer_name;
-        
-        return view('order-success', compact('tempOrder', 'restaurant_details', 'table_details', 'orderId', 'customerName'));
+        $tempOrder = TempOrder::with(['items.menuItem', 'table_details'])->find($id);
+
+        if ($tempOrder) {
+            $restaurant_details = RestaurantMaster::find($tempOrder->restaurant_id);
+            $table_details = $tempOrder->table_details ?? ($tempOrder->table_id ? TableManage::where('restaurant_id', $tempOrder->restaurant_id)->find($tempOrder->table_id) : null);
+            $orderId = $tempOrder->order_id ?? ('#' . $tempOrder->id);
+            $customerName = $tempOrder->customer_name;
+            $orderStatus = strtoupper($tempOrder->order_status ?? 'PENDING');
+            $items = $tempOrder->items ?? collect();
+            $grandTotal = $tempOrder->grand_total ?? $tempOrder->total_amount;
+            $subtotal = $tempOrder->total_amount;
+            $discount = $tempOrder->discount;
+            $gstAmount = $tempOrder->gst_amount;
+            $taxableAmount = $tempOrder->taxable_amount;
+            $isGstBill = ($tempOrder->is_gst_bill ?? 'NO') === 'YES';
+
+            return view('order-success', compact(
+                'tempOrder',
+                'restaurant_details',
+                'table_details',
+                'orderId',
+                'customerName',
+                'orderStatus',
+                'items',
+                'grandTotal',
+                'subtotal',
+                'discount',
+                'gstAmount',
+                'taxableAmount',
+                'isGstBill'
+            ));
+        }
+
+        // Fallback: Check if it is an OrderManage record
+        $mainOrder = OrderManage::with(['items.subcategory', 'table'])->find($id);
+        if ($mainOrder) {
+            $restaurant_details = RestaurantMaster::find($mainOrder->restaurant_id);
+            $table_details = $mainOrder->table ?? ($mainOrder->table_id ? TableManage::find($mainOrder->table_id) : null);
+            $orderId = $mainOrder->order_id ?? ('#' . $mainOrder->id);
+            $customerName = $mainOrder->customer_name;
+            $orderStatus = strtoupper($mainOrder->order_status ?? 'ACCEPTED');
+            $items = $mainOrder->items ?? collect();
+            $grandTotal = $mainOrder->grand_total ?? $mainOrder->total_amount;
+            $subtotal = $mainOrder->total_amount;
+            $discount = $mainOrder->discount;
+            $gstAmount = $mainOrder->gst_amount;
+            $taxableAmount = $mainOrder->taxable_amount;
+            $isGstBill = ($mainOrder->is_gst_bill ?? 'NO') === 'YES';
+
+            return view('order-success', compact(
+                'mainOrder',
+                'restaurant_details',
+                'table_details',
+                'orderId',
+                'customerName',
+                'orderStatus',
+                'items',
+                'grandTotal',
+                'subtotal',
+                'discount',
+                'gstAmount',
+                'taxableAmount',
+                'isGstBill'
+            ));
+        }
+
+        abort(404, 'Order not found');
+    }
+
+    public function checkStatus($id)
+    {
+        $tempOrder = TempOrder::find($id);
+        if ($tempOrder) {
+            return response()->json([
+                'status' => true,
+                'order_status' => strtoupper($tempOrder->order_status ?? 'PENDING'),
+                'order_id' => $tempOrder->order_id ?? ('#' . $tempOrder->id),
+            ]);
+        }
+
+        $mainOrder = OrderManage::find($id);
+        if ($mainOrder) {
+            return response()->json([
+                'status' => true,
+                'order_status' => strtoupper($mainOrder->order_status ?? 'ACCEPTED'),
+                'order_id' => $mainOrder->order_id ?? ('#' . $mainOrder->id),
+            ]);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Order not found'
+        ], 404);
     }
 
     public function approveOrder($id)
@@ -248,8 +334,10 @@ public function store(Request $request)
                 $orderItem->save();
             }
 
-            // Delete temp order
-            $tempOrder->delete();
+            // Update temp order status to APPROVED
+            $tempOrder->order_status = 'APPROVED';
+            $tempOrder->order_id = $order->id;
+            $tempOrder->save();
 
             DB::commit();
             return redirect()->back()->with('success', 'Order approved and moved to main orders.');
