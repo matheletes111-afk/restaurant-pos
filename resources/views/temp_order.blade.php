@@ -483,6 +483,41 @@
       box-shadow: 0 4px 12px rgba(185, 28, 28, 0.3);
     }
 
+    .diet-btn .filter-close-icon {
+      display: none;
+      font-size: 0.72rem;
+      margin-left: 4px;
+      opacity: 0.85;
+      transition: transform 0.2s ease;
+    }
+
+    .diet-btn.active[data-type="veg"] .filter-close-icon,
+    .diet-btn.active[data-type="non-veg"] .filter-close-icon {
+      display: inline-block;
+    }
+
+    .diet-btn:hover .filter-close-icon {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+
+    .cat-pill-tab .cat-close-icon {
+      display: none;
+      font-size: 0.72rem;
+      margin-left: 4px;
+      opacity: 0.85;
+      transition: transform 0.2s ease;
+    }
+
+    .cat-pill-tab.active:not([href="#catAll"]) .cat-close-icon {
+      display: inline-block;
+    }
+
+    .cat-pill-tab:hover .cat-close-icon {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+
     /* Category Navigation Sticky Tabs */
     .category-nav-bar {
       position: sticky;
@@ -1149,11 +1184,11 @@
     <div class="hero-glow-bg"></div>
 
     @if(!empty($restaurant_details) && $restaurant_details->hasLogo())
-      <div class="restaurant-avatar-wrap">
-        <img src="{{ $restaurant_details->logo_url }}" alt="{{ $restaurant_details->name ?? 'Restaurant Logo' }}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'restaurant-icon-circle\'><i class=\'fas fa-utensils\'></i></div>';">
+      <div class="restaurant-avatar-wrap restaurant-logo-card">
+        <img src="{{ $restaurant_details->logo_url }}" alt="{{ $restaurant_details->name ?? 'Restaurant Logo' }}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'restaurant-icon-circle header-icon-ring\'><i class=\'fas fa-utensils\'></i></div>';">
       </div>
     @else
-      <div class="restaurant-icon-circle"><i class="fas fa-utensils"></i></div>
+      <div class="restaurant-icon-circle header-icon-ring"><i class="fas fa-utensils"></i></div>
     @endif
 
     <h1 class="restaurant-title serif-title">{{ $restaurant_details->name ?? 'Premium Dining' }}</h1>
@@ -1232,14 +1267,16 @@
     </div>
 
     <div class="dietary-filters-group">
-      <button type="button" class="diet-btn active" data-type="">
+      <button type="button" class="diet-btn active" data-type="" title="Show all items">
         <i class="fas fa-utensils"></i> All Items
       </button>
-      <button type="button" class="diet-btn" data-type="veg">
+      <button type="button" class="diet-btn" data-type="veg" title="Click to filter Veg, click again to deselect">
         <span class="fssai-box fssai-veg" style="width:14px;height:14px;border-width:1.5px;display:inline-flex;"><span class="fssai-symbol" style="width:6px;height:6px;"></span></span> Veg
+        <i class="fas fa-times filter-close-icon"></i>
       </button>
-      <button type="button" class="diet-btn" data-type="non-veg">
+      <button type="button" class="diet-btn" data-type="non-veg" title="Click to filter Non-Veg, click again to deselect">
         <span class="fssai-box fssai-nonveg" style="width:14px;height:14px;border-width:1.5px;display:inline-flex;"><span class="fssai-symbol" style="border-left-width:4px;border-right-width:4px;border-bottom-width:7px;"></span></span> Non-Veg
+        <i class="fas fa-times filter-close-icon"></i>
       </button>
     </div>
   </div>
@@ -1255,9 +1292,10 @@
 
       <!-- Individual Category Tabs -->
       @foreach($categories as $cat)
-        <a class="cat-pill-tab" data-toggle="tab" href="#cat{{ $cat->id }}" role="tab">
+        <a class="cat-pill-tab" data-toggle="tab" href="#cat{{ $cat->id }}" role="tab" title="Click to filter, click again to deselect">
           {{ $cat->name }}
           <span class="cat-count-pill">{{ $cat->subcategories->count() }}</span>
+          <i class="fas fa-times cat-close-icon"></i>
         </a>
       @endforeach
     </div>
@@ -1282,11 +1320,12 @@
               <div class="food-grid">
                 @foreach($cat->subcategories as $item)
                   @php
-                    $isVeg = strtolower($item->food_type) === 'veg';
+                    $rawType = trim(strtolower($item->food_type ?? 'veg'));
+                    $isVeg = !in_array($rawType, ['non-veg', 'non_veg', 'non veg', 'nonveg', 'egg']);
                     $hasDiscount = ($item->discount_percentage ?? 0) > 0;
                     $discountedPrice = $hasDiscount ? ($item->price - ($item->price * $item->discount_percentage / 100)) : $item->price;
                   @endphp
-                  <div class="food-card-wrapper" data-id="{{ $item->id }}" data-name="{{ strtolower($item->name) }}" data-type="{{ strtolower($item->food_type) }}">
+                  <div class="food-card-wrapper" data-id="{{ $item->id }}" data-name="{{ strtolower($item->name) }}" data-desc="{{ strtolower($item->description ?? '') }}" data-type="{{ $isVeg ? 'veg' : 'non-veg' }}">
                     <div class="food-card">
                       <div class="food-image-frame">
                         @if($item->image)
@@ -1371,11 +1410,12 @@
           <div class="food-grid">
             @foreach($cat->subcategories as $item)
               @php
-                $isVeg = strtolower($item->food_type) === 'veg';
+                $rawType = trim(strtolower($item->food_type ?? 'veg'));
+                $isVeg = !in_array($rawType, ['non-veg', 'non_veg', 'non veg', 'nonveg', 'egg']);
                 $hasDiscount = ($item->discount_percentage ?? 0) > 0;
                 $discountedPrice = $hasDiscount ? ($item->price - ($item->price * $item->discount_percentage / 100)) : $item->price;
               @endphp
-              <div class="food-card-wrapper" data-id="{{ $item->id }}" data-name="{{ strtolower($item->name) }}" data-type="{{ strtolower($item->food_type) }}">
+              <div class="food-card-wrapper" data-id="{{ $item->id }}" data-name="{{ strtolower($item->name) }}" data-desc="{{ strtolower($item->description ?? '') }}" data-type="{{ $isVeg ? 'veg' : 'non-veg' }}">
                 <div class="food-card">
                   <div class="food-image-frame">
                     @if($item->image)
@@ -1703,10 +1743,26 @@ $(document).on('click', '.removeItem', function() {
 });
 
 /* Live Filter & Search Logic */
+function updateCategoryCounts() {
+    let totalAllVisible = $('#catAll .food-card-wrapper').filter(function() {
+        return $(this).css('display') !== 'none';
+    }).length;
+    $('a[href="#catAll"] .cat-count-pill').text(totalAllVisible);
+
+    $('a.cat-pill-tab:not([href="#catAll"])').each(function() {
+        let targetPaneId = $(this).attr('href');
+        let count = $(targetPaneId).find('.food-card-wrapper').filter(function() {
+            return $(this).css('display') !== 'none';
+        }).length;
+        $(this).find('.cat-count-pill').text(count);
+    });
+}
+
 function applyFilters() {
-    let searchVal = $('#searchBox').val().toLowerCase().trim();
-    let type = $('.diet-btn.active').data('type') || '';
-    
+    let searchVal = ($('#searchBox').val() || '').toLowerCase().trim();
+    let $activeDietBtn = $('.diet-btn.active');
+    let activeType = ($activeDietBtn.attr('data-type') !== undefined ? $activeDietBtn.attr('data-type') : ($activeDietBtn.data('type') || '')).toLowerCase().trim();
+
     // Show/hide clear search button
     if (searchVal.length > 0) {
         $('#clearSearchBtn').show();
@@ -1714,13 +1770,17 @@ function applyFilters() {
         $('#clearSearchBtn').hide();
     }
 
-    let activePane = $('.tab-pane.active');
+    // Filter ALL cards across all tab panes
+    $('.food-card-wrapper').each(function() {
+        let name = String($(this).attr('data-name') || $(this).data('name') || '').toLowerCase();
+        let desc = String($(this).attr('data-desc') || $(this).data('desc') || '').toLowerCase();
+        let rawFoodType = String($(this).attr('data-type') || $(this).data('type') || '').toLowerCase().trim();
 
-    activePane.find('.food-card-wrapper').each(function() {
-        let name = $(this).data('name') || '';
-        let foodType = $(this).data('type') || '';
-        let nameMatches = searchVal === '' || name.includes(searchVal);
-        let typeMatches = type === '' || foodType === type;
+        let isCardVeg = !['non-veg', 'non_veg', 'non veg', 'nonveg', 'egg'].includes(rawFoodType);
+        let cardFoodType = isCardVeg ? 'veg' : 'non-veg';
+
+        let nameMatches = (searchVal === '') || name.includes(searchVal) || desc.includes(searchVal);
+        let typeMatches = (activeType === '' || activeType === 'all') ? true : (cardFoodType === activeType);
 
         if (nameMatches && typeMatches) {
             $(this).show();
@@ -1729,35 +1789,74 @@ function applyFilters() {
         }
     });
 
-    // Check visible cards in active pane
-    let visibleCount = activePane.find('.food-card-wrapper:visible').length;
-    let noResultsBox = activePane.find('.no-results-state');
-    if (visibleCount === 0) {
-        noResultsBox.show();
-    } else {
-        noResultsBox.hide();
-    }
+    // Update category-group-blocks in #catAll
+    $('#catAll .category-group-block').each(function() {
+        let visibleCount = $(this).find('.food-card-wrapper').filter(function() {
+            return $(this).css('display') !== 'none';
+        }).length;
+        $(this).toggle(visibleCount > 0);
+    });
 
-    // If in #catAll, hide empty category groups
-    if (activePane.attr('id') === 'catAll') {
-        $('.category-group-block').each(function() {
-            let hasVisible = $(this).find('.food-card-wrapper:visible').length > 0;
-            $(this).toggle(hasVisible);
-        });
-    }
+    // Check visible cards in every tab pane and toggle empty state message
+    $('.tab-pane').each(function() {
+        let visibleCount = $(this).find('.food-card-wrapper').filter(function() {
+            return $(this).css('display') !== 'none';
+        }).length;
+        let $noResultsBox = $(this).find('.no-results-state');
+        if (visibleCount === 0) {
+            $noResultsBox.show();
+        } else {
+            $noResultsBox.hide();
+        }
+    });
+
+    // Dynamically update category dish counts on tabs
+    updateCategoryCounts();
 }
 
-$('#searchBox').on('input', applyFilters);
+$('#searchBox').on('input', function() {
+    let searchVal = $(this).val().toLowerCase().trim();
+    // If typing search while inside a single category tab, switch to All Menu to search entire menu
+    if (searchVal.length > 0 && !$('a[href="#catAll"]').hasClass('active')) {
+        $('a[href="#catAll"]').tab('show');
+    }
+    applyFilters();
+});
 
 $('#clearSearchBtn').on('click', function() {
     $('#searchBox').val('').focus();
     applyFilters();
 });
 
-$('.diet-btn').on('click', function() {
-    $('.diet-btn').removeClass('active');
-    $(this).addClass('active');
+// Diet filter click with toggle / deselect support
+$(document).on('click', '.diet-btn', function(e) {
+    e.preventDefault();
+    let wasActive = $(this).hasClass('active');
+    let btnType = $(this).attr('data-type') !== undefined ? $(this).attr('data-type') : ($(this).data('type') || '');
+
+    if (wasActive) {
+        // If clicking an already active filter (veg or non-veg), DESELECT IT and revert to All Items
+        if (btnType !== '' && btnType !== 'all') {
+            $(this).removeClass('active');
+            $('.diet-btn[data-type=""], .diet-btn:not([data-type])').first().addClass('active');
+        }
+    } else {
+        // Selecting a new filter
+        $('.diet-btn').removeClass('active');
+        $(this).addClass('active');
+    }
+
     applyFilters();
+});
+
+// Category pills deselect support: clicking active category returns to All Menu
+$(document).on('click', '.cat-pill-tab', function(e) {
+    let target = $(this).attr('href');
+    if ($(this).hasClass('active') && target !== '#catAll') {
+        e.preventDefault();
+        e.stopPropagation();
+        $('a[href="#catAll"]').tab('show');
+    }
 });
 
 $('a[data-toggle="tab"]').on('shown.bs.tab', function() {
@@ -1821,6 +1920,7 @@ $('#placeOrderBtn').on('click', function() {
 
 $(document).ready(function() {
     updateEmptyState();
+    applyFilters();
 });
 </script>
 </body>
