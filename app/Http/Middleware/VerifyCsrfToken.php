@@ -15,5 +15,6 @@ class VerifyCsrfToken extends Middleware
         'admin/razorpay/webhook',
         'razorpay/webhook',
         'admin/razorpay/*',
+        'restaurant/qr-notifications/*',
     ];
 }

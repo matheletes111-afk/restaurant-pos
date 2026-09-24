@@ -31,6 +31,14 @@ class TempOrderAdminController extends Controller
         $order = TempOrder::with(['items.menuItem', 'table_details'])
             ->where('restaurant_id', auth()->user()->restaurant_id)
             ->findOrFail($id);
+
+        if (!$order->is_read) {
+            $order->update([
+                'is_read' => true,
+                'read_at' => Carbon::now()
+            ]);
+        }
+
         $table = TableManage::where('id', $order->table_id)->first();
         return view('temp_orders.view', compact('order', 'table'));
     }

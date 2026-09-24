@@ -56,6 +56,7 @@ class CheckMenuPermission
                     'admin.subscriptions.invoice',
                     'restaurant.support.tickets',
                     'restaurant-support',
+                    'restaurant.qr.notifications',
                     'logout',
                     'logout.user'
                 ];
@@ -71,7 +72,7 @@ class CheckMenuPermission
                     }
                 }
 
-                if (str_contains($path, 'subscribe') || str_contains($path, 'payment') || str_contains($path, 'support') || str_contains($path, 'logout') || str_contains($path, 'invoice')) {
+                if (str_contains($path, 'subscribe') || str_contains($path, 'payment') || str_contains($path, 'support') || str_contains($path, 'logout') || str_contains($path, 'invoice') || str_contains($path, 'qr-notifications')) {
                     $isAllowed = true;
                 }
 

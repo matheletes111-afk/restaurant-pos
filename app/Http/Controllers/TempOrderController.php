@@ -11,8 +11,12 @@ use App\Models\RestaurantMaster;
 use App\Models\OrderManage;
 use App\Models\OrderItems;
 use App\Models\TableManage;
+use App\Models\User;
+use App\Mail\NewQrOrderMail;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 class TempOrderController extends Controller
 {
     public function create($table_id, $restaurant_id)
@@ -145,6 +149,36 @@ public function store(Request $request)
             'total_amount' => $item['total_amount'],
             'order_status' => 'PENDING',
             'restaurant_id' => $request->restaurant_id,
+        ]);
+    }
+
+    // Send email notification to the restaurant's registered email
+    try {
+        $restaurantInfo = RestaurantMaster::with('owner')->find($request->restaurant_id);
+        $registeredEmail = null;
+
+        if ($restaurantInfo) {
+            if ($restaurantInfo->owner && !empty($restaurantInfo->owner->email)) {
+                $registeredEmail = $restaurantInfo->owner->email;
+            } else {
+                $registeredEmail = User::where('restaurant_id', $restaurantInfo->id)
+                    ->where('role', 'RES')
+                    ->whereNotNull('email')
+                    ->value('email');
+            }
+        }
+
+        if (!empty($registeredEmail)) {
+            $tempOrder->load(['items.menuItem', 'table_details']);
+            Mail::to($registeredEmail)->send(
+                new NewQrOrderMail($tempOrder, $restaurantInfo, $tempOrder->table_details)
+            );
+        }
+    } catch (\Throwable $e) {
+        Log::error('Failed to send QR order email notification: ' . $e->getMessage(), [
+            'order_id' => $tempOrder->id,
+            'restaurant_id' => $request->restaurant_id,
+            'trace' => $e->getTraceAsString(),
         ]);
     }
 

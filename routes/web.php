@@ -59,10 +59,18 @@ Route::get('/login/verify/resend', [LoginController::class, 'resendOtp'])->name(
 
 
 // Scan QR link: /customer/order/{table_id}/{restaurant_id}
-    Route::get('order-customer/{table_id}/{restaurant_id}', [App\Http\Controllers\TempOrderController::class, 'create'])->name('temp.order.create');
-    Route::post('order/store', [App\Http\Controllers\TempOrderController::class, 'store'])->name('temp.order.store');
-    Route::get('/order-success/{id}', [App\Http\Controllers\TempOrderController::class, 'success'])->name('order.success');
-    Route::get('/order-status-check/{id}', [App\Http\Controllers\TempOrderController::class, 'checkStatus'])->name('order.status.check');
+Route::get('order-customer/{table_id}/{restaurant_id}', [App\Http\Controllers\TempOrderController::class, 'create'])->name('temp.order.create');
+Route::post('order/store', [App\Http\Controllers\TempOrderController::class, 'store'])->name('temp.order.store');
+Route::get('/order-success/{id}', [App\Http\Controllers\TempOrderController::class, 'success'])->name('order.success');
+Route::get('/order-status-check/{id}', [App\Http\Controllers\TempOrderController::class, 'checkStatus'])->name('order.status.check');
+
+// QR Order Notifications (Accessible to all authenticated staff & admins)
+Route::middleware('auth')->group(function () {
+    Route::get('/restaurant/qr-notifications', [App\Http\Controllers\QrNotificationController::class, 'getNotifications'])->name('restaurant.qr.notifications');
+    Route::match(['GET', 'POST'], '/restaurant/qr-notifications/mark-read/{id}', [App\Http\Controllers\QrNotificationController::class, 'markRead'])->name('restaurant.qr.notifications.mark-read');
+    Route::match(['GET', 'POST'], '/restaurant/qr-notifications/mark-all-read', [App\Http\Controllers\QrNotificationController::class, 'markAllRead'])->name('restaurant.qr.notifications.mark-all-read');
+});
+
 Route::group(['middleware' => ['auth', 'menu.permission', 'secure.restro.data']], function () {
 
  Route::get('/select-plans', [App\Http\Controllers\PlanController::class, 'selectPlan'])->name('select.plan.page');
