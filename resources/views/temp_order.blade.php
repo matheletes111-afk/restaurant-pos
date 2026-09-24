@@ -483,39 +483,13 @@
       box-shadow: 0 4px 12px rgba(185, 28, 28, 0.3);
     }
 
-    .diet-btn .filter-close-icon {
-      display: none;
-      font-size: 0.72rem;
-      margin-left: 4px;
-      opacity: 0.85;
-      transition: transform 0.2s ease;
+    .cat-pill-tab:focus {
+      outline: none;
     }
 
-    .diet-btn.active[data-type="veg"] .filter-close-icon,
-    .diet-btn.active[data-type="non-veg"] .filter-close-icon {
-      display: inline-block;
-    }
-
-    .diet-btn:hover .filter-close-icon {
-      opacity: 1;
-      transform: scale(1.15);
-    }
-
-    .cat-pill-tab .cat-close-icon {
-      display: none;
-      font-size: 0.72rem;
-      margin-left: 4px;
-      opacity: 0.85;
-      transition: transform 0.2s ease;
-    }
-
-    .cat-pill-tab.active:not([href="#catAll"]) .cat-close-icon {
-      display: inline-block;
-    }
-
-    .cat-pill-tab:hover .cat-close-icon {
-      opacity: 1;
-      transform: scale(1.15);
+    .cat-pill-tab.active .cat-count-pill {
+      background: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
     }
 
     /* Category Navigation Sticky Tabs */
@@ -1208,7 +1182,7 @@
         </span>
       @endif
 
-      @if($restaurant_details->gstin)
+      @if(!empty($restaurant_details?->gstin))
         <span class="meta-pill">
           <i class="fas fa-receipt"></i> GSTIN: {{ $restaurant_details->gstin }} ({{ $restaurant_details->gst_percentage ?? 0 }}% GST)
         </span>
@@ -1218,7 +1192,7 @@
         </span>
       @endif
 
-      @if(!empty($restaurant_details->fssai_number))
+      @if(!empty($restaurant_details?->fssai_number))
         <span class="meta-pill">
           <i class="fas fa-shield-halved"></i> FSSAI: {{ $restaurant_details->fssai_number }}
         </span>
@@ -1254,7 +1228,7 @@
     </div>
     <input type="hidden" id="table_id" value="{{ $table_id }}">
     <input type="hidden" id="restaurant_id" value="{{ $restaurant_id }}">
-    <input type="hidden" id="is_gst_registered" value="{{ $restaurant_details->gstin ? 'true' : 'false' }}">
+    <input type="hidden" id="is_gst_registered" value="{{ !empty($restaurant_details?->gstin) ? 'true' : 'false' }}">
     <input type="hidden" id="gst_percentage" value="{{ $restaurant_details->gst_percentage ?? 0 }}">
   </div>
 
@@ -1270,218 +1244,126 @@
       <button type="button" class="diet-btn active" data-type="" title="Show all items">
         <i class="fas fa-utensils"></i> All Items
       </button>
-      <button type="button" class="diet-btn" data-type="veg" title="Click to filter Veg, click again to deselect">
+      <button type="button" class="diet-btn" data-type="veg" title="Vegetarian dishes only">
         <span class="fssai-box fssai-veg" style="width:14px;height:14px;border-width:1.5px;display:inline-flex;"><span class="fssai-symbol" style="width:6px;height:6px;"></span></span> Veg
-        <i class="fas fa-times filter-close-icon"></i>
       </button>
-      <button type="button" class="diet-btn" data-type="non-veg" title="Click to filter Non-Veg, click again to deselect">
+      <button type="button" class="diet-btn" data-type="non-veg" title="Non-Vegetarian dishes only">
         <span class="fssai-box fssai-nonveg" style="width:14px;height:14px;border-width:1.5px;display:inline-flex;"><span class="fssai-symbol" style="border-left-width:4px;border-right-width:4px;border-bottom-width:7px;"></span></span> Non-Veg
-        <i class="fas fa-times filter-close-icon"></i>
       </button>
     </div>
   </div>
 
-  <!-- Category Tabs with "All" Option First -->
+  <!-- Category Filter Bar -->
   <div class="category-nav-bar">
     <div class="category-pills-scroll" role="tablist">
       <!-- ALL Categories Tab (Default Active) -->
-      <a class="cat-pill-tab active" data-toggle="tab" href="#catAll" role="tab">
-        <i class="fas fa-layer-group"></i> All Menu
+      <button type="button" class="cat-pill-tab active" data-category="all">
+        <i class="fas fa-layer-group"></i> All Items
         <span class="cat-count-pill">{{ $totalDishesCount }}</span>
-      </a>
+      </button>
 
       <!-- Individual Category Tabs -->
       @foreach($categories as $cat)
-        <a class="cat-pill-tab" data-toggle="tab" href="#cat{{ $cat->id }}" role="tab" title="Click to filter, click again to deselect">
-          {{ $cat->name }}
-          <span class="cat-count-pill">{{ $cat->subcategories->count() }}</span>
-          <i class="fas fa-times cat-close-icon"></i>
-        </a>
+        @if($cat->subcategories->count() > 0)
+          <button type="button" class="cat-pill-tab" data-category="{{ $cat->id }}">
+            {{ $cat->name }}
+            <span class="cat-count-pill">{{ $cat->subcategories->count() }}</span>
+          </button>
+        @endif
       @endforeach
     </div>
   </div>
 
-  <!-- Tab Content Area -->
-  <div class="tab-content">
-    
-    <!-- ALL TAB PANE (Default Active) -->
-    <div class="tab-pane fade show active" id="catAll" role="tabpanel">
-      @if($totalDishesCount > 0)
-        @foreach($categories as $cat)
-          @if($cat->subcategories->count() > 0)
-            <div class="category-group-block mb-4" data-category-id="{{ $cat->id }}">
-              <div class="category-section-divider">
-                <div class="category-section-title">
-                  {{ $cat->name }}
-                </div>
-                <span class="category-item-count">{{ $cat->subcategories->count() }} dishes</span>
-              </div>
-
-              <div class="food-grid">
-                @foreach($cat->subcategories as $item)
-                  @php
-                    $rawType = trim(strtolower($item->food_type ?? 'veg'));
-                    $isVeg = !in_array($rawType, ['non-veg', 'non_veg', 'non veg', 'nonveg', 'egg']);
-                    $hasDiscount = ($item->discount_percentage ?? 0) > 0;
-                    $discountedPrice = $hasDiscount ? ($item->price - ($item->price * $item->discount_percentage / 100)) : $item->price;
-                  @endphp
-                  <div class="food-card-wrapper" data-id="{{ $item->id }}" data-name="{{ strtolower($item->name) }}" data-desc="{{ strtolower($item->description ?? '') }}" data-type="{{ $isVeg ? 'veg' : 'non-veg' }}">
-                    <div class="food-card">
-                      <div class="food-image-frame">
-                        @if($item->image)
-                          <img src="{{ URL::to('storage/category') }}/{{ $item->image }}" alt="{{ $item->name }}" class="food-image" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=350&fit=crop';">
-                        @else
-                          <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=350&fit=crop" alt="{{ $item->name }}" class="food-image">
-                        @endif
-
-                        <!-- FSSAI Veg / Non-Veg Indicator -->
-                        <div class="fssai-indicator" title="{{ $isVeg ? 'Vegetarian' : 'Non-Vegetarian' }}">
-                          <div class="fssai-box {{ $isVeg ? 'fssai-veg' : 'fssai-nonveg' }}">
-                            <div class="fssai-symbol"></div>
-                          </div>
-                        </div>
-
-                        <!-- Discount Tag -->
-                        @if($hasDiscount)
-                          <div class="discount-ribbon">
-                            <i class="fas fa-fire"></i> {{ $item->discount_percentage }}% OFF
-                          </div>
-                        @endif
-                      </div>
-
-                      <div class="food-card-body">
-                        <h3 class="food-item-title">{{ $item->name }}</h3>
-                        <p class="food-item-desc">{{ $item->description ?? 'Expertly crafted dish prepared with the freshest authentic ingredients.' }}</p>
-
-                        <div class="food-card-footer">
-                          <div class="price-block">
-                            @if($hasDiscount)
-                              <span class="cross-price-label">₹{{ number_format($item->price, 2) }}</span>
-                            @endif
-                            <span class="active-price-label">₹{{ number_format($discountedPrice, 2) }}</span>
-                            @if($restaurant_details->gstin)
-                              <span class="gst-tax-note">+ {{ $restaurant_details->gst_percentage ?? 0 }}% GST</span>
-                            @endif
-                          </div>
-
-                          <div class="card-stepper-wrap">
-                            <button type="button" class="btn-add-tray addItemBtn" data-id="{{ $item->id }}" data-name="{{ $item->name }}" data-price="{{ $item->price }}" data-discount="{{ $item->discount_percentage ?? 0 }}">
-                              <i class="fas fa-plus"></i> Add
-                            </button>
-                            <div class="card-active-counter" data-card-id="{{ $item->id }}">
-                              <button type="button" class="card-counter-btn decreaseCardQty" data-id="{{ $item->id }}">−</button>
-                              <span class="card-counter-val">1</span>
-                              <button type="button" class="card-counter-btn increaseCardQty" data-id="{{ $item->id }}">+</button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                @endforeach
-              </div>
-            </div>
-          @endif
-        @endforeach
-      @else
-        <div class="text-center py-5">
-          <p class="text-muted">No dishes currently available in the menu.</p>
-        </div>
-      @endif
-
-      <div class="no-results-state">
-        <i class="fas fa-search fa-3x text-muted mb-3"></i>
-        <h5>No Matching Dishes Found</h5>
-        <p class="text-muted">Try adjusting your search or filters to explore other items.</p>
-      </div>
-    </div>
-
-    <!-- INDIVIDUAL CATEGORY TAB PANES -->
-    @foreach($categories as $cat)
-      <div class="tab-pane fade" id="cat{{ $cat->id }}" role="tabpanel">
+  <!-- Menu Dishes Container -->
+  <div class="menu-dishes-container" id="menuDishesContainer">
+    @if($totalDishesCount > 0)
+      @foreach($categories as $cat)
         @if($cat->subcategories->count() > 0)
-          <div class="category-section-divider">
-            <div class="category-section-title">
-              {{ $cat->name }}
+          <div class="category-group-block mb-4" data-category-id="{{ $cat->id }}">
+            <div class="category-section-divider">
+              <div class="category-section-title">
+                {{ $cat->name }}
+              </div>
+              <span class="category-item-count">{{ $cat->subcategories->count() }} dishes</span>
             </div>
-            <span class="category-item-count">{{ $cat->subcategories->count() }} dishes</span>
-          </div>
 
-          <div class="food-grid">
-            @foreach($cat->subcategories as $item)
-              @php
-                $rawType = trim(strtolower($item->food_type ?? 'veg'));
-                $isVeg = !in_array($rawType, ['non-veg', 'non_veg', 'non veg', 'nonveg', 'egg']);
-                $hasDiscount = ($item->discount_percentage ?? 0) > 0;
-                $discountedPrice = $hasDiscount ? ($item->price - ($item->price * $item->discount_percentage / 100)) : $item->price;
-              @endphp
-              <div class="food-card-wrapper" data-id="{{ $item->id }}" data-name="{{ strtolower($item->name) }}" data-desc="{{ strtolower($item->description ?? '') }}" data-type="{{ $isVeg ? 'veg' : 'non-veg' }}">
-                <div class="food-card">
-                  <div class="food-image-frame">
-                    @if($item->image)
-                      <img src="{{ URL::to('storage/category') }}/{{ $item->image }}" alt="{{ $item->name }}" class="food-image" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=350&fit=crop';">
-                    @else
-                      <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=350&fit=crop" alt="{{ $item->name }}" class="food-image">
-                    @endif
+            <div class="food-grid">
+              @foreach($cat->subcategories as $item)
+                @php
+                  $rawType = trim(strtolower($item->food_type ?? 'veg'));
+                  $isVeg = !in_array($rawType, ['non-veg', 'non_veg', 'non veg', 'nonveg', 'egg']);
+                  $hasDiscount = ($item->discount_percentage ?? 0) > 0;
+                  $discountedPrice = $hasDiscount ? ($item->price - ($item->price * $item->discount_percentage / 100)) : $item->price;
+                @endphp
+                <div class="food-card-wrapper" data-id="{{ $item->id }}" data-category-id="{{ $cat->id }}" data-name="{{ strtolower($item->name) }}" data-desc="{{ strtolower($item->description ?? '') }}" data-type="{{ $isVeg ? 'veg' : 'non-veg' }}">
+                  <div class="food-card">
+                    <div class="food-image-frame">
+                      @if($item->image)
+                        <img src="{{ URL::to('storage/category') }}/{{ $item->image }}" alt="{{ $item->name }}" class="food-image" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=350&fit=crop';">
+                      @else
+                        <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=350&fit=crop" alt="{{ $item->name }}" class="food-image">
+                      @endif
 
-                    <div class="fssai-indicator" title="{{ $isVeg ? 'Vegetarian' : 'Non-Vegetarian' }}">
-                      <div class="fssai-box {{ $isVeg ? 'fssai-veg' : 'fssai-nonveg' }}">
-                        <div class="fssai-symbol"></div>
+                      <!-- FSSAI Veg / Non-Veg Indicator -->
+                      <div class="fssai-indicator" title="{{ $isVeg ? 'Vegetarian' : 'Non-Vegetarian' }}">
+                        <div class="fssai-box {{ $isVeg ? 'fssai-veg' : 'fssai-nonveg' }}">
+                          <div class="fssai-symbol"></div>
+                        </div>
                       </div>
+
+                      <!-- Discount Tag -->
+                      @if($hasDiscount)
+                        <div class="discount-ribbon">
+                          <i class="fas fa-fire"></i> {{ $item->discount_percentage }}% OFF
+                        </div>
+                      @endif
                     </div>
 
-                    @if($hasDiscount)
-                      <div class="discount-ribbon">
-                        <i class="fas fa-fire"></i> {{ $item->discount_percentage }}% OFF
-                      </div>
-                    @endif
-                  </div>
+                    <div class="food-card-body">
+                      <h3 class="food-item-title">{{ $item->name }}</h3>
+                      <p class="food-item-desc">{{ $item->description ?? 'Expertly crafted dish prepared with the freshest authentic ingredients.' }}</p>
 
-                  <div class="food-card-body">
-                    <h3 class="food-item-title">{{ $item->name }}</h3>
-                    <p class="food-item-desc">{{ $item->description ?? 'Expertly crafted dish prepared with the freshest authentic ingredients.' }}</p>
+                      <div class="food-card-footer">
+                        <div class="price-block">
+                          @if($hasDiscount)
+                            <span class="cross-price-label">₹{{ number_format($item->price, 2) }}</span>
+                          @endif
+                          <span class="active-price-label">₹{{ number_format($discountedPrice, 2) }}</span>
+                          @if(!empty($restaurant_details?->gstin))
+                            <span class="gst-tax-note">+ {{ $restaurant_details->gst_percentage ?? 0 }}% GST</span>
+                          @endif
+                        </div>
 
-                    <div class="food-card-footer">
-                      <div class="price-block">
-                        @if($hasDiscount)
-                          <span class="cross-price-label">₹{{ number_format($item->price, 2) }}</span>
-                        @endif
-                        <span class="active-price-label">₹{{ number_format($discountedPrice, 2) }}</span>
-                        @if($restaurant_details->gstin)
-                          <span class="gst-tax-note">+ {{ $restaurant_details->gst_percentage ?? 0 }}% GST</span>
-                        @endif
-                      </div>
-
-                      <div class="card-stepper-wrap">
-                        <button type="button" class="btn-add-tray addItemBtn" data-id="{{ $item->id }}" data-name="{{ $item->name }}" data-price="{{ $item->price }}" data-discount="{{ $item->discount_percentage ?? 0 }}">
-                          <i class="fas fa-plus"></i> Add
-                        </button>
-                        <div class="card-active-counter" data-card-id="{{ $item->id }}">
-                          <button type="button" class="card-counter-btn decreaseCardQty" data-id="{{ $item->id }}">−</button>
-                          <span class="card-counter-val">1</span>
-                          <button type="button" class="card-counter-btn increaseCardQty" data-id="{{ $item->id }}">+</button>
+                        <div class="card-stepper-wrap">
+                          <button type="button" class="btn-add-tray addItemBtn" data-id="{{ $item->id }}" data-name="{{ $item->name }}" data-price="{{ $item->price }}" data-discount="{{ $item->discount_percentage ?? 0 }}">
+                            <i class="fas fa-plus"></i> Add
+                          </button>
+                          <div class="card-active-counter" data-card-id="{{ $item->id }}">
+                            <button type="button" class="card-counter-btn decreaseCardQty" data-id="{{ $item->id }}">−</button>
+                            <span class="card-counter-val">1</span>
+                            <button type="button" class="card-counter-btn increaseCardQty" data-id="{{ $item->id }}">+</button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            @endforeach
-          </div>
-        @else
-          <div class="text-center py-5">
-            <p class="text-muted">No dishes in this category yet.</p>
+              @endforeach
+            </div>
           </div>
         @endif
-
-        <div class="no-results-state">
-          <i class="fas fa-search fa-3x text-muted mb-3"></i>
-          <h5>No Matching Dishes Found</h5>
-          <p class="text-muted">Try adjusting your search or dietary filter.</p>
-        </div>
+      @endforeach
+    @else
+      <div class="text-center py-5">
+        <p class="text-muted">No dishes currently available in the menu.</p>
       </div>
-    @endforeach
+    @endif
 
+    <div class="no-results-state" id="noResultsState">
+      <i class="fas fa-search fa-3x text-muted mb-3"></i>
+      <h5>No Matching Dishes Found</h5>
+      <p class="text-muted">Try adjusting your search or category filter to explore other items.</p>
+    </div>
   </div>
 
   <!-- Order Summary Tray Section -->
@@ -1743,19 +1625,37 @@ $(document).on('click', '.removeItem', function() {
 });
 
 /* Live Filter & Search Logic */
-function updateCategoryCounts() {
-    let totalAllVisible = $('#catAll .food-card-wrapper').filter(function() {
-        return $(this).css('display') !== 'none';
-    }).length;
-    $('a[href="#catAll"] .cat-count-pill').text(totalAllVisible);
+let selectedCategory = 'all';
 
-    $('a.cat-pill-tab:not([href="#catAll"])').each(function() {
-        let targetPaneId = $(this).attr('href');
-        let count = $(targetPaneId).find('.food-card-wrapper').filter(function() {
-            return $(this).css('display') !== 'none';
-        }).length;
-        $(this).find('.cat-count-pill').text(count);
+function updateCategoryCounts() {
+    let activeDiet = ($('.diet-btn.active').attr('data-type') !== undefined ? $('.diet-btn.active').attr('data-type') : ($('.diet-btn.active').data('type') || '')).toLowerCase().trim();
+    let searchVal = ($('#searchBox').val() || '').toLowerCase().trim();
+
+    let totalAllCount = 0;
+    $('.category-group-block').each(function() {
+        let catId = String($(this).data('category-id'));
+        let countInCat = 0;
+
+        $(this).find('.food-card-wrapper').each(function() {
+            let name = String($(this).attr('data-name') || '').toLowerCase();
+            let desc = String($(this).attr('data-desc') || '').toLowerCase();
+            let rawFoodType = String($(this).attr('data-type') || '').toLowerCase().trim();
+            let isCardVeg = !['non-veg', 'non_veg', 'non veg', 'nonveg', 'egg'].includes(rawFoodType);
+            let cardFoodType = isCardVeg ? 'veg' : 'non-veg';
+
+            let nameMatches = (searchVal === '') || name.includes(searchVal) || desc.includes(searchVal);
+            let typeMatches = (activeDiet === '' || activeDiet === 'all') ? true : (cardFoodType === activeDiet);
+
+            if (nameMatches && typeMatches) {
+                countInCat++;
+                totalAllCount++;
+            }
+        });
+
+        $(`.cat-pill-tab[data-category="${catId}"] .cat-count-pill`).text(countInCat);
     });
+
+    $(`.cat-pill-tab[data-category="all"] .cat-count-pill`).text(totalAllCount);
 }
 
 function applyFilters() {
@@ -1763,103 +1663,124 @@ function applyFilters() {
     let $activeDietBtn = $('.diet-btn.active');
     let activeType = ($activeDietBtn.attr('data-type') !== undefined ? $activeDietBtn.attr('data-type') : ($activeDietBtn.data('type') || '')).toLowerCase().trim();
 
-    // Show/hide clear search button
+    // Toggle clear search button
     if (searchVal.length > 0) {
         $('#clearSearchBtn').show();
     } else {
         $('#clearSearchBtn').hide();
     }
 
-    // Filter ALL cards across all tab panes
-    $('.food-card-wrapper').each(function() {
-        let name = String($(this).attr('data-name') || $(this).data('name') || '').toLowerCase();
-        let desc = String($(this).attr('data-desc') || $(this).data('desc') || '').toLowerCase();
-        let rawFoodType = String($(this).attr('data-type') || $(this).data('type') || '').toLowerCase().trim();
+    let isSearching = searchVal.length > 0;
+    let totalVisible = 0;
 
-        let isCardVeg = !['non-veg', 'non_veg', 'non veg', 'nonveg', 'egg'].includes(rawFoodType);
-        let cardFoodType = isCardVeg ? 'veg' : 'non-veg';
+    $('.category-group-block').each(function() {
+        let catId = String($(this).data('category-id'));
 
-        let nameMatches = (searchVal === '') || name.includes(searchVal) || desc.includes(searchVal);
-        let typeMatches = (activeType === '' || activeType === 'all') ? true : (cardFoodType === activeType);
+        // If searching: search across all categories.
+        // Otherwise: if selectedCategory is 'all', show all; if specific category, only show that category!
+        let catMatch = isSearching || (selectedCategory === 'all') || (catId === String(selectedCategory));
 
-        if (nameMatches && typeMatches) {
-            $(this).show();
-        } else {
+        if (!catMatch) {
             $(this).hide();
+            return;
         }
+
+        let visibleInBlock = 0;
+
+        $(this).find('.food-card-wrapper').each(function() {
+            let name = String($(this).attr('data-name') || '').toLowerCase();
+            let desc = String($(this).attr('data-desc') || '').toLowerCase();
+            let rawFoodType = String($(this).attr('data-type') || '').toLowerCase().trim();
+
+            let isCardVeg = !['non-veg', 'non_veg', 'non veg', 'nonveg', 'egg'].includes(rawFoodType);
+            let cardFoodType = isCardVeg ? 'veg' : 'non-veg';
+
+            let nameMatches = (searchVal === '') || name.includes(searchVal) || desc.includes(searchVal);
+            let typeMatches = (activeType === '' || activeType === 'all') ? true : (cardFoodType === activeType);
+
+            if (nameMatches && typeMatches) {
+                $(this).show();
+                visibleInBlock++;
+                totalVisible++;
+            } else {
+                $(this).hide();
+            }
+        });
+
+        // Show/hide category group block based on whether any matching dish is in it
+        $(this).toggle(visibleInBlock > 0);
     });
 
-    // Update category-group-blocks in #catAll
-    $('#catAll .category-group-block').each(function() {
-        let visibleCount = $(this).find('.food-card-wrapper').filter(function() {
-            return $(this).css('display') !== 'none';
-        }).length;
-        $(this).toggle(visibleCount > 0);
-    });
-
-    // Check visible cards in every tab pane and toggle empty state message
-    $('.tab-pane').each(function() {
-        let visibleCount = $(this).find('.food-card-wrapper').filter(function() {
-            return $(this).css('display') !== 'none';
-        }).length;
-        let $noResultsBox = $(this).find('.no-results-state');
-        if (visibleCount === 0) {
-            $noResultsBox.show();
-        } else {
-            $noResultsBox.hide();
-        }
-    });
-
-    // Dynamically update category dish counts on tabs
+    $('#noResultsState').toggle(totalVisible === 0);
     updateCategoryCounts();
 }
 
+// 1. Click Category Pill
+$(document).on('click', '.cat-pill-tab', function(e) {
+    e.preventDefault();
+    $('.cat-pill-tab').removeClass('active');
+    $(this).addClass('active');
+
+    selectedCategory = $(this).attr('data-category') || 'all';
+
+    applyFilters();
+
+    // Scroll smoothly to category block if selecting a specific category
+    if (selectedCategory !== 'all') {
+        let $targetBlock = $(`.category-group-block[data-category-id="${selectedCategory}"]`);
+        if ($targetBlock.length > 0) {
+            $('html, body').animate({
+                scrollTop: $targetBlock.offset().top - 120
+            }, 250);
+        }
+    }
+});
+
+// 2. Click Dietary Filter (All Items / Veg / Non-Veg)
+$(document).on('click', '.diet-btn', function(e) {
+    e.preventDefault();
+    let btnType = $(this).attr('data-type') !== undefined ? $(this).attr('data-type') : ($(this).data('type') || '');
+    let wasActive = $(this).hasClass('active');
+
+    if (btnType === '') {
+        // "All Items" clicked:
+        // Set dietary filter to all items
+        $('.diet-btn').removeClass('active');
+        $(this).addClass('active');
+
+        // Also switch category to 'all' so ALL dishes across ALL categories will show!
+        selectedCategory = 'all';
+        $('.cat-pill-tab').removeClass('active');
+        $('.cat-pill-tab[data-category="all"]').addClass('active');
+    } else {
+        // Veg or Non-Veg
+        if (wasActive) {
+            // Deselect it: revert back to All Items
+            $(this).removeClass('active');
+            $('.diet-btn[data-type=""]').addClass('active');
+        } else {
+            $('.diet-btn').removeClass('active');
+            $(this).addClass('active');
+        }
+    }
+
+    applyFilters();
+});
+
+// 3. Search Box Input
 $('#searchBox').on('input', function() {
     let searchVal = $(this).val().toLowerCase().trim();
-    // If typing search while inside a single category tab, switch to All Menu to search entire menu
-    if (searchVal.length > 0 && !$('a[href="#catAll"]').hasClass('active')) {
-        $('a[href="#catAll"]').tab('show');
+    if (searchVal.length > 0 && selectedCategory !== 'all') {
+        // When searching, switch to all categories so all matching dishes can be found
+        selectedCategory = 'all';
+        $('.cat-pill-tab').removeClass('active');
+        $('.cat-pill-tab[data-category="all"]').addClass('active');
     }
     applyFilters();
 });
 
 $('#clearSearchBtn').on('click', function() {
     $('#searchBox').val('').focus();
-    applyFilters();
-});
-
-// Diet filter click with toggle / deselect support
-$(document).on('click', '.diet-btn', function(e) {
-    e.preventDefault();
-    let wasActive = $(this).hasClass('active');
-    let btnType = $(this).attr('data-type') !== undefined ? $(this).attr('data-type') : ($(this).data('type') || '');
-
-    if (wasActive) {
-        // If clicking an already active filter (veg or non-veg), DESELECT IT and revert to All Items
-        if (btnType !== '' && btnType !== 'all') {
-            $(this).removeClass('active');
-            $('.diet-btn[data-type=""], .diet-btn:not([data-type])').first().addClass('active');
-        }
-    } else {
-        // Selecting a new filter
-        $('.diet-btn').removeClass('active');
-        $(this).addClass('active');
-    }
-
-    applyFilters();
-});
-
-// Category pills deselect support: clicking active category returns to All Menu
-$(document).on('click', '.cat-pill-tab', function(e) {
-    let target = $(this).attr('href');
-    if ($(this).hasClass('active') && target !== '#catAll') {
-        e.preventDefault();
-        e.stopPropagation();
-        $('a[href="#catAll"]').tab('show');
-    }
-});
-
-$('a[data-toggle="tab"]').on('shown.bs.tab', function() {
     applyFilters();
 });
 

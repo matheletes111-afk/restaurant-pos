@@ -21,11 +21,23 @@ class TempOrderController extends Controller
 {
     public function create($table_id, $restaurant_id)
     {
+        $table_details = TableManage::where('restaurant_id', $restaurant_id)->find($table_id);
+        if (!$table_details) {
+            $table_details = TableManage::find($table_id);
+            if ($table_details && $table_details->restaurant_id) {
+                $restaurant_id = $table_details->restaurant_id;
+            }
+        }
+
+        $restaurant_details = RestaurantMaster::where('id', $restaurant_id)->first();
+        if (!$restaurant_details) {
+            $restaurant_details = RestaurantMaster::first() ?? new RestaurantMaster(['name' => 'Restaurant Menu']);
+        }
+
         $categories = Category::where('restaurant_id', $restaurant_id)
                                 ->with('subcategories')
                                 ->get();
-        $restaurant_details = RestaurantMaster::where('id', $restaurant_id)->first();
-        $table_details = TableManage::where('restaurant_id', $restaurant_id)->find($table_id);
+
         return view('temp_order', compact('categories', 'table_id', 'restaurant_id', 'restaurant_details', 'table_details'));
     }
 
