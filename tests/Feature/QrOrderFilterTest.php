@@ -90,9 +90,14 @@ class QrOrderFilterTest extends TestCase
         $response->assertSee('data-type="veg"', false);
         $response->assertSee('data-type="non-veg"', false);
 
-        // Assert filter close icons exist for deselect
-        $response->assertSee('filter-close-icon', false);
-        $response->assertSee('cat-close-icon', false);
+        // Assert category tab navigation exists with single tab selection attributes
+        $response->assertSee('category-nav-bar', false);
+        $response->assertSee('cat-pill-tab', false);
+        $response->assertSee('data-category="all"', false);
+        $response->assertSee('data-category="' . $category->id . '"', false);
+
+        // Ensure no confusing multi-select close/deselect icons exist
+        $response->assertDontSee('cat-close-icon', false);
 
         // Assert dishes have normalized data-type and data-desc
         $response->assertSee('data-type="veg"', false);

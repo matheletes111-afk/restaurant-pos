@@ -1242,7 +1242,7 @@
 
     <div class="dietary-filters-group">
       <button type="button" class="diet-btn active" data-type="" title="Show all items">
-        <i class="fas fa-utensils"></i> All Items
+        <i class="fas fa-utensils"></i> All
       </button>
       <button type="button" class="diet-btn" data-type="veg" title="Vegetarian dishes only">
         <span class="fssai-box fssai-veg" style="width:14px;height:14px;border-width:1.5px;display:inline-flex;"><span class="fssai-symbol" style="width:6px;height:6px;"></span></span> Veg
@@ -1633,7 +1633,7 @@ function updateCategoryCounts() {
 
     let totalAllCount = 0;
     $('.category-group-block').each(function() {
-        let catId = String($(this).data('category-id'));
+        let catId = String($(this).attr('data-category-id') || $(this).data('category-id') || '');
         let countInCat = 0;
 
         $(this).find('.food-card-wrapper').each(function() {
@@ -1674,7 +1674,7 @@ function applyFilters() {
     let totalVisible = 0;
 
     $('.category-group-block').each(function() {
-        let catId = String($(this).data('category-id'));
+        let catId = String($(this).attr('data-category-id') || $(this).data('category-id') || '');
 
         // If searching: search across all categories.
         // Otherwise: if selectedCategory is 'all', show all; if specific category, only show that category!
