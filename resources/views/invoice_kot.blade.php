@@ -183,14 +183,27 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>
-                        <span class="item-name">{{ $item->subcategory->name }}</span>
-                        <br>
-                        <small style="font-size: 8px;">Category: {{ $item->subcategory->category->name ?? 'N/A' }} ({{ $item->subcategory->food_type }})</small>
-                    </td>
-                    <td class="right bold item-qty">{{ $item->quantity }}</td>
-                </tr>
+                @if(isset($items) && count($items) > 0)
+                    @foreach($items as $kotItem)
+                        <tr>
+                            <td>
+                                <span class="item-name">{{ $kotItem->subcategory->name ?? 'Unknown' }}</span>
+                                <br>
+                                <small style="font-size: 8px;">Category: {{ $kotItem->subcategory->category->name ?? 'N/A' }} ({{ $kotItem->subcategory->food_type ?? '' }})</small>
+                            </td>
+                            <td class="right bold item-qty">{{ $kotItem->quantity }}</td>
+                        </tr>
+                    @endforeach
+                @else
+                    <tr>
+                        <td>
+                            <span class="item-name">{{ $item->subcategory->name }}</span>
+                            <br>
+                            <small style="font-size: 8px;">Category: {{ $item->subcategory->category->name ?? 'N/A' }} ({{ $item->subcategory->food_type }})</small>
+                        </td>
+                        <td class="right bold item-qty">{{ $item->quantity }}</td>
+                    </tr>
+                @endif
             </tbody>
         </table>
         

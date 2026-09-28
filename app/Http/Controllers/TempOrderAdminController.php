@@ -133,24 +133,11 @@ public function approveOrder($id)
         $order->created_by = auth()->id();
         $order->save();
 
-        // Move items with all fields and generate unique KOT number for each
-        foreach ($tempOrder->items as $item) {
-            $latestItem = OrderItems::where('restaurant_id', $restaurantId)
-                ->whereNotNull('kot_no')
-                ->orderBy('id', 'desc')
-                ->first();
-                
-            $todayDateStr = Carbon::now()->format('ymd');
-            $nextSequence = 1;
+        // Generate a single KOT number for all items in this initial approved order batch
+        $kotNo = OrderItems::generateNextKotNumber($restaurantId);
 
-            if ($latestItem && preg_match('/KOT-(\d{6})-(\d+)/', $latestItem->kot_no, $matches)) {
-                $latestDateStr = $matches[1];
-                $latestSequence = intval($matches[2]);
-                if ($latestDateStr === $todayDateStr) {
-                    $nextSequence = $latestSequence + 1;
-                }
-            }
-            $kotNo = "KOT-{$todayDateStr}-" . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
+        // Move items with all fields
+        foreach ($tempOrder->items as $item) {
 
             $orderItem = new OrderItems();
             $orderItem->order_id = $order->id;
@@ -187,6 +174,21 @@ public function approveOrder($id)
         $tempOrder->save();
 
         DB::commit();
+
+        // Notify kitchen staff of the new approved order
+        try {
+            $webNotificationService = app(\App\Services\WebNotificationService::class);
+            $tableName = isset($table) && $table ? $table->name : ('Table ' . ($order->table_id ?? ''));
+            $webNotificationService->notifyKitchenStaffWeb(
+                $restaurantId,
+                "New Order Approved - {$tableName}",
+                "Order #{$orderNo} (KOT #{$kotNo}) approved for {$tableName}",
+                ['order_id' => $order->id, 'kot_no' => $kotNo]
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Kitchen notification error on approve: ' . $e->getMessage());
+        }
+
         return redirect()->route('temp.orders')->with('success', 'Order approved and moved to main orders. Order Number: ' . $orderNo);
         
     } catch (\Exception $e) {

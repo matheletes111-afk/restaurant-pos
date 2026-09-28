@@ -6,6 +6,7 @@
         $isPending = in_array($statusNormalized, ['PENDING', 'AWAITING']);
         $isAccepted = in_array($statusNormalized, ['ACCEPTED', 'APPROVED', 'COMPLETED', 'SERVED', 'IN_KITCHEN']);
         $isRejected = in_array($statusNormalized, ['REJECTED', 'CANCELLED', 'DECLINED']);
+        $isDone = ($isCompleted ?? false) || (isset($mainOrder) && ($mainOrder->order_complete === 'DONE' || $mainOrder->payment_status === 'PAID'));
         
         $tableId = $table_details->id ?? ($tempOrder->table_id ?? ($mainOrder->table_id ?? null));
         $restaurantId = $restaurant_details->id ?? ($tempOrder->restaurant_id ?? ($mainOrder->restaurant_id ?? null));
@@ -450,7 +451,120 @@
             border-radius: 6px;
             margin-right: 8px;
         }
+
+        .kot-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            letter-spacing: 0.03em;
+        }
+
+        .item-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            transition: all 0.3s ease;
+        }
+
+        .item-status-pill.status-pending {
+            background: #fffbeb;
+            color: #b45309;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .item-status-pill.status-cooking {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            animation: pulseSubtle 2s infinite;
+        }
+
+        .item-status-pill.status-done {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        @keyframes pulseSubtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.75; }
+        }
+
+        .btn-item-cancel {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-item-cancel:hover {
+            background: #dc2626;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+        }
+
+        .badge-item-locked {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #f8fafc;
+            color: #94a3b8;
+            border: 1px dashed #cbd5e1;
+            border-radius: 6px;
+            padding: 2px 7px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
         @endif
+
+        /* Toast feedback */
+        .toast-feedback {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(40px);
+            background: #0f172a;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 9999px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toast-feedback.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
 
         /* Totals Card */
         .order-totals-strip {
@@ -717,24 +831,62 @@
             <!-- Ordered Dishes List (If Available) -->
             @if(isset($items) && count($items) > 0)
                 <div class="items-preview-list">
-                    <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
-                        Ordered Items ({{ count($items) }})
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">
+                            Ordered Dishes ({{ count($items) }})
+                        </div>
+                        <span style="font-size: 0.72rem; color: #64748b; font-weight: 600;">
+                            <i class="fas fa-circle-info me-1"></i> Live Kitchen Status
+                        </span>
                     </div>
+                    <div id="itemsContainerList">
                     @foreach($items as $itm)
                         @php
                             $itemName = $itm->menuItem->name ?? ($itm->subcategory->name ?? ($itm->name ?? 'Dish'));
                             $qty = $itm->quantity ?? ($itm->qty ?? 1);
                             $price = $itm->discounted_price ?? ($itm->price ?? 0);
                             $total = $itm->total_amount ?? ($price * $qty);
+                            $itemStatus = strtoupper($itm->order_status ?? 'PENDING');
+                            $kotNo = $itm->kot_no ?? null;
                         @endphp
-                        <div class="item-preview-row">
-                            <div>
-                                <span class="item-qty-badge">{{ $qty }}x</span>
-                                <strong>{{ $itemName }}</strong>
+                        <div class="item-preview-row" id="itemRow_{{ $itm->id }}" data-item-id="{{ $itm->id }}" style="padding: 10px 0;">
+                            <div style="flex: 1; min-width: 0; padding-right: 10px;">
+                                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 4px;">
+                                    <span class="item-qty-badge">{{ $qty }}x</span>
+                                    <strong style="color: var(--text-main); font-size: 0.94rem;">{{ $itemName }}</strong>
+                                    @if(!empty($kotNo))
+                                        <span class="kot-badge" id="kotBadge_{{ $itm->id }}"><i class="fas fa-receipt"></i> {{ $kotNo }}</span>
+                                    @endif
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span class="item-status-pill status-{{ strtolower($itemStatus) }}" id="itemStatusBadge_{{ $itm->id }}">
+                                        @if($itemStatus === 'COOKING')
+                                            <i class="fas fa-fire-burner"></i> Cooking
+                                        @elseif($itemStatus === 'DONE')
+                                            <i class="fas fa-check-circle"></i> Cooked
+                                        @else
+                                            <i class="fas fa-hourglass-half"></i> Pending
+                                        @endif
+                                    </span>
+                                    <div id="itemActionArea_{{ $itm->id }}">
+                                        @if($itemStatus === 'PENDING')
+                                            <button type="button" class="btn-item-cancel" onclick="cancelDishItem({{ $itm->id }})" title="Cancel this pending dish">
+                                                <i class="fas fa-trash-alt"></i> Cancel
+                                            </button>
+                                        @else
+                                            <span class="badge-item-locked" title="Kitchen is already preparing or cooked this dish. Cannot cancel or modify.">
+                                                <i class="fas fa-lock"></i> Locked
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
-                            <span style="font-weight: 700;">₹{{ number_format($total, 2) }}</span>
+                            <div style="text-align: right; flex-shrink: 0;">
+                                <span style="font-weight: 800; font-size: 0.96rem; color: var(--text-main);">₹{{ number_format($total, 2) }}</span>
+                            </div>
                         </div>
                     @endforeach
+                    </div>
                 </div>
             @endif
 
@@ -771,10 +923,17 @@
         <!-- Action Footer -->
         <div class="actions-card-footer">
             @if($tableId && $restaurantId)
-                <a href="{{ route('temp.order.create', [$tableId, $restaurantId]) }}" class="btn-action-primary">
-                    <i class="fas fa-plus-circle"></i>
-                    <span>{{ $isRejected ? 'Choose Other Dishes' : 'Order More Items' }}</span>
-                </a>
+                @if($isDone)
+                    <a href="{{ route('temp.order.fresh', [$tableId, $restaurantId]) }}" class="btn-action-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Start Fresh Order</span>
+                    </a>
+                @else
+                    <a href="{{ route('temp.order.create', [$tableId, $restaurantId]) }}" class="btn-action-primary">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>{{ $isRejected ? 'Choose Other Dishes' : 'Order More Items' }}</span>
+                    </a>
+                @endif
             @endif
 
             <a href="javascript:window.location.reload();" class="btn-action-secondary">
@@ -786,27 +945,138 @@
     </div>
 </div>
 
-<script>
-    // Live Auto-Polling for Real-time status update (When Awaiting)
-    @if($isPending)
-    const orderId = {{ $orderRecordId }};
-    let pollInterval = setInterval(function() {
-        if (!orderId) return;
+<div id="toastFeedback" class="toast-feedback"><i class="fas fa-check-circle text-success"></i> <span id="toastMsg">Updated</span></div>
 
-        fetch("{{ route('order.status.check', ':id') }}".replace(':id', orderId))
-            .then(res => res.json())
-            .then(data => {
-                if (data.status && data.order_status && data.order_status !== 'PENDING') {
-                    clearInterval(pollInterval);
-                    // Reload to immediately display the Accepted or Rejected state with animations
+<script>
+    function showToast(msg, isSuccess = true) {
+        const toast = document.getElementById('toastFeedback');
+        const msgEl = document.getElementById('toastMsg');
+        if (!toast || !msgEl) return;
+        msgEl.textContent = msg;
+        toast.querySelector('i').className = isSuccess ? 'fas fa-check-circle text-success' : 'fas fa-exclamation-triangle text-danger';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3200);
+    }
+
+    function cancelDishItem(itemId) {
+        if (!confirm('Are you sure you want to cancel this pending dish?')) {
+            return;
+        }
+
+        const btn = event.currentTarget;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+
+        fetch("{{ url('/order-customer/item/delete') }}/" + itemId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                _token: '{{ csrf_token() }}'
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status) {
+                showToast(data.message || 'Item cancelled successfully.');
+                const row = document.getElementById('itemRow_' + itemId);
+                if (row) {
+                    row.style.transition = 'all 0.3s ease';
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateX(20px)';
+                    setTimeout(() => {
+                        row.remove();
+                        setTimeout(() => window.location.reload(), 600);
+                    }, 300);
+                } else {
                     window.location.reload();
                 }
-            })
-            .catch(err => {
-                console.log('Status polling...', err);
-            });
-    }, 3500);
-    @endif
+            } else {
+                alert(data.message || 'Could not cancel item.');
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        })
+        .catch(err => {
+            alert('Network error while cancelling item.');
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        });
+    }
+
+    // Live Auto-Polling for Real-time status update
+    const orderRecordId = {{ $orderRecordId }};
+    if (orderRecordId) {
+        let pollInterval = setInterval(function() {
+            const checkType = '{{ isset($mainOrder) && $mainOrder ? "main" : "temp" }}';
+            fetch("{{ route('order.status.check', ':id') }}".replace(':id', orderRecordId) + '?type=' + checkType)
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.status) return;
+
+                    // If order completed or closed by restaurant:
+                    if (data.is_completed) {
+                        clearInterval(pollInterval);
+                        window.location.reload();
+                        return;
+                    }
+
+                    // If it was pending approval and was approved or rejected:
+                    @if($isPending)
+                    if (data.order_status && data.order_status !== 'PENDING') {
+                        clearInterval(pollInterval);
+                        if (data.redirect_url) {
+                            window.location.href = data.redirect_url;
+                        } else if (data.main_order_id) {
+                            window.location.href = "{{ url('/order-details') }}/" + data.main_order_id;
+                        } else {
+                            window.location.reload();
+                        }
+                        return;
+                    }
+                    @endif
+
+                    // Live update each item's kitchen status badge & lock state
+                    if (data.items && Array.isArray(data.items)) {
+                        data.items.forEach(itm => {
+                            const badge = document.getElementById('itemStatusBadge_' + itm.id);
+                            const actionArea = document.getElementById('itemActionArea_' + itm.id);
+                            const kotBadge = document.getElementById('kotBadge_' + itm.id);
+
+                            if (kotBadge && itm.kot_no) {
+                                kotBadge.innerHTML = '<i class="fas fa-receipt"></i> ' + itm.kot_no;
+                            }
+
+                            if (badge) {
+                                const statusLower = itm.order_status.toLowerCase();
+                                badge.className = 'item-status-pill status-' + statusLower;
+                                if (itm.order_status === 'COOKING') {
+                                    badge.innerHTML = '<i class="fas fa-fire-burner"></i> Cooking';
+                                } else if (itm.order_status === 'DONE') {
+                                    badge.innerHTML = '<i class="fas fa-check-circle"></i> Cooked';
+                                } else {
+                                    badge.innerHTML = '<i class="fas fa-hourglass-half"></i> Pending';
+                                }
+                            }
+
+                            if (actionArea) {
+                                if (itm.order_status === 'PENDING') {
+                                    actionArea.innerHTML = `<button type="button" class="btn-item-cancel" onclick="cancelDishItem(${itm.id})" title="Cancel this pending dish"><i class="fas fa-trash-alt"></i> Cancel</button>`;
+                                } else {
+                                    actionArea.innerHTML = `<span class="badge-item-locked" title="Kitchen is already preparing or cooked this dish. Cannot cancel or modify."><i class="fas fa-lock"></i> Locked</span>`;
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.log('Status polling...', err);
+                });
+        }, 3500);
+    }
 
     // Sparkle effect for Accepted state
     @if($isAccepted)

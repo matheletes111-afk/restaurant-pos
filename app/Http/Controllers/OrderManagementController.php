@@ -341,10 +341,12 @@ class OrderManagementController extends Controller
             $order->user_id = auth()->user()->id;
             $order->save();
        
-            // Save order items with all GST details and generate unique KOT number for each
+            // Generate a single KOT number for all items in this initial order batch
+            $kotNo = $this->generateKOTNumber($restaurantId);
+
+            // Save order items with all GST details
             foreach ($request->order_items as $index => $item) {
                 $calc = $calculatedItems[$index];
-                $kotNo = $this->generateKOTNumber($restaurantId);
                 
                 $orderItem = new OrderItems();
                 $orderItem->order_id = $order->id;
@@ -440,7 +442,10 @@ class OrderManagementController extends Controller
             $isGstRegistered = !empty($restaurant->gstin);
 
             // Handle new item additions with discount
-            if ($request->has('order_items') && is_array($request->order_items)) {
+            if ($request->has('order_items') && is_array($request->order_items) && count($request->order_items) > 0) {
+                // Generate a single new KOT number for all items in this edit/addition batch
+                $kotNo = $this->generateKOTNumber($restaurant->id);
+
                 foreach ($request->order_items as $item) {
                     $itemDiscount = isset($item['item_discount']) ? floatval($item['item_discount']) : 0;
                     $calc = $this->calculateItemGST(
@@ -450,9 +455,6 @@ class OrderManagementController extends Controller
                         $restaurantGstPercentage,
                         $isGstRegistered
                     );
-                    
-                    // Generate unique KOT number for each new item
-                    $kotNo = $this->generateKOTNumber($restaurant->id);
                     
                     OrderItems::create([
                         'order_id' => $id,
@@ -829,15 +831,28 @@ public function deletePayment($payment_id)
         $item = OrderItems::with(['order.table', 'subcategory.category'])->findOrFail($id);
         $restaurant_details = RestaurantMaster::where('id', $item->restaurant_id)->first();
 
+        // If this item has a KOT number, get all items belonging to this same KOT
+        $kotItems = null;
+        if (!empty($item->kot_no)) {
+            $kotItems = OrderItems::with(['order.table', 'subcategory.category'])
+                ->where('order_id', $item->order_id)
+                ->where('kot_no', $item->kot_no)
+                ->get();
+        }
+
         $data = [
             'item' => $item,
+            'items' => $kotItems,
             'restaurant_details' => $restaurant_details,
         ];
 
-        $pdf = Pdf::loadView('invoice_kot', $data)
-            ->setPaper([0, 0, 226, 400]);
+        $itemCount = $kotItems ? $kotItems->count() : 1;
+        $paperHeight = max(350, 200 + ($itemCount * 45));
 
-        return $pdf->stream('kot_' . $item->id . '.pdf');
+        $pdf = Pdf::loadView('invoice_kot', $data)
+            ->setPaper([0, 0, 226, $paperHeight]);
+
+        return $pdf->stream('kot_' . ($item->kot_no ?? $item->id) . '.pdf');
     }
 
     /**
@@ -972,14 +987,23 @@ public function deletePayment($payment_id)
      */
     private function generateKOTNumber($restaurantId)
     {
-        // Find the latest KOT number generated for this restaurant
-        $latestItem = OrderItems::where('restaurant_id', $restaurantId)
-            ->whereNotNull('kot_no')
-            ->orderBy('id', 'desc')
-            ->first();
-            
         $todayDateStr = Carbon::now()->format('ymd');
         $nextSequence = 1;
+
+        // Find the latest KOT number generated today for this restaurant
+        $latestItem = OrderItems::where('restaurant_id', $restaurantId)
+            ->whereNotNull('kot_no')
+            ->where('kot_no', 'like', "KOT-{$todayDateStr}-%")
+            ->orderBy('id', 'desc')
+            ->first();
+
+        // If none found for today with prefix, fallback to latest overall item
+        if (!$latestItem) {
+            $latestItem = OrderItems::where('restaurant_id', $restaurantId)
+                ->whereNotNull('kot_no')
+                ->orderBy('id', 'desc')
+                ->first();
+        }
 
         if ($latestItem && preg_match('/KOT-(\d{6})-(\d+)/', $latestItem->kot_no, $matches)) {
             $latestDateStr = $matches[1];

@@ -816,7 +816,12 @@
                   $itemTotal = $taxableAmount + $gstAmount;
                 @endphp
                 <tr data-item-id="{{ $item->id }}">
-                  <td><strong>{{ $item->subcategory->name ?? 'Unknown' }}</strong></td>
+                  <td>
+                    <strong>{{ $item->subcategory->name ?? 'Unknown' }}</strong>
+                    @if(!empty($item->kot_no))
+                      <span class="badge bg-light text-dark border ms-1" style="font-size: 0.72rem; vertical-align: middle;">{{ $item->kot_no }}</span>
+                    @endif
+                  </td>
                   <td class="text-end">₹{{ number_format($item->price, 2) }}</td>
                   <td class="text-center">{{ $itemDiscount }}%</td>
                   <td class="text-center">{{ $item->quantity }}</td>

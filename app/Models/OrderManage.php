@@ -78,4 +78,47 @@ class OrderManage extends Model
     {
         return $this->belongsTo(RestaurantMaster::class, 'restaurant_id');
     }
+
+    /**
+     * Recalculate order totals based on order items
+     */
+    public function recalculateTotals()
+    {
+        $items = $this->orderItems()->get();
+        $originalSubtotal = 0;
+        $totalTaxable = 0;
+        $totalGst = 0;
+        $totalCgst = 0;
+        $totalSgst = 0;
+        $totalIgst = 0;
+
+        foreach ($items as $item) {
+            $originalSubtotal += $item->price * $item->quantity;
+            $totalTaxable += $item->taxable_amount;
+            $totalGst += $item->gst_amount;
+            $totalCgst += $item->cgst_amount;
+            $totalSgst += $item->sgst_amount;
+            $totalIgst += $item->igst_amount;
+        }
+
+        $discountPercent = floatval($this->discount_percentage ?? 0);
+        $totalBeforeDiscount = $totalTaxable + $totalGst;
+        $discountAmount = ($totalBeforeDiscount * $discountPercent) / 100;
+        $grandTotal = $totalBeforeDiscount - $discountAmount;
+        $finalTotal = round($grandTotal);
+        $roundOff = $finalTotal - $grandTotal;
+
+        $this->total_amount = $originalSubtotal;
+        $this->taxable_amount = $totalTaxable;
+        $this->gst_amount = $totalGst;
+        $this->cgst_amount = $totalCgst;
+        $this->sgst_amount = $totalSgst;
+        $this->igst_amount = $totalIgst;
+        $this->discount = $discountAmount;
+        $this->grand_total = $finalTotal;
+        $this->round_off = $roundOff;
+        $this->save();
+
+        return $this;
+    }
 }

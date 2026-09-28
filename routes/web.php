@@ -62,7 +62,12 @@ Route::get('/login/verify/resend', [LoginController::class, 'resendOtp'])->name(
 Route::get('order-customer/{table_id}/{restaurant_id}', [App\Http\Controllers\TempOrderController::class, 'create'])->name('temp.order.create');
 Route::post('order/store', [App\Http\Controllers\TempOrderController::class, 'store'])->name('temp.order.store');
 Route::get('/order-success/{id}', [App\Http\Controllers\TempOrderController::class, 'success'])->name('order.success');
+Route::get('/order-details/{id}', [App\Http\Controllers\TempOrderController::class, 'orderDetails'])->name('order.details');
 Route::get('/order-status-check/{id}', [App\Http\Controllers\TempOrderController::class, 'checkStatus'])->name('order.status.check');
+Route::post('/order-customer/add-items', [App\Http\Controllers\TempOrderController::class, 'addItemsToActiveOrder'])->name('temp.order.add_items');
+Route::post('/order-customer/item/delete/{id}', [App\Http\Controllers\TempOrderController::class, 'deleteActiveOrderItem'])->name('temp.order.delete_item');
+Route::post('/order-customer/item/update-qty/{id}', [App\Http\Controllers\TempOrderController::class, 'updateActiveOrderItemQty'])->name('temp.order.update_item_qty');
+Route::get('/order-customer/fresh/{table_id}/{restaurant_id}', [App\Http\Controllers\TempOrderController::class, 'startFreshOrder'])->name('temp.order.fresh');
 
 // QR Order Notifications (Accessible to all authenticated staff & admins)
 Route::middleware('auth')->group(function () {

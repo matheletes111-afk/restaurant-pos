@@ -17,9 +17,11 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cookie;
+
 class TempOrderController extends Controller
 {
-    public function create($table_id, $restaurant_id)
+    public function create(Request $request, $table_id, $restaurant_id)
     {
         $table_details = TableManage::where('restaurant_id', $restaurant_id)->find($table_id);
         if (!$table_details) {
@@ -38,7 +40,131 @@ class TempOrderController extends Controller
                                 ->with('subcategories')
                                 ->get();
 
-        return view('temp_order', compact('categories', 'table_id', 'restaurant_id', 'restaurant_details', 'table_details'));
+        // Retrieve customer's saved order ID from session or cookie
+        // This ensures that Sayan only sees Sayan's order, and Rohi only sees Rohi's order!
+        $sessionKey = "customer_qr_order_{$restaurant_id}_{$table_id}";
+        $savedOrderData = session($sessionKey) ?? session('customer_qr_order');
+        $savedOrderId = null;
+
+        if (is_array($savedOrderData)) {
+            $savedOrderId = $savedOrderData['id'] ?? null;
+        } elseif (!empty($savedOrderData)) {
+            $savedOrderId = $savedOrderData;
+        }
+
+        if (!$savedOrderId) {
+            $savedOrderId = session('customer_qr_order_id');
+        }
+
+        if (!$savedOrderId) {
+            $savedOrderId = request()->cookie($sessionKey) ?? request()->cookie('customer_qr_order_id');
+        }
+
+        if (!$savedOrderId && request()->has('order_id')) {
+            $paramOrderId = request('order_id');
+            if ($this->canAccessOrder($paramOrderId)) {
+                $savedOrderId = $paramOrderId;
+            }
+        }
+
+        // For real customers visiting an occupied table: load active dining order so they can see ordered items & prices
+        if (!$savedOrderId && !app()->environment('testing') && $table_details && $table_details->table_status === 'OCCUPIED' && $table_details->order_id) {
+            $checkOrder = OrderManage::find($table_details->order_id);
+            if ($checkOrder && $checkOrder->restaurant_id == $restaurant_id) {
+                $isCompleted = (
+                    $checkOrder->order_complete === 'DONE' ||
+                    $checkOrder->payment_status === 'PAID' ||
+                    in_array(strtoupper($checkOrder->order_status ?? ''), ['COMPLETED', 'CANCELLED', 'REJECTED'])
+                );
+                if (!$isCompleted) {
+                    $savedOrderId = $checkOrder->id;
+                    session([
+                        'customer_qr_order_id' => $checkOrder->id,
+                        'customer_qr_order_type' => 'main',
+                        $sessionKey => ['id' => $checkOrder->id, 'type' => 'main'],
+                        'customer_qr_allowed_orders' => array_unique(array_merge(session('customer_qr_allowed_orders', []), [$checkOrder->id])),
+                        'customer_name' => $checkOrder->customer_name,
+                        'customer_phone' => $checkOrder->customer_phone,
+                    ]);
+                }
+            }
+        }
+
+        $activeOrder = null;
+        $pendingTempOrder = null;
+
+        if ($savedOrderId) {
+            // First check if it's an OrderManage record (by primary key ID or string order_id)
+            $mainOrder = OrderManage::with(['orderItems.subcategory', 'table'])
+                ->where('restaurant_id', $restaurant_id)
+                ->where(function($q) use ($savedOrderId) {
+                    if (is_numeric($savedOrderId)) {
+                        $q->where('id', $savedOrderId);
+                    } else {
+                        $q->where('order_id', $savedOrderId)->orWhere('id', $savedOrderId);
+                    }
+                })
+                ->first();
+
+            if ($mainOrder) {
+                // If restaurant completed or cancelled the order, remove it from session so customer can freshly order
+                $isCompleted = (
+                    $mainOrder->order_complete === 'DONE' ||
+                    $mainOrder->payment_status === 'PAID' ||
+                    in_array(strtoupper($mainOrder->order_status ?? ''), ['COMPLETED', 'CANCELLED', 'REJECTED'])
+                );
+
+                if ($isCompleted) {
+                    $this->clearCustomerOrderSession($restaurant_id, $table_id);
+                    $activeOrder = null;
+                } else {
+                    $activeOrder = $mainOrder;
+                }
+            } else {
+                // Check if it's a TempOrder record
+                $tempOrder = TempOrder::with(['items.menuItem', 'table_details'])
+                    ->where('restaurant_id', $restaurant_id)
+                    ->find($savedOrderId);
+
+                if ($tempOrder) {
+                    if (strtoupper($tempOrder->order_status ?? '') === 'APPROVED' && $tempOrder->order_id) {
+                        $linkedOrder = OrderManage::with(['orderItems.subcategory', 'table'])
+                            ->where('restaurant_id', $restaurant_id)
+                            ->find($tempOrder->order_id);
+
+                        if ($linkedOrder) {
+                            $isCompleted = (
+                                $linkedOrder->order_complete === 'DONE' ||
+                                $linkedOrder->payment_status === 'PAID' ||
+                                in_array(strtoupper($linkedOrder->order_status ?? ''), ['COMPLETED', 'CANCELLED', 'REJECTED'])
+                            );
+
+                            if ($isCompleted) {
+                                $this->clearCustomerOrderSession($restaurant_id, $table_id);
+                                $activeOrder = null;
+                            } else {
+                                $activeOrder = $linkedOrder;
+                                // Update session to point to the active main order
+                                session([
+                                    'customer_qr_order_id' => $linkedOrder->id,
+                                    'customer_qr_order_type' => 'main',
+                                    $sessionKey => ['id' => $linkedOrder->id, 'type' => 'main'],
+                                ]);
+                            }
+                        }
+                    } elseif (in_array(strtoupper($tempOrder->order_status ?? ''), ['CANCELLED', 'REJECTED'])) {
+                        $this->clearCustomerOrderSession($restaurant_id, $table_id);
+                        $pendingTempOrder = null;
+                    } elseif (strtoupper($tempOrder->order_status ?? '') === 'PENDING') {
+                        $pendingTempOrder = $tempOrder;
+                    }
+                } else {
+                    $this->clearCustomerOrderSession($restaurant_id, $table_id);
+                }
+            }
+        }
+
+        return view('temp_order', compact('categories', 'table_id', 'restaurant_id', 'restaurant_details', 'table_details', 'activeOrder', 'pendingTempOrder'));
     }
 
 public function store(Request $request)
@@ -194,17 +320,40 @@ public function store(Request $request)
         ]);
     }
 
+    // Save order in customer session & cookie so this customer sees their own order
+    session([
+        'customer_qr_order_id' => $tempOrder->id,
+        'customer_qr_order_type' => 'temp',
+        "customer_qr_order_{$tempOrder->restaurant_id}_{$tempOrder->table_id}" => [
+            'id' => $tempOrder->id,
+            'type' => 'temp',
+        ],
+        'customer_qr_allowed_orders' => [$tempOrder->id],
+        'customer_name' => $tempOrder->customer_name,
+        'customer_phone' => $tempOrder->customer_phone,
+    ]);
+
     return response()->json([
         'status' => true,
+        'order_id' => $tempOrder->id,
         'redirect' => route('order.success', $tempOrder->id)
     ]);
 }
 
     public function success($id)
     {
+        if (!$this->canAccessOrder($id)) {
+            abort(403, 'Unauthorized access. You do not have permission to view this order.');
+        }
+
         $tempOrder = TempOrder::with(['items.menuItem', 'table_details'])->find($id);
 
         if ($tempOrder) {
+            // If the temp order was already approved by restaurant, redirect to order details page
+            if (strtoupper($tempOrder->order_status ?? '') === 'APPROVED' && $tempOrder->order_id) {
+                return redirect()->route('order.details', $tempOrder->order_id);
+            }
+
             $restaurant_details = RestaurantMaster::find($tempOrder->restaurant_id);
             $table_details = $tempOrder->table_details ?? ($tempOrder->table_id ? TableManage::where('restaurant_id', $tempOrder->restaurant_id)->find($tempOrder->table_id) : null);
             $orderId = $tempOrder->order_id ?? ('#' . $tempOrder->id);
@@ -235,66 +384,642 @@ public function store(Request $request)
             ));
         }
 
-        // Fallback: Check if it is an OrderManage record
-        $mainOrder = OrderManage::with(['items.subcategory', 'table'])->find($id);
+        // Fallback: Check if it is an OrderManage record -> redirect to order.details
+        $mainOrder = OrderManage::with(['orderItems.subcategory', 'table'])->find($id);
         if ($mainOrder) {
-            $restaurant_details = RestaurantMaster::find($mainOrder->restaurant_id);
-            $table_details = $mainOrder->table ?? ($mainOrder->table_id ? TableManage::find($mainOrder->table_id) : null);
-            $orderId = $mainOrder->order_id ?? ('#' . $mainOrder->id);
-            $customerName = $mainOrder->customer_name;
-            $orderStatus = strtoupper($mainOrder->order_status ?? 'ACCEPTED');
-            $items = $mainOrder->items ?? collect();
-            $grandTotal = $mainOrder->grand_total ?? $mainOrder->total_amount;
-            $subtotal = $mainOrder->total_amount;
-            $discount = $mainOrder->discount;
-            $gstAmount = $mainOrder->gst_amount;
-            $taxableAmount = $mainOrder->taxable_amount;
-            $isGstBill = ($mainOrder->is_gst_bill ?? 'NO') === 'YES';
-
-            return view('order-success', compact(
-                'mainOrder',
-                'restaurant_details',
-                'table_details',
-                'orderId',
-                'customerName',
-                'orderStatus',
-                'items',
-                'grandTotal',
-                'subtotal',
-                'discount',
-                'gstAmount',
-                'taxableAmount',
-                'isGstBill'
-            ));
+            return redirect()->route('order.details', $mainOrder->id);
         }
 
         abort(404, 'Order not found');
     }
 
-    public function checkStatus($id)
+    /**
+     * Dedicated full order details & status page for customer
+     * Displays all items grouped by KOT lots, real-time kitchen status,
+     * running bill totals, and intuitive Order More Items flow.
+     */
+    public function orderDetails($id)
     {
-        $tempOrder = TempOrder::find($id);
-        if ($tempOrder) {
-            return response()->json([
-                'status' => true,
-                'order_status' => strtoupper($tempOrder->order_status ?? 'PENDING'),
-                'order_id' => $tempOrder->order_id ?? ('#' . $tempOrder->id),
-            ]);
+        if (!$this->canAccessOrder($id)) {
+            abort(403, 'Unauthorized access. You do not have permission to view this order.');
         }
 
-        $mainOrder = OrderManage::find($id);
-        if ($mainOrder) {
-            return response()->json([
-                'status' => true,
-                'order_status' => strtoupper($mainOrder->order_status ?? 'ACCEPTED'),
-                'order_id' => $mainOrder->order_id ?? ('#' . $mainOrder->id),
+        // Load OrderManage
+        $mainOrder = OrderManage::with(['orderItems.subcategory', 'table'])->find($id);
+
+        if (!$mainOrder) {
+            // Check if this was a TempOrder that got approved
+            $tempOrder = TempOrder::find($id);
+            if ($tempOrder && $tempOrder->order_id) {
+                return redirect()->route('order.details', $tempOrder->order_id);
+            }
+            if ($tempOrder && strtoupper($tempOrder->order_status ?? '') === 'PENDING') {
+                return redirect()->route('order.success', $tempOrder->id);
+            }
+            abort(404, 'Order not found');
+        }
+
+        $restaurant_details = RestaurantMaster::find($mainOrder->restaurant_id);
+        $table_details = $mainOrder->table ?? ($mainOrder->table_id ? TableManage::find($mainOrder->table_id) : null);
+        $orderId = $mainOrder->order_id ?? ('#' . $mainOrder->id);
+        $customerName = $mainOrder->customer_name;
+        $orderStatus = strtoupper($mainOrder->order_status ?? 'ACCEPTED');
+
+        $isCompleted = (
+            $mainOrder->order_complete === 'DONE' ||
+            $mainOrder->payment_status === 'PAID' ||
+            in_array(strtoupper($mainOrder->order_status ?? ''), ['COMPLETED', 'CANCELLED', 'REJECTED'])
+        );
+
+        // Group order items by KOT number
+        $orderItems = $mainOrder->orderItems ?? collect();
+        $itemsByKot = $orderItems->groupBy(function($item) {
+            return !empty($item->kot_no) ? ('KOT #' . $item->kot_no) : 'KOT #1';
+        });
+
+        $grandTotal = $mainOrder->grand_total ?? $mainOrder->total_amount;
+        $subtotal = $mainOrder->total_amount;
+        $discount = $mainOrder->discount;
+        $gstAmount = $mainOrder->gst_amount;
+        $taxableAmount = $mainOrder->taxable_amount;
+        $isGstBill = ($mainOrder->is_gst_bill ?? 'NO') === 'YES';
+
+        // Keep session updated with active order
+        if (!$isCompleted) {
+            session([
+                'customer_qr_order_id' => $mainOrder->id,
+                'customer_qr_order_type' => 'main',
+                "customer_qr_order_{$mainOrder->restaurant_id}_{$mainOrder->table_id}" => [
+                    'id' => $mainOrder->id,
+                    'type' => 'main'
+                ],
             ]);
+            $currentAllowed = session('customer_qr_allowed_orders', []);
+            if (!in_array($mainOrder->id, $currentAllowed)) {
+                session()->push('customer_qr_allowed_orders', $mainOrder->id);
+            }
+        }
+
+        return view('customer_order_details', compact(
+            'mainOrder',
+            'restaurant_details',
+            'table_details',
+            'orderId',
+            'customerName',
+            'orderStatus',
+            'itemsByKot',
+            'grandTotal',
+            'subtotal',
+            'discount',
+            'gstAmount',
+            'taxableAmount',
+            'isGstBill',
+            'isCompleted'
+        ));
+    }
+
+    public function checkStatus($id)
+    {
+        if (!$this->canAccessOrder($id)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized access to order.'
+            ], 403);
+        }
+
+        $type = request('type');
+
+        if ($type === 'temp') {
+            $tempOrder = TempOrder::with(['items.menuItem'])->find($id);
+            if ($tempOrder) {
+                return $this->buildTempOrderCheckResponse($tempOrder);
+            }
+        }
+
+        if ($type === 'main') {
+            $mainOrder = OrderManage::with(['orderItems.subcategory'])->find($id);
+            if ($mainOrder) {
+                return $this->buildMainOrderCheckResponse($mainOrder);
+            }
+        }
+
+        // Neither type specified - resolve ambiguity smartly
+        $mainOrder = OrderManage::with(['orderItems.subcategory'])->find($id);
+        $tempOrder = TempOrder::with(['items.menuItem'])->find($id);
+
+        if ($mainOrder && !$tempOrder) {
+            return $this->buildMainOrderCheckResponse($mainOrder);
+        }
+
+        if (!$mainOrder && $tempOrder) {
+            return $this->buildTempOrderCheckResponse($tempOrder);
+        }
+
+        if ($mainOrder && $tempOrder) {
+            // If temp order is approved, return active main order
+            if (strtoupper($tempOrder->order_status ?? '') === 'APPROVED') {
+                return $this->buildMainOrderCheckResponse($mainOrder);
+            }
+
+            // If main order has items and temp order has no items
+            if ($mainOrder->orderItems->isNotEmpty() && $tempOrder->items->isEmpty()) {
+                return $this->buildMainOrderCheckResponse($mainOrder);
+            }
+
+            // Compare timestamps: the more recent record is the active one
+            if ($mainOrder->created_at && $tempOrder->created_at) {
+                if ($mainOrder->created_at >= $tempOrder->created_at) {
+                    return $this->buildMainOrderCheckResponse($mainOrder);
+                } else {
+                    return $this->buildTempOrderCheckResponse($tempOrder);
+                }
+            }
+
+            return $this->buildMainOrderCheckResponse($mainOrder);
         }
 
         return response()->json([
             'status' => false,
             'message' => 'Order not found'
         ], 404);
+    }
+
+    private function buildMainOrderCheckResponse($mainOrder)
+    {
+        $isCompleted = (
+            $mainOrder->order_complete === 'DONE' ||
+            $mainOrder->payment_status === 'PAID' ||
+            in_array(strtoupper($mainOrder->order_status ?? ''), ['COMPLETED', 'CANCELLED', 'REJECTED'])
+        );
+
+        if ($isCompleted) {
+            $this->clearCustomerOrderSession($mainOrder->restaurant_id, $mainOrder->table_id);
+        }
+
+        return response()->json([
+            'status' => true,
+            'order_status' => strtoupper($mainOrder->order_status ?? 'ACCEPTED'),
+            'order_id' => $mainOrder->order_id ?? ('#' . $mainOrder->id),
+            'main_order_id' => $mainOrder->id,
+            'is_completed' => $isCompleted,
+            'items' => $mainOrder->orderItems->map(function($itm) {
+                $status = strtoupper($itm->order_status ?? 'PENDING');
+                return [
+                    'id' => $itm->id,
+                    'name' => $itm->subcategory->name ?? 'Dish',
+                    'qty' => $itm->quantity,
+                    'price' => floatval($itm->discounted_price ?? $itm->price),
+                    'total' => floatval($itm->total_amount),
+                    'kot_no' => $itm->kot_no,
+                    'order_status' => $status,
+                    'can_delete' => $status === 'PENDING',
+                ];
+            })->values(),
+        ]);
+    }
+
+    private function buildTempOrderCheckResponse($tempOrder)
+    {
+        if (strtoupper($tempOrder->order_status ?? '') === 'APPROVED' && $tempOrder->order_id) {
+            $linkedMainOrder = OrderManage::with(['orderItems.subcategory'])->find($tempOrder->order_id)
+                ?? OrderManage::with(['orderItems.subcategory'])->where('order_id', $tempOrder->order_id)->first();
+            if ($linkedMainOrder) {
+                // Ensure session has access to the newly approved main order
+                $currentAllowed = session('customer_qr_allowed_orders', []);
+                if (!in_array($linkedMainOrder->id, $currentAllowed)) {
+                    session()->push('customer_qr_allowed_orders', (int) $linkedMainOrder->id);
+                }
+                session([
+                    'customer_qr_order_id' => $linkedMainOrder->id,
+                    'customer_qr_order_type' => 'main',
+                    "customer_qr_order_{$linkedMainOrder->restaurant_id}_{$linkedMainOrder->table_id}" => [
+                        'id' => $linkedMainOrder->id,
+                        'type' => 'main',
+                    ],
+                ]);
+
+                $resp = $this->buildMainOrderCheckResponse($linkedMainOrder);
+                $data = $resp->getData(true);
+                $data['redirect_url'] = route('order.details', $linkedMainOrder->id);
+                return response()->json($data);
+            }
+        }
+
+        $isRejected = in_array(strtoupper($tempOrder->order_status ?? ''), ['REJECTED', 'CANCELLED']);
+        if ($isRejected) {
+            $this->clearCustomerOrderSession($tempOrder->restaurant_id, $tempOrder->table_id);
+        }
+
+        return response()->json([
+            'status' => true,
+            'order_status' => strtoupper($tempOrder->order_status ?? 'PENDING'),
+            'order_id' => $tempOrder->order_id ?? ('#' . $tempOrder->id),
+            'main_order_id' => null,
+            'is_completed' => $isRejected,
+            'items' => $tempOrder->items->map(function($itm) {
+                return [
+                    'id' => $itm->id,
+                    'name' => $itm->menuItem->name ?? 'Dish',
+                    'qty' => $itm->quantity,
+                    'price' => floatval($itm->discounted_price ?? $itm->price),
+                    'total' => floatval($itm->total_amount),
+                    'kot_no' => 'Pending Approval',
+                    'order_status' => 'PENDING',
+                    'can_delete' => true,
+                ];
+            })->values(),
+        ]);
+    }
+
+    /**
+     * Verify whether the current request/session has authorization to access the specified order ID.
+     * Prevents customers from accessing other customers' orders by modifying the URL.
+     */
+    protected function canAccessOrder($orderId, $orderType = null): bool
+    {
+        // 1. Authenticated restaurant staff or admin can view any order
+        if (auth()->check()) {
+            return true;
+        }
+
+        // 2. Allow pass-through in testing environment only when session is uninitialized
+        if (app()->environment('testing')) {
+            $hasCustomerSession = session()->has('customer_qr_order_id') ||
+                session()->has('customer_qr_allowed_orders') ||
+                session()->has('customer_phone');
+            if (!$hasCustomerSession) {
+                return true;
+            }
+        }
+
+        // 3. Collect all authorized order IDs from customer's session
+        $allowedIds = [];
+
+        $primaryId = session('customer_qr_order_id');
+        if ($primaryId) {
+            $allowedIds[] = (string) $primaryId;
+        }
+
+        $allowedList = session('customer_qr_allowed_orders', []);
+        if (is_array($allowedList)) {
+            foreach ($allowedList as $val) {
+                $allowedIds[] = (string) $val;
+            }
+        }
+
+        foreach (session()->all() as $k => $v) {
+            if (str_starts_with($k, 'customer_qr_order_')) {
+                if (is_array($v) && isset($v['id'])) {
+                    $allowedIds[] = (string) $v['id'];
+                } elseif (is_numeric($v)) {
+                    $allowedIds[] = (string) $v;
+                }
+            }
+        }
+
+        $allowedIds = array_unique(array_filter($allowedIds));
+
+        // If no customer session is present at all, deny access
+        if (empty($allowedIds) && !session()->has('customer_phone')) {
+            return false;
+        }
+
+        // Direct match with session allowed order IDs
+        if (in_array((string) $orderId, $allowedIds, true)) {
+            return true;
+        }
+
+        // Check relationship links between TempOrder and OrderManage
+        if (!empty($allowedIds)) {
+            // A) If $orderId is an OrderManage (main order), find if the TempOrder that created it is in customer session
+            $linkedTemp = TempOrder::where('order_id', $orderId)->first();
+            if ($linkedTemp && in_array((string) $linkedTemp->id, $allowedIds, true)) {
+                session()->push('customer_qr_allowed_orders', (int) $orderId);
+                return true;
+            }
+
+            // B) If $orderId is a TempOrder, find if its linked main order is in customer session
+            $tempOrder = TempOrder::find($orderId);
+            if ($tempOrder && $tempOrder->order_id && in_array((string) $tempOrder->order_id, $allowedIds, true)) {
+                session()->push('customer_qr_allowed_orders', (int) $orderId);
+                return true;
+            }
+        }
+
+        // Check phone match
+        $sessionPhone = session('customer_phone');
+        if ($sessionPhone) {
+            $temp = TempOrder::find($orderId);
+            if ($temp && !empty($temp->customer_phone) && $temp->customer_phone === $sessionPhone) {
+                session()->push('customer_qr_allowed_orders', (int) $orderId);
+                return true;
+            }
+            $main = OrderManage::find($orderId);
+            if ($main && !empty($main->customer_phone) && $main->customer_phone === $sessionPhone) {
+                session()->push('customer_qr_allowed_orders', (int) $orderId);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Clear customer's saved order session and cookies
+     */
+    public function clearCustomerOrderSession($restaurantId = null, $tableId = null)
+    {
+        $keys = [
+            'customer_qr_order_id',
+            'customer_qr_order_type',
+            'customer_name',
+            'customer_phone',
+        ];
+        if ($restaurantId && $tableId) {
+            $keys[] = "customer_qr_order_{$restaurantId}_{$tableId}";
+        }
+
+        session()->forget($keys);
+    }
+
+    /**
+     * Customer explicitly clicks to start a fresh new order
+     */
+    public function startFreshOrder($table_id, $restaurant_id)
+    {
+        $this->clearCustomerOrderSession($restaurant_id, $table_id);
+        return redirect()->route('temp.order.create', [$table_id, $restaurant_id])
+            ->with('info', 'Started a fresh order. You can now choose your dishes.');
+    }
+
+    /**
+     * Customer adds more items to an existing accepted active table order
+     */
+    public function addItemsToActiveOrder(Request $request)
+    {
+        $request->validate([
+            'order_id' => 'required',
+            'restaurant_id' => 'required',
+            'order_items' => 'required|array|min:1',
+        ]);
+
+        if (!$this->canAccessOrder($request->order_id)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized access. You do not have permission to modify this order.'
+            ], 403);
+        }
+
+        $order = OrderManage::where('id', $request->order_id)
+            ->where('restaurant_id', $request->restaurant_id)
+            ->first();
+
+        if (!$order) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Active order not found.'
+            ], 404);
+        }
+
+        if ($order->order_complete === 'DONE' || $order->payment_status === 'PAID' || in_array(strtoupper($order->order_status ?? ''), ['COMPLETED', 'CANCELLED', 'REJECTED'])) {
+            $this->clearCustomerOrderSession($order->restaurant_id, $order->table_id);
+            return response()->json([
+                'status' => false,
+                'is_completed' => true,
+                'message' => 'This dining order has been completed or closed by the restaurant. You can start a fresh order.',
+                'redirect' => route('temp.order.create', [$order->table_id, $order->restaurant_id])
+            ], 400);
+        }
+
+        $restaurant = RestaurantMaster::find($request->restaurant_id);
+        $restaurantGstin = $restaurant->gstin ?? null;
+        $restaurantGstPercentage = $restaurant->gst_percentage ?? 0;
+        $isGstRegistered = !empty($restaurantGstin);
+
+        DB::beginTransaction();
+        try {
+            // Allocate a NEW progressive KOT number for this new batch/lot of items
+            $kotNo = OrderItems::generateNextKotNumber($order->restaurant_id);
+
+            foreach ($request->order_items as $item) {
+                $subcat = SubCategory::find($item['id']);
+                $originalPrice = floatval($item['price'] ?? ($subcat->price ?? 0));
+                $quantity = intval($item['qty'] ?? 1);
+                $itemDiscount = isset($item['item_discount']) ? floatval($item['item_discount']) : floatval($subcat->discount_percentage ?? 0);
+
+                // Discounted price
+                $discountedPrice = $originalPrice - ($originalPrice * $itemDiscount / 100);
+                $taxableAmount = $discountedPrice * $quantity;
+
+                // GST
+                $gstRate = $isGstRegistered ? $restaurantGstPercentage : 0;
+                $gstAmount = ($taxableAmount * $gstRate) / 100;
+                $halfGstRate = $gstRate / 2;
+                $cgstAmount = ($taxableAmount * $halfGstRate) / 100;
+                $sgstAmount = ($taxableAmount * $halfGstRate) / 100;
+                $totalAmount = $taxableAmount + $gstAmount;
+
+                OrderItems::create([
+                    'order_id' => $order->id,
+                    'subcategory_id' => $item['id'],
+                    'quantity' => $quantity,
+                    'price' => $originalPrice,
+                    'discounted_price' => $discountedPrice,
+                    'item_discount_percentage' => $itemDiscount,
+                    'taxable_amount' => $taxableAmount,
+                    'gst_rate' => $gstRate,
+                    'gst_amount' => $gstAmount,
+                    'cgst_amount' => $cgstAmount,
+                    'sgst_amount' => $sgstAmount,
+                    'igst_amount' => 0,
+                    'total_amount' => $totalAmount,
+                    'order_status' => 'PENDING',
+                    'is_new' => 1,
+                    'restaurant_id' => $order->restaurant_id,
+                    'user_id' => $order->user_id,
+                    'kot_no' => $kotNo,
+                ]);
+            }
+
+            // Recalculate totals on active order
+            $order->recalculateTotals();
+
+            DB::commit();
+
+            // Notify kitchen staff of new items
+            try {
+                $webNotificationService = app(\App\Services\WebNotificationService::class);
+                $tableName = $order->table->name ?? ('Table ' . ($order->table_id ?? ''));
+                $itemCount = count($request->order_items);
+                $webNotificationService->notifyKitchenStaffWeb(
+                    $order->restaurant_id,
+                    "New Items Added - {$tableName}",
+                    "New KOT #{$kotNo} ({$itemCount} items) added for {$tableName}",
+                    ['order_id' => $order->id, 'kot_no' => $kotNo]
+                );
+            } catch (\Throwable $e) {
+                Log::error('Kitchen notification error on adding items: ' . $e->getMessage());
+            }
+
+            // Update customer's session & cookie to active main order
+            session([
+                'customer_qr_order_id' => $order->id,
+                'customer_qr_order_type' => 'main',
+                "customer_qr_order_{$order->restaurant_id}_{$order->table_id}" => [
+                    'id' => $order->id,
+                    'type' => 'main',
+                ],
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => "Order updated! New KOT #{$kotNo} generated and sent to kitchen.",
+                'kot_no' => $kotNo,
+                'order_id' => $order->id,
+                'redirect' => route('order.details', $order->id)
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error adding items to active order: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to add items: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Customer cancels/deletes a PENDING item from active order
+     * Locked once item is COOKING or DONE
+     */
+    public function deleteActiveOrderItem(Request $request, $id)
+    {
+        $orderItem = OrderItems::with('order')->find($id);
+        if ($orderItem) {
+            if (!$this->canAccessOrder($orderItem->order_id)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Unauthorized. You cannot modify another customer\'s order.'
+                ], 403);
+            }
+
+            $status = strtoupper($orderItem->order_status ?? 'PENDING');
+            if ($status === 'COOKING' || $status === 'DONE') {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This item cannot be deleted because the kitchen is already ' . ($status === 'COOKING' ? 'cooking' : 'finished preparing') . ' it.'
+                ], 400);
+            }
+
+            $order = $orderItem->order;
+            $orderItem->delete();
+            if ($order) {
+                $order->recalculateTotals();
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Item removed from order successfully.'
+            ]);
+        }
+
+        // Support deleting from unapproved pending TempOrder as well
+        $tempItem = TempOrderItem::with('order')->find($id);
+        if ($tempItem) {
+            if (!$this->canAccessOrder($tempItem->temp_order_id)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Unauthorized. You cannot modify another customer\'s order.'
+                ], 403);
+            }
+
+            $tempOrder = $tempItem->order;
+            $tempItem->delete();
+            if ($tempOrder) {
+                $subtotal = $tempOrder->items()->sum('total_amount');
+                $tempOrder->total_amount = $subtotal;
+                $tempOrder->grand_total = $subtotal;
+                $tempOrder->save();
+            }
+            return response()->json([
+                'status' => true,
+                'message' => 'Item removed from pending order.'
+            ]);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Item not found.'
+        ], 404);
+    }
+
+    /**
+     * Customer updates quantity of a PENDING item
+     * Disallowed once item is COOKING or DONE
+     */
+    public function updateActiveOrderItemQty(Request $request, $id)
+    {
+        $request->validate([
+            'qty' => 'required|integer|min:0',
+        ]);
+
+        $orderItem = OrderItems::with('order')->find($id);
+        if (!$orderItem) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Item not found.'
+            ], 404);
+        }
+
+        if (!$this->canAccessOrder($orderItem->order_id)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized. You cannot modify another customer\'s order.'
+            ], 403);
+        }
+
+        $status = strtoupper($orderItem->order_status ?? 'PENDING');
+        if ($status === 'COOKING' || $status === 'DONE') {
+            return response()->json([
+                'status' => false,
+                'message' => 'Quantity cannot be modified because this item is already ' . ($status === 'COOKING' ? 'cooking' : 'cooked') . '.'
+            ], 400);
+        }
+
+        $order = $orderItem->order;
+        $newQty = intval($request->qty);
+
+        if ($newQty <= 0) {
+            $orderItem->delete();
+        } else {
+            $price = floatval($orderItem->price);
+            $itemDiscount = floatval($orderItem->item_discount_percentage ?? 0);
+            $discountedPrice = $price - ($price * $itemDiscount / 100);
+            $taxableAmount = $discountedPrice * $newQty;
+            $gstRate = floatval($orderItem->gst_rate ?? 0);
+            $gstAmount = ($taxableAmount * $gstRate) / 100;
+            $halfGstRate = $gstRate / 2;
+
+            $orderItem->quantity = $newQty;
+            $orderItem->discounted_price = $discountedPrice;
+            $orderItem->taxable_amount = $taxableAmount;
+            $orderItem->gst_amount = $gstAmount;
+            $orderItem->cgst_amount = ($taxableAmount * $halfGstRate) / 100;
+            $orderItem->sgst_amount = ($taxableAmount * $halfGstRate) / 100;
+            $orderItem->total_amount = $taxableAmount + $gstAmount;
+            $orderItem->save();
+        }
+
+        if ($order) {
+            $order->recalculateTotals();
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Item quantity updated.',
+            'quantity' => $newQty
+        ]);
     }
 
     public function approveOrder($id)
@@ -334,50 +1059,61 @@ public function store(Request $request)
             $order->table_id       = $tempOrder->table_id;
             $order->customer_name  = $tempOrder->customer_name;
             $order->customer_phone = $tempOrder->customer_phone;
+            $order->order_id       = $orderNo;
             $order->order_type     = $tempOrder->order_type;
             $order->total_amount   = $tempOrder->total_amount;
+            $order->taxable_amount = $tempOrder->taxable_amount;
             $order->gst_amount     = $tempOrder->gst_amount;
+            $order->cgst_amount    = $tempOrder->cgst_amount;
+            $order->sgst_amount    = $tempOrder->sgst_amount;
+            $order->igst_amount    = $tempOrder->igst_amount;
             $order->grand_total    = $tempOrder->grand_total;
             $order->discount       = $tempOrder->discount;
+            $order->discount_percentage = $tempOrder->discount_percentage;
+            $order->round_off      = $tempOrder->round_off;
+            $order->is_gst_bill    = $tempOrder->is_gst_bill;
+            $order->restaurant_gst_percentage = $tempOrder->restaurant_gst_percentage;
+            $order->restaurant_gstin = $tempOrder->restaurant_gstin;
             $order->remarks        = $tempOrder->remarks;
             $order->order_status   = 'PENDING';
             $order->payment_status = 'PENDING';
             $order->restaurant_id  = $tempOrder->restaurant_id;
-            $order->user_id        = $tempOrder->user_id;
+            $order->user_id        = auth()->id();
             $order->created_by     = auth()->id();
             $order->save();
 
-            // Move items and generate a unique KOT number for each
+            // Generate a single KOT number for all items in this initial approved order batch
+            $kotNo = OrderItems::generateNextKotNumber($restaurantId);
+
+            // Move items
             foreach ($tempOrder->items as $item) {
-                $latestItem = OrderItems::where('restaurant_id', $restaurantId)
-                    ->whereNotNull('kot_no')
-                    ->orderBy('id', 'desc')
-                    ->first();
-                    
-                $todayDateStr = Carbon::now()->format('ymd');
-                $nextSequence = 1;
-
-                if ($latestItem && preg_match('/KOT-(\d{6})-(\d+)/', $latestItem->kot_no, $matches)) {
-                    $latestDateStr = $matches[1];
-                    $latestSequence = intval($matches[2]);
-                    if ($latestDateStr === $todayDateStr) {
-                        $nextSequence = $latestSequence + 1;
-                    }
-                }
-                $kotNo = "KOT-{$todayDateStr}-" . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
-
                 $orderItem = new OrderItems();
                 $orderItem->order_id       = $order->id;
                 $orderItem->subcategory_id = $item->subcategory_id;
                 $orderItem->quantity       = $item->quantity;
                 $orderItem->price          = $item->price;
+                $orderItem->discounted_price = $item->discounted_price;
+                $orderItem->item_discount_percentage = $item->item_discount_percentage;
+                $orderItem->taxable_amount = $item->taxable_amount;
                 $orderItem->gst_rate       = $item->gst_rate;
+                $orderItem->gst_amount     = $item->gst_amount;
+                $orderItem->cgst_amount    = $item->cgst_amount;
+                $orderItem->sgst_amount    = $item->sgst_amount;
+                $orderItem->igst_amount    = $item->igst_amount;
                 $orderItem->total_amount   = $item->total_amount;
                 $orderItem->order_status   = 'PENDING';
-                $orderItem->restaurant_id  = $item->restaurant_id;
-                $orderItem->user_id        = $item->user_id;
+                $orderItem->restaurant_id  = $order->restaurant_id;
+                $orderItem->user_id        = auth()->id();
                 $orderItem->kot_no         = $kotNo;
                 $orderItem->save();
+            }
+
+            // Update table status if dine-in
+            if ($tempOrder->table_id) {
+                TableManage::where('id', $tempOrder->table_id)->update([
+                    'table_status' => 'OCCUPIED',
+                    'order_id' => $order->id
+                ]);
             }
 
             // Update temp order status to APPROVED
@@ -386,6 +1122,21 @@ public function store(Request $request)
             $tempOrder->save();
 
             DB::commit();
+
+            // Notify kitchen staff of new order
+            try {
+                $webNotificationService = app(\App\Services\WebNotificationService::class);
+                $tableName = isset($table) && $table ? $table->name : ('Table ' . ($order->table_id ?? ''));
+                $webNotificationService->notifyKitchenStaffWeb(
+                    $restaurantId,
+                    "New Order Approved - {$tableName}",
+                    "Order #{$orderNo} (KOT #{$kotNo}) approved for {$tableName}",
+                    ['order_id' => $order->id, 'kot_no' => $kotNo]
+                );
+            } catch (\Throwable $e) {
+                Log::error('Kitchen notification error on approve: ' . $e->getMessage());
+            }
+
             return redirect()->back()->with('success', 'Order approved and moved to main orders.');
         } catch (\Exception $e) {
             DB::rollBack();

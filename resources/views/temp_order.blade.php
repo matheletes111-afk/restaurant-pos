@@ -1119,6 +1119,420 @@
       .btn-place-order-master { padding: 12px 24px; font-size: 0.95rem; }
       .floating-grand-total { font-size: 1.25rem; }
     }
+
+    /* Active Dining Order & Live Kitchen Panel */
+    .active-order-panel {
+      background: #ffffff;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 94, 20, 0.25);
+      box-shadow: 0 10px 30px rgba(255, 94, 20, 0.08);
+      margin-bottom: 28px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .active-order-header-bar {
+      background: linear-gradient(135deg, rgba(255, 94, 20, 0.06) 0%, rgba(255, 140, 66, 0.09) 100%);
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid rgba(255, 94, 20, 0.15);
+    }
+
+    .active-title-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .active-pulse-ring {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.15);
+      border: 2px solid #10b981;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .pulse-core {
+      width: 12px;
+      height: 12px;
+      background: #10b981;
+      border-radius: 50%;
+      animation: pulseCoreAnim 1.6s infinite;
+    }
+
+    @keyframes pulseCoreAnim {
+      0% { transform: scale(0.85); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.85); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .active-session-tag {
+      font-size: 0.73rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #059669;
+    }
+
+    .active-table-order-title {
+      font-size: 1.18rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin: 0;
+    }
+
+    .active-badge-status-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-active-live {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-toggle-active-items {
+      background: #ffffff;
+      color: var(--text-body);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-toggle-active-items:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .active-items-collapsible {
+      padding: 20px 24px;
+      background: #ffffff;
+    }
+
+    .active-items-info-strip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--surface-3);
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-body);
+    }
+
+    /* Clean, Elegant & Responsive Active Dishes List */
+    .active-dishes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .active-dish-row {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+
+    .active-dish-row:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      background: #fafbfc;
+    }
+
+    .active-dish-main-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .active-dish-qty-chip {
+      background: rgba(255, 94, 20, 0.1);
+      color: var(--primary);
+      font-weight: 800;
+      font-size: 0.82rem;
+      padding: 4px 9px;
+      border-radius: 8px;
+      flex-shrink: 0;
+      letter-spacing: -0.01em;
+    }
+
+    .active-dish-title-text {
+      font-weight: 700;
+      color: var(--text-main);
+      font-size: 0.98rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .active-dish-status-price-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+
+    .active-dish-exact-price {
+      font-size: 1.08rem;
+      font-weight: 800;
+      color: var(--text-main);
+      min-width: 70px;
+      text-align: right;
+      letter-spacing: -0.01em;
+    }
+
+    .active-dish-row:hover .active-dish-exact-price {
+      color: var(--primary);
+    }
+
+    .active-dish-action-slot {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .dish-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+
+    .dish-status-pill.status-pending {
+      background: #fffbeb;
+      color: #b45309;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+
+    .dish-status-pill.status-cooking {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+    }
+
+    .dish-status-pill.status-done {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    .btn-cancel-active-dish {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      padding: 0;
+    }
+
+    .btn-cancel-active-dish:hover {
+      background: #dc2626;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+      transform: scale(1.05);
+    }
+
+    .active-items-count-badge {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: rgba(255, 94, 20, 0.08);
+      padding: 3px 10px;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 94, 20, 0.2);
+    }
+
+    .active-section-heading {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+    }
+
+    .btn-refresh-status {
+      background: #ffffff;
+      color: var(--primary);
+      border: 1px solid rgba(255, 94, 20, 0.35);
+      border-radius: var(--radius-full);
+      padding: 5px 13px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      white-space: nowrap;
+    }
+
+    .btn-refresh-status:hover {
+      background: var(--surface-2);
+      border-color: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(255, 94, 20, 0.18);
+    }
+
+    .btn-refresh-status:active {
+      transform: translateY(0);
+    }
+
+    .btn-refresh-status:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .already-ordered-ribbon {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      background: rgba(15, 23, 42, 0.90);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #34d399;
+      font-size: 0.74rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      z-index: 4;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    @media (max-width: 576px) {
+      .active-dish-row {
+        padding: 10px 12px;
+        gap: 8px;
+      }
+      .active-dish-main-info {
+        gap: 8px;
+      }
+      .active-dish-title-text {
+        font-size: 0.9rem;
+      }
+      .active-dish-qty-chip {
+        font-size: 0.76rem;
+        padding: 3px 7px;
+      }
+      .active-dish-status-price-wrap {
+        gap: 8px;
+      }
+      .active-dish-exact-price {
+        font-size: 0.98rem;
+        min-width: auto;
+      }
+      .dish-status-pill {
+        padding: 3px 8px;
+        font-size: 0.7rem;
+      }
+      .btn-cancel-active-dish {
+        width: 28px;
+        height: 28px;
+        font-size: 0.72rem;
+      }
+    }
+
+    .active-order-footer-note {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      border: 1px solid var(--border);
+    }
+
+    .add-more-hint {
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 0.86rem;
+    }
+
+    /* Toast for temp order */
+    .temp-toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(40px);
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 9999px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .temp-toast.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
   </style>
 </head>
 <body>
@@ -1204,30 +1618,167 @@
     </div>
   </div>
 
-  <!-- Guest Details Form -->
-  <div class="guest-info-card">
-    <div class="card-heading-clean">
-      <div class="card-heading-icon"><i class="fas fa-user"></i></div>
-      <h4>Guest Information</h4>
+  @if(isset($pendingTempOrder) && $pendingTempOrder)
+    <!-- Notice: Order is awaiting approval -->
+    <div class="pending-notice-card" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 20px; padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <div style="width: 44px; height: 44px; border-radius: 50%; background: #f59e0b; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;">
+          <i class="fas fa-hourglass-half"></i>
+        </div>
+        <div>
+          <h5 style="margin: 0 0 3px; font-weight: 800; color: #92400e;">Order Placed &bull; Awaiting Restaurant Approval</h5>
+          <p style="margin: 0; font-size: 0.88rem; color: #b45309;">Your initial order is pending confirmation from the restaurant. Once approved, you can add more dishes anytime.</p>
+        </div>
+      </div>
+      <a href="{{ route('order.success', $pendingTempOrder->id) }}" class="btn" style="background: #d97706; color: #fff; font-weight: 700; border-radius: 9999px; padding: 8px 20px; font-size: 0.86rem; text-decoration: none;">
+        <i class="fas fa-clock me-1"></i> Check Status
+      </a>
     </div>
-    <div class="row">
+  @endif
+
+  @if(isset($activeOrder) && $activeOrder)
+    <!-- Active Dining Session & Live Kitchen Status Tracker -->
+    <div class="active-order-panel" id="activeOrderPanel">
+      <div class="active-order-header-bar">
+        <div class="active-title-group">
+          <div class="active-pulse-ring"><span class="pulse-core"></span></div>
+          <div>
+            <div class="active-session-tag">Active Dining Session</div>
+            <h3 class="active-table-order-title">
+              Table {{ $table_details->name ?? '' }} &bull; Order #{{ $activeOrder->order_id }}
+            </h3>
+            <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary); margin-top: 2px;">
+              Active Bill: ₹{{ number_format($activeOrder->grand_total, 2) }} &bull; {{ $activeOrder->orderItems->count() }} dishes sent to kitchen
+            </div>
+          </div>
+        </div>
+        <div class="active-badge-status-wrap">
+          <button type="button" class="btn-refresh-status" title="Refresh Kitchen Status">
+            <i class="fas fa-sync-alt"></i> <span>Refresh</span>
+          </button>
+          <a href="{{ route('order.details', $activeOrder->id) }}" class="btn-view-details-pill" style="display: inline-flex; align-items: center; gap: 5px; background: #ffffff; color: var(--primary); font-size: 0.8rem; font-weight: 700; padding: 5px 12px; border-radius: 9999px; border: 1px solid var(--primary); text-decoration: none; transition: all 0.2s ease;">
+            <i class="fas fa-file-invoice"></i> View Details
+          </a>
+          <span class="badge-active-live">
+            <i class="fas fa-fire-burner"></i> In Kitchen
+          </span>
+          <button type="button" class="btn-toggle-active-items" id="toggleActiveItemsBtn">
+            <span id="toggleActiveText">Hide Dishes</span>
+            <i class="fas fa-chevron-up" id="toggleActiveIcon"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="active-items-collapsible" id="activeItemsCollapsible">
+        <div class="active-items-info-strip">
+          <div class="active-section-heading">
+            <i class="fas fa-fire-burner text-primary me-2"></i> Dishes Sent to Kitchen &bull; Live Status &amp; Pricing:
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" class="btn-refresh-status" id="btnRefreshStatus" title="Refresh Kitchen Status">
+              <i class="fas fa-sync-alt"></i> <span>Refresh Status</span>
+            </button>
+            <span class="active-items-count-badge">
+              {{ $activeOrder->orderItems->count() }} {{ \Illuminate\Support\Str::plural('Item', $activeOrder->orderItems->count()) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="active-dishes-list" id="activeDishesGrid">
+          @foreach($activeOrder->orderItems as $actItem)
+            @php
+              $actName = $actItem->subcategory->name ?? 'Dish';
+              $actStatus = strtoupper($actItem->order_status ?? 'PENDING');
+              $actPrice = floatval($actItem->discounted_price ?: ($actItem->price ?: ($actItem->total_amount / max(1, $actItem->quantity))));
+              $actTotal = floatval($actItem->total_amount ?: ($actPrice * $actItem->quantity));
+            @endphp
+            <div class="active-dish-row" id="activeCard_{{ $actItem->id }}" data-item-id="{{ $actItem->id }}">
+              <div class="active-dish-main-info">
+                <span class="active-dish-qty-chip">{{ $actItem->quantity }}x</span>
+                <span class="active-dish-title-text">{{ $actName }}</span>
+              </div>
+
+              <div class="active-dish-status-price-wrap">
+                <span class="dish-status-pill status-{{ strtolower($actStatus) }}" id="activeStatusPill_{{ $actItem->id }}">
+                  @if($actStatus === 'COOKING')
+                    <i class="fas fa-fire-burner"></i> Cooking
+                  @elseif($actStatus === 'DONE')
+                    <i class="fas fa-check-circle"></i> Cooked
+                  @else
+                    <i class="fas fa-hourglass-half"></i> Pending
+                  @endif
+                </span>
+
+                <span class="active-dish-exact-price" id="activeItemPrice_{{ $actItem->id }}">
+                  ₹{{ number_format($actTotal, 2) }}
+                </span>
+
+                <div class="active-dish-action-slot" id="activeItemActions_{{ $actItem->id }}">
+                  @if($actStatus === 'PENDING')
+                    <button type="button" class="btn-cancel-active-dish" onclick="cancelActiveOrderItem({{ $actItem->id }})" title="Cancel pending dish">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  @endif
+                </div>
+              </div>
+            </div>
+          @endforeach
+        </div>
+
+        <div class="active-order-footer-note" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <span>Current Active Total: <strong style="font-size: 1.15rem; color: var(--primary);">₹{{ number_format($activeOrder->grand_total, 2) }}</strong> ({{ $activeOrder->orderItems->count() }} dishes sent to kitchen)</span>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <a href="{{ route('order.details', $activeOrder->id) }}" style="color: var(--primary); font-weight: 700; font-size: 0.84rem; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="fas fa-receipt"></i> Full Order Details &bull; Status &rarr;
+            </a>
+            <span class="add-more-hint"><i class="fas fa-arrow-down text-primary me-1"></i> Add items below</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  @endif
+
+  <!-- Guest Details Form -->
+  <div class="guest-info-card" @if(isset($activeOrder) && $activeOrder) style="background: rgba(248, 250, 252, 0.7); border-color: #cbd5e1;" @endif>
+    <div class="card-heading-clean" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="card-heading-icon"><i class="fas fa-user"></i></div>
+        <h4 style="margin: 0;">
+          Guest Information
+          @if(isset($activeOrder) && $activeOrder)
+            <span style="font-size: 0.76rem; font-weight: 700; color: #059669; background: #ecfdf5; border: 1px solid rgba(16,185,129,0.3); padding: 3px 10px; border-radius: 9999px; margin-left: 8px;">
+              <i class="fas fa-check me-1"></i> Active Table Guest
+            </span>
+          @endif
+        </h4>
+      </div>
+      @if(isset($activeOrder) && $activeOrder)
+        <a href="{{ route('temp.order.fresh', [$table_id, $restaurant_id]) }}" class="btn-start-fresh" onclick="return confirm('Start a fresh new order?');" style="font-size: 0.8rem; font-weight: 700; color: #64748b; background: #fff; border: 1px solid #cbd5e1; padding: 6px 14px; border-radius: 9999px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+          <i class="fas fa-plus-circle text-primary"></i> Start Fresh Order
+        </a>
+      @endif
+    </div>
+    <div class="row mt-3">
       <div class="col-md-6 mb-3 mb-md-0">
         <label class="input-label-clean">Full Name <span class="text-danger">*</span></label>
         <div class="input-icon-group">
-          <input type="text" id="customer_name" class="form-input-premium" placeholder="e.g. Rahul Sharma" autocomplete="name">
+          <input type="text" id="customer_name" class="form-input-premium" placeholder="e.g. Sayan Ghosh" autocomplete="name"
+            value="{{ $activeOrder->customer_name ?? (session('customer_name') ?? '') }}" @if(isset($activeOrder) && $activeOrder) readonly style="background: #f1f5f9; cursor: not-allowed;" @endif>
           <i class="fas fa-user"></i>
         </div>
       </div>
       <div class="col-md-6">
         <label class="input-label-clean">Mobile Number <span class="text-danger">*</span></label>
         <div class="input-icon-group">
-          <input type="tel" id="phone" class="form-input-premium" placeholder="e.g. 9876543210" autocomplete="tel">
+          <input type="tel" id="phone" class="form-input-premium" placeholder="e.g. 9876543210" autocomplete="tel"
+            value="{{ $activeOrder->customer_phone ?? (session('customer_phone') ?? '') }}" @if(isset($activeOrder) && $activeOrder) readonly style="background: #f1f5f9; cursor: not-allowed;" @endif>
           <i class="fas fa-phone-alt"></i>
         </div>
       </div>
     </div>
     <input type="hidden" id="table_id" value="{{ $table_id }}">
     <input type="hidden" id="restaurant_id" value="{{ $restaurant_id }}">
+    <input type="hidden" id="active_order_id" value="{{ $activeOrder->id ?? '' }}">
     <input type="hidden" id="is_gst_registered" value="{{ !empty($restaurant_details?->gstin) ? 'true' : 'false' }}">
     <input type="hidden" id="gst_percentage" value="{{ $restaurant_details->gst_percentage ?? 0 }}">
   </div>
@@ -1276,6 +1827,15 @@
 
   <!-- Menu Dishes Container -->
   <div class="menu-dishes-container" id="menuDishesContainer">
+    @php
+      $activeOrderedDishCounts = [];
+      if (isset($activeOrder) && $activeOrder && $activeOrder->orderItems) {
+        foreach ($activeOrder->orderItems as $aItm) {
+          $sid = $aItm->subcategory_id;
+          $activeOrderedDishCounts[$sid] = ($activeOrderedDishCounts[$sid] ?? 0) + $aItm->quantity;
+        }
+      }
+    @endphp
     @if($totalDishesCount > 0)
       @foreach($categories as $cat)
         @if($cat->subcategories->count() > 0)
@@ -1294,6 +1854,7 @@
                   $isVeg = !in_array($rawType, ['non-veg', 'non_veg', 'non veg', 'nonveg', 'egg']);
                   $hasDiscount = ($item->discount_percentage ?? 0) > 0;
                   $discountedPrice = $hasDiscount ? ($item->price - ($item->price * $item->discount_percentage / 100)) : $item->price;
+                  $alreadyOrderedQty = $activeOrderedDishCounts[$item->id] ?? 0;
                 @endphp
                 <div class="food-card-wrapper" data-id="{{ $item->id }}" data-category-id="{{ $cat->id }}" data-name="{{ strtolower($item->name) }}" data-desc="{{ strtolower($item->description ?? '') }}" data-type="{{ $isVeg ? 'veg' : 'non-veg' }}">
                   <div class="food-card">
@@ -1311,6 +1872,13 @@
                         </div>
                       </div>
 
+                      <!-- Already Ordered Badge -->
+                      @if($alreadyOrderedQty > 0)
+                        <div class="already-ordered-ribbon" title="Currently ordered for this table">
+                          <i class="fas fa-check-circle"></i> {{ $alreadyOrderedQty }}x Ordered
+                        </div>
+                      @endif
+
                       <!-- Discount Tag -->
                       @if($hasDiscount)
                         <div class="discount-ribbon">
@@ -1321,6 +1889,11 @@
 
                     <div class="food-card-body">
                       <h3 class="food-item-title">{{ $item->name }}</h3>
+                      @if($alreadyOrderedQty > 0)
+                        <div style="font-size: 0.78rem; font-weight: 700; color: #059669; margin-bottom: 6px; display: inline-flex; align-items: center; gap: 5px;">
+                          <i class="fas fa-fire-burner"></i> {{ $alreadyOrderedQty }}x active in kitchen
+                        </div>
+                      @endif
                       <p class="food-item-desc">{{ $item->description ?? 'Expertly crafted dish prepared with the freshest authentic ingredients.' }}</p>
 
                       <div class="food-card-footer">
@@ -1370,11 +1943,84 @@
   <div class="order-summary-card" id="orderSummaryCard">
     <div class="card-heading-clean">
       <div class="card-heading-icon"><i class="fas fa-receipt"></i></div>
-      <h4>Your Order Tray</h4>
+      @if(isset($activeOrder) && $activeOrder)
+        <h4>Add Dishes to Order</h4>
+      @else
+        <h4>Your Order Tray</h4>
+      @endif
     </div>
 
+    @if(isset($activeOrder) && $activeOrder && $activeOrder->orderItems && $activeOrder->orderItems->count() > 0)
+      <!-- Itemized Previously Ordered Dishes Section -->
+      <div class="previously-ordered-tray-wrap mb-4" id="previouslyOrderedTableContainer">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <h5 style="margin: 0; font-size: 1rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-fire-burner text-primary"></i> Previously Ordered Dishes (In Kitchen)
+          </h5>
+          <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">
+            {{ $activeOrder->orderItems->count() }} items &bull; <strong style="color: var(--primary);">₹{{ number_format($activeOrder->grand_total, 2) }}</strong>
+          </span>
+        </div>
+        <div class="tray-table-container" style="display: block; margin-bottom: 16px; background: #fafafa;">
+          <table class="tray-table">
+            <thead>
+              <tr>
+                <th>Dish</th>
+                <th style="text-align: center;">Quantity</th>
+                <th>Unit Price</th>
+                <th>Kitchen Status</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach($activeOrder->orderItems as $actItm)
+                @php
+                  $pName = $actItm->subcategory->name ?? 'Dish';
+                  $pPrice = floatval($actItm->discounted_price ?: ($actItm->price ?: ($actItm->total_amount / max(1, $actItm->quantity))));
+                  $pTotal = floatval($actItm->total_amount ?: ($pPrice * $actItm->quantity));
+                  $pStatus = strtoupper($actItm->order_status ?? 'PENDING');
+                @endphp
+                <tr>
+                  <td>
+                    <span class="tray-item-title">{{ $pName }}</span>
+                    @if(!empty($actItm->kot_no))
+                      <span class="kot-badge" style="font-size: 0.7rem; padding: 2px 7px;"><i class="fas fa-receipt"></i> {{ $actItm->kot_no }}</span>
+                    @endif
+                  </td>
+                  <td style="text-align: center;">
+                    <span style="display: inline-block; font-weight: 800; background: var(--surface-3); border-radius: 6px; padding: 3px 10px; font-size: 0.88rem; color: var(--text-main);">
+                      {{ $actItm->quantity }}x
+                    </span>
+                  </td>
+                  <td style="font-weight: 600; color: var(--text-muted);">₹{{ number_format($pPrice, 2) }}</td>
+                  <td>
+                    <span class="dish-status-pill status-{{ strtolower($pStatus) }}">
+                      @if($pStatus === 'COOKING')
+                        <i class="fas fa-fire-burner"></i> Cooking
+                      @elseif($pStatus === 'DONE')
+                        <i class="fas fa-check-circle"></i> Cooked
+                      @else
+                        <i class="fas fa-hourglass-half"></i> Pending
+                      @endif
+                    </span>
+                  </td>
+                  <td style="font-weight: 800; color: var(--text-main); font-size: 0.98rem;">₹{{ number_format($pTotal, 2) }}</td>
+                </tr>
+              @endforeach
+            </tbody>
+          </table>
+        </div>
+      </div>
+    @endif
+
     <div id="orderItemsContainer">
-      <div class="tray-table-container" style="display: none;">
+      @if(isset($activeOrder) && $activeOrder)
+        <div style="font-size: 0.92rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+          <i class="fas fa-plus-circle text-primary"></i> New Dishes to Add
+        </div>
+      @endif
+
+      <div class="tray-table-container" id="newItemsTableContainer" style="display: none;">
         <table class="tray-table">
           <thead>
             <tr>
@@ -1396,14 +2042,26 @@
 
       <div id="emptyOrderState" class="empty-tray-state">
         <div class="empty-tray-icon"><i class="fas fa-shopping-basket"></i></div>
-        <h5>Your Tray is Empty</h5>
-        <p>Explore our delicious menu above and click <strong>Add +</strong> on any dish to begin your order.</p>
+        @if(isset($activeOrder) && $activeOrder)
+          <h5>Your New Item Tray is Empty</h5>
+          <p>Browse our menu above and click <strong>Add +</strong> on any dish to add more items to your table order.</p>
+        @else
+          <h5>Your Tray is Empty</h5>
+          <p>Explore our delicious menu above and click <strong>Add +</strong> on any dish to begin your order.</p>
+        @endif
       </div>
     </div>
 
     <div class="tray-totals-box">
+      @if(isset($activeOrder) && $activeOrder)
+        <div class="tray-calc-row" style="color: var(--text-main); font-weight: 700; border-bottom: 1px dashed #cbd5e1; padding-bottom: 10px; margin-bottom: 8px;">
+          <span><i class="fas fa-receipt text-primary me-1"></i> Active Table Bill (In Kitchen)</span>
+          <span style="font-size: 1.15rem; color: var(--primary);">₹<span id="active_order_amount">{{ number_format($activeOrder->grand_total, 2) }}</span></span>
+        </div>
+      @endif
+
       <div class="tray-calc-row">
-        <span>Original Subtotal</span>
+        <span>@if(isset($activeOrder) && $activeOrder) New Items Original Subtotal @else Original Subtotal @endif</span>
         <span>₹<span id="original_subtotal">0.00</span></span>
       </div>
       <div class="tray-calc-row discount-row">
@@ -1420,10 +2078,17 @@
           <span>₹<span id="gst_amount">0.00</span></span>
         </div>
       @endif
-      <div class="tray-calc-row grand-total-row">
-        <span>Grand Total</span>
-        <span class="grand-total-amount">₹<span id="final_total">0.00</span></span>
+      <div class="tray-calc-row" style="font-weight: 700; color: var(--text-main);">
+        <span>@if(isset($activeOrder) && $activeOrder) New Items Total @else Grand Total @endif</span>
+        <span style="font-size: 1.15rem;">₹<span id="final_total">0.00</span></span>
       </div>
+
+      @if(isset($activeOrder) && $activeOrder)
+        <div class="tray-calc-row grand-total-row" style="margin-top: 14px; padding-top: 16px; border-top: 2px solid var(--text-main);">
+          <span>Combined Total Bill (Active + New)</span>
+          <span class="grand-total-amount">₹<span id="combined_final_total">{{ number_format($activeOrder->grand_total, 2) }}</span></span>
+        </div>
+      @endif
     </div>
   </div>
 
@@ -1436,11 +2101,21 @@
     <span class="floating-grand-total">₹<span id="floatingGrandTotal">0.00</span></span>
   </div>
 
-  <button type="button" class="btn-place-order-master" id="placeOrderBtn" disabled>
-    <span>Confirm Order</span>
-    <i class="fas fa-arrow-right"></i>
-  </button>
+  <div id="floatingBarBtnWrap">
+    @if(isset($activeOrder) && $activeOrder)
+      <a href="{{ route('order.details', $activeOrder->id) }}" class="btn-place-order-master" style="text-decoration: none;">
+        <i class="fas fa-file-invoice"></i> View Live Status
+      </a>
+    @else
+      <button type="button" class="btn-place-order-master" id="placeOrderBtn" disabled>
+        <span>Confirm Order</span>
+        <i class="fas fa-arrow-right"></i>
+      </button>
+    @endif
+  </div>
 </div>
+
+<div id="tempToast" class="temp-toast"><i class="fas fa-check-circle text-success"></i> <span id="tempToastMsg">Success</span></div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -1449,6 +2124,8 @@
 let cart = [];
 let isGstRegistered = $('#is_gst_registered').val() === 'true';
 let gstPercentage = parseFloat($('#gst_percentage').val()) || 0;
+let hasActiveOrder = {{ isset($activeOrder) && $activeOrder ? 'true' : 'false' }};
+let activeOrderTotal = parseFloat('{{ $activeOrder->grand_total ?? 0 }}') || 0;
 
 function calculateItemDetails(originalPrice, qty, discountPercent = 0) {
     let discountedPrice = originalPrice - (originalPrice * discountPercent / 100);
@@ -1482,18 +2159,48 @@ function syncCardCounters() {
 function updateEmptyState() {
     let totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
     $('#topCartBadge').text(totalQty);
-    $('#floatingItemCount').text(totalQty);
 
     if (cart.length === 0) {
         $('#emptyOrderState').show();
-        $('.tray-table-container').hide();
+        $('#newItemsTableContainer').hide();
         $('#placeOrderBtn').prop('disabled', true);
-        $('#floatingBar').css('transform', 'translateY(100%)');
+
+        if (hasActiveOrder) {
+            $('#floatingItemCount').text('0 New');
+            $('#floatingGrandTotal').text(activeOrderTotal.toFixed(2));
+            $('#floatingBar').css('transform', 'translateY(0)');
+            $('#floatingBarBtnWrap').html(`
+                <a href="{{ route('order.details', $activeOrder->id ?? 0) }}" class="btn-place-order-master" style="text-decoration:none;">
+                    <i class="fas fa-file-invoice"></i> View Live Status
+                </a>
+            `);
+        } else {
+            $('#floatingItemCount').text('0');
+            $('#floatingGrandTotal').text('0.00');
+            $('#floatingBar').css('transform', 'translateY(100%)');
+        }
     } else {
         $('#emptyOrderState').hide();
-        $('.tray-table-container').show();
+        $('#newItemsTableContainer').show();
         $('#placeOrderBtn').prop('disabled', false);
         $('#floatingBar').css('transform', 'translateY(0)');
+
+        if (hasActiveOrder) {
+            $('#floatingItemCount').text(totalQty + ' New');
+            $('#floatingBarBtnWrap').html(`
+                <button type="button" class="btn-place-order-master" id="placeOrderBtn">
+                    <span><i class="fas fa-plus-circle me-1"></i> Save &amp; Order</span>
+                </button>
+            `);
+        } else {
+            $('#floatingItemCount').text(totalQty);
+            $('#floatingBarBtnWrap').html(`
+                <button type="button" class="btn-place-order-master" id="placeOrderBtn">
+                    <span>Confirm Order</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            `);
+        }
     }
 }
 
@@ -1550,7 +2257,18 @@ function refreshTable() {
     $('#taxable_amount').text(totalTaxable.toFixed(2));
     if (isGstRegistered) $('#gst_amount').text(totalGst.toFixed(2));
     $('#final_total').text(grandTotal.toFixed(2));
-    $('#floatingGrandTotal').text(grandTotal.toFixed(2));
+
+    if (hasActiveOrder) {
+        let combined = activeOrderTotal + grandTotal;
+        $('#combined_final_total').text(combined.toFixed(2));
+        if (cart.length > 0) {
+            $('#floatingGrandTotal').text(combined.toFixed(2));
+        } else {
+            $('#floatingGrandTotal').text(activeOrderTotal.toFixed(2));
+        }
+    } else {
+        $('#floatingGrandTotal').text(grandTotal.toFixed(2));
+    }
 
     syncCardCounters();
     updateEmptyState();
@@ -1784,13 +2502,70 @@ $('#clearSearchBtn').on('click', function() {
     applyFilters();
 });
 
-/* Place Order Submission */
-$('#placeOrderBtn').on('click', function() {
+function showTempToast(msg, isSuccess = true) {
+    const toast = document.getElementById('tempToast');
+    const msgEl = document.getElementById('tempToastMsg');
+    if (!toast || !msgEl) return;
+    msgEl.textContent = msg;
+    toast.querySelector('i').className = isSuccess ? 'fas fa-check-circle text-success' : 'fas fa-exclamation-triangle text-danger';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3200);
+}
+
+// Toggle Active Order Items view
+$('#toggleActiveItemsBtn').on('click', function() {
+    let $content = $('#activeItemsCollapsible');
+    let isVisible = $content.is(':visible');
+    $content.slideToggle(200);
+    $('#toggleActiveText').text(isVisible ? 'Show Dishes' : 'Hide Dishes');
+    $('#toggleActiveIcon').attr('class', isVisible ? 'fas fa-chevron-down' : 'fas fa-chevron-up');
+});
+
+// Cancel a PENDING item from active table order
+function cancelActiveOrderItem(itemId) {
+    if (!confirm('Are you sure you want to cancel this pending dish?')) {
+        return;
+    }
+
+    let $card = $('#activeCard_' + itemId);
+    let $btn = $card.find('.btn-cancel-active-dish');
+    let origHtml = $btn.html();
+    $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
+
+    $.post("{{ url('/order-customer/item/delete') }}/" + itemId, {
+        _token: "{{ csrf_token() }}"
+    }, function(res) {
+        if (res.status) {
+            showTempToast(res.message || 'Item cancelled successfully.');
+            $card.fadeOut(300, function() {
+                $card.remove();
+                setTimeout(function() {
+                    window.location.reload();
+                }, 500);
+            });
+        } else {
+            alert(res.message || 'Could not cancel item.');
+            $btn.html(origHtml).prop('disabled', false);
+        }
+    }).fail(function(xhr) {
+        let msg = 'Could not cancel item.';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+            msg = xhr.responseJSON.message;
+        }
+        alert(msg);
+        $btn.html(origHtml).prop('disabled', false);
+    });
+}
+
+/* Place Order / Save & Order Submission */
+$(document).on('click', '#placeOrderBtn', function() {
     if (cart.length === 0) {
         alert('Please add at least one dish to your order tray.');
         return;
     }
 
+    let activeOrderId = $('#active_order_id').val();
+    let isAddOrder = !!activeOrderId;
     let name  = $('#customer_name').val().trim();
     let phone = $('#phone').val().trim();
 
@@ -1817,27 +2592,112 @@ $('#placeOrderBtn').on('click', function() {
     }));
 
     let $btn = $(this);
-    $btn.html('<i class="fas fa-spinner fa-spin"></i> Processing Order...').prop('disabled', true);
+    $btn.html(isAddOrder ? '<i class="fas fa-spinner fa-spin"></i> Saving &amp; Ordering...' : '<i class="fas fa-spinner fa-spin"></i> Processing Order...').prop('disabled', true);
 
-    $.post("{{ route('temp.order.store') }}", {
+    let submitUrl = isAddOrder ? "{{ route('temp.order.add_items') }}" : "{{ route('temp.order.store') }}";
+    let postData = {
         _token:          "{{ csrf_token() }}",
         customer_name:   name,
         customer_phone:  phone,
         table_id:        $('#table_id').val(),
         restaurant_id:   $('#restaurant_id').val(),
         order_items:     orderItems
-    }, function(res) {
+    };
+    if (isAddOrder) {
+        postData.order_id = activeOrderId;
+    }
+
+    $.post(submitUrl, postData, function(res) {
         if (res.status) {
+            if (res.order_id) {
+                try { localStorage.setItem('customer_qr_order_id', res.order_id); } catch(e) {}
+            }
             window.location.href = res.redirect;
         } else {
-            alert('Something went wrong while placing your order. Please try again.');
-            $btn.html('<span>Confirm Order</span> <i class="fas fa-arrow-right"></i>').prop('disabled', false);
+            alert(res.message || 'Something went wrong while placing your order. Please try again.');
+            $btn.html(isAddOrder ? '<span>Save &amp; Order</span> <i class="fas fa-plus-circle"></i>' : '<span>Confirm Order</span> <i class="fas fa-arrow-right"></i>').prop('disabled', false);
         }
-    }).fail(function() {
-        alert('Network connection error. Please check your internet and try again.');
-        $btn.html('<span>Confirm Order</span> <i class="fas fa-arrow-right"></i>').prop('disabled', false);
+    }).fail(function(xhr) {
+        let msg = 'Network connection error. Please check your internet and try again.';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+            msg = xhr.responseJSON.message;
+        }
+        alert(msg);
+        $btn.html(isAddOrder ? '<span>Save &amp; Order</span> <i class="fas fa-plus-circle"></i>' : '<span>Confirm Order</span> <i class="fas fa-arrow-right"></i>').prop('disabled', false);
     });
 });
+
+@if(isset($activeOrder) && $activeOrder)
+// Manual on-demand status refresh (no continuous background polling)
+let activeOrderId = {{ $activeOrder->id }};
+
+function manualRefreshStatus() {
+    let $btns = $('.btn-refresh-status');
+    let $icons = $('.btn-refresh-status i');
+    $icons.addClass('fa-spin');
+    $btns.prop('disabled', true);
+
+    $.get("{{ route('order.status.check', ':id') }}".replace(':id', activeOrderId) + '?type=main', function(res) {
+        $icons.removeClass('fa-spin');
+        $btns.prop('disabled', false);
+
+        if (res.is_completed) {
+            showTempToast('Dining completed by restaurant! Refreshing...', true);
+            setTimeout(function() {
+                window.location.reload();
+            }, 1200);
+            return;
+        }
+
+        if (res.status && res.items && Array.isArray(res.items)) {
+            res.items.forEach(function(itm) {
+                let $pill = $('#activeStatusPill_' + itm.id);
+                let $actions = $('#activeItemActions_' + itm.id);
+                let $kotBadge = $('#activeKotBadge_' + itm.id);
+                let $priceEl = $('#activeItemPrice_' + itm.id);
+
+                if ($kotBadge.length && itm.kot_no) {
+                    $kotBadge.html('<i class="fas fa-receipt"></i> ' + itm.kot_no);
+                }
+
+                if ($priceEl.length && itm.total !== undefined) {
+                    $priceEl.text('₹' + parseFloat(itm.total).toFixed(2));
+                }
+
+                if ($pill.length) {
+                    let statusLower = itm.order_status.toLowerCase();
+                    $pill.attr('class', 'dish-status-pill status-' + statusLower);
+                    if (itm.order_status === 'COOKING') {
+                        $pill.html('<i class="fas fa-fire-burner"></i> Cooking');
+                    } else if (itm.order_status === 'DONE') {
+                        $pill.html('<i class="fas fa-check-circle"></i> Cooked');
+                    } else {
+                        $pill.html('<i class="fas fa-hourglass-half"></i> Pending');
+                    }
+                }
+
+                if ($actions.length) {
+                    if (itm.order_status === 'PENDING') {
+                        $actions.html(`<button type="button" class="btn-cancel-active-dish" onclick="cancelActiveOrderItem(${itm.id})" title="Cancel pending dish"><i class="fas fa-trash-alt"></i></button>`);
+                    } else {
+                        $actions.html('');
+                    }
+                }
+            });
+            showTempToast('Kitchen status updated successfully!', true);
+        }
+    }).fail(function() {
+        $icons.removeClass('fa-spin');
+        $btns.prop('disabled', false);
+        showTempToast('Could not fetch latest status. Please try again.', false);
+    });
+}
+
+$(document).on('click', '.btn-refresh-status', function(e) {
+    e.preventDefault();
+    manualRefreshStatus();
+});
+@endif
 
 $(document).ready(function() {
     updateEmptyState();
