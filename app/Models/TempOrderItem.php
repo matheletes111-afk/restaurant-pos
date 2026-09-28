@@ -31,4 +31,19 @@ class TempOrderItem extends Model
     {
         return $this->belongsTo(SubCategory::class, 'subcategory_id');
     }
+
+    public function subcategory()
+    {
+        return $this->belongsTo(SubCategory::class, 'subcategory_id');
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(TempOrder::class, 'temp_order_id');
+    }
+
+    public function tempOrder()
+    {
+        return $this->belongsTo(TempOrder::class, 'temp_order_id');
+    }
 }

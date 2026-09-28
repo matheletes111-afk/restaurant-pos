@@ -67,6 +67,7 @@ Route::get('/order-status-check/{id}', [App\Http\Controllers\TempOrderController
 Route::post('/order-customer/add-items', [App\Http\Controllers\TempOrderController::class, 'addItemsToActiveOrder'])->name('temp.order.add_items');
 Route::post('/order-customer/item/delete/{id}', [App\Http\Controllers\TempOrderController::class, 'deleteActiveOrderItem'])->name('temp.order.delete_item');
 Route::post('/order-customer/item/update-qty/{id}', [App\Http\Controllers\TempOrderController::class, 'updateActiveOrderItemQty'])->name('temp.order.update_item_qty');
+Route::post('/order-customer/cancel/{id}', [App\Http\Controllers\TempOrderController::class, 'cancelPendingOrder'])->name('temp.order.cancel');
 Route::get('/order-customer/fresh/{table_id}/{restaurant_id}', [App\Http\Controllers\TempOrderController::class, 'startFreshOrder'])->name('temp.order.fresh');
 
 // QR Order Notifications (Accessible to all authenticated staff & admins)

@@ -354,6 +354,22 @@ public function store(Request $request)
                 return redirect()->route('order.details', $tempOrder->order_id);
             }
 
+            // Keep customer session updated with this pending order
+            if (!in_array(strtoupper($tempOrder->order_status ?? ''), ['REJECTED', 'CANCELLED'])) {
+                session([
+                    'customer_qr_order_id' => $tempOrder->id,
+                    'customer_qr_order_type' => 'temp',
+                    "customer_qr_order_{$tempOrder->restaurant_id}_{$tempOrder->table_id}" => [
+                        'id' => $tempOrder->id,
+                        'type' => 'temp'
+                    ],
+                ]);
+                $currentAllowed = session('customer_qr_allowed_orders', []);
+                if (!in_array($tempOrder->id, $currentAllowed)) {
+                    session()->push('customer_qr_allowed_orders', $tempOrder->id);
+                }
+            }
+
             $restaurant_details = RestaurantMaster::find($tempOrder->restaurant_id);
             $table_details = $tempOrder->table_details ?? ($tempOrder->table_id ? TableManage::where('restaurant_id', $tempOrder->restaurant_id)->find($tempOrder->table_id) : null);
             $orderId = $tempOrder->order_id ?? ('#' . $tempOrder->id);
@@ -920,6 +936,7 @@ public function store(Request $request)
 
             return response()->json([
                 'status' => true,
+                'order_cancelled' => false,
                 'message' => 'Item removed from order successfully.'
             ]);
         }
@@ -934,16 +951,47 @@ public function store(Request $request)
                 ], 403);
             }
 
+            $status = strtoupper($tempItem->order_status ?? 'PENDING');
+            if ($status === 'COOKING' || $status === 'DONE') {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This item cannot be deleted because the kitchen is already ' . ($status === 'COOKING' ? 'cooking' : 'finished preparing') . ' it.'
+                ], 400);
+            }
+
             $tempOrder = $tempItem->order;
             $tempItem->delete();
             if ($tempOrder) {
-                $subtotal = $tempOrder->items()->sum('total_amount');
-                $tempOrder->total_amount = $subtotal;
-                $tempOrder->grand_total = $subtotal;
-                $tempOrder->save();
+                $remainingItems = $tempOrder->items()->get();
+                if ($remainingItems->isEmpty()) {
+                    $tempOrder->order_status = 'REJECTED';
+                    $tempOrder->total_amount = 0;
+                    $tempOrder->taxable_amount = 0;
+                    $tempOrder->gst_amount = 0;
+                    $tempOrder->grand_total = 0;
+                    $tempOrder->save();
+                    $this->clearCustomerOrderSession($tempOrder->restaurant_id, $tempOrder->table_id);
+
+                    return response()->json([
+                        'status' => true,
+                        'order_cancelled' => true,
+                        'message' => 'All dishes cancelled. Your order has been cancelled.',
+                        'redirect' => route('temp.order.create', [$tempOrder->table_id, $tempOrder->restaurant_id])
+                    ]);
+                } else {
+                    $subtotal = $remainingItems->sum('total_amount');
+                    $taxable = $remainingItems->sum('taxable_amount');
+                    $gst = $remainingItems->sum('gst_amount');
+                    $tempOrder->total_amount = $subtotal;
+                    $tempOrder->taxable_amount = $taxable;
+                    $tempOrder->gst_amount = $gst;
+                    $tempOrder->grand_total = $subtotal;
+                    $tempOrder->save();
+                }
             }
             return response()->json([
                 'status' => true,
+                'order_cancelled' => false,
                 'message' => 'Item removed from pending order.'
             ]);
         }
@@ -951,6 +999,85 @@ public function store(Request $request)
         return response()->json([
             'status' => false,
             'message' => 'Item not found.'
+        ], 404);
+    }
+
+    /**
+     * Cancel an entire pending order from order-success page
+     */
+    public function cancelPendingOrder(Request $request, $id)
+    {
+        $tempOrder = TempOrder::find($id);
+        if ($tempOrder) {
+            if (!$this->canAccessOrder($tempOrder->id)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Unauthorized. You cannot modify another customer\'s order.'
+                ], 403);
+            }
+
+            $status = strtoupper($tempOrder->order_status ?? 'PENDING');
+            if ($status !== 'PENDING') {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This order has already been ' . strtolower($status) . ' and cannot be cancelled.'
+                ], 400);
+            }
+
+            $tempOrder->order_status = 'REJECTED';
+            $tempOrder->save();
+            $tempOrder->items()->delete();
+
+            $tableId = $tempOrder->table_id;
+            $restaurantId = $tempOrder->restaurant_id;
+            $this->clearCustomerOrderSession($restaurantId, $tableId);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Order cancelled successfully.',
+                'redirect' => route('temp.order.create', [$tableId, $restaurantId])
+            ]);
+        }
+
+        $mainOrder = OrderManage::with('orderItems')->find($id);
+        if ($mainOrder) {
+            if (!$this->canAccessOrder($mainOrder->id)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Unauthorized.'
+                ], 403);
+            }
+
+            $hasCookingOrDone = $mainOrder->orderItems->contains(function($itm) {
+                return in_array(strtoupper($itm->order_status ?? ''), ['COOKING', 'DONE']);
+            });
+
+            if ($hasCookingOrDone) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Kitchen has already started preparing dishes. Order cannot be cancelled.'
+                ], 400);
+            }
+
+            $mainOrder->order_status = 'COMPLETED';
+            $mainOrder->order_complete = 'CANCELLED';
+            $mainOrder->save();
+            $mainOrder->orderItems()->delete();
+
+            $tableId = $mainOrder->table_id;
+            $restaurantId = $mainOrder->restaurant_id;
+            $this->clearCustomerOrderSession($restaurantId, $tableId);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Order cancelled successfully.',
+                'redirect' => route('temp.order.create', [$tableId, $restaurantId])
+            ]);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Order not found.'
         ], 404);
     }
 

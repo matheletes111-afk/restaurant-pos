@@ -1042,13 +1042,30 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            }
+            },
+            body: JSON.stringify({
+                _token: '{{ csrf_token() }}'
+            })
         })
-        .then(res => res.json())
+        .then(async res => {
+            const data = await res.json().catch(() => null);
+            if (!res.ok) {
+                const errMsg = (data && data.message) ? data.message : ('Error ' + res.status);
+                throw new Error(errMsg);
+            }
+            return data;
+        })
         .then(data => {
-            if (data.status) {
+            if (data && data.status) {
                 showToast(data.message || 'Item cancelled successfully.');
+                if (data.order_cancelled && data.redirect) {
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 800);
+                    return;
+                }
                 if (row) {
                     row.style.opacity = '0';
                     row.style.transform = 'translateX(20px)';
@@ -1061,7 +1078,7 @@
                     window.location.reload();
                 }
             } else {
-                alert(data.message || 'Could not cancel item.');
+                alert((data && data.message) ? data.message : 'Could not cancel item.');
                 if (btn) {
                     btn.innerHTML = '<i class="fas fa-trash-alt"></i> Cancel';
                     btn.disabled = false;
@@ -1069,7 +1086,7 @@
             }
         })
         .catch(err => {
-            alert('Network error while cancelling item.');
+            alert(err.message || 'Error while cancelling item.');
             if (btn) {
                 btn.innerHTML = '<i class="fas fa-trash-alt"></i> Cancel';
                 btn.disabled = false;

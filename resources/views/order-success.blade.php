@@ -657,6 +657,31 @@
             border-color: #cbd5e1;
         }
 
+        .btn-action-cancel-order {
+            background: #ffffff;
+            color: #ef4444 !important;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            border-radius: var(--radius-full);
+            padding: 13px 32px;
+            font-size: 0.94rem;
+            font-weight: 700;
+            text-align: center;
+            text-decoration: none !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-action-cancel-order:hover {
+            background: #fef2f2;
+            border-color: #ef4444;
+            color: #b91c1c !important;
+            transform: translateY(-1px);
+        }
+
         /* Confetti sparkle effect */
         .sparkle-particle {
             position: absolute;
@@ -940,6 +965,13 @@
                 <i class="fas fa-sync-alt"></i>
                 <span>Refresh Status</span>
             </a>
+
+            @if($isPending && !$isAccepted && !$isRejected && $tableId && $restaurantId)
+                <button type="button" class="btn-action-cancel-order" onclick="cancelEntireOrder({{ $orderRecordId }})" title="Cancel this pending order">
+                    <i class="fas fa-ban"></i>
+                    <span>Cancel Entire Order</span>
+                </button>
+            @endif
         </div>
 
     </div>
@@ -972,16 +1004,30 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
             body: JSON.stringify({
                 _token: '{{ csrf_token() }}'
             })
         })
-        .then(res => res.json())
+        .then(async res => {
+            const data = await res.json().catch(() => null);
+            if (!res.ok) {
+                const errMsg = (data && data.message) ? data.message : ('Error ' + res.status);
+                throw new Error(errMsg);
+            }
+            return data;
+        })
         .then(data => {
-            if (data.status) {
+            if (data && data.status) {
                 showToast(data.message || 'Item cancelled successfully.');
+                if (data.order_cancelled && data.redirect) {
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 800);
+                    return;
+                }
                 const row = document.getElementById('itemRow_' + itemId);
                 if (row) {
                     row.style.transition = 'all 0.3s ease';
@@ -995,15 +1041,58 @@
                     window.location.reload();
                 }
             } else {
-                alert(data.message || 'Could not cancel item.');
+                alert((data && data.message) ? data.message : 'Could not cancel item.');
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
             }
         })
         .catch(err => {
-            alert('Network error while cancelling item.');
+            alert(err.message || 'Error while cancelling item.');
             btn.innerHTML = originalHtml;
             btn.disabled = false;
+        });
+    }
+
+    function cancelEntireOrder(orderId) {
+        if (!confirm('Are you sure you want to cancel this entire pending order?')) {
+            return;
+        }
+
+        fetch("{{ url('/order-customer/cancel') }}/" + orderId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                _token: '{{ csrf_token() }}'
+            })
+        })
+        .then(async res => {
+            const data = await res.json().catch(() => null);
+            if (!res.ok) {
+                const errMsg = (data && data.message) ? data.message : ('Error ' + res.status);
+                throw new Error(errMsg);
+            }
+            return data;
+        })
+        .then(data => {
+            if (data && data.status) {
+                showToast(data.message || 'Order cancelled successfully.');
+                setTimeout(() => {
+                    if (data.redirect) {
+                        window.location.href = data.redirect;
+                    } else {
+                        window.location.reload();
+                    }
+                }, 800);
+            } else {
+                alert((data && data.message) ? data.message : 'Could not cancel order.');
+            }
+        })
+        .catch(err => {
+            alert(err.message || 'Error while cancelling order.');
         });
     }
 
