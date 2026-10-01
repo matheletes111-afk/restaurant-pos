@@ -1,0 +1,579 @@
+/* ==========================================================================
+   Support Tickets - Premium Modern Stylesheet
+   Design: Elegant, Conversational, High-Contrast, 100% Mobile Responsive
+   ========================================================================== */
+
+:root {
+  --tkt-primary: #ff5e14;
+  --tkt-primary-hover: #ea580c;
+  --tkt-primary-light: rgba(255, 94, 20, 0.08);
+  --tkt-primary-gradient: linear-gradient(135deg, #ff5e14 0%, #ff8c42 100%);
+  
+  --tkt-dark: #0f172a;
+  --tkt-slate: #1e293b;
+  --tkt-muted: #64748b;
+  --tkt-border: #e2e8f0;
+  --tkt-border-light: #eef2f6;
+  --tkt-bg: #f4f6fb;
+  --tkt-card-bg: #ffffff;
+  
+  --tkt-new: #f59e0b;
+  --tkt-new-bg: #fffbeb;
+  --tkt-new-border: #fde68a;
+  --tkt-new-text: #b45309;
+
+  --tkt-progress: #0284c7;
+  --tkt-progress-bg: #f0f9ff;
+  --tkt-progress-border: #bae6fd;
+  --tkt-progress-text: #0369a1;
+
+  --tkt-resolved: #10b981;
+  --tkt-resolved-bg: #ecfdf5;
+  --tkt-resolved-border: #a7f3d0;
+  --tkt-resolved-text: #047857;
+
+  --tkt-urgent: #ef4444;
+  --tkt-urgent-bg: #fef2f2;
+  --tkt-urgent-text: #dc2626;
+  
+  --tkt-radius-sm: 8px;
+  --tkt-radius-md: 14px;
+  --tkt-radius-lg: 18px;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--tkt-bg);
+  color: var(--tkt-slate);
+  overflow-x: hidden;
+}
+
+.tkt-page-wrap {
+  padding: 24px 28px;
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .tkt-page-wrap {
+    padding: 16px 14px;
+  }
+}
+
+/* ==========================================================================
+   1. HEADER DECK
+   ========================================================================== */
+.tkt-header-deck {
+  background: var(--tkt-card-bg);
+  border-radius: var(--tkt-radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 22px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--tkt-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.tkt-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1 1 auto;
+  min-width: 240px;
+}
+
+.tkt-header-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--tkt-primary-gradient);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  box-shadow: 0 6px 18px rgba(255, 94, 20, 0.28);
+  flex-shrink: 0;
+}
+
+.tkt-header-title-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.tkt-header-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--tkt-primary);
+  margin-bottom: 2px;
+}
+
+.tkt-header-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--tkt-dark);
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.tkt-header-sub {
+  font-size: 0.82rem;
+  color: var(--tkt-muted);
+  margin: 0;
+}
+
+.btn-tkt-primary {
+  height: 42px;
+  padding: 0 22px;
+  border-radius: 30px;
+  background: var(--tkt-primary-gradient);
+  border: none;
+  color: #ffffff;
+  font-size: 0.86rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(255, 94, 20, 0.25);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-tkt-primary:hover {
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(255, 94, 20, 0.35);
+}
+
+.btn-tkt-secondary {
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 30px;
+  border: 1px solid var(--tkt-border);
+  background: #ffffff;
+  color: var(--tkt-slate);
+  font-size: 0.86rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-tkt-secondary:hover {
+  border-color: var(--tkt-primary);
+  color: var(--tkt-primary);
+  background: #fff8f5;
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   2. STATS OVERVIEW DECK
+   ========================================================================== */
+.tkt-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+@media (max-width: 991px) {
+  .tkt-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .tkt-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.tkt-stat-card {
+  background: #ffffff;
+  border-radius: var(--tkt-radius-md);
+  padding: 18px 20px;
+  border: 1px solid var(--tkt-border-light);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.tkt-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.tkt-stat-card.stat-all::before { background: var(--tkt-dark); }
+.tkt-stat-card.stat-new::before { background: var(--tkt-new); }
+.tkt-stat-card.stat-progress::before { background: var(--tkt-progress); }
+.tkt-stat-card.stat-resolved::before { background: var(--tkt-resolved); }
+
+.tkt-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.tkt-stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.tkt-stat-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--tkt-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.tkt-stat-val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--tkt-dark);
+  line-height: 1;
+}
+
+.tkt-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.stat-all .tkt-stat-icon { background: #f1f5f9; color: var(--tkt-dark); }
+.stat-new .tkt-stat-icon { background: var(--tkt-new-bg); color: var(--tkt-new-text); }
+.stat-progress .tkt-stat-icon { background: var(--tkt-progress-bg); color: var(--tkt-progress-text); }
+.stat-resolved .tkt-stat-icon { background: var(--tkt-resolved-bg); color: var(--tkt-resolved-text); }
+
+/* ==========================================================================
+   3. TICKET CARDS & LIST
+   ========================================================================== */
+.tkt-ticket-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.tkt-ticket-card {
+  background: #ffffff;
+  border-radius: var(--tkt-radius-md);
+  border: 1px solid var(--tkt-border-light);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.tkt-ticket-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 5px;
+}
+
+.tkt-ticket-card.status-NEW::before { background: var(--tkt-new); }
+.tkt-ticket-card.status-IN_PROGRESS::before { background: var(--tkt-progress); }
+.tkt-ticket-card.status-RESOLVED::before { background: var(--tkt-resolved); }
+
+.tkt-ticket-card:hover {
+  transform: translateX(4px);
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  color: inherit;
+}
+
+.tkt-ticket-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.tkt-ticket-id-tag {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--tkt-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tkt-ticket-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--tkt-dark);
+  margin: 4px 0 2px 0;
+  line-height: 1.3;
+}
+
+.tkt-badge-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Status Badges */
+.tkt-badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 30px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.tkt-badge-status.NEW {
+  background: var(--tkt-new-bg);
+  color: var(--tkt-new-text);
+  border: 1px solid var(--tkt-new-border);
+}
+
+.tkt-badge-status.IN_PROGRESS {
+  background: var(--tkt-progress-bg);
+  color: var(--tkt-progress-text);
+  border: 1px solid var(--tkt-progress-border);
+}
+
+.tkt-badge-status.RESOLVED {
+  background: var(--tkt-resolved-bg);
+  color: var(--tkt-resolved-text);
+  border: 1px solid var(--tkt-resolved-border);
+}
+
+/* Priority Badges */
+.tkt-badge-priority {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.tkt-badge-priority.LOW { background: #f1f5f9; color: #475569; }
+.tkt-badge-priority.MEDIUM { background: #e0f2fe; color: #0369a1; }
+.tkt-badge-priority.HIGH { background: #fef3c7; color: #92400e; }
+.tkt-badge-priority.URGENT { background: #fee2e2; color: #b91c1c; animation: tktUrgentPulse 1.8s infinite; }
+
+@keyframes tktUrgentPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.tkt-ticket-body-preview {
+  font-size: 0.88rem;
+  color: var(--tkt-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.tkt-ticket-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px dashed var(--tkt-border-light);
+  font-size: 0.78rem;
+  color: var(--tkt-muted);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tkt-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tkt-replies-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  background: #f8fafc;
+  border-radius: 20px;
+  font-weight: 700;
+  color: var(--tkt-slate);
+  border: 1px solid var(--tkt-border);
+}
+
+/* ==========================================================================
+   4. CONVERSATION & CHAT THREAD (TICKET DETAIL)
+   ========================================================================== */
+.tkt-chat-container {
+  background: #f8fafc;
+  border-radius: var(--tkt-radius-md);
+  border: 1px solid var(--tkt-border);
+  padding: 24px;
+  max-height: 580px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tkt-bubble-row {
+  display: flex;
+  width: 100%;
+}
+
+.tkt-bubble-row.from-restaurant {
+  justify-content: flex-end;
+}
+
+.tkt-bubble-row.from-admin {
+  justify-content: flex-start;
+}
+
+.tkt-bubble {
+  max-width: 75%;
+  padding: 16px 20px;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+@media (max-width: 576px) {
+  .tkt-bubble {
+    max-width: 90%;
+  }
+}
+
+.from-restaurant .tkt-bubble {
+  background: var(--tkt-primary-gradient);
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.from-admin .tkt-bubble {
+  background: #ffffff;
+  color: var(--tkt-slate);
+  border: 1px solid var(--tkt-border);
+  border-bottom-left-radius: 4px;
+}
+
+.tkt-bubble-author {
+  font-size: 0.78rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.from-restaurant .tkt-bubble-author {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.from-admin .tkt-bubble-author {
+  color: var(--tkt-progress-text);
+}
+
+.tkt-bubble-content {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.tkt-bubble-time {
+  font-size: 0.7rem;
+  opacity: 0.75;
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ==========================================================================
+   5. FORM STYLING
+   ========================================================================== */
+.tkt-form-card {
+  background: #ffffff;
+  border-radius: var(--tkt-radius-lg);
+  border: 1px solid var(--tkt-border-light);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+  padding: 28px;
+  margin-bottom: 24px;
+}
+
+.tkt-form-group {
+  margin-bottom: 20px;
+}
+
+.tkt-form-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tkt-dark);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.tkt-form-input,
+.tkt-form-select,
+.tkt-form-textarea {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid var(--tkt-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  color: var(--tkt-slate);
+  transition: all 0.2s ease;
+  outline: none;
+  font-family: inherit;
+}
+
+.tkt-form-input:focus,
+.tkt-form-select:focus,
+.tkt-form-textarea:focus {
+  background: #ffffff;
+  border-color: var(--tkt-primary);
+  box-shadow: 0 0 0 3px rgba(255, 94, 20, 0.12);
+}

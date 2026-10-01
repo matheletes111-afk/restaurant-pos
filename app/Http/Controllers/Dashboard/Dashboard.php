@@ -8,6 +8,7 @@ use App\Models\SubCategory;
 use App\Models\OrderManage;
 use App\Models\OrderItems;
 use App\Models\User;
+use App\Models\TableManage;
 use DB;
 
 class Dashboard extends Controller
@@ -17,7 +18,7 @@ class Dashboard extends Controller
         $restaurantId = auth()->user()->restaurant_id;
         $today = Carbon::today();
 
-        // COUNTERS
+        // COUNTERS - Menu & Staff
         $totalDishes = SubCategory::where('status', '!=', 'D')
             ->where('restaurant_id', $restaurantId)->count();
 
@@ -27,6 +28,22 @@ class Dashboard extends Controller
         $totalNonVeg = SubCategory::where('food_type', 'NON-VEG')
             ->where('restaurant_id', $restaurantId)->count();
 
+        $totalStaff = User::where('restaurant_id', $restaurantId)->count();
+
+        // COUNTERS - Tables
+        $totalTables = TableManage::where('status', '!=', 'D')
+            ->where('restaurant_id', $restaurantId)->count();
+
+        $occupiedTables = TableManage::where('status', '!=', 'D')
+            ->where('restaurant_id', $restaurantId)
+            ->where(function($q) {
+                $q->where('table_status', 'OCCUPIED')
+                  ->orWhere(function($sub) {
+                      $sub->whereNotNull('order_id')->where('order_id', '>', 0);
+                  });
+            })->count();
+
+        // COUNTERS - Orders & Revenue Today
         $totalOrdersToday = OrderManage::whereDate('created_at', $today)
             ->where('restaurant_id', $restaurantId)
             ->where('payment_status', 'PAID')
@@ -37,7 +54,25 @@ class Dashboard extends Controller
             ->where('payment_status', 'PAID')
             ->sum('grand_total');
 
-        $totalStaff = User::where('restaurant_id', $restaurantId)->count();
+        $avgOrderValue = $totalOrdersToday > 0 ? ($totalRevenueToday / $totalOrdersToday) : 0;
+
+        // COUNTERS - Orders & Revenue Month
+        $totalOrdersMonth = OrderManage::whereYear('created_at', $today->year)
+            ->whereMonth('created_at', $today->month)
+            ->where('restaurant_id', $restaurantId)
+            ->where('payment_status', 'PAID')
+            ->count();
+
+        $totalRevenueMonth = OrderManage::whereYear('created_at', $today->year)
+            ->whereMonth('created_at', $today->month)
+            ->where('restaurant_id', $restaurantId)
+            ->where('payment_status', 'PAID')
+            ->sum('grand_total');
+
+        $pendingOrders = OrderManage::where('restaurant_id', $restaurantId)
+            ->where('payment_status', '!=', 'PAID')
+            ->whereNotIn('order_status', ['COMPLETED', 'CANCELLED', 'REJECTED'])
+            ->count();
 
         // HOT DISHES
         $hotDaily = OrderItems::select('subcategory_id', DB::raw('SUM(quantity) as total'))
@@ -46,7 +81,7 @@ class Dashboard extends Controller
             ->groupBy('subcategory_id')
             ->orderByDesc('total')
             ->with('subcategory')
-            ->take(4)
+            ->take(5)
             ->get();
 
         $hotMonthly = OrderItems::select('subcategory_id', DB::raw('SUM(quantity) as total'))
@@ -56,7 +91,7 @@ class Dashboard extends Controller
             ->groupBy('subcategory_id')
             ->orderByDesc('total')
             ->with('subcategory')
-            ->take(4)
+            ->take(5)
             ->get();
 
         $hotYearly = OrderItems::select('subcategory_id', DB::raw('SUM(quantity) as total'))
@@ -65,7 +100,7 @@ class Dashboard extends Controller
             ->groupBy('subcategory_id')
             ->orderByDesc('total')
             ->with('subcategory')
-            ->take(4)
+            ->take(5)
             ->get();
 
         // TOP PRODUCT SERIES
@@ -76,18 +111,21 @@ class Dashboard extends Controller
         // DISH LIST FOR DROPDOWN
         $dishes = SubCategory::where('status', '!=', 'D')
             ->where('restaurant_id', $restaurantId)
+            ->orderBy('name', 'asc')
             ->get();
 
         // LATEST ORDERS
-        $orders = OrderManage::with('table')
+        $orders = OrderManage::with(['table', 'orderItems.subcategory'])
             ->where('restaurant_id', $restaurantId)
             ->orderBy('created_at', 'desc')
             ->take(10)
             ->get();
 
         return view("dashboard.index", compact(
-            "totalDishes", "totalVeg", "totalNonVeg",
-            "totalOrdersToday", "totalRevenueToday", "totalStaff",
+            "totalDishes", "totalVeg", "totalNonVeg", "totalStaff",
+            "totalTables", "occupiedTables",
+            "totalOrdersToday", "totalRevenueToday", "avgOrderValue",
+            "totalOrdersMonth", "totalRevenueMonth", "pendingOrders",
             "hotDaily", "hotMonthly", "hotYearly",
             "topDailySeries", "topMonthlySeries", "topYearlySeries",
             "dishes", "orders"

@@ -158,6 +158,8 @@ Route::get('manage-menu-category',[App\Http\Controllers\Category\CategoryControl
 Route::post('manage-menu-category/insert-category',[App\Http\Controllers\Category\CategoryController::class,'insert'])->name('manage.category.insert');
 Route::post('manage-menu-category/update-category',[App\Http\Controllers\Category\CategoryController::class,'update'])->name('manage.category.update');
 Route::get('manage-menu-category/delete-category/{id}',[App\Http\Controllers\Category\CategoryController::class,'delete'])->name('manage.category.delete');
+Route::post('manage-menu-category/bulk-upload', [App\Http\Controllers\Category\CategoryController::class, 'bulkUploadCategory'])->name('manage.category.bulk.upload');
+Route::get('manage-menu-category/bulk-upload-template', [App\Http\Controllers\Category\CategoryController::class, 'downloadCategoryTemplate'])->name('manage.category.template');
 
 Route::get('manage-category/manage-food-items/{id}',[App\Http\Controllers\Category\CategoryController::class,'subCategory'])->name('manage.subcategory.category');
 Route::post('manage-category/manage-food-items/insert-sub-category',[App\Http\Controllers\Category\CategoryController::class,'subCategoryinsert'])->name('manage.subcategory.category.insert');
@@ -166,7 +168,7 @@ Route::get('manage-category/manage-food-items/delete-sub-category/{id}',[App\Htt
 Route::get('manage-category/manage-food-items/status-sub-category/{id}',[App\Http\Controllers\Category\CategoryController::class,'subCategorystatus'])->name('manage.subcategory.category.status');
 
 Route::post('manage-category/manage-food-items/bulk-upload', [App\Http\Controllers\Category\CategoryController::class, 'bulkUpload'])->name('manage.subcategory.category.bulk.upload');
-Route::get('manage-category/bulk-upload-template/{id}', [App\Http\Controllers\Category\CategoryController::class, 'downloadTemplate'])->name('manage.subcategory.category.template');
+Route::get('manage-category/bulk-upload-template/{id?}', [App\Http\Controllers\Category\CategoryController::class, 'downloadTemplate'])->name('manage.subcategory.category.template');
 
 // manage-table
 Route::get('table-manage', [TableManageController::class, 'index'])->name('table.manage');

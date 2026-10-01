@@ -155,47 +155,71 @@ class ProductController extends Controller
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Products Sample');
         
         // Headers
         $sheet->setCellValue('A1', 'Product Name');
-        $sheet->setCellValue('B1', 'Unit ID');
+        $sheet->setCellValue('B1', 'Unit Name / ID');
         $sheet->setCellValue('C1', 'Opening Qty');
-        $sheet->setCellValue('D1', 'Notes');
         
         // Sample data
-        $sheet->setCellValue('A2', 'Chicken Breast');
-        $sheet->setCellValue('B2', '1');
+        $sheet->setCellValue('A2', 'Basmati Rice');
+        $sheet->setCellValue('B2', 'Kg');
         $sheet->setCellValue('C2', '50');
-        $sheet->setCellValue('D2', 'Fresh chicken breast');
         
-        $sheet->setCellValue('A3', 'Rice');
-        $sheet->setCellValue('B3', '2');
-        $sheet->setCellValue('C3', '100');
-        $sheet->setCellValue('D3', 'Basmati rice');
+        $sheet->setCellValue('A3', 'Chicken Breast');
+        $sheet->setCellValue('B3', 'Kg');
+        $sheet->setCellValue('C3', '25.5');
+        
+        $sheet->setCellValue('A4', 'Cooking Oil');
+        $sheet->setCellValue('B4', 'Liter');
+        $sheet->setCellValue('C4', '30');
+
+        $sheet->setCellValue('A5', 'Fresh Paneer');
+        $sheet->setCellValue('B5', 'Kg');
+        $sheet->setCellValue('C5', '15');
+
+        $sheet->setCellValue('A6', 'Egg Trays');
+        $sheet->setCellValue('B6', 'Pcs');
+        $sheet->setCellValue('C6', '100');
+        
+        // Style Header
+        $sheet->getStyle('A1:C1')->getFont()->setBold(true)->getColor()->setARGB('FF0F172A');
+        $sheet->getStyle('A1:C1')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FFF1F5F9');
+        $sheet->getStyle('A1:C6')->getAlignment()->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
         
         // Auto size columns
-        foreach (range('A', 'D') as $column) {
+        foreach (range('A', 'C') as $column) {
             $sheet->getColumnDimension($column)->setAutoSize(true);
         }
         
-        // Get units for reference
+        // Get existing active units for reference in Column E & F
         $units = Unit::where('restaurant_id', auth()->user()->restaurant_id)
             ->where('status', 'A')
+            ->orderBy('name', 'asc')
             ->get();
         
         if ($units->count() > 0) {
-            $sheet->setCellValue('F1', 'Unit Reference');
-            $sheet->setCellValue('F2', 'ID - Unit Name');
+            $sheet->setCellValue('E1', 'Configured Units in your Restaurant');
+            $sheet->setCellValue('E2', 'Unit Name');
+            $sheet->setCellValue('F2', 'Unit ID');
             
+            $sheet->getStyle('E1')->getFont()->setBold(true)->getColor()->setARGB('FF047857');
+            $sheet->getStyle('E2:F2')->getFont()->setBold(true);
+            $sheet->getStyle('E2:F2')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FFECFDF5');
+
             $row = 3;
             foreach ($units as $unit) {
-                $sheet->setCellValue('F' . $row, $unit->id . ' - ' . $unit->name);
+                $sheet->setCellValue('E' . $row, $unit->name);
+                $sheet->setCellValue('F' . $row, $unit->id);
                 $row++;
             }
+            $sheet->getColumnDimension('E')->setAutoSize(true);
+            $sheet->getColumnDimension('F')->setAutoSize(true);
         }
         
         $writer = new Xlsx($spreadsheet);
-        $filename = 'products_import_sample.xlsx';
+        $filename = 'products_bulk_upload_sample.xlsx';
         
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $filename . '"');
@@ -208,63 +232,91 @@ class ProductController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'excel_file' => 'required|mimes:xlsx,xls,csv|max:2048'
+            'excel_file' => 'nullable|file|mimes:xlsx,xls,csv,txt|max:5120',
+            'bulk_file' => 'nullable|file|mimes:xlsx,xls,csv,txt|max:5120'
         ]);
+
+        $file = $request->file('excel_file') ?? $request->file('bulk_file');
+        if (!$file) {
+            return redirect()->back()->with('error', 'Please select an Excel or CSV file to upload.');
+        }
+
+        $restaurantId = auth()->user()->restaurant_id;
+        $userId = auth()->user()->id;
 
         DB::beginTransaction();
         try {
-            $file = $request->file('excel_file');
-            $spreadsheet = IOFactory::load($file);
+            $spreadsheet = IOFactory::load($file->getRealPath());
             $worksheet = $spreadsheet->getActiveSheet();
             $rows = $worksheet->toArray();
             
             $successCount = 0;
-            $errorCount = 0;
+            $skippedCount = 0;
             $errors = [];
             
-            // Skip header row (row 1)
+            if (empty($rows) || count($rows) <= 1) {
+                return redirect()->back()->with('error', 'The uploaded file contains no data rows.');
+            }
+
+            // Pre-load existing active units for this restaurant
+            $existingUnits = Unit::where('restaurant_id', $restaurantId)
+                ->where('status', 'A')
+                ->get();
+
+            // Skip header row (row index 0)
             for ($i = 1; $i < count($rows); $i++) {
                 $row = $rows[$i];
                 
-                // Skip empty rows
-                if (empty($row[0])) {
+                // Skip if entire row or first column is empty
+                if (!isset($row[0]) || trim((string)$row[0]) === '') {
                     continue;
                 }
                 
-                $productName = trim($row[0]);
-                $unitId = isset($row[1]) ? trim($row[1]) : null;
-                $openingQty = isset($row[2]) ? (float) trim($row[2]) : 0;
+                $productName = trim((string)$row[0]);
+                $unitInput = isset($row[1]) ? trim((string)$row[1]) : '';
+                $openingQtyRaw = isset($row[2]) ? trim((string)$row[2]) : '0';
+                $openingQty = is_numeric($openingQtyRaw) ? (float) $openingQtyRaw : 0;
                 
-                // Validate row data
                 if (empty($productName)) {
-                    $errors[] = "Row " . ($i + 1) . ": Product name is required";
-                    $errorCount++;
                     continue;
                 }
                 
                 // Check if product already exists
-                $existingProduct = Product::where('product_name', $productName)
-                    ->where('restaurant_id', auth()->user()->restaurant_id)
+                $existingProduct = Product::where('restaurant_id', $restaurantId)
                     ->where('status', 'A')
+                    ->whereRaw('LOWER(product_name) = ?', [strtolower($productName)])
                     ->first();
                 
                 if ($existingProduct) {
-                    $errors[] = "Row " . ($i + 1) . ": Product '{$productName}' already exists";
-                    $errorCount++;
+                    $skippedCount++;
+                    $errors[] = "Row " . ($i + 1) . ": Product '{$productName}' already exists (skipped).";
                     continue;
                 }
                 
-                // Validate unit if provided
-                if ($unitId) {
-                    $unit = Unit::where('id', $unitId)
-                        ->where('restaurant_id', auth()->user()->restaurant_id)
-                        ->where('status', 'A')
-                        ->first();
-                    
-                    if (!$unit) {
-                        $errors[] = "Row " . ($i + 1) . ": Unit ID '{$unitId}' is invalid";
-                        $errorCount++;
-                        continue;
+                // Resolve Unit
+                $unitId = null;
+                if (!empty($unitInput)) {
+                    if (is_numeric($unitInput)) {
+                        $matchedUnit = $existingUnits->firstWhere('id', (int)$unitInput);
+                    } else {
+                        $matchedUnit = $existingUnits->first(function ($u) use ($unitInput) {
+                            return strcasecmp($u->name, $unitInput) === 0;
+                        });
+                    }
+
+                    // If unit does not exist, auto-create it
+                    if (!$matchedUnit) {
+                        $newUnitName = is_numeric($unitInput) ? 'Unit ' . $unitInput : $unitInput;
+                        $createdUnit = Unit::create([
+                            'name' => $newUnitName,
+                            'status' => 'A',
+                            'restaurant_id' => $restaurantId,
+                            'created_by' => auth()->user()->name ?? 'System'
+                        ]);
+                        $existingUnits->push($createdUnit);
+                        $unitId = $createdUnit->id;
+                    } else {
+                        $unitId = $matchedUnit->id;
                     }
                 }
                 
@@ -273,19 +325,20 @@ class ProductController extends Controller
                 $product->product_name = $productName;
                 $product->unit_id = $unitId;
                 $product->opening_qty = $openingQty;
-                $product->restaurant_id = auth()->user()->restaurant_id;
-                $product->user_id = auth()->user()->id;
+                $product->restaurant_id = $restaurantId;
+                $product->user_id = $userId;
                 $product->status = 'A';
                 $product->save();
                 
-                // Create inventory record if opening quantity > 0
+                // Create or update inventory record if opening quantity > 0
                 if ($openingQty > 0) {
-                    $inventory = new Inventory();
-                    $inventory->product_id = $product->id;
+                    $inventory = Inventory::firstOrNew([
+                        'product_id' => $product->id,
+                        'restaurant_id' => $restaurantId
+                    ]);
                     $inventory->total_qty = $openingQty;
                     $inventory->opening_qty = $openingQty;
-                    $inventory->created_by = auth()->user()->name;
-                    $inventory->restaurant_id = auth()->user()->restaurant_id;
+                    $inventory->created_by = auth()->user()->name ?? 'System';
                     $inventory->save();
                 }
                 
@@ -294,22 +347,24 @@ class ProductController extends Controller
             
             DB::commit();
             
-            $message = "Import completed: {$successCount} products imported successfully.";
-            if ($errorCount > 0) {
-                $message .= " {$errorCount} errors found.";
-                if (!empty($errors)) {
-                    session()->flash('import_errors', $errors);
-                }
+            if ($successCount === 0 && $skippedCount > 0) {
+                return redirect()->route('products.manage')
+                    ->with('warning', "No new products added. {$skippedCount} products already exist.")
+                    ->with('import_errors', $errors);
             }
-            
-            return redirect()->route('products.manage')->with(
-                $errorCount > 0 ? 'warning' : 'success',
-                $message
-            );
+
+            $message = "Bulk upload completed! Successfully added {$successCount} product(s).";
+            if ($skippedCount > 0) {
+                $message .= " ({$skippedCount} duplicate items skipped).";
+            }
+
+            return redirect()->route('products.manage')
+                ->with('success', $message)
+                ->with('import_errors', !empty($errors) ? $errors : null);
             
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Import failed: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Bulk upload failed: ' . $e->getMessage());
         }
     }
 

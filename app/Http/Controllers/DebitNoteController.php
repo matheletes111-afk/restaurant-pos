@@ -10,18 +10,110 @@ use App\Models\Product;
 use App\Models\Unit;
 use App\Models\Inventory;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DebitNoteController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $debitNotes = DebitNote::with(['supplier', 'items.product.unit', 'user'])
-            ->where('restaurant_id', auth()->user()->restaurant_id)
-            ->orderBy('debit_date', 'desc')
+        $restaurantId = auth()->user()->restaurant_id;
+
+        $hasExplicitFilter = $request->has('from_date') || $request->has('to_date') || $request->has('supplier_id') || $request->has('keyword');
+
+        $fromDate = $request->filled('from_date') 
+            ? Carbon::parse($request->from_date)->startOfDay() 
+            : Carbon::now()->startOfMonth()->startOfDay();
+
+        $toDate = $request->filled('to_date') 
+            ? Carbon::parse($request->to_date)->endOfDay() 
+            : Carbon::now()->endOfMonth()->endOfDay();
+
+        $supplierId = $request->supplier_id;
+        $keyword = $request->keyword;
+
+        $query = DebitNote::with(['supplier', 'items.product.unit', 'user'])
+            ->where('restaurant_id', $restaurantId);
+
+        if ($hasExplicitFilter) {
+            if ($request->filled('from_date') && $request->filled('to_date')) {
+                $query->where(function($dq) use ($fromDate, $toDate) {
+                    $dq->whereBetween('debit_date', [$fromDate->format('Y-m-d'), $toDate->format('Y-m-d')])
+                       ->orWhereBetween('created_at', [$fromDate, $toDate]);
+                });
+            } elseif ($request->filled('from_date')) {
+                $query->where(function($dq) use ($fromDate) {
+                    $dq->where('debit_date', '>=', $fromDate->format('Y-m-d'))
+                       ->orWhere('created_at', '>=', $fromDate);
+                });
+            } elseif ($request->filled('to_date')) {
+                $query->where(function($dq) use ($toDate) {
+                    $dq->where('debit_date', '<=', $toDate->format('Y-m-d'))
+                       ->orWhere('created_at', '<=', $toDate);
+                });
+            }
+        } else {
+            // Check if debit notes exist in current month
+            $currentMonthCount = (clone $query)->where(function($dq) use ($fromDate, $toDate) {
+                $dq->whereBetween('debit_date', [$fromDate->format('Y-m-d'), $toDate->format('Y-m-d')])
+                   ->orWhereBetween('created_at', [$fromDate, $toDate]);
+            })->count();
+
+            if ($currentMonthCount > 0) {
+                $query->where(function($dq) use ($fromDate, $toDate) {
+                    $dq->whereBetween('debit_date', [$fromDate->format('Y-m-d'), $toDate->format('Y-m-d')])
+                       ->orWhereBetween('created_at', [$fromDate, $toDate]);
+                });
+            } else {
+                // If no debit notes exist in current month, show all existing debit notes
+                $minDate = DebitNote::where('restaurant_id', $restaurantId)->min('debit_date');
+                if ($minDate) {
+                    $fromDate = Carbon::parse($minDate)->startOfDay();
+                } else {
+                    $minCreated = DebitNote::where('restaurant_id', $restaurantId)->min('created_at');
+                    if ($minCreated) {
+                        $fromDate = Carbon::parse($minCreated)->startOfDay();
+                    }
+                }
+            }
+        }
+
+        if ($request->filled('supplier_id') && $request->supplier_id !== 'all') {
+            $query->where('supplier_id', $request->supplier_id);
+        }
+
+        if ($request->filled('keyword')) {
+            $searchTerm = trim($request->keyword);
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('debit_note_no', 'like', "%{$searchTerm}%")
+                  ->orWhere('remarks', 'like', "%{$searchTerm}%")
+                  ->orWhereHas('supplier', function($sq) use ($searchTerm) {
+                      $sq->where('supplier_name', 'like', "%{$searchTerm}%")
+                         ->orWhere('phone', 'like', "%{$searchTerm}%");
+                  })
+                  ->orWhereHas('items.product', function($pq) use ($searchTerm) {
+                      $pq->where('product_name', 'like', "%{$searchTerm}%");
+                  });
+            });
+        }
+
+        $debitNotes = $query->orderBy('debit_date', 'desc')
             ->orderBy('id', 'desc')
-            ->paginate(20);
+            ->get();
+
+        $suppliers = Supplier::where('restaurant_id', $restaurantId)
+            ->where('status', '!=', 'D')
+            ->orderBy('supplier_name')
+            ->get();
         
-        return view('debit_notes.index', compact('debitNotes'));
+        return view('debit_notes.index', compact(
+            'debitNotes', 
+            'suppliers', 
+            'fromDate', 
+            'toDate', 
+            'supplierId', 
+            'keyword', 
+            'hasExplicitFilter'
+        ));
     }
     
     public function create()

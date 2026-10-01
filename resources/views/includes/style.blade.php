@@ -1,7 +1,8 @@
 <link rel="shortcut icon" href="{{ asset('fav_web.png') }}">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" id="main-font-link">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<!-- [Font Awesome Icons] https://fontawesome.com/icons -->
+<!-- [Font Awesome Icons] -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="{{asset('admin_template/fonts/fontawesome.css')}}">
 <!-- [Material Icons] https://fonts.google.com/icons -->
 <link rel="stylesheet" href="{{asset('admin_template/fonts/material.css')}}" >

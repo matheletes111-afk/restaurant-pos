@@ -50,42 +50,80 @@ class InventoryController extends Controller
     }
     public function live(Request $request)
     {
-        // Get all products with their inventory
+        $restaurantId = auth()->user()->restaurant_id;
+
+        // Base query for stats across all active restaurant products
+        $allInventories = Inventory::with(['product.unit'])
+            ->where('restaurant_id', $restaurantId)
+            ->whereHas('product', function ($q) {
+                $q->where('status', 'A');
+            })
+            ->get();
+
+        $totalProducts = $allInventories->count();
+        $goodStockItems = $allInventories->where('total_qty', '>', 10)->count();
+        $lowStockItems = $allInventories->where('total_qty', '<=', 10)->where('total_qty', '>', 0)->count();
+        $outOfStockItems = $allInventories->where('total_qty', '<=', 0)->count();
+        $totalStockQuantity = $allInventories->sum('total_qty');
+
+        // Filtered query for display
         $query = Inventory::with(['product.unit'])
-            ->where('restaurant_id', auth()->user()->restaurant_id)
-            ->orderBy('total_qty', 'asc'); // Sort by stock quantity ascending
-            
-        // Search functionality
-        if ($request->has('search') && !empty($request->search)) {
-            $query->whereHas('product', function($q) use ($request) {
-                $q->where('product_name', 'LIKE', "%{$request->search}%")
-                  ->where('status', 'A');
-            });
-        } else {
-            // Only show products with status 'A' (Active)
-            $query->whereHas('product', function($q) {
+            ->where('restaurant_id', $restaurantId)
+            ->whereHas('product', function ($q) {
                 $q->where('status', 'A');
             });
+
+        // Search functionality (Product Name, Unit Name, Created By)
+        if ($request->filled('search')) {
+            $keyword = trim($request->search);
+            $query->where(function ($q) use ($keyword) {
+                $q->whereHas('product', function ($pq) use ($keyword) {
+                    $pq->where('product_name', 'LIKE', "%{$keyword}%")
+                       ->orWhereHas('unit', function ($uq) use ($keyword) {
+                           $uq->where('name', 'LIKE', "%{$keyword}%");
+                       });
+                })->orWhere('created_by', 'LIKE', "%{$keyword}%");
+            });
         }
-        
-        // Filter by low stock
+
+        // Unit filter
+        if ($request->filled('unit_id')) {
+            $query->whereHas('product', function ($q) use ($request) {
+                $q->where('unit_id', $request->unit_id);
+            });
+        }
+
+        // Stock status filter (supporting stock_status, low_stock, out_of_stock)
+        $stockStatus = $request->get('stock_status', '');
         if ($request->has('low_stock') && $request->low_stock == '1') {
-            $query->where('total_qty', '<=', 10);
+            $stockStatus = 'low';
+        } elseif ($request->has('out_of_stock') && $request->out_of_stock == '1') {
+            $stockStatus = 'out';
         }
-        
-        // Filter by out of stock
-        if ($request->has('out_of_stock') && $request->out_of_stock == '1') {
+
+        if ($stockStatus === 'low') {
+            $query->where('total_qty', '<=', 10)->where('total_qty', '>', 0);
+        } elseif ($stockStatus === 'out') {
             $query->where('total_qty', '<=', 0);
+        } elseif ($stockStatus === 'good') {
+            $query->where('total_qty', '>', 10);
         }
-        
-        $inventories = $query->get();
-        
-        // Calculate summary
-        $totalProducts = $inventories->count();
-        $lowStockItems = $inventories->where('total_qty', '<=', 10)->where('total_qty', '>', 0)->count();
-        $outOfStockItems = $inventories->where('total_qty', '<=', 0)->count();
-        $totalStockValue = 0; // You can calculate this if you have price in products
-        
-        return view('inventory', compact('inventories', 'totalProducts', 'lowStockItems', 'outOfStockItems'));
+
+        // Sort by stock quantity ascending (lowest stock on top)
+        $inventories = $query->orderBy('total_qty', 'asc')->get();
+
+        // Get units for filter dropdown
+        $units = Unit::where('restaurant_id', $restaurantId)->where('status', 'A')->orderBy('name')->get();
+
+        return view('inventory', compact(
+            'inventories',
+            'totalProducts',
+            'goodStockItems',
+            'lowStockItems',
+            'outOfStockItems',
+            'totalStockQuantity',
+            'units',
+            'stockStatus'
+        ));
     }
 }

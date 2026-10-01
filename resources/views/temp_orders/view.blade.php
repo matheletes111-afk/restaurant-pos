@@ -1,542 +1,369 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Admin - View Order #{{ $order->id }}</title>
-    @include('includes.style')
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --gold: #C9A84C;
-            --gold-light: #E8C97A;
-            --gold-dim: rgba(201,168,76,0.15);
-            --primary-dark: #1e293b;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --info: #3b82f6;
-        }
+  <title>Review Pending Order #{{ $order->order_id ?? $order->id }} • Bill&Bite POS</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
 
-        .order-header {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-            border-radius: 20px;
-            padding: 24px 30px;
-            margin-bottom: 28px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .order-header::before {
-            content: '';
-            position: absolute;
-            top: -30%;
-            right: -10%;
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(201,168,76,0.15), transparent);
-            border-radius: 50%;
-        }
+  @include('includes.style')
 
-        .order-header h3 {
-            color: white;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome 6 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-        .order-header .order-badge {
-            background: rgba(255,255,255,0.15);
-            padding: 6px 15px;
-            border-radius: 30px;
-            font-size: 0.85rem;
-            color: #a5f3fc;
-            display: inline-block;
-        }
-
-        .info-card {
-            background: white;
-            border-radius: 20px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-            border: 1px solid #eef2f8;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
-        .info-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 12px;
-            background: #f8fafc;
-            border-radius: 14px;
-            transition: all 0.3s;
-        }
-
-        .info-item:hover {
-            background: #f1f5f9;
-            transform: translateX(3px);
-        }
-
-        .info-icon {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, var(--gold), var(--gold-light));
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.2rem;
-        }
-
-        .info-content {
-            flex: 1;
-        }
-
-        .info-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #64748b;
-            margin-bottom: 4px;
-        }
-
-        .info-value {
-            font-weight: 700;
-            color: #1e293b;
-            font-size: 1rem;
-        }
-
-        .badge-gst {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
-        }
-
-        .badge-non-gst {
-            background: #64748b;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
-        }
-
-        .summary-card {
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-            border-radius: 16px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .summary-row:last-child {
-            border-bottom: none;
-        }
-
-        .summary-label {
-            color: #64748b;
-            font-size: 0.9rem;
-        }
-
-        .summary-value {
-            font-weight: 600;
-            color: #1e293b;
-        }
-
-        .summary-total {
-            background: linear-gradient(135deg, #1e293b, #334155);
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .summary-total .label {
-            color: white;
-            font-weight: 600;
-        }
-
-        .summary-total .value {
-            color: var(--gold-light);
-            font-weight: 800;
-            font-size: 1.2rem;
-        }
-
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .items-table thead th {
-            background: linear-gradient(135deg, #1e293b, #334155);
-            color: white;
-            font-weight: 500;
-            padding: 14px 16px;
-            font-size: 0.85rem;
-        }
-
-        .items-table tbody td {
-            padding: 12px 16px;
-            border-bottom: 1px solid #eef2f8;
-            vertical-align: middle;
-        }
-
-        .items-table tbody tr:hover {
-            background: #f8fafc;
-        }
-
-        .btn-approve {
-            background: linear-gradient(135deg, var(--success), #059669);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            padding: 14px 40px;
-            font-size: 1rem;
-            font-weight: 600;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .btn-approve:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(16,185,129,0.3);
-            color: white;
-        }
-
-        .btn-approve:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-    </style>
+  <!-- Pending Orders CSS -->
+  <link rel="stylesheet" href="{{ asset('admin_template/css/pending-temp-orders.css') }}">
 </head>
-
 <body data-pc-theme="light">
 
 @include('includes.sidebar')
 
 <div class="pc-container">
-<div class="pc-content">
+  <div class="pc-content">
+    
+    <div class="pos-page-wrap">
 
-    <!-- Order Header -->
-    <div class="order-header">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      @php
+        $isGstBill = ($order->is_gst_bill ?? 'NO') == 'YES';
+        $orderNo = $order->order_id ?? ('#' . $order->id);
+        $customerInitial = strtoupper(substr($order->customer_name ?? 'G', 0, 1));
+      @endphp
+      
+      <!-- ===================================================
+           1. TOP ORDER BANNER
+           =================================================== -->
+      <div class="pos-order-banner">
+        <div class="pos-banner-top">
+          <div class="pos-banner-title-area">
+            <a href="{{ route('temp.orders') }}" class="btn-back-square" title="Back to Pending Orders">
+              <i class="fa-solid fa-arrow-left"></i>
+            </a>
+
             <div>
-                <h3><i class="fas fa-receipt me-2"></i>Order Details</h3>
-                <div class="order-badge mt-2">
-                    <i class="fas fa-hashtag me-1"></i> Order #{{ $order->order_id ?? $order->id }}
-                </div>
-            </div>
-            <div>
-                @php $isGstBill = ($order->is_gst_bill ?? 'NO') == 'YES'; @endphp
+              <h1 class="pos-banner-order-no">
+                <span>Pending Order {{ $orderNo }}</span>
                 @if($isGstBill)
-                    <span class="badge-gst"><i class="fas fa-file-invoice-dollar"></i> GST Bill</span>
+                  <span class="pos-bill-type-tag gst"><i class="fa-solid fa-percent me-1"></i> GST Bill</span>
                 @else
-                    <span class="badge-non-gst"><i class="fas fa-receipt"></i> Non-GST Bill</span>
+                  <span class="pos-bill-type-tag nongst">Non-GST</span>
                 @endif
+              </h1>
+              <p class="text-white-50 mb-0" style="font-size: 0.82rem;">
+                <i class="fa-regular fa-clock me-1"></i> Placed on {{ $order->created_at ? $order->created_at->format('d M Y, h:i A') : 'Just now' }} • Contactless QR Order
+              </p>
             </div>
-        </div>
-    </div>
+          </div>
 
-    <!-- Customer & Order Information -->
-    <div class="info-card">
-        <div class="info-grid">
-            <div class="info-item">
-                <div class="info-icon"><i class="fas fa-user"></i></div>
-                <div class="info-content">
-                    <div class="info-label">Customer Name</div>
-                    <div class="info-value">{{ $order->customer_name ?? 'Guest' }}</div>
-                </div>
-            </div>
-            <div class="info-item">
-                <div class="info-icon"><i class="fas fa-phone-alt"></i></div>
-                <div class="info-content">
-                    <div class="info-label">Phone Number</div>
-                    <div class="info-value">{{ $order->customer_phone ?? '-' }}</div>
-                </div>
-            </div>
-            <div class="info-item">
-                <div class="info-icon"><i class="fas fa-table"></i></div>
-                <div class="info-content">
-                    <div class="info-label">Table Number</div>
-                    <div class="info-value">
-                        {{ $order->table_details->name ?? 'Takeaway' }}
-                        @if($order->table_details)
-                            @if($order->table_details->table_status == 'INACTIVE' || $order->table_details->status == 'I' || $order->table_details->status == 'D')
-                                <span class="badge bg-danger ms-1" style="font-size: 0.7rem;">Inactive</span>
-                            @elseif($order->table_details->table_status == 'OCCUPIED')
-                                <span class="badge bg-warning text-dark ms-1" style="font-size: 0.7rem;">Occupied</span>
-                            @else
-                                <span class="badge bg-success ms-1" style="font-size: 0.7rem;">Available</span>
-                            @endif
-                        @endif
-                    </div>
-                </div>
-            </div>
-            <div class="info-item">
-                <div class="info-icon"><i class="fas fa-calendar-alt"></i></div>
-                <div class="info-content">
-                    <div class="info-label">Order Date</div>
-                    <div class="info-value">{{ $order->created_at->format('d M Y, h:i A') }}</div>
-                </div>
-            </div>
-            @if($order->order_type)
-            <div class="info-item">
-                <div class="info-icon"><i class="fas fa-utensils"></i></div>
-                <div class="info-content">
-                    <div class="info-label">Order Type</div>
-                    <div class="info-value">
-                        @if($order->order_type == 'DINE_IN')
-                            <span class="btn btn-info">Dine In</span>
-                        @else
-                            <span class="btn btn-success">Takeaway</span>
-                        @endif
-                    </div>
-                </div>
-            </div>
-            @endif
-            @if($order->remarks)
-            <div class="info-item">
-                <div class="info-icon"><i class="fas fa-sticky-note"></i></div>
-                <div class="info-content">
-                    <div class="info-label">Remarks</div>
-                    <div class="info-value">{{ $order->remarks }}</div>
-                </div>
-            </div>
-            @endif
+          <div class="d-flex align-items-center gap-2">
+            <span class="pos-table-badge dine-in" style="background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.25);">
+              <i class="fa-solid fa-spinner fa-spin me-1 text-warning"></i> Awaiting Approval
+            </span>
+          </div>
         </div>
-    </div>
+      </div>
 
-    <!-- Order Items Card -->
-    <div class="card mt-3">
-        <div class="card-header">
-            <h5><i class="fas fa-list-ul me-2"></i>Order Items <span class="badge bg-secondary ms-2">{{ count($order->items) }} Items</span></h5>
-        </div>
-        @include('includes.message')
-        <div class="card-body table-responsive">
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Food Item</th>
-                        <th>Qty</th>
-                        <th>Price</th>
-                        <th>Discount</th>
-                        <th>Taxable</th>
-                        <th>GST</th>
-                        <th>Total</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($order->items as $key => $i)
-                    @php
-                        $itemDiscount = $i->item_discount_percentage ?? 0;
-                        $discountedPrice = $i->discounted_price ?? ($i->price - ($i->price * $itemDiscount / 100));
-                        $taxableAmount = $i->taxable_amount ?? ($discountedPrice * $i->quantity);
-                        $gstAmount = $i->gst_amount ?? (($taxableAmount * ($i->gst_rate ?? 0)) / 100);
-                        $itemTotal = $taxableAmount + $gstAmount;
-                    @endphp
-                    <tr>
-                        <td>{{ $key+1 }}</div>
-                        <td>
-                            <strong>{{ $i->menuItem->name ?? 'N/A' }}</strong>
-                            @if($itemDiscount > 0)
-                                <br><small class="text-success">{{ $itemDiscount }}% OFF</small>
-                            @endif
-                        </div>
-                        <td>{{ $i->quantity }}</div>
-                        <td>
-                            @if($itemDiscount > 0)
-                                <del class="text-muted">₹{{ number_format($i->price, 2) }}</del><br>
-                                <span class="text-success">₹{{ number_format($discountedPrice, 2) }}</span>
-                            @else
-                                ₹{{ number_format($i->price, 2) }}
-                            @endif
-                        </div>
-                        <td>
-                            @if($itemDiscount > 0)
-                                <span class="text-danger">- ₹{{ number_format(($i->price * $i->quantity) - $taxableAmount, 2) }}</span>
-                            @else
-                                <span class="text-muted">-</span>
-                            @endif
-                        </div>
-                        <td>₹{{ number_format($taxableAmount, 2) }}</div>
-                        <td>{{ $i->gst_rate ?? 0 }}%</div>
-                        <td><strong class="text-primary">₹{{ number_format($itemTotal, 2) }}</strong></div>
-                        <td>
-                            <a href="{{ route('temp.orders.view.delete.item', $i->id) }}"
-                               onclick="return confirm('Delete this item?')"
-                               class="btn btn-danger btn-sm"
-                               title="Remove Item">
-                               <i class="fa fa-trash"></i>
-                            </a>
-                        </div>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
+      <!-- Flash Messages -->
+      @include('includes.message')
 
-    <!-- Billing Summary -->
-    <div class="summary-card">
-        <div class="summary-row">
-            <span class="summary-label">Original Subtotal</span>
-            <span class="summary-value">₹{{ number_format($order->total_amount ?? 0, 2) }}</span>
+      <!-- ===================================================
+           2. CUSTOMER & ORDER META INFO CARDS
+           =================================================== -->
+      <div class="pos-info-cards-grid">
+        <!-- Customer Details -->
+        <div class="pos-info-box">
+          <div class="pos-info-box-icon">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div class="pos-info-box-meta">
+            <span class="pos-info-box-label">Customer Name</span>
+            <span class="pos-info-box-value">{{ $order->customer_name ?? 'Guest Customer' }}</span>
+          </div>
         </div>
+
+        <!-- Phone Number -->
+        <div class="pos-info-box">
+          <div class="pos-info-box-icon">
+            <i class="fa-solid fa-phone"></i>
+          </div>
+          <div class="pos-info-box-meta">
+            <span class="pos-info-box-label">Contact Phone</span>
+            <span class="pos-info-box-value">
+              @if($order->customer_phone)
+                <a href="tel:{{ $order->customer_phone }}" class="text-dark text-decoration-none">{{ $order->customer_phone }}</a>
+              @else
+                <span class="text-muted">Not Provided</span>
+              @endif
+            </span>
+          </div>
+        </div>
+
+        <!-- Dining Table -->
+        <div class="pos-info-box">
+          <div class="pos-info-box-icon">
+            <i class="fa-solid fa-chair"></i>
+          </div>
+          <div class="pos-info-box-meta">
+            <span class="pos-info-box-label">Table &amp; Dining Type</span>
+            <span class="pos-info-box-value">
+              @if($order->order_type == 'DINE_IN')
+                {{ @$order->table_details->name ?? 'Dine In' }}
+                @if($order->table_details)
+                  @if($order->table_details->table_status == 'INACTIVE' || $order->table_details->status == 'I' || $order->table_details->status == 'D')
+                    <span class="badge bg-danger ms-1" style="font-size: 0.65rem;">Inactive</span>
+                  @elseif($order->table_details->table_status == 'OCCUPIED')
+                    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Occupied</span>
+                  @else
+                    <span class="badge bg-success ms-1" style="font-size: 0.65rem;">Available</span>
+                  @endif
+                @endif
+              @else
+                Takeaway Order
+              @endif
+            </span>
+          </div>
+        </div>
+
+        <!-- Customer Remarks / Special Requests -->
+        <div class="pos-info-box">
+          <div class="pos-info-box-icon">
+            <i class="fa-solid fa-note-sticky"></i>
+          </div>
+          <div class="pos-info-box-meta">
+            <span class="pos-info-box-label">Customer Remarks</span>
+            <span class="pos-info-box-value" style="font-size: 0.85rem; color: #92400e;">
+              {{ $order->remarks ? $order->remarks : 'No special instructions' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================
+           3. MAIN LAYOUT: ITEMS LIST (LEFT) + BILL SUMMARY (RIGHT)
+           =================================================== -->
+      <div class="pos-view-layout-grid">
         
-        @php
-            $totalItemDiscount = 0;
-            foreach($order->items as $item) {
+        <!-- LEFT: Items Review Table -->
+        <div class="pos-card-container mb-0">
+          <div class="pos-card-header">
+            <h2 class="pos-card-title">
+              <i class="fa-solid fa-utensils text-primary"></i>
+              <span>Order Items</span>
+              <span class="pos-badge-count">{{ count($order->items) }} Items</span>
+            </h2>
+          </div>
+
+          <div class="table-responsive">
+            <table class="pos-table-custom">
+              <thead>
+                <tr>
+                  <th style="width: 40px;">#</th>
+                  <th>Food Item</th>
+                  <th class="text-center">Qty</th>
+                  <th>Unit Price</th>
+                  <th>Discount</th>
+                  <th>Taxable</th>
+                  <th>GST</th>
+                  <th>Item Total</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @foreach($order->items as $key => $i)
+                @php
+                  $itemDiscount = $i->item_discount_percentage ?? 0;
+                  $discountedPrice = $i->discounted_price ?? ($i->price - ($i->price * $itemDiscount / 100));
+                  $taxableAmount = $i->taxable_amount ?? ($discountedPrice * $i->quantity);
+                  $gstAmount = $i->gst_amount ?? (($taxableAmount * ($i->gst_rate ?? 0)) / 100);
+                  $itemTotal = $taxableAmount + $gstAmount;
+                  $foodType = strtoupper($i->menuItem->food_type ?? 'VEG');
+                @endphp
+                <tr>
+                  <td><span class="text-muted" style="font-size: 0.8rem;">{{ $key + 1 }}</span></td>
+                  <td>
+                    <div>
+                      <strong style="color: #0f172a; font-size: 0.92rem;">{{ $i->menuItem->name ?? 'Dish Item' }}</strong>
+                      <div class="mt-1">
+                        <span class="pos-bill-type-tag {{ $foodType == 'VEG' ? 'gst' : 'nongst' }}" style="font-size: 0.65rem; padding: 1px 6px;">
+                          <i class="fa-solid fa-circle me-1" style="font-size: 0.45rem; color: {{ $foodType == 'VEG' ? '#10b981' : '#ef4444' }};"></i> {{ $foodType }}
+                        </span>
+                        @if($itemDiscount > 0)
+                          <span class="badge bg-success text-white ms-1" style="font-size: 0.65rem;">{{ $itemDiscount }}% OFF</span>
+                        @endif
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <span class="pos-items-count-pill" style="font-size: 0.85rem; font-weight: 800;">
+                      x{{ $i->quantity }}
+                    </span>
+                  </td>
+                  <td>
+                    @if($itemDiscount > 0)
+                      <del class="text-muted" style="font-size: 0.78rem;">₹{{ number_format($i->price, 2) }}</del><br>
+                      <strong class="text-success">₹{{ number_format($discountedPrice, 2) }}</strong>
+                    @else
+                      <strong>₹{{ number_format($i->price, 2) }}</strong>
+                    @endif
+                  </td>
+                  <td>
+                    @if($itemDiscount > 0)
+                      <span class="text-danger font-weight-bold">- ₹{{ number_format(($i->price * $i->quantity) - $taxableAmount, 2) }}</span>
+                    @else
+                      <span class="text-muted">-</span>
+                    @endif
+                  </td>
+                  <td>₹{{ number_format($taxableAmount, 2) }}</td>
+                  <td>
+                    @if($isGstBill)
+                      ₹{{ number_format($gstAmount, 2) }} <small class="text-muted">({{ $i->gst_rate ?? 0 }}%)</small>
+                    @else
+                      <span class="text-muted">-</span>
+                    @endif
+                  </td>
+                  <td>
+                    <strong class="text-primary font-weight-bold" style="font-family: 'Outfit', sans-serif; font-size: 0.95rem;">
+                      ₹{{ number_format($itemTotal, 2) }}
+                    </strong>
+                  </td>
+                  <td class="text-end">
+                    <a href="{{ route('temp.orders.view.delete.item', $i->id) }}" 
+                       onclick="return confirm('Remove \'{{ addslashes($i->menuItem->name ?? 'item') }}\' from this pending order?')"
+                       class="btn btn-sm btn-outline-danger" 
+                       style="border-radius: 8px; padding: 4px 10px;"
+                       title="Remove Item">
+                      <i class="fa-solid fa-trash"></i>
+                    </a>
+                  </td>
+                </tr>
+                @endforeach
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- RIGHT: Financial Summary & Totals -->
+        <div>
+          <div class="pos-summary-card">
+            <h3 class="pos-summary-title">
+              <i class="fa-solid fa-calculator text-primary"></i>
+              <span>Bill Breakdown</span>
+            </h3>
+
+            @php
+              $totalItemDiscount = 0;
+              foreach($order->items as $item) {
                 $itemDiscount = $item->item_discount_percentage ?? 0;
                 $discountedPrice = $item->discounted_price ?? ($item->price - ($item->price * $itemDiscount / 100));
                 $taxableAmount = $item->taxable_amount ?? ($discountedPrice * $item->quantity);
                 $totalItemDiscount += ($item->price * $item->quantity) - $taxableAmount;
-            }
-        @endphp
-        
-        @if($totalItemDiscount > 0)
-        <div class="summary-row">
-            <span class="summary-label">Item Discount</span>
-            <span class="summary-value text-success">- ₹{{ number_format($totalItemDiscount, 2) }}</span>
-        </div>
-        @endif
-        
-        <div class="summary-row">
-            <span class="summary-label">Taxable Amount</span>
-            <span class="summary-value">₹{{ number_format($order->taxable_amount ?? ($order->total_amount - $totalItemDiscount), 2) }}</span>
-        </div>
-        
-        @if($isGstBill)
-        <div class="summary-row">
-            <span class="summary-label">GST Total ({{ $order->restaurant_gst_percentage ?? 0 }}%)</span>
-            <span class="summary-value">₹{{ number_format($order->gst_amount ?? 0, 2) }}</span>
-        </div>
-        @endif
-        
-        @if($order->discount_percentage > 0)
-        <div class="summary-row">
-            <span class="summary-label">Order Discount ({{ $order->discount_percentage }}%)</span>
-            <span class="summary-value text-success">- ₹{{ number_format($order->discount ?? 0, 2) }}</span>
-        </div>
-        @endif
-        
-        @php
-            $grandTotal = $order->grand_total ?? 0;
-            $finalAmount = round($grandTotal);
-            $roundOff = $finalAmount - $grandTotal;
-        @endphp
+              }
+              $grandTotal = $order->grand_total ?? 0;
+              $finalAmount = round($grandTotal);
+              $roundOff = $finalAmount - $grandTotal;
+            @endphp
 
-        @if(abs($roundOff) > 0)
-        <div class="summary-row">
-            <span class="summary-label">Round Off</span>
-            <span class="summary-value">₹{{ number_format($roundOff, 2) }}</span>
-        </div>
-        @endif
-        
-        <div class="summary-total">
-            <span class="label"><i class="fas fa-rupee-sign me-1"></i> Grand Total</span>
-            <span class="value">₹{{ number_format($grandTotal, 2) }}</span>
-        </div>
-        
-        <div class="summary-total mt-2" style="background: linear-gradient(135deg, var(--success), #059669);">
-            <span class="label"><i class="fas fa-check-circle me-1"></i> Final Bill Amount</span>
-            <span class="value">₹{{ number_format($finalAmount, 2) }}</span>
-        </div>
-    </div>
+            <div class="pos-summary-row">
+              <span>Original Subtotal</span>
+              <span>₹{{ number_format($order->total_amount ?? 0, 2) }}</span>
+            </div>
 
-    <!-- Approve Order Section -->
-    <div class="text-center mt-4">
-        @php
-            $tableInactive = $order->table_details && ($order->table_details->table_status == 'INACTIVE' || $order->table_details->status == 'I' || $order->table_details->status == 'D');
-        @endphp
-        
+            @if($totalItemDiscount > 0)
+            <div class="pos-summary-row text-success">
+              <span>Item Level Discounts</span>
+              <span>- ₹{{ number_format($totalItemDiscount, 2) }}</span>
+            </div>
+            @endif
+
+            <div class="pos-summary-row bold-total">
+              <span>Taxable Subtotal</span>
+              <span>₹{{ number_format($order->taxable_amount ?? ($order->total_amount - $totalItemDiscount), 2) }}</span>
+            </div>
+
+            @if($isGstBill)
+            <div class="pos-summary-row">
+              <span>GST ({{ $order->restaurant_gst_percentage ?? 0 }}%)</span>
+              <span>₹{{ number_format($order->gst_amount ?? 0, 2) }}</span>
+            </div>
+            @endif
+
+            @if(($order->discount_percentage ?? 0) > 0 || ($order->discount ?? 0) > 0)
+            <div class="pos-summary-row text-success">
+              <span>Order Discount ({{ $order->discount_percentage ?? 0 }}%)</span>
+              <span>- ₹{{ number_format($order->discount ?? 0, 2) }}</span>
+            </div>
+            @endif
+
+            @if(abs($roundOff) > 0)
+            <div class="pos-summary-row">
+              <span>Round Off</span>
+              <span>₹{{ number_format($roundOff, 2) }}</span>
+            </div>
+            @endif
+
+            <div class="pos-grand-total-box">
+              <span style="font-weight: 700; font-size: 0.92rem;">Calculated Grand Total</span>
+              <span style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: #ff8c42;">₹{{ number_format($grandTotal, 2) }}</span>
+            </div>
+
+            <div class="pos-final-amount-box">
+              <span style="font-weight: 800; font-size: 0.95rem;"><i class="fa-solid fa-check-circle me-1"></i> Final Payable Amount</span>
+              <span style="font-family: 'Outfit', sans-serif; font-size: 1.45rem; font-weight: 800;">₹{{ number_format($finalAmount, 2) }}</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ===================================================
+           4. FLOATING APPROVAL & REJECTION ACTION BAR
+           =================================================== -->
+      @php
+        $tableInactive = $order->table_details && ($order->table_details->table_status == 'INACTIVE' || $order->table_details->status == 'I' || $order->table_details->status == 'D');
+      @endphp
+
+      <div class="pos-approval-bar">
         @if(!$tableInactive)
-            <div class="action-buttons">
-                <a href="{{ route('admin.temporder.approve', $order->id) }}"
-                   class="btn-approve"
-                   onclick="return confirm('Approve this order? It will be moved to main orders with a new order number.')">
-                    <i class="fas fa-check-circle"></i> Approve Order
-                </a>
-                <a href="{{ route('admin.temporder.reject', $order->id) }}"
-                   class="btn btn-danger btn-lg rounded-pill px-4"
-                   style="display: inline-flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 600;"
-                   onclick="return confirm('Reject this order? The customer will see the rejected status on their screen.')">
-                    <i class="fas fa-times-circle"></i> Reject Order
-                </a>
-                <a href="{{ route('temp.orders') }}" class="btn btn-secondary btn-lg rounded-pill px-4" style="display: inline-flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 600;">
-                    <i class="fas fa-arrow-left"></i> Back to Pending Orders
-                </a>
-            </div>
+          <a href="{{ route('admin.temporder.approve', $order->id) }}" 
+             class="btn-approve-big" 
+             onclick="return confirm('Approve this customer order and send tickets directly to kitchen?')">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>Approve &amp; Send to Kitchen</span>
+          </a>
+
+          <a href="{{ route('admin.temporder.reject', $order->id) }}" 
+             class="btn-reject-big" 
+             onclick="return confirm('Reject this pending order? The customer will see the rejected notification.')">
+            <i class="fa-solid fa-circle-xmark"></i>
+            <span>Reject Order</span>
+          </a>
+
+          <a href="{{ route('temp.orders') }}" class="btn-pos-pill">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Back to Queue</span>
+          </a>
         @else
-            <div class="alert alert-danger d-inline-flex align-items-center gap-2 px-4 py-3 rounded-lg">
-                <i class="fas fa-exclamation-triangle fa-lg"></i>
-                <strong>Table is inactive!</strong> The table is currently inactive or under maintenance.
-            </div>
-            <div class="mt-3">
-                <a href="{{ route('temp.orders') }}" class="btn btn-secondary btn-lg">
-                    <i class="fas fa-arrow-left"></i> Back to Pending Orders
-                </a>
-            </div>
+          <div class="alert alert-danger mb-0 d-inline-flex align-items-center gap-2" style="border-radius: 30px; font-weight: 700; font-size: 0.88rem;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Table is currently inactive or under maintenance. Please update table status before approving.</span>
+          </div>
+          <a href="{{ route('temp.orders') }}" class="btn-pos-pill">
+            <i class="fa-solid fa-arrow-left"></i> Back to Queue
+          </a>
         @endif
-    </div>
+      </div>
 
-</div>
-</div>
+    </div><!-- /.pos-page-wrap -->
 
+  </div><!-- /.pc-content -->
+</div><!-- /.pc-container -->
+
+<!-- JS & Scripts -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 @include('includes.script')
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.info-card, .card');
-        cards.forEach((card, index) => {
-            card.style.animation = `fadeInUp 0.5s ease-out ${index * 0.1}s both`;
-        });
-    });
-    
-    style = document.createElement('style');
-    style.textContent = `
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    `;
-    document.head.appendChild(style);
-</script>
 
 </body>
 </html>

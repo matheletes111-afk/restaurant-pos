@@ -653,22 +653,7 @@ public function store(Request $request)
      */
     protected function canAccessOrder($orderId, $orderType = null): bool
     {
-        // 1. Authenticated restaurant staff or admin can view any order
-        if (auth()->check()) {
-            return true;
-        }
-
-        // 2. Allow pass-through in testing environment only when session is uninitialized
-        if (app()->environment('testing')) {
-            $hasCustomerSession = session()->has('customer_qr_order_id') ||
-                session()->has('customer_qr_allowed_orders') ||
-                session()->has('customer_phone');
-            if (!$hasCustomerSession) {
-                return true;
-            }
-        }
-
-        // 3. Collect all authorized order IDs from customer's session
+        // 1. Collect all authorized order IDs from customer's session
         $allowedIds = [];
 
         $primaryId = session('customer_qr_order_id');
@@ -694,6 +679,17 @@ public function store(Request $request)
         }
 
         $allowedIds = array_unique(array_filter($allowedIds));
+        $hasCustomerSession = !empty($allowedIds) || session()->has('customer_phone');
+
+        // 2. Authenticated restaurant staff or admin can view any order ONLY if not in a customer session
+        if (auth()->check() && !$hasCustomerSession) {
+            return true;
+        }
+
+        // 3. Allow pass-through in testing environment only when session is uninitialized
+        if (app()->environment('testing') && !$hasCustomerSession) {
+            return true;
+        }
 
         // If no customer session is present at all, deny access
         if (empty($allowedIds) && !session()->has('customer_phone')) {
@@ -912,14 +908,9 @@ public function store(Request $request)
     public function deleteActiveOrderItem(Request $request, $id)
     {
         $orderItem = OrderItems::with('order')->find($id);
-        if ($orderItem) {
-            if (!$this->canAccessOrder($orderItem->order_id)) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Unauthorized. You cannot modify another customer\'s order.'
-                ], 403);
-            }
+        $tempItem = TempOrderItem::with('order')->find($id);
 
+        if ($orderItem && $this->canAccessOrder($orderItem->order_id)) {
             $status = strtoupper($orderItem->order_status ?? 'PENDING');
             if ($status === 'COOKING' || $status === 'DONE') {
                 return response()->json([
@@ -941,16 +932,7 @@ public function store(Request $request)
             ]);
         }
 
-        // Support deleting from unapproved pending TempOrder as well
-        $tempItem = TempOrderItem::with('order')->find($id);
-        if ($tempItem) {
-            if (!$this->canAccessOrder($tempItem->temp_order_id)) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Unauthorized. You cannot modify another customer\'s order.'
-                ], 403);
-            }
-
+        if ($tempItem && $this->canAccessOrder($tempItem->temp_order_id)) {
             $status = strtoupper($tempItem->order_status ?? 'PENDING');
             if ($status === 'COOKING' || $status === 'DONE') {
                 return response()->json([
@@ -975,7 +957,7 @@ public function store(Request $request)
                     return response()->json([
                         'status' => true,
                         'order_cancelled' => true,
-                        'message' => 'All dishes cancelled. Your order has been cancelled.',
+                        'message' => 'All items cancelled. Your order has been cancelled.',
                         'redirect' => route('temp.order.create', [$tempOrder->table_id, $tempOrder->restaurant_id])
                     ]);
                 } else {
@@ -994,6 +976,13 @@ public function store(Request $request)
                 'order_cancelled' => false,
                 'message' => 'Item removed from pending order.'
             ]);
+        }
+
+        if ($orderItem || $tempItem) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized. You cannot modify another customer\'s order.'
+            ], 403);
         }
 
         return response()->json([

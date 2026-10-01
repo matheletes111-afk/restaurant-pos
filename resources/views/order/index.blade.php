@@ -1,658 +1,515 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Place Order - Select Table or Takeaway</title>
-  @include('includes.style')
+  <title>Order Management Dashboard • Bill&Bite POS</title>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+  @include('includes.style')
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #f0f2f8;
-    }
-
-    /* Page Header Enhancement */
-    .page-header-custom {
-      background: linear-gradient(135deg, #1e2a3a 0%, #0f172a 100%);
-      border-radius: 28px;
-      padding: 24px 32px;
-      margin-bottom: 32px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .page-header-custom::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -20%;
-      width: 300px;
-      height: 300px;
-      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
-      border-radius: 50%;
-    }
-
-    .page-header-custom h5 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: white;
-      margin: 0;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .page-header-custom h5 i {
-      font-size: 2rem;
-      background: linear-gradient(135deg, #f59e0b, #ef4444);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-
-    .stats-badge {
-      background: rgba(255,255,255,0.15);
-      backdrop-filter: blur(10px);
-      border-radius: 40px;
-      padding: 8px 20px;
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      margin-top: 16px;
-    }
-
-    .stats-badge span {
-      color: white;
-      font-size: 0.85rem;
-      font-weight: 500;
-    }
-
-    .stats-badge .stat-number {
-      font-weight: 800;
-      font-size: 1.1rem;
-      background: rgba(255,255,255,0.25);
-      padding: 2px 12px;
-      border-radius: 30px;
-    }
-
-    /* Card Design - Modern Glassmorphism Style */
-    .table-card {
-      border-radius: 24px;
-      min-height: 220px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      transition: all 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-      cursor: pointer;
-      border: none;
-      backdrop-filter: blur(0px);
-    }
-
-    .table-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-      transition: left 0.5s;
-    }
-
-    .table-card:hover::before {
-      left: 100%;
-    }
-
-    .table-card:hover {
-      transform: translateY(-10px) scale(1.02);
-      box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.35);
-    }
-
-    .table-card .card-body {
-      padding: 1.8rem 1.5rem;
-    }
-
-    .table-icon {
-      width: 70px;
-      height: 70px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 16px auto;
-      transition: all 0.3s;
-    }
-
-    .table-card:hover .table-icon {
-      transform: scale(1.1);
-      background: rgba(255,255,255,0.3);
-    }
-
-    .table-icon i {
-      font-size: 2rem;
-    }
-
-    .card-title {
-      font-weight: 800;
-      font-size: 1.3rem;
-      margin-bottom: 8px;
-      letter-spacing: -0.3px;
-    }
-
-    .status-label {
-      font-weight: 600;
-      font-size: 0.8rem;
-      padding: 6px 16px;
-      border-radius: 40px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(0,0,0,0.2);
-      backdrop-filter: blur(4px);
-    }
-
-    /* Takeaway Card Special */
-    .takeaway-card {
-      background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
-      color: #fff;
-      position: relative;
-    }
-
-    .takeaway-card .table-icon {
-      background: rgba(255,255,255,0.25);
-    }
-
-    .takeaway-badge {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      background: rgba(255,215,0,0.3);
-      border-radius: 30px;
-      padding: 4px 12px;
-      font-size: 0.7rem;
-      font-weight: 600;
-    }
-
-    /* Available Tables */
-    .available-table {
-      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-      color: #fff;
-    }
-
-    /* Occupied Tables */
-    .occupied-table {
-      background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-      color: #fff;
-    }
-
-    .occupied-table .status-label {
-      background: rgba(0,0,0,0.25);
-    }
-
-    /* Inactive Tables */
-    .inactive-table {
-      background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
-      color: #fff;
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
-
-    .inactive-table:hover {
-      transform: translateY(0);
-      opacity: 0.7;
-    }
-
-    /* Customer info on occupied table */
-    .customer-info {
-      font-size: 0.7rem;
-      margin-top: 8px;
-      opacity: 0.9;
-      background: rgba(0,0,0,0.15);
-      padding: 4px 10px;
-      border-radius: 30px;
-      display: inline-block;
-    }
-
-    /* Grid Enhancements */
-    .row-cards {
-      margin: 0 -12px;
-    }
-
-    .col-card {
-      padding: 0 12px;
-      margin-bottom: 24px;
-    }
-
-    /* Empty State */
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      background: white;
-      border-radius: 32px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    }
-
-    .empty-state i {
-      font-size: 4rem;
-      color: #cbd5e1;
-      margin-bottom: 1rem;
-    }
-
-    .empty-state p {
-      color: #64748b;
-      font-size: 1rem;
-    }
-
-    /* Animation */
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .table-card {
-      animation: fadeInUp 0.5s ease backwards;
-    }
-
-    .table-card:nth-child(1) { animation-delay: 0.05s; }
-    .table-card:nth-child(2) { animation-delay: 0.1s; }
-    .table-card:nth-child(3) { animation-delay: 0.15s; }
-    .table-card:nth-child(4) { animation-delay: 0.2s; }
-    .table-card:nth-child(5) { animation-delay: 0.25s; }
-    .table-card:nth-child(6) { animation-delay: 0.3s; }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .page-header-custom h5 {
-        font-size: 1.3rem;
-      }
-      .table-card {
-        min-height: 180px;
-      }
-      .table-icon {
-        width: 55px;
-        height: 55px;
-      }
-      .card-title {
-        font-size: 1.1rem;
-      }
-    }
-
-    /* Floating decoration */
-    .bg-decoration {
-      position: fixed;
-      bottom: 0;
-      right: 0;
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .pc-content {
-      position: relative;
-      z-index: 1;
-    }
-  </style>
+  <!-- Font Awesome 6 CDN Loaded after includes.style -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  
+  <!-- External Order Dashboard CSS -->
+  <link rel="stylesheet" href="{{ asset('admin_template/css/order-dashboard.css') }}?v={{ time() }}">
 </head>
-
 <body>
-  @include('includes.sidebar')
+@include('includes.sidebar')
 
-  <div class="pc-container">
-    <div class="pc-content">
+@php
+  $tableList = $data ?? collect([]);
+  $totalTables = count($tableList);
+  $availableCount = $tableList->filter(function($t) {
+      return $t->table_status != 'INACTIVE' && $t->activeOrders->count() == 0;
+  })->count();
+  $occupiedCount = $tableList->filter(function($t) {
+      return $t->table_status != 'INACTIVE' && $t->activeOrders->count() > 0;
+  })->count();
+  $totalActiveBills = $tableList->sum(function($t) {
+      return $t->activeOrders->count();
+  });
+  $restaurant = \App\Models\RestaurantMaster::find(auth()->user()->restaurant_id);
+  $canOrder = in_array(auth()->user()->role_type, ['Manager', 'Cashier', 'ADMIN', 'STAFF']);
+@endphp
+
+<div class="pc-container">
+  <div class="pc-content">
+    
+    <!-- Prominent Hero Header Architecture -->
+    <div class="floor-header-card">
+      <div class="floor-header-left">
+        <div class="floor-header-icon">
+          <i class="fa-solid fa-utensils"></i>
+        </div>
+        <div class="floor-header-meta">
+          <span class="floor-eyebrow-tag">
+            <i class="fa-solid fa-layer-group"></i> Table &amp; POS Order Dispatch
+          </span>
+          <h1 class="floor-main-title">Order Management Dashboard</h1>
+          <p class="floor-sub-text">
+            @if($restaurant)
+              <span class="text-white fw-bold"><i class="fa-solid fa-store text-warning me-1"></i> {{ $restaurant->name }}</span>
+              <span class="opacity-75">&bull;</span>
+            @endif
+            <span class="floor-live-pill">
+              <span class="floor-pulse-dot"></span> Live Dining Sync
+            </span>
+            <span class="opacity-75">&bull; {{ $totalActiveBills }} Active {{ Str::plural('Bill', $totalActiveBills) }} in Service</span>
+          </p>
+        </div>
+      </div>
       
-      <!-- Enhanced Header with Stats -->
-      <div class="page-header-custom">
-        <h5>
-          <i class="fas fa-utensils"></i> 
-          Select Dining Option
-        </h5>
-        <div class="stats-badge">
-          <span><i class="fas fa-chair"></i> Total Tables</span>
-          <span class="stat-number">{{ count($data) }}</span>
-          <span class="mx-2">•</span>
-          <span><i class="fas fa-circle" style="color:#10B981; font-size: 0.6rem;"></i> Available</span>
-          <span class="stat-number">{{ $data->where('table_status', 'AVAILABLE')->count() }}</span>
-          <span class="mx-2">•</span>
-          <span><i class="fas fa-circle" style="color:#F59E0B; font-size: 0.6rem;"></i> Occupied</span>
-          <span class="stat-number">{{ $data->where('table_status', 'OCCUPIED')->count() }}</span>
+      <div class="floor-header-actions">
+        @if($canOrder)
+          <a href="{{ route('order.create', 'TAKEAWAY') }}" class="btn-header-takeaway" title="Start a fast takeaway / parcel order">
+            <i class="fa-solid fa-bolt text-warning"></i> Fast Takeaway Order
+          </a>
+        @endif
+      </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @include('includes.message')
+
+    <!-- Prominent KPI Live Stats Deck -->
+    <div class="floor-kpi-grid">
+      <div class="floor-kpi-card kpi-total-deck">
+        <div class="floor-kpi-icon">
+          <i class="fa-solid fa-chair"></i>
+        </div>
+        <div class="floor-kpi-info">
+          <span class="floor-kpi-number">{{ $totalTables }}</span>
+          <span class="floor-kpi-label">Total Floor Tables</span>
         </div>
       </div>
 
-      <div class="row row-cards">
-        <!-- Takeaway Card - Enhanced -->
-        @if(auth()->user()->role_type=="Manager" || auth()->user()->role_type=="Cashier" || auth()->user()->role_type=="ADMIN")
-        <div class="col-md-3 col-sm-6 col-card">
-          <a href="{{ route('order.create', 'TAKEAWAY') }}" style="text-decoration:none;">
-            <div class="table-card takeaway-card">
-              <div class="takeaway-badge">
-                <i class="fas fa-bolt"></i> Fast Order
-              </div>
-              <div class="card-body d-flex flex-column justify-content-center align-items-center">
-                <div class="table-icon">
-                  <i class="fas fa-shopping-bag fa-2x"></i>
-                </div>
-                <h5 class="card-title">Takeaway</h5>
-                <span class="status-label">
-                  <i class="fas fa-clock"></i> Ready in 15-20 min
-                </span>
-                <small style="margin-top: 12px; opacity:0.8;">
-                  <i class="fas fa-arrow-right"></i> Click to start order
-                </small>
-              </div>
-            </div>
-          </a>
+      <div class="floor-kpi-card kpi-vacant-deck">
+        <div class="floor-kpi-icon">
+          <i class="fa-solid fa-circle-check"></i>
         </div>
+        <div class="floor-kpi-info">
+          <span class="floor-kpi-number">{{ $availableCount }}</span>
+          <span class="floor-kpi-label">Vacant &amp; Ready</span>
+        </div>
+      </div>
+
+      <div class="floor-kpi-card kpi-occupied-deck">
+        <div class="floor-kpi-icon">
+          <i class="fa-solid fa-fire"></i>
+        </div>
+        <div class="floor-kpi-info">
+          <span class="floor-kpi-number">{{ $occupiedCount }}</span>
+          <span class="floor-kpi-label">Occupied Dining</span>
+        </div>
+      </div>
+
+      <div class="floor-kpi-card kpi-bills-deck">
+        <div class="floor-kpi-icon">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+        </div>
+        <div class="floor-kpi-info">
+          <span class="floor-kpi-number">{{ $totalActiveBills }}</span>
+          <span class="floor-kpi-label">Active Running Bills</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls Toolbar & Live Filters -->
+    <div class="floor-toolbar-panel">
+      <div class="floor-filter-pills">
+        <button type="button" class="floor-pill-btn active" data-filter="all">
+          <i class="fa-solid fa-table-cells-large"></i> All Dining
+          <span class="pill-counter">{{ $totalTables + ($canOrder ? 1 : 0) }}</span>
+        </button>
+
+        <button type="button" class="floor-pill-btn pill-available" data-filter="available">
+          <i class="fa-solid fa-circle-check text-success"></i> Vacant Tables
+          <span class="pill-counter">{{ $availableCount }}</span>
+        </button>
+
+        <button type="button" class="floor-pill-btn pill-occupied" data-filter="occupied">
+          <i class="fa-solid fa-fire text-warning"></i> Occupied Tables
+          <span class="pill-counter">{{ $occupiedCount }}</span>
+        </button>
+
+        @if($canOrder)
+          <button type="button" class="floor-pill-btn pill-takeaway" data-filter="takeaway">
+            <i class="fa-solid fa-bag-shopping text-info"></i> Takeaway
+            <span class="pill-counter">1</span>
+          </button>
         @endif
+      </div>
 
-        <!-- Loop through all tables with enhanced design -->
-        @foreach($data as $table)
-          @php
-              $bgClass = '';
-              $statusText = '';
-              $url = '#';
-              $style = '';
-              $iconClass = 'fa-utensils';
-              $customerName = '';
-              $activeBillsCount = $table->activeOrders->count();
+      <!-- Real-time Instant Search -->
+      <div class="floor-search-box">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="tableSearchInput" class="floor-search-input" placeholder="Search tables (e.g. Table 1, VIP)..." autocomplete="off">
+        <button type="button" id="clearSearchBtn" class="search-clear-btn" style="display: none;" title="Clear search">&times;</button>
+      </div>
+    </div>
 
-              // if table is inactive
-              if($table->table_status == 'INACTIVE') {
-                  $bgClass = 'inactive-table';
-                  $statusText = 'Under Maintenance';
-                  $style = 'pointer-events:none; opacity:0.6; cursor:not-allowed;';
-                  $iconClass = 'fa-tools';
+    <!-- Dining Floor Grid -->
+    <div class="floor-grid" id="floorGridContainer">
+      
+      <!-- 1. Takeaway Card -->
+      @if($canOrder)
+      <a href="{{ route('order.create', 'TAKEAWAY') }}" 
+         class="dining-card-wrap filter-item" 
+         data-type="takeaway" 
+         data-name="takeaway parcel fast order"
+         title="Click to start a new Takeaway order">
+        <div class="prominent-dining-card theme-takeaway">
+          <div class="card-banner-strip">
+            <span class="card-type-chip">
+              <i class="fa-solid fa-bolt text-warning"></i> Quick Service
+            </span>
+            <span class="card-id-tag text-white" style="background: rgba(255,255,255,0.2);">FAST POS</span>
+          </div>
 
-              // if table is occupied (has active orders)
-              } elseif($activeBillsCount > 0) {
-                  $bgClass = 'occupied-table';
-                  $statusText = 'Occupied • ' . $activeBillsCount . ' Bill' . ($activeBillsCount > 1 ? 's' : '');
-                  $customerName = $table->activeOrders->first()->customer_name ?? 'Guest';
-                  $url = 'javascript:void(0);';
-                  $iconClass = 'fa-users';
+          <div class="card-main-body">
+            <div class="card-center-icon-wrap">
+              <i class="fa-solid fa-bag-shopping"></i>
+            </div>
+            <h3 class="card-title-text">Takeaway &amp; Parcel</h3>
+            <span class="card-status-badge">
+              <i class="fa-solid fa-clock"></i> 15 - 20 Mins Prep
+            </span>
+            <div class="card-desc-notes text-white-50">
+              Counter billing, takeaway packaging &amp; express checkout
+            </div>
+          </div>
 
-              // if available
-              } else {
-                  $bgClass = 'available-table';
-                  $statusText = 'Available • Ready';
-                  $url = route('order.create', $table->id);
-                  $iconClass = 'fa-chair';
-              }
-          @endphp
+          <div class="card-action-bar">
+            <span>Start Express Order</span>
+            <span class="card-action-btn">
+              <i class="fa-solid fa-arrow-right"></i> Order Now
+            </span>
+          </div>
+        </div>
+      </a>
+      @endif
 
-          <div class="col-md-3 col-sm-6 col-card">
-            <a href="{{ $url }}" 
-               @if($activeBillsCount > 0 && $table->table_status != 'INACTIVE')
-                 class="occupied-table-link"
-                 data-table-id="{{ $table->id }}"
-                 data-table-name="{{ $table->name }}"
-                 data-active-bills="{{ json_encode($table->activeOrders->map(function($o) {
-                     return [
-                         'id' => $o->id,
-                         'order_id' => $o->order_id,
-                         'customer_name' => $o->customer_name ?? 'Guest',
-                         'grand_total' => $o->grand_total,
-                         'created_at' => $o->created_at->format('h:i A'),
-                         'edit_url' => route('order.edit', $o->id)
-                     ];
-                 })) }}"
-               @endif
-               style="text-decoration:none; {{ $style }}">
-              <div class="table-card {{ $bgClass }}">
-                <div class="card-body d-flex flex-column justify-content-center align-items-center">
-                  <div class="table-icon">
-                    <i class="fas {{ $iconClass }} fa-2x"></i>
-                  </div>
-                  <h5 class="card-title">{{ $table->name }}</h5>
-                  
-                  @if($activeBillsCount > 0 && $table->table_status != 'INACTIVE')
-                    <span class="status-label">
-                      <i class="fas fa-user-check"></i> {{ $statusText }}
-                    </span>
-                    <div class="customer-info">
-                      <i class="fas fa-hourglass-half"></i> First: {{ $customerName }}
-                    </div>
-                  @elseif($table->table_status == 'INACTIVE')
-                    <span class="status-label">
-                      <i class="fas fa-wrench"></i> {{ $statusText }}
-                    </span>
-                  @else
-                    <span class="status-label">
-                      <i class="fas fa-check-circle"></i> {{ $statusText }}
-                    </span>
-                    <small style="margin-top: 10px; opacity:0.85;">
-                      <i class="fas fa-plus-circle"></i> New Order
-                    </small>
+      <!-- 2. Dining Tables Loop -->
+      @foreach($tableList as $table)
+        @php
+          $activeOrders = $table->activeOrders;
+          $activeBillsCount = $activeOrders->count();
+          $isInactive = ($table->table_status == 'INACTIVE');
+          $isOccupied = (!$isInactive && $activeBillsCount > 0);
+          $isAvailable = (!$isInactive && $activeBillsCount == 0);
+
+          if ($isInactive) {
+              $cardType = 'inactive';
+              $themeClass = 'theme-inactive';
+              $statusText = 'Under Maintenance';
+              $statusIcon = 'fa-wrench';
+              $url = 'javascript:void(0);';
+              $linkClass = '';
+              $cursorStyle = 'pointer-events:none; cursor:not-allowed;';
+          } elseif ($isOccupied) {
+              $cardType = 'occupied';
+              $themeClass = 'theme-occupied';
+              $statusText = 'Occupied • ' . $activeBillsCount . ' ' . Str::plural('Bill', $activeBillsCount);
+              $statusIcon = 'fa-users';
+              $url = 'javascript:void(0);';
+              $linkClass = 'occupied-table-link';
+              $cursorStyle = '';
+              $firstCustomer = $activeOrders->first()->customer_name ?? 'Guest';
+              $firstOrderTime = $activeOrders->first()->created_at ? $activeOrders->first()->created_at->diffForHumans(null, true) : null;
+              $runningTotal = $activeOrders->sum('grand_total');
+          } else {
+              $cardType = 'available';
+              $themeClass = 'theme-available';
+              $statusText = 'Vacant • Ready';
+              $statusIcon = 'fa-circle-check';
+              $url = route('order.create', $table->id);
+              $linkClass = '';
+              $cursorStyle = '';
+          }
+        @endphp
+
+        <a href="{{ $url }}" 
+           class="dining-card-wrap filter-item {{ $linkClass }}" 
+           data-type="{{ $cardType }}"
+           data-name="{{ strtolower($table->name . ' ' . ($table->description ?? '')) }}"
+           @if($isOccupied)
+             data-table-id="{{ $table->id }}"
+             data-table-name="{{ $table->name }}"
+             data-active-bills="{{ json_encode($activeOrders->map(function($o) {
+                 return [
+                     'id' => $o->id,
+                     'order_id' => $o->order_id,
+                     'customer_name' => $o->customer_name ?: 'Guest',
+                     'grand_total' => (float)$o->grand_total,
+                     'created_at' => $o->created_at ? $o->created_at->format('h:i A') : 'Just now',
+                     'edit_url' => route('order.edit', $o->id)
+                 ];
+             })) }}"
+           @endif
+           style="{{ $cursorStyle }}">
+          
+          <div class="prominent-dining-card {{ $themeClass }}">
+            <!-- Card Top Header Banner -->
+            <div class="card-banner-strip">
+              <span class="card-type-chip">
+                @if($isOccupied)
+                  <i class="fa-solid fa-fire text-warning"></i> In Service
+                @elseif($isInactive)
+                  <i class="fa-solid fa-ban text-danger"></i> Offline
+                @else
+                  <i class="fa-solid fa-circle-check text-success"></i> Vacant Table
+                @endif
+              </span>
+              <span class="card-id-tag">ID #{{ $table->id }}</span>
+            </div>
+
+            <!-- Card Main Center Body -->
+            <div class="card-main-body">
+              <div class="card-center-icon-wrap">
+                @if($isOccupied)
+                  <i class="fa-solid fa-users"></i>
+                @elseif($isInactive)
+                  <i class="fa-solid fa-screwdriver-wrench"></i>
+                @else
+                  <i class="fa-solid fa-chair"></i>
+                @endif
+              </div>
+
+              <h3 class="card-title-text">{{ $table->name }}</h3>
+              
+              <span class="card-status-badge">
+                <i class="fa-solid {{ $statusIcon }}"></i> {{ $statusText }}
+              </span>
+
+              @if($isOccupied)
+                <div class="occupied-info-box">
+                  <span><i class="fa-solid fa-user-tag"></i> {{ $firstCustomer }}</span>
+                  @if($firstOrderTime)
+                    <span>&bull;</span>
+                    <span><i class="fa-solid fa-clock"></i> {{ $firstOrderTime }}</span>
                   @endif
                 </div>
-              </div>
-            </a>
+              @elseif(!empty($table->description))
+                <div class="card-desc-notes text-truncate">
+                  {{ $table->description }}
+                </div>
+              @else
+                <div class="card-desc-notes">
+                  Ready for new guest order
+                </div>
+              @endif
+            </div>
+
+            <!-- Card Bottom Action Bar -->
+            <div class="card-action-bar">
+              @if($isOccupied)
+                <span class="text-dark fw-bold">
+                  ₹{{ number_format($runningTotal, 2) }}
+                </span>
+                <span class="card-action-btn">
+                  <i class="fa-solid fa-receipt"></i> View Bills ({{ $activeBillsCount }})
+                </span>
+              @elseif($isInactive)
+                <span class="text-muted small">Not in service</span>
+                <span class="badge bg-secondary text-white">Disabled</span>
+              @else
+                <span class="text-success fw-bold">Ready</span>
+                <span class="card-action-btn">
+                  <i class="fa-solid fa-plus-circle"></i> Start Order
+                </span>
+              @endif
+            </div>
           </div>
-        @endforeach
+        </a>
+      @endforeach
+
+      <!-- Empty State for 0 Search Results or 0 Tables -->
+      <div id="noResultsBox" class="floor-empty-state" style="display: none;">
+        <div class="floor-empty-icon">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+        <h4 class="floor-empty-title">No Matching Tables Found</h4>
+        <p class="floor-empty-desc">No dining tables match your search query or selected filter. Try clearing your search input.</p>
       </div>
 
-      <!-- Empty State (if no tables exist) -->
-      @if(count($data) == 0)
-      <div class="empty-state">
-        <i class="fas fa-chair"></i>
-        <p>No tables configured yet. Please contact administrator to add tables.</p>
+      @if($totalTables == 0 && !$canOrder)
+      <div class="floor-empty-state">
+        <div class="floor-empty-icon">
+          <i class="fa-solid fa-chair"></i>
+        </div>
+        <h4 class="floor-empty-title">No Tables Configured</h4>
+        <p class="floor-empty-desc">No floor tables have been set up for this restaurant yet. Please navigate to Table Master to add dining tables.</p>
       </div>
       @endif
 
     </div>
-  </div>
 
-  <!-- Active Bills Modal -->
-  <div class="modal fade" id="activeBillsModal" tabindex="-1" role="dialog" aria-labelledby="activeBillsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content" style="border-radius: 20px; overflow: hidden; border: none; box-shadow: 0 15px 30px rgba(0,0,0,0.2);">
-        <div class="modal-header text-white" style="background: linear-gradient(135deg, #1e2a3a 0%, #0f172a 100%);">
-          <h5 class="modal-title text-white" style="color:white !important" id="activeBillsModalLabel">
-            <i class="fas fa-file-invoice-dollar mr-2"></i>
-            Active Bills for <span id="modalTableName">Table</span>
-          </h5>
-          <button type="button" class="close text-white" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body p-4" style="background: #f8fafc;">
-          <!-- List of active bills -->
-          <div id="activeBillsList" class="mb-4">
-            <!-- Dynamic active bills will be injected here -->
+  </div>
+</div>
+
+<!-- ===================================================
+     ACTIVE BILLS LUXURY MODAL
+     =================================================== -->
+<div class="modal fade" id="activeBillsModal" tabindex="-1" role="dialog" aria-labelledby="activeBillsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-md" role="document">
+    <div class="modal-content modal-pos-content">
+      <div class="modal-pos-header">
+        <h5 class="modal-pos-title" id="activeBillsModalLabel">
+          <i class="fa-solid fa-receipt text-warning"></i>
+          Active Bills for <span id="modalTableName" class="text-warning">Table</span>
+        </h5>
+        <button type="button" class="modal-btn-close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="modal-pos-body">
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted small fw-bold text-uppercase">
+              <i class="fa-solid fa-list-check me-1"></i> Running Bills / KOTs
+            </span>
+            <span id="modalBillsCountBadge" class="badge bg-warning text-dark font-weight-bold">0 Bills</span>
           </div>
           
-          <!-- Action Buttons -->
-          <div class="text-center">
-            <a href="#" id="modalAddNewBillBtn" class="btn btn-success btn-lg btn-block" style="border-radius: 12px; font-weight: 600; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">
-              <i class="fas fa-plus-circle mr-2"></i> Add New Bill
-            </a>
-          </div>
+          <!-- Dynamic active bills injected here -->
+          <div id="activeBillsList"></div>
         </div>
+        
+        <!-- Add New Split Bill CTA -->
+        <a href="#" id="modalAddNewBillBtn" class="btn-modal-new-bill">
+          <i class="fa-solid fa-plus-circle"></i> Add Another Bill to Table
+        </a>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Background Decoration -->
-  <div class="bg-decoration"></div>
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+@include('includes.script')
 
-  <!-- Scripts -->
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-  @include('includes.script')
+<script>
+$(document).ready(function() {
+  var activeFilter = 'all';
 
-  <script>
-    // Add ripple effect on card click
-    $(document).ready(function() {
-      $('.table-card').on('click', function(e) {
-        let target = $(this);
-        if(target.closest('a').attr('style')?.includes('pointer-events:none')) {
-          e.preventDefault();
-          // Optional: Show toast message for inactive tables
-          if(target.hasClass('inactive-table')) {
-            alert('This table is currently under maintenance. Please choose another option.');
-          }
-        }
-      });
+  // Real-time table filtering & search
+  function applyFloorFilters() {
+    var searchQuery = $('#tableSearchInput').val().toLowerCase().trim();
+    var visibleCount = 0;
 
-      // Handle occupied table modal popup
-      $(document).on('click', '.occupied-table-link', function(e) {
-        e.preventDefault();
-        let tableId = $(this).data('table-id');
-        let tableName = $(this).data('table-name');
-        let activeBills = $(this).data('active-bills');
-        
-        $('#modalTableName').text(tableName);
-        
-        // Update Add New Bill button link
-        let createUrl = "{{ route('order.create', ':table_id') }}".replace(':table_id', tableId);
-        $('#modalAddNewBillBtn').attr('href', createUrl);
-        
-        let listDiv = $('#activeBillsList');
-        listDiv.empty();
-        
-        if (activeBills && activeBills.length > 0) {
-            activeBills.forEach(bill => {
-                let billHtml = `
-                    <div class="card mb-3 shadow-sm border-0" style="border-radius: 12px; background: white; border: 1px solid #e2e8f0;">
-                        <div class="card-body p-3 d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="mb-1 text-dark" style="font-weight: 700;">${bill.order_id}</h6>
-                                <p class="mb-0 text-muted small"><i class="fas fa-user mr-1"></i> ${bill.customer_name} • <i class="fas fa-clock mr-1"></i> ${bill.created_at}</p>
-                            </div>
-                            <div class="text-right">
-                                <div class="mb-2 text-success" style="font-weight: 700; font-size: 1.05rem;">₹${parseFloat(bill.grand_total).toFixed(2)}</div>
-                                <a href="${bill.edit_url}" class="btn btn-primary btn-sm px-3" style="border-radius: 8px; font-weight: 600;">
-                                    <i class="fas fa-edit mr-1"></i> Edit
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                listDiv.append(billHtml);
-            });
-        } else {
-            listDiv.append(`
-                <div class="text-center py-4 text-muted">
-                    <i class="fas fa-receipt fa-2x mb-2 d-block text-muted"></i>
-                    No active bills found.
-                </div>
-            `);
-        }
-        
-        $('#activeBillsModal').modal('show');
-      });
+    $('.filter-item').each(function() {
+      var itemType = $(this).data('type');
+      var itemName = $(this).data('name') || '';
 
-      // Animate stats on load
-      $('.stat-number').each(function() {
-        let final = $(this).text();
-        $(this).text('0');
-        let current = 0;
-        let interval = setInterval(() => {
-          if(current >= parseInt(final)) {
-            clearInterval(interval);
-            $(this).text(final);
-          } else {
-            current++;
-            $(this).text(current);
-          }
-        }, 20);
-      });
+      var matchesFilter = (activeFilter === 'all') || (itemType === activeFilter);
+      var matchesSearch = (searchQuery === '') || (itemName.indexOf(searchQuery) !== -1);
+
+      if (matchesFilter && matchesSearch) {
+        $(this).fadeIn(150);
+        visibleCount++;
+      } else {
+        $(this).hide();
+      }
     });
-  </script>
 
-  <style>
-    /* Additional polish */
-    a[style*="pointer-events:none"] {
-      cursor: default;
+    if (visibleCount === 0) {
+      $('#noResultsBox').fadeIn(150);
+    } else {
+      $('#noResultsBox').hide();
+    }
+  }
+
+  // Filter pills click handler
+  $('.floor-pill-btn').on('click', function() {
+    $('.floor-pill-btn').removeClass('active');
+    $(this).addClass('active');
+    activeFilter = $(this).data('filter');
+    applyFloorFilters();
+  });
+
+  // Search input handler
+  $('#tableSearchInput').on('input', function() {
+    var val = $(this).val();
+    if (val.length > 0) {
+      $('#clearSearchBtn').show();
+    } else {
+      $('#clearSearchBtn').hide();
+    }
+    applyFloorFilters();
+  });
+
+  // Clear search button handler
+  $('#clearSearchBtn').on('click', function() {
+    $('#tableSearchInput').val('').focus();
+    $(this).hide();
+    applyFloorFilters();
+  });
+
+  // Occupied table popup modal trigger
+  $(document).on('click', '.occupied-table-link', function(e) {
+    e.preventDefault();
+    var tableId = $(this).data('table-id');
+    var tableName = $(this).data('table-name');
+    var activeBills = $(this).data('active-bills');
+    
+    $('#modalTableName').text(tableName);
+    
+    // Set Add New Bill link
+    var createUrl = "{{ route('order.create', ':table_id') }}".replace(':table_id', tableId);
+    $('#modalAddNewBillBtn').attr('href', createUrl);
+    
+    var listDiv = $('#activeBillsList');
+    listDiv.empty();
+    
+    if (activeBills && activeBills.length > 0) {
+      $('#modalBillsCountBadge').text(activeBills.length + (activeBills.length === 1 ? ' Bill' : ' Bills'));
+      activeBills.forEach(function(bill) {
+        var formattedAmount = Number(bill.grand_total).toLocaleString('en-IN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+
+        var billHtml = `
+          <div class="active-bill-row-card">
+            <div class="bill-meta-left">
+              <div class="bill-order-number">
+                <i class="fa-solid fa-file-invoice text-primary me-1"></i> ${bill.order_id}
+              </div>
+              <div class="bill-guest-subtext">
+                <span><i class="fa-solid fa-user me-1 text-secondary"></i> ${bill.customer_name}</span>
+                <span>&bull;</span>
+                <span><i class="fa-solid fa-clock me-1 text-secondary"></i> ${bill.created_at}</span>
+              </div>
+            </div>
+            <div class="bill-amount-dock">
+              <div class="bill-grand-total">₹${formattedAmount}</div>
+              <a href="${bill.edit_url}" class="btn-edit-bill">
+                <i class="fa-solid fa-pen-to-square"></i> Manage Bill
+              </a>
+            </div>
+          </div>
+        `;
+        listDiv.append(billHtml);
+      });
+    } else {
+      $('#modalBillsCountBadge').text('0 Bills');
+      listDiv.append(`
+        <div class="text-center py-4 text-muted">
+          <i class="fa-solid fa-receipt fa-2x mb-2 d-block text-muted"></i>
+          No active bills found for this table.
+        </div>
+      `);
     }
     
-    .table-card {
-      position: relative;
-    }
-    
-    .table-card .card-body {
-      z-index: 2;
-      position: relative;
-    }
-    
-    /* Glow effect on hover for available tables */
-    .available-table:hover {
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.4), 0 20px 35px -10px rgba(0,0,0,0.3);
-    }
-    
-    .occupied-table:hover {
-      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.4), 0 20px 35px -10px rgba(0,0,0,0.3);
-    }
-    
-    .takeaway-card:hover {
-      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.4), 0 20px 35px -10px rgba(0,0,0,0.3);
-    }
-    
-    /* Responsive grid improvements */
-    @media (max-width: 1200px) {
-      .col-md-3 {
-        flex: 0 0 33.333%;
-        max-width: 33.333%;
-      }
-    }
-    
-    @media (max-width: 768px) {
-      .col-md-3 {
-        flex: 0 0 50%;
-        max-width: 50%;
-      }
-      .stats-badge {
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-    }
-    
-    @media (max-width: 480px) {
-      .col-md-3 {
-        flex: 0 0 100%;
-        max-width: 100%;
-      }
-    }
-    
-    /* Scrollbar styling */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-      background: #e2e8f0;
-      border-radius: 10px;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-      background: #94a3b8;
-      border-radius: 10px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-      background: #64748b;
-    }
-  </style>
+    $('#activeBillsModal').modal('show');
+  });
+});
+</script>
+
 </body>
 </html>
