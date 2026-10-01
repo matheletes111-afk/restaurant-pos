@@ -126,76 +126,70 @@
               @endforeach
             </div>
 
-            <!-- Categories Container -->
-            <div id="dishesCategoryContainer">
-              @foreach($categories as $key => $category)
-                <div class="category-pane mb-3" id="category-pane-{{ $category->id }}" data-category-id="{{ $category->id }}">
-                  
-                  <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
-                    <h5 class="fw-bold mb-0 text-dark" style="font-size: 0.95rem;">
-                      <i class="fa-solid fa-bookmark text-primary me-1"></i> {{ $category->name }}
-                    </h5>
-                    <span class="text-muted small">{{ $category->subcategories->count() }} {{ Str::plural('item', $category->subcategories->count()) }}</span>
-                  </div>
-
-                  <div class="food-items-grid">
-                    @forelse($category->subcategories as $item)
-                      @php
-                        $isNonVeg = (strtolower($item->food_type ?? 'veg') == 'non-veg');
-                        $discount = (float)($item->discount_percentage ?? 0);
-                        $finalPrice = $discount > 0 ? ($item->price - ($item->price * $discount / 100)) : $item->price;
-                      @endphp
-                      <div class="food-menu-card food-card" 
-                           data-category-id="{{ $category->id }}"
-                           data-type="{{ $isNonVeg ? 'non-veg' : 'veg' }}" 
-                           data-name="{{ strtolower($item->name) }}">
-                        
-                        <div>
-                          <div class="food-badge-strip">
-                            <span class="badge-food-type {{ $isNonVeg ? 'badge-food-nonveg' : 'badge-food-veg' }}">
-                              <i class="fa-solid {{ $isNonVeg ? 'fa-drumstick-bite' : 'fa-leaf' }}"></i>
-                              {{ $item->food_type ?? 'Veg' }}
+            <!-- All Dishes Unified Grid -->
+            <div id="dishesContainer">
+              <div class="food-items-grid" id="foodItemsGrid">
+                @php $hasAnyDishes = false; @endphp
+                @foreach($categories as $category)
+                  @foreach($category->subcategories as $item)
+                    @php
+                      $hasAnyDishes = true;
+                      $isNonVeg = (strtolower($item->food_type ?? 'veg') == 'non-veg');
+                      $discount = (float)($item->discount_percentage ?? 0);
+                      $finalPrice = $discount > 0 ? ($item->price - ($item->price * $discount / 100)) : $item->price;
+                    @endphp
+                    <div class="food-menu-card food-card" 
+                         data-category-id="{{ $category->id }}"
+                         data-category-name="{{ strtolower($category->name) }}"
+                         data-type="{{ $isNonVeg ? 'non-veg' : 'veg' }}" 
+                         data-name="{{ strtolower($item->name) }}">
+                      
+                      <div>
+                        <div class="food-badge-strip">
+                          <span class="badge-food-type {{ $isNonVeg ? 'badge-food-nonveg' : 'badge-food-veg' }}">
+                            <i class="fa-solid {{ $isNonVeg ? 'fa-drumstick-bite' : 'fa-leaf' }}"></i>
+                            {{ $item->food_type ?? 'Veg' }}
+                          </span>
+                          <span class="badge-category-tag" title="Category: {{ $category->name }}">
+                            <i class="fa-solid fa-bookmark me-1 opacity-75"></i>{{ Str::limit($category->name, 14) }}
+                          </span>
+                          @if($discount > 0)
+                            <span class="badge-food-discount">
+                              <i class="fa-solid fa-tag"></i> {{ $discount }}% OFF
                             </span>
-                            @if($discount > 0)
-                              <span class="badge-food-discount">
-                                <i class="fa-solid fa-tag"></i> {{ $discount }}% OFF
-                              </span>
-                            @endif
-                          </div>
-
-                          <h4 class="food-item-name">{{ $item->name }}</h4>
+                          @endif
                         </div>
 
-                        <div>
-                          <div class="food-pricing-row">
-                            <span class="price-final">₹{{ number_format($finalPrice, 2) }}</span>
-                            @if($discount > 0)
-                              <span class="price-original-del">₹{{ number_format($item->price, 2) }}</span>
-                            @endif
-                          </div>
+                        <h4 class="food-item-name">{{ $item->name }}</h4>
+                      </div>
 
-                          <button type="button" class="btn-add-food add-item-btn"
-                                  data-id="{{ $item->id }}"
-                                  data-name="{{ $item->name }}"
-                                  data-price="{{ $item->price }}"
-                                  data-discount="{{ $discount }}">
-                            <i class="fa-solid fa-plus"></i> Add Item
-                          </button>
+                      <div>
+                        <div class="food-pricing-row">
+                          <span class="price-final">₹{{ number_format($finalPrice, 2) }}</span>
+                          @if($discount > 0)
+                            <span class="price-original-del">₹{{ number_format($item->price, 2) }}</span>
+                          @endif
                         </div>
-                      </div>
-                    @empty
-                      <div class="text-center py-4 text-muted w-100">
-                        <i class="fa-solid fa-utensils fa-2x mb-2 d-block"></i>
-                        No food items available under this category.
-                      </div>
-                    @endforelse
-                  </div>
 
-                  <div class="no-dishes-notice text-center py-3 text-muted" style="display: none;">
-                    <i class="fa-solid fa-magnifying-glass me-1"></i> No matching dishes found in {{ $category->name }}.
-                  </div>
-                </div>
-              @endforeach
+                        <button type="button" class="btn-add-food add-item-btn"
+                                data-id="{{ $item->id }}"
+                                data-name="{{ $item->name }}"
+                                data-price="{{ $item->price }}"
+                                data-discount="{{ $discount }}">
+                          <i class="fa-solid fa-plus"></i> Add Item
+                        </button>
+                      </div>
+                    </div>
+                  @endforeach
+                @endforeach
+              </div>
+
+              <!-- No Matching Dishes Notice -->
+              <div id="noDishesNotice" class="text-center py-5 text-muted" style="display: {{ $hasAnyDishes ? 'none' : 'block' }};">
+                <i class="fa-solid fa-utensils fa-3x mb-3 text-muted opacity-50"></i>
+                <h5 class="fw-bold text-dark">No Dishes Found</h5>
+                <p class="small text-muted mb-0">No menu items match your search or filter selection.</p>
+              </div>
             </div>
 
           </div>
@@ -594,39 +588,31 @@ function applyFoodFilters() {
     let vegType = $('#vegFilter').val().toLowerCase().trim();
     let searchKeyword = $('#nameFilter').val().toLowerCase().trim();
 
-    $('.category-pane').each(function() {
-        let paneCatId = $(this).data('category-id');
-        let showThisCategory = (selectedCatId === 'all') || (String(paneCatId) === String(selectedCatId));
+    let visibleCount = 0;
 
-        if (!showThisCategory) {
-            $(this).hide();
-            return;
-        }
+    $('.food-card').each(function() {
+        let cardCatId = $(this).data('category-id');
+        let cardType = ($(this).data('type') || '').toLowerCase();
+        let cardName = ($(this).data('name') || '').toLowerCase();
+        let cardCatName = ($(this).data('category-name') || '').toLowerCase();
 
-        $(this).show();
-        let visibleCount = 0;
+        let matchesCat = (selectedCatId === 'all') || (String(cardCatId) === String(selectedCatId));
+        let matchesType = (!vegType) || (cardType === vegType);
+        let matchesName = (!searchKeyword) || (cardName.indexOf(searchKeyword) !== -1) || (cardCatName.indexOf(searchKeyword) !== -1);
 
-        $(this).find('.food-card').each(function() {
-            let cardType = ($(this).data('type') || '').toLowerCase();
-            let cardName = ($(this).data('name') || '').toLowerCase();
-
-            let matchesType = (!vegType) || (cardType === vegType);
-            let matchesName = (!searchKeyword) || (cardName.indexOf(searchKeyword) !== -1);
-
-            if (matchesType && matchesName) {
-                $(this).show();
-                visibleCount++;
-            } else {
-                $(this).hide();
-            }
-        });
-
-        if (visibleCount === 0) {
-            $(this).find('.no-dishes-notice').show();
+        if (matchesCat && matchesType && matchesName) {
+            $(this).show();
+            visibleCount++;
         } else {
-            $(this).find('.no-dishes-notice').hide();
+            $(this).hide();
         }
     });
+
+    if (visibleCount === 0) {
+        $('#noDishesNotice').show();
+    } else {
+        $('#noDishesNotice').hide();
+    }
 }
 
 $(document).ready(function() {
