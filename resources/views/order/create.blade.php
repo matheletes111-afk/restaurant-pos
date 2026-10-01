@@ -121,7 +121,9 @@
                   <span class="badge bg-light text-dark ms-1" style="font-size: 0.72rem;">{{ $category->subcategories->count() }}</span>
                 </button>
               @endforeach
-                      <!-- All Dishes Unified Grid -->
+            </div>
+
+            <!-- All Dishes Unified Grid -->
             <div id="dishesContainer">
               <div class="food-items-grid" id="foodItemsGrid">
                 @php $hasAnyDishes = false; @endphp
@@ -486,27 +488,27 @@ function renderOrderTable() {
 
 // Category and Food Item Filtering Logic
 function applyFoodFilters() {
-    let selectedCatId = $('.cat-pill-tab.active').data('category-id');
-    let vegType = $('#vegFilter').val().toLowerCase().trim();
-    let searchKeyword = $('#nameFilter').val().toLowerCase().trim();
+    let activeTab = $('.cat-pill-tab.active');
+    let selectedCatId = String(activeTab.attr('data-category-id') || 'all').trim();
+    let vegType = String($('#vegFilter').val() || '').toLowerCase().trim();
+    let searchKeyword = String($('#nameFilter').val() || '').toLowerCase().trim();
 
     let visibleCount = 0;
 
     $('.food-card').each(function() {
-        let cardCatId = $(this).data('category-id');
-        let cardType = ($(this).data('type') || '').toLowerCase();
-        let cardName = ($(this).data('name') || '').toLowerCase();
-        let cardCatName = ($(this).data('category-name') || '').toLowerCase();
+        let cardCatId = String($(this).attr('data-category-id') || '').trim();
+        let cardType = String($(this).attr('data-type') || '').toLowerCase().trim();
+        let cardName = String($(this).attr('data-name') || '').toLowerCase().trim();
 
-        let matchesCat = (selectedCatId === 'all') || (String(cardCatId) === String(selectedCatId));
+        let matchesCat = (selectedCatId === 'all') || (cardCatId === selectedCatId);
         let matchesType = (!vegType) || (cardType === vegType);
-        let matchesName = (!searchKeyword) || (cardName.indexOf(searchKeyword) !== -1) || (cardCatName.indexOf(searchKeyword) !== -1);
+        let matchesName = (!searchKeyword) || (cardName.indexOf(searchKeyword) !== -1);
 
         if (matchesCat && matchesType && matchesName) {
-            $(this).show();
+            $(this).css('display', 'flex');
             visibleCount++;
         } else {
-            $(this).hide();
+            $(this).css('display', 'none');
         }
     });
 
@@ -522,12 +524,12 @@ $(document).ready(function() {
     $(document).on('click', '.cat-pill-tab', function(e) {
         e.preventDefault();
         $('.cat-pill-tab').removeClass('active');
-        $(this).addClass('active');
+        $(this).closest('.cat-pill-tab').addClass('active');
         applyFoodFilters();
     });
 
     // Search and Veg Filter inputs
-    $('#vegFilter, #nameFilter').on('input change', function() {
+    $('#vegFilter, #nameFilter').on('input change keyup', function() {
         applyFoodFilters();
     });
 

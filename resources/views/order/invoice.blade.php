@@ -1,19 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Invoice #{{ $order->order_id ?? $order->id }} | {{ $order->customer_name ?: 'Guest' }}</title>
+    <title>Invoice #{{ $order->order_id ?? $order->id }} | {{ $order->customer_name ?: 'Guest' }} • Bill&Bite POS</title>
     @include('includes.style')
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <style>
         :root {
             --inv-primary: #ff5e14;
-            --inv-primary-hover: #ea580c;
+            --inv-primary-dark: #e04a08;
+            --inv-primary-light: #fff3ed;
             --inv-primary-gradient: linear-gradient(135deg, #ff5e14 0%, #ff8c42 100%);
             --inv-dark: #0f172a;
             --inv-slate: #1e293b;
@@ -23,6 +28,7 @@
             --inv-bg: #f8fafc;
             --inv-card: #ffffff;
             --inv-success: #10b981;
+            --inv-success-dark: #059669;
             --inv-success-bg: #ecfdf5;
             --inv-danger: #ef4444;
             --inv-danger-bg: #fef2f2;
@@ -31,6 +37,9 @@
             --inv-info: #0284c7;
             --inv-info-bg: #f0f9ff;
             --inv-purple: #8b5cf6;
+            --inv-radius-lg: 20px;
+            --inv-radius-md: 14px;
+            --inv-radius-sm: 10px;
         }
 
         body {
@@ -41,19 +50,19 @@
         }
 
         .inv-page-wrap {
-            max-width: 1080px;
+            max-width: 1040px;
             margin: 0 auto;
-            padding: 24px 16px;
+            padding: 24px 16px 48px;
         }
 
-        /* Top Bar */
+        /* Top Action Bar */
         .inv-topbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 16px;
-            margin-bottom: 24px;
+            margin-bottom: 22px;
         }
 
         .inv-top-title {
@@ -63,15 +72,18 @@
         }
 
         .inv-order-badge {
-            background: var(--inv-slate);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: #ffffff;
             font-family: 'Outfit', sans-serif;
             font-size: 1.15rem;
             font-weight: 800;
-            padding: 6px 16px;
+            padding: 7px 18px;
             border-radius: 30px;
             letter-spacing: 0.02em;
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .inv-actions {
@@ -83,7 +95,7 @@
 
         .btn-inv-primary {
             background: var(--inv-primary-gradient);
-            color: #ffffff;
+            color: #ffffff !important;
             border: none;
             padding: 10px 22px;
             border-radius: 30px;
@@ -93,20 +105,20 @@
             align-items: center;
             gap: 8px;
             box-shadow: 0 4px 16px rgba(255, 94, 20, 0.28);
-            transition: all 0.25s ease;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             cursor: pointer;
             text-decoration: none;
         }
 
         .btn-inv-primary:hover {
-            color: #ffffff;
             transform: translateY(-2px);
-            box-shadow: 0 8px 22px rgba(255, 94, 20, 0.38);
+            box-shadow: 0 8px 24px rgba(255, 94, 20, 0.38);
+            color: #ffffff !important;
         }
 
         .btn-inv-slate {
-            background: var(--inv-slate);
-            color: #ffffff;
+            background: #1e293b;
+            color: #ffffff !important;
             border: none;
             padding: 10px 20px;
             border-radius: 30px;
@@ -123,15 +135,38 @@
 
         .btn-inv-slate:hover {
             background: #0f172a;
-            color: #ffffff;
             transform: translateY(-2px);
+            color: #ffffff !important;
+        }
+
+        .btn-inv-whatsapp {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: #ffffff !important;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-inv-whatsapp:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(37, 211, 102, 0.42);
+            color: #ffffff !important;
         }
 
         .btn-inv-back {
             background: #ffffff;
-            color: var(--inv-slate);
-            border: 1px solid var(--inv-border);
-            padding: 10px 18px;
+            color: var(--inv-slate) !important;
+            border: 1.5px solid var(--inv-border);
+            padding: 9px 18px;
             border-radius: 30px;
             font-weight: 700;
             font-size: 0.88rem;
@@ -145,36 +180,37 @@
         .btn-inv-back:hover {
             background: #f8fafc;
             border-color: var(--inv-primary);
-            color: var(--inv-primary);
+            color: var(--inv-primary) !important;
         }
 
-        /* Invoice Container Card */
+        /* Invoice Main Card */
         .invoice-card {
             background: #ffffff;
-            border-radius: 20px;
-            border: 1px solid var(--inv-border);
+            border-radius: var(--inv-radius-lg);
+            border: 1.5px solid var(--inv-border);
             box-shadow: 0 10px 35px rgba(15, 23, 42, 0.05);
             overflow: hidden;
             margin-bottom: 30px;
         }
 
-        /* Header Canvas */
+        /* Hero Header Canvas */
         .invoice-header-canvas {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f172a 100%);
             color: #ffffff;
             padding: 32px 36px;
             position: relative;
             overflow: hidden;
+            border-bottom: 4px solid var(--inv-primary);
         }
 
         .invoice-header-canvas::after {
             content: '';
             position: absolute;
-            top: -50px;
-            right: -50px;
-            width: 240px;
-            height: 240px;
-            background: radial-gradient(circle, rgba(255, 94, 20, 0.2), transparent 70%);
+            top: -60px;
+            right: -60px;
+            width: 260px;
+            height: 260px;
+            background: radial-gradient(circle, rgba(255, 94, 20, 0.22), transparent 70%);
             border-radius: 50%;
             pointer-events: none;
         }
@@ -186,16 +222,16 @@
         }
 
         .inv-brand-logo {
-            width: 64px;
-            height: 64px;
+            width: 68px;
+            height: 68px;
             border-radius: 16px;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             color: #ffffff;
             flex-shrink: 0;
             overflow: hidden;
@@ -209,7 +245,7 @@
 
         .inv-restaurant-name {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.55rem;
+            font-size: 1.6rem;
             font-weight: 800;
             color: #ffffff;
             margin: 0 0 4px 0;
@@ -220,7 +256,7 @@
             font-size: 0.82rem;
             color: #94a3b8;
             margin: 0;
-            line-height: 1.45;
+            line-height: 1.5;
         }
 
         .inv-doc-title-block {
@@ -235,16 +271,16 @@
             font-size: 0.75rem;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.08em;
             padding: 4px 14px;
             border-radius: 20px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             box-shadow: 0 2px 10px rgba(255, 94, 20, 0.35);
         }
 
         .inv-doc-number {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.35rem;
+            font-size: 1.45rem;
             font-weight: 800;
             color: #ffffff;
             margin: 0;
@@ -256,14 +292,14 @@
             margin-top: 4px;
         }
 
-        /* Order Info Strip */
+        /* Meta Information Strip */
         .inv-meta-grid {
             background: #f8fafc;
-            border-bottom: 1px solid var(--inv-border);
-            padding: 24px 36px;
+            border-bottom: 1.5px solid var(--inv-border);
+            padding: 20px 36px;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 18px;
         }
 
         .inv-meta-item {
@@ -277,7 +313,7 @@
             text-transform: uppercase;
             letter-spacing: 0.06em;
             color: var(--inv-muted);
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
 
         .inv-meta-val {
@@ -286,29 +322,30 @@
             color: var(--inv-dark);
         }
 
-        /* Financial Health / Payment Summary Card */
+        /* Financial Summary Deck */
         .inv-financial-deck {
-            margin: 28px 36px 20px;
+            margin: 26px 36px 18px;
             background: #ffffff;
-            border: 1px solid var(--inv-border);
-            border-radius: 16px;
+            border: 1.5px solid var(--inv-border);
+            border-radius: var(--inv-radius-md);
             padding: 20px 24px;
-            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+            box-shadow: 0 4px 18px rgba(15, 23, 42, 0.03);
         }
 
         .inv-fin-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            gap: 18px;
             align-items: center;
         }
 
         .inv-fin-col {
             text-align: center;
-            padding: 10px 14px;
-            border-radius: 12px;
+            padding: 14px 16px;
+            border-radius: var(--inv-radius-sm);
             background: #f8fafc;
-            border: 1px solid var(--inv-border-light);
+            border: 1.5px solid var(--inv-border-light);
+            transition: all 0.2s ease;
         }
 
         .inv-fin-col.col-total {
@@ -334,22 +371,22 @@
             font-size: 0.72rem;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.06em;
             color: var(--inv-muted);
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
 
         .inv-fin-val {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.7rem;
+            font-size: 1.75rem;
             font-weight: 800;
-            line-height: 1.1;
+            line-height: 1.15;
         }
 
         .inv-fin-val.text-total { color: var(--inv-dark); }
-        .inv-fin-val.text-paid { color: var(--inv-success); }
+        .inv-fin-val.text-paid { color: var(--inv-success-dark); }
         .inv-fin-val.text-due { color: var(--inv-danger); }
-        .inv-fin-val.text-due.settled { color: var(--inv-success); }
+        .inv-fin-val.text-due.settled { color: var(--inv-success-dark); }
 
         .inv-status-pill-wrap {
             text-align: center;
@@ -365,38 +402,38 @@
             font-weight: 800;
             padding: 6px 18px;
             border-radius: 30px;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.04em;
         }
 
         .inv-status-pill.status-paid {
             background: #ecfdf5;
             color: #047857;
-            border: 1px solid #a7f3d0;
+            border: 1.5px solid #a7f3d0;
         }
 
         .inv-status-pill.status-partial {
             background: #fffbeb;
             color: #b45309;
-            border: 1px solid #fde68a;
+            border: 1.5px solid #fde68a;
         }
 
         .inv-status-pill.status-pending {
             background: #fef2f2;
             color: #b91c1c;
-            border: 1px solid #fecaca;
+            border: 1.5px solid #fecaca;
         }
 
         /* Tables & Section Layout */
         .inv-section-wrap {
-            padding: 10px 36px 28px;
+            padding: 8px 36px 26px;
         }
 
         .inv-section-title {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.15rem;
+            font-size: 1.12rem;
             font-weight: 800;
             color: var(--inv-dark);
-            margin: 24px 0 14px;
+            margin: 20px 0 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -411,7 +448,7 @@
         .inv-table {
             width: 100%;
             border-collapse: collapse;
-            border: 1px solid var(--inv-border-light);
+            border: 1.5px solid var(--inv-border);
             border-radius: 12px;
             overflow: hidden;
         }
@@ -425,7 +462,7 @@
             text-transform: uppercase;
             letter-spacing: 0.06em;
             padding: 12px 16px;
-            border-bottom: 1px solid var(--inv-border);
+            border-bottom: 1.5px solid var(--inv-border);
             white-space: nowrap;
         }
 
@@ -454,7 +491,7 @@
         .food-type-dot.veg { border-color: #10b981; color: #10b981; }
         .food-type-dot.nonveg { border-color: #ef4444; color: #ef4444; }
 
-        /* Calculation Summary Grid */
+        /* Calculation Summary Box */
         .inv-calc-container {
             display: flex;
             justify-content: flex-end;
@@ -462,12 +499,12 @@
         }
 
         .inv-calc-box {
-            width: 360px;
+            width: 380px;
             max-width: 100%;
             background: #f8fafc;
-            border: 1px solid var(--inv-border);
-            border-radius: 14px;
-            padding: 16px 20px;
+            border: 1.5px solid var(--inv-border);
+            border-radius: var(--inv-radius-md);
+            padding: 18px 22px;
         }
 
         .inv-calc-row {
@@ -481,11 +518,11 @@
 
         .inv-calc-row.grand-total {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.15rem;
+            font-size: 1.2rem;
             font-weight: 800;
             color: var(--inv-dark);
             border-top: 2px dashed var(--inv-border);
-            padding-top: 10px;
+            padding-top: 12px;
             margin-top: 10px;
             margin-bottom: 0;
         }
@@ -494,10 +531,10 @@
         .payment-method-badge {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            padding: 4px 10px;
+            gap: 6px;
+            padding: 4px 12px;
             border-radius: 20px;
-            font-size: 0.74rem;
+            font-size: 0.75rem;
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.02em;
@@ -512,14 +549,14 @@
         /* QR Scan & Pay Box */
         .inv-qr-card {
             background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
-            border: 1px solid var(--inv-border);
+            border: 1.5px solid var(--inv-border);
             border-radius: 16px;
             padding: 20px;
             display: flex;
             align-items: center;
             gap: 20px;
             max-width: 480px;
-            margin: 24px auto 0;
+            margin: 20px auto 0;
         }
 
         .inv-qr-img {
@@ -539,96 +576,197 @@
             object-fit: contain;
         }
 
-        /* Modal Enhancements */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(4px);
-            z-index: 1050;
-            overflow-x: hidden;
-            overflow-y: auto;
-        }
-
-        .modal.show {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-dialog {
-            width: 100%;
-            max-width: 480px;
-            margin: 1.75rem auto;
-        }
-
-        .modal-content {
-            background: #ffffff;
-            border-radius: 20px;
-            border: 1px solid var(--inv-border);
-            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+        /* Premium Modal Design */
+        .modal-content-premium {
+            border: none;
+            border-radius: 24px;
+            box-shadow: 0 25px 60px -10px rgba(15, 23, 42, 0.35);
             overflow: hidden;
         }
 
-        .modal-header {
-            background: var(--inv-slate);
+        .modal-header-premium {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: #ffffff;
-            padding: 18px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 22px 28px;
+            border-bottom: 3px solid var(--inv-primary);
         }
 
-        .modal-title {
+        .modal-header-premium .modal-title {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.15rem;
+            font-size: 1.25rem;
             font-weight: 800;
-            margin: 0;
+            color: #ffffff;
             display: flex;
             align-items: center;
-            gap: 8px;
-        }
-
-        .modal-body {
-            padding: 24px;
-        }
-
-        .modal-footer {
-            padding: 16px 24px;
-            background: #f8fafc;
-            border-top: 1px solid var(--inv-border);
-            display: flex;
-            justify-content: flex-end;
             gap: 10px;
         }
 
-        .form-label-custom {
-            font-size: 0.75rem;
+        .modal-body-premium {
+            padding: 28px;
+            background: #ffffff;
+        }
+
+        .modal-footer-premium {
+            padding: 16px 28px;
+            background: #f8fafc;
+            border-top: 1.5px solid var(--inv-border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* Form Controls in Modal */
+        .pm-label {
+            font-size: 0.78rem;
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: var(--inv-slate);
+            color: var(--inv-dark);
             margin-bottom: 6px;
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        .form-control-custom {
+        .pm-input-wrap {
+            position: relative;
+        }
+
+        .pm-input-prefix {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--inv-primary);
+            pointer-events: none;
+        }
+
+        .pm-input-control {
             width: 100%;
-            padding: 10px 14px;
-            border-radius: 10px;
-            border: 1px solid var(--inv-border);
-            font-size: 0.9rem;
+            border: 1.5px solid var(--inv-border);
+            border-radius: 12px;
+            padding: 11px 16px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            background: #f8fafc;
             outline: none;
+            transition: all 0.2s ease;
+            color: var(--inv-dark);
+        }
+
+        .pm-input-control.has-prefix {
+            padding-left: 36px;
+            font-family: 'Outfit', monospace;
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--inv-dark);
+        }
+
+        .pm-input-control:focus {
+            background: #ffffff;
+            border-color: var(--inv-primary);
+            box-shadow: 0 0 0 4px rgba(255, 94, 20, 0.12);
+        }
+
+        /* Quick Amount Preset Chips */
+        .quick-presets-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            margin-bottom: 18px;
+        }
+
+        .preset-chip {
+            background: #f1f5f9;
+            border: 1.5px solid var(--inv-border);
+            color: var(--inv-slate);
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .preset-chip:hover {
+            background: #e2e8f0;
+            border-color: #cbd5e1;
+        }
+
+        .preset-chip.chip-full {
+            background: var(--inv-primary-light);
+            border-color: rgba(255, 94, 20, 0.3);
+            color: var(--inv-primary-dark);
+        }
+
+        .preset-chip.chip-full:hover {
+            background: #ffe6d6;
+        }
+
+        /* Payment Mode Grid Selection */
+        .payment-method-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .payment-mode-radio {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .payment-mode-card {
+            border: 1.5px solid var(--inv-border);
+            border-radius: 12px;
+            padding: 12px 8px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8fafc;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .payment-mode-card i {
+            font-size: 1.25rem;
+            color: var(--inv-muted);
             transition: all 0.2s ease;
         }
 
-        .form-control-custom:focus {
+        .payment-mode-card span {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--inv-slate);
+        }
+
+        .payment-mode-card:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+
+        .payment-mode-radio:checked + .payment-mode-card {
+            background: #ffffff;
             border-color: var(--inv-primary);
             box-shadow: 0 0 0 3px rgba(255, 94, 20, 0.15);
+        }
+
+        .payment-mode-radio:checked + .payment-mode-card i {
+            color: var(--inv-primary);
+            transform: scale(1.1);
+        }
+
+        .payment-mode-radio:checked + .payment-mode-card span {
+            color: var(--inv-dark);
+            font-weight: 800;
         }
 
         .hidden-iframe {
@@ -644,12 +782,12 @@
             top: 24px;
             right: 24px;
             padding: 14px 22px;
-            border-radius: 12px;
+            border-radius: 14px;
             color: #ffffff;
             font-weight: 700;
             font-size: 0.88rem;
             z-index: 99999;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
             display: flex;
             align-items: center;
             gap: 10px;
@@ -694,10 +832,10 @@
                 padding: 18px 20px;
             }
             .inv-section-wrap {
-                padding: 10px 20px 24px;
+                padding: 8px 20px 24px;
             }
             .inv-financial-deck {
-                margin: 20px 20px 10px;
+                margin: 20px 20px 12px;
                 padding: 16px;
             }
             .inv-brand-block {
@@ -741,22 +879,25 @@
             <div class="inv-topbar">
                 <div class="inv-top-title">
                     <span class="inv-order-badge">
-                        <i class="fas fa-receipt me-1"></i> #{{ $order->order_id ?? $order->id }}
+                        <i class="fa-solid fa-receipt text-warning"></i> #{{ $order->order_id ?? $order->id }}
                     </span>
                     <span class="text-muted small fw-bold">
-                        <i class="far fa-clock me-1"></i> {{ $order->created_at->format('d M Y, h:i A') }}
+                        <i class="fa-regular fa-clock me-1"></i> {{ $order->created_at->format('d M Y, h:i A') }}
                     </span>
                 </div>
 
                 <div class="inv-actions">
+                    <button type="button" class="btn-inv-whatsapp" id="showWhatsappModalBtn">
+                        <i class="fa-brands fa-whatsapp"></i> Share Bill WhatsApp
+                    </button>
                     <button type="button" class="btn-inv-primary" id="showAddPaymentModal">
-                        <i class="fas fa-plus-circle"></i> Add Payment
+                        <i class="fa-solid fa-circle-plus"></i> Add Payment
                     </button>
                     <button type="button" class="btn-inv-slate" id="printInvoiceBtn">
-                        <i class="fas fa-print"></i> Print Invoice
+                        <i class="fa-solid fa-print"></i> Print Invoice
                     </button>
                     <a href="{{ route('order.management.dashboard') }}" class="btn-inv-back">
-                        <i class="fas fa-arrow-left"></i> Back to Orders
+                        <i class="fa-solid fa-arrow-left"></i> Back to Orders
                     </a>
                 </div>
             </div>
@@ -773,14 +914,14 @@
                                     @if(!empty($order->restaurant->logo))
                                         <img src="{{ asset('storage/' . $order->restaurant->logo) }}" alt="Logo">
                                     @else
-                                        <i class="fas fa-utensils"></i>
+                                        <i class="fa-solid fa-utensils"></i>
                                     @endif
                                 </div>
                                 <div>
                                     <h2 class="inv-restaurant-name">{{ $order->restaurant->name ?? config('app.name', 'Restaurant') }}</h2>
                                     <p class="inv-restaurant-meta">
                                         @if(!empty($order->restaurant->address))
-                                            <i class="fas fa-location-dot me-1"></i> {{ $order->restaurant->address }}
+                                            <i class="fa-solid fa-location-dot me-1"></i> {{ $order->restaurant->address }}
                                             @if(!empty($order->restaurant->pincode)) - {{ $order->restaurant->pincode }} @endif
                                             <br>
                                         @endif
@@ -826,11 +967,11 @@
                         <span class="inv-meta-val">
                             @if($order->order_type == 'DINE_IN')
                                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
-                                    <i class="fas fa-utensils me-1"></i> Dine In ({{ @$order->table->name ?? 'Table' }})
+                                    <i class="fa-solid fa-chair me-1"></i> Dine In ({{ @$order->table->name ?? 'Table' }})
                                 </span>
                             @else
                                 <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">
-                                    <i class="fas fa-box me-1"></i> Takeaway
+                                    <i class="fa-solid fa-bag-shopping me-1"></i> Takeaway
                                 </span>
                             @endif
                         </span>
@@ -874,15 +1015,15 @@
                     <div class="inv-status-pill-wrap" id="paymentStatusBadge">
                         @if($balanceDue <= 0)
                             <span class="inv-status-pill status-paid">
-                                <i class="fas fa-check-circle"></i> FULLY SETTLED & PAID
+                                <i class="fa-solid fa-circle-check"></i> FULLY SETTLED &amp; PAID
                             </span>
                         @elseif($totalPaid > 0)
                             <span class="inv-status-pill status-partial">
-                                <i class="fas fa-clock"></i> PARTIAL PAYMENT RECEIVED
+                                <i class="fa-solid fa-clock"></i> PARTIAL PAYMENT RECEIVED
                             </span>
                         @else
                             <span class="inv-status-pill status-pending">
-                                <i class="fas fa-exclamation-circle"></i> PAYMENT PENDING
+                                <i class="fa-solid fa-circle-exclamation"></i> PAYMENT PENDING
                             </span>
                         @endif
                     </div>
@@ -893,7 +1034,7 @@
                 <div class="inv-section-wrap">
                     <div class="inv-section-title">
                         <div class="title-text">
-                            <i class="fas fa-bowl-food text-primary"></i>
+                            <i class="fa-solid fa-bowl-food text-primary"></i>
                             <span>Ordered Items Summary</span>
                         </div>
                         <span class="badge bg-light text-dark border">{{ count($order->orderItems) }} Items</span>
@@ -920,9 +1061,9 @@
                                     <td>
                                         <div class="d-flex align-items-center">
                                             @if(@$item->subcategory->food_type == 'non-veg')
-                                                <span class="food-type-dot nonveg" title="Non-Veg"><i class="fas fa-circle"></i></span>
+                                                <span class="food-type-dot nonveg" title="Non-Veg"><i class="fa-solid fa-circle"></i></span>
                                             @else
-                                                <span class="food-type-dot veg" title="Veg"><i class="fas fa-circle"></i></span>
+                                                <span class="food-type-dot veg" title="Veg"><i class="fa-solid fa-circle"></i></span>
                                             @endif
                                             <div>
                                                 <strong class="text-dark">{{ $item->subcategory->name ?? 'Custom Item' }}</strong>
@@ -984,10 +1125,10 @@
                 @endif
 
                 {{-- Payment History Ledger Section --}}
-                <div class="inv-section-wrap" style="border-top: 1px solid var(--inv-border-light);">
+                <div class="inv-section-wrap" style="border-top: 1.5px solid var(--inv-border-light);">
                     <div class="inv-section-title">
                         <div class="title-text">
-                            <i class="fas fa-history text-success"></i>
+                            <i class="fa-solid fa-clock-rotate-left text-success"></i>
                             <span>Payment Transaction History</span>
                         </div>
                     </div>
@@ -997,7 +1138,7 @@
                             <thead>
                                 <tr>
                                     <th width="40">#</th>
-                                    <th>Date & Time</th>
+                                    <th>Date &amp; Time</th>
                                     <th class="text-end">Amount (₹)</th>
                                     <th>Payment Mode</th>
                                     <th>Reference / TXN No</th>
@@ -1018,13 +1159,13 @@
                                     <td>
                                         <span class="payment-method-badge method-{{ strtolower(str_replace(' ', '_', $payment->payment_method)) }}">
                                             @if(str_contains(strtolower($payment->payment_method), 'cash'))
-                                                <i class="fas fa-money-bill-wave me-1"></i>
+                                                <i class="fa-solid fa-money-bill-wave me-1"></i>
                                             @elseif(str_contains(strtolower($payment->payment_method), 'upi'))
-                                                <i class="fas fa-qrcode me-1"></i>
+                                                <i class="fa-solid fa-qrcode me-1"></i>
                                             @elseif(str_contains(strtolower($payment->payment_method), 'card'))
-                                                <i class="fas fa-credit-card me-1"></i>
+                                                <i class="fa-solid fa-credit-card me-1"></i>
                                             @else
-                                                <i class="fas fa-wallet me-1"></i>
+                                                <i class="fa-solid fa-wallet me-1"></i>
                                             @endif
                                             {{ $payment->payment_method }}
                                         </span>
@@ -1033,18 +1174,18 @@
                                     <td class="text-muted small">{{ $payment->remarks ?: '-' }}</td>
                                     <td class="text-center">
                                         <button type="button" class="btn btn-sm btn-outline-danger delete-payment rounded-circle" 
-                                                style="width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center;"
+                                                style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;"
                                                 data-id="{{ $payment->id }}"
                                                 data-amount="{{ $payment->amount }}"
                                                 title="Delete Payment Record">
-                                            <i class="fas fa-trash-can" style="font-size: 0.75rem;"></i>
+                                            <i class="fa-solid fa-trash-can" style="font-size: 0.75rem;"></i>
                                         </button>
                                     </td>
                                 </tr>
                                 @empty
                                 <tr>
                                     <td colspan="7" class="text-center py-4 text-muted">
-                                        <i class="fas fa-credit-card fa-2x mb-2 d-block text-muted opacity-50"></i>
+                                        <i class="fa-solid fa-credit-card fa-2x mb-2 d-block text-muted opacity-50"></i>
                                         No payments recorded yet for this order.
                                     </td>
                                 </tr>
@@ -1063,7 +1204,7 @@
 
                 {{-- QR Code Scan to Pay Section --}}
                 @if(!empty($order->restaurant->qr_code_image) || !empty($order->restaurant->upi_id))
-                <div class="p-4" style="background: #fafbfc; border-top: 1px solid var(--inv-border);">
+                <div class="p-4" style="background: #fafbfc; border-top: 1.5px solid var(--inv-border);">
                     <div class="inv-qr-card">
                         @if(!empty($order->restaurant->qr_code_image))
                             <div class="inv-qr-img">
@@ -1072,7 +1213,7 @@
                         @endif
                         <div>
                             <span class="badge bg-primary-subtle text-primary fw-bold mb-1 px-2 py-1">
-                                <i class="fas fa-bolt me-1"></i> Instant UPI Payment
+                                <i class="fa-solid fa-bolt me-1"></i> Instant UPI Payment
                             </span>
                             <div class="fw-bold text-dark fs-6">Scan QR with any UPI App</div>
                             @if(!empty($order->restaurant->upi_id))
@@ -1086,9 +1227,9 @@
                 @endif
 
                 {{-- Footer Greeting --}}
-                <div class="p-4 text-center text-muted small" style="background: #ffffff; border-top: 1px solid var(--inv-border-light);">
+                <div class="p-4 text-center text-muted small" style="background: #ffffff; border-top: 1.5px solid var(--inv-border-light);">
                     <p class="mb-0 fw-semibold text-secondary">
-                        <i class="fas fa-heart text-danger me-1"></i> Thank you for dining with {{ $order->restaurant->name ?? 'us' }}! Please visit us again.
+                        <i class="fa-solid fa-heart text-danger me-1"></i> Thank you for dining with {{ $order->restaurant->name ?? 'us' }}! Please visit us again.
                     </p>
                 </div>
             </div>
@@ -1097,58 +1238,108 @@
     </div>
 </div>
 
-<!-- Add Payment Modal -->
-<div id="addPaymentModal" class="modal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-circle-plus text-primary"></i> Record Order Payment
+<!-- Add Payment Modal (Bootstrap 5) -->
+<div class="modal fade" id="addPaymentModal" tabindex="-1" aria-labelledby="addPaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-premium">
+            <div class="modal-header modal-header-premium">
+                <h5 class="modal-title" id="addPaymentModalLabel">
+                    <i class="fa-solid fa-cash-register text-primary"></i> Record Payment
                 </h5>
-                <button type="button" class="btn-close btn-close-white" id="closeModalBtn" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="addPaymentForm">
                 @csrf
                 <input type="hidden" name="order_id" value="{{ $order->id }}">
-                <div class="modal-body">
+                <div class="modal-body modal-body-premium">
+                    
+                    {{-- 1. Amount to Settle --}}
                     <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label-custom mb-0">Amount to Settle (₹) <span class="text-danger">*</span></label>
-                            <span class="badge bg-light text-muted border">
-                                Balance: ₹<span id="modalBalanceHint">{{ number_format(max(0, $balanceDue), 2) }}</span>
+                        <label class="pm-label">
+                            <span>Amount to Settle <span class="text-danger">*</span></span>
+                            <span class="text-muted fw-normal">
+                                Due: <strong class="text-danger">₹<span id="modalBalanceHint">{{ number_format(max(0, $balanceDue), 2) }}</span></strong>
                             </span>
+                        </label>
+                        <div class="pm-input-wrap">
+                            <span class="pm-input-prefix">₹</span>
+                            <input type="number" name="amount" id="paymentAmount" class="pm-input-control has-prefix" step="0.01" 
+                                   max="{{ max(0, $balanceDue) }}" required placeholder="0.00" autofocus>
                         </div>
-                        <input type="number" name="amount" id="paymentAmount" class="form-control-custom font-monospace fs-5 fw-bold" step="0.01" 
-                               max="{{ max(0, $balanceDue) }}" required placeholder="0.00">
+                        
+                        {{-- Quick Presets --}}
+                        <div class="quick-presets-row">
+                            <button type="button" class="preset-chip chip-full" id="btnFillFullBalance">
+                                <i class="fa-solid fa-bolt me-1"></i> Full Balance (₹<span id="chipFullVal">{{ number_format(max(0, $balanceDue), 2) }}</span>)
+                            </button>
+                            @if($balanceDue > 100)
+                                <button type="button" class="preset-chip" id="btnFillHalfBalance">50% Balance</button>
+                            @endif
+                            <button type="button" class="preset-chip btn-quick-amt" data-amt="100">₹100</button>
+                            <button type="button" class="preset-chip btn-quick-amt" data-amt="500">₹500</button>
+                            <button type="button" class="preset-chip btn-quick-amt" data-amt="1000">₹1000</button>
+                        </div>
                     </div>
 
+                    {{-- 2. Visual Payment Mode Cards --}}
                     <div class="mb-3">
-                        <label class="form-label-custom">Payment Mode <span class="text-danger">*</span></label>
-                        <select name="payment_method" id="paymentMethod" class="form-control-custom" required>
-                            <option value="">-- Choose Payment Mode --</option>
-                            <option value="CASH">Cash</option>
-                            <option value="UPI">UPI / QR Code</option>
-                            <option value="CARD">Debit / Credit Card</option>
-                            <option value="BANK_TRANSFER">Bank Transfer / NEFT</option>
-                            <option value="OTHER">Other / Wallets</option>
-                        </select>
+                        <label class="pm-label">Select Payment Mode <span class="text-danger">*</span></label>
+                        <div class="payment-method-selector">
+                            <label>
+                                <input type="radio" name="payment_method" value="CASH" class="payment-mode-radio" checked>
+                                <div class="payment-mode-card">
+                                    <i class="fa-solid fa-money-bill-wave"></i>
+                                    <span>Cash</span>
+                                </div>
+                            </label>
+                            <label>
+                                <input type="radio" name="payment_method" value="UPI" class="payment-mode-radio">
+                                <div class="payment-mode-card">
+                                    <i class="fa-solid fa-qrcode"></i>
+                                    <span>UPI / QR</span>
+                                </div>
+                            </label>
+                            <label>
+                                <input type="radio" name="payment_method" value="CARD" class="payment-mode-radio">
+                                <div class="payment-mode-card">
+                                    <i class="fa-solid fa-credit-card"></i>
+                                    <span>Card</span>
+                                </div>
+                            </label>
+                            <label>
+                                <input type="radio" name="payment_method" value="BANK_TRANSFER" class="payment-mode-radio">
+                                <div class="payment-mode-card">
+                                    <i class="fa-solid fa-building-columns"></i>
+                                    <span>Bank</span>
+                                </div>
+                            </label>
+                            <label>
+                                <input type="radio" name="payment_method" value="OTHER" class="payment-mode-radio">
+                                <div class="payment-mode-card">
+                                    <i class="fa-solid fa-wallet"></i>
+                                    <span>Other</span>
+                                </div>
+                            </label>
+                        </div>
                     </div>
 
+                    {{-- 3. Transaction No --}}
                     <div class="mb-3">
-                        <label class="form-label-custom">Transaction / Reference ID (Optional)</label>
-                        <input type="text" name="transaction_no" id="transactionNo" class="form-control-custom" placeholder="e.g. UPI Ref / UTR / TXN-9988">
+                        <label class="pm-label">Transaction / Reference ID <span class="text-muted fw-normal">(Optional)</span></label>
+                        <input type="text" name="transaction_no" id="transactionNo" class="pm-input-control" placeholder="e.g. UPI Ref / UTR / TXN-9988">
                     </div>
 
-                    <div class="mb-2">
-                        <label class="form-label-custom">Remarks / Notes</label>
-                        <textarea name="remarks" id="remarks" class="form-control-custom" rows="2" placeholder="Optional cashier notes"></textarea>
+                    {{-- 4. Remarks --}}
+                    <div>
+                        <label class="pm-label">Remarks / Cashier Notes <span class="text-muted fw-normal">(Optional)</span></label>
+                        <textarea name="remarks" id="remarks" class="pm-input-control" rows="2" placeholder="e.g. Split bill / Partial advance / Customer note"></textarea>
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light rounded-pill px-3 fw-bold" id="cancelModalBtn">Cancel</button>
+                <div class="modal-footer modal-footer-premium">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn-inv-primary" id="submitPaymentBtn">
-                        <i class="fas fa-check-circle"></i> Save Payment
+                        <i class="fa-solid fa-check-circle"></i> Save Payment
                     </button>
                 </div>
             </form>
@@ -1156,16 +1347,78 @@
     </div>
 </div>
 
+<!-- Share Bill WhatsApp Modal (Bootstrap 5) -->
+<div class="modal fade" id="shareWhatsappModal" tabindex="-1" aria-labelledby="shareWhatsappModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-premium">
+            <div class="modal-header modal-header-premium" style="background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%); border-bottom-color: #25D366;">
+                <h5 class="modal-title" id="shareWhatsappModalLabel">
+                    <i class="fa-brands fa-whatsapp text-success fs-4"></i> Share Bill on WhatsApp
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                
+                {{-- 1. Phone input --}}
+                <div class="mb-3">
+                    <label class="pm-label">
+                        <span>Recipient WhatsApp Number <span class="text-danger">*</span></span>
+                        <span class="text-muted fw-normal">Include country code if outside India</span>
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light fw-bold text-dark font-monospace" style="border: 1.5px solid var(--inv-border); border-right: none; border-radius: 12px 0 0 12px;">+91</span>
+                        <input type="tel" id="whatsappPhone" class="pm-input-control font-monospace fw-bold" style="border-radius: 0 12px 12px 0;"
+                               value="{{ preg_replace('/^\+?91/', '', preg_replace('/[^0-9]/', '', $order->customer_phone ?? '')) }}" 
+                               placeholder="e.g. 9876543210" maxlength="15">
+                    </div>
+                </div>
+
+                {{-- 2. Invoice Link & Copy --}}
+                <div class="mb-3">
+                    <label class="pm-label">Invoice Download / View Link</label>
+                    <div class="input-group">
+                        <input type="text" id="invoiceShareUrl" class="pm-input-control font-monospace small" 
+                               value="{{ route('order.invoice', $order->id) }}" readonly style="border-radius: 12px 0 0 12px;">
+                        <button class="btn btn-outline-secondary px-3" type="button" id="btnCopyInvoiceLink" title="Copy Link" style="border-radius: 0 12px 12px 0; border: 1.5px solid var(--inv-border); border-left: none;">
+                            <i class="fa-regular fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+
+                {{-- 3. Message Preview --}}
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="pm-label mb-0">WhatsApp Message Preview</label>
+                        <button type="button" class="btn btn-link p-0 text-decoration-none small text-success fw-bold" id="btnCopyWhatsappMsg">
+                            <i class="fa-solid fa-copy me-1"></i> Copy Text
+                        </button>
+                    </div>
+                    <textarea id="whatsappMsgPreview" class="pm-input-control font-monospace small" rows="8" readonly style="background: #f8fafc; resize: none; font-size: 0.8rem; line-height: 1.45;"></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer modal-footer-premium">
+                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-inv-whatsapp" id="btnSendWhatsapp">
+                    <i class="fa-brands fa-whatsapp fs-5"></i> Open in WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 @include('includes.script')
 
 <script>
+let currentBalanceDue = {{ max(0, $balanceDue) }};
+let paymentModalInstance = null;
+let whatsappModalInstance = null;
+
 function showToast(message, isError = false) {
     let toastClass = isError ? 'toast-error' : 'toast-success';
     let icon = isError ? 'fa-circle-exclamation' : 'fa-circle-check';
-    let toast = $(`<div class="toast-float ${toastClass}"><i class="fas ${icon}"></i> <span>${message}</span></div>`);
+    let toast = $(`<div class="toast-float ${toastClass}"><i class="fa-solid ${icon}"></i> <span>${message}</span></div>`);
     $('body').append(toast);
     setTimeout(() => {
         toast.fadeOut(300, function() { $(this).remove(); });
@@ -1173,21 +1426,76 @@ function showToast(message, isError = false) {
 }
 
 function openModal() {
-    let balanceDue = parseFloat($('#paymentAmount').attr('max')) || 0;
-    if (balanceDue > 0) {
-        $('#paymentAmount').val(balanceDue.toFixed(2));
+    if (currentBalanceDue > 0) {
+        $('#paymentAmount').val(currentBalanceDue.toFixed(2));
     } else {
         $('#paymentAmount').val('');
     }
-    $('#addPaymentModal').addClass('show');
-    $('body').css('overflow', 'hidden');
+    
+    const modalEl = document.getElementById('addPaymentModal');
+    if (!paymentModalInstance) {
+        paymentModalInstance = new bootstrap.Modal(modalEl);
+    }
+    paymentModalInstance.show();
 }
 
 function closeModal() {
-    $('#addPaymentModal').removeClass('show');
-    $('body').css('overflow', 'auto');
+    if (paymentModalInstance) {
+        paymentModalInstance.hide();
+    }
     $('#addPaymentForm')[0].reset();
-    $('#paymentMethod').val('');
+    $('input[name="payment_method"][value="CASH"]').prop('checked', true);
+}
+
+function generateWhatsappMessage() {
+    let restaurantName = "{{ $order->restaurant->name ?? config('app.name', 'Restaurant') }}";
+    let customerName = "{{ $order->customer_name ?: 'Valued Guest' }}";
+    let invoiceNo = "#{{ $order->order_id ?? $order->id }}";
+    let orderDate = "{{ $order->created_at->format('d M Y, h:i A') }}";
+    let orderType = "{{ $order->order_type == 'DINE_IN' ? 'Dine In (' . (@$order->table->name ?? 'Table') . ')' : 'Takeaway' }}";
+    let grandTotal = "₹{{ number_format($order->grand_total, 2) }}";
+    let paidAmount = "₹" + parseFloat($('#totalPaidAmount').text() || '{{ $totalPaid }}').toFixed(2);
+    let balanceVal = parseFloat($('#balanceDueAmount').text() || '{{ $balanceDue }}');
+    let invoiceUrl = "{{ route('order.invoice', $order->id) }}";
+    
+    let msg = `🧾 *${restaurantName} - Bill & Receipt*\n`;
+    msg += `--------------------------------\n`;
+    msg += `👤 *Customer:* ${customerName}\n`;
+    msg += `🆔 *Invoice No:* ${invoiceNo}\n`;
+    msg += `📅 *Date:* ${orderDate}\n`;
+    msg += `🍽️ *Type:* ${orderType}\n\n`;
+    
+    msg += `📋 *Ordered Items:*\n`;
+    @if($order->orderItems && count($order->orderItems) > 0)
+        @foreach($order->orderItems as $item)
+            msg += `• {{ $item->quantity }}x {{ addslashes($item->subcategory->name ?? 'Item') }} - ₹{{ number_format($item->total_amount ?? ($item->price * $item->quantity), 2) }}\n`;
+        @endforeach
+    @endif
+    
+    msg += `\n--------------------------------\n`;
+    msg += `💰 *Grand Total:* ${grandTotal}\n`;
+    msg += `✅ *Paid Amount:* ${paidAmount}\n`;
+    if (balanceVal > 0) {
+        msg += `⚠️ *Balance Due:* ₹${balanceVal.toFixed(2)}\n`;
+    } else {
+        msg += `✨ *Status:* Fully Paid & Settled\n`;
+    }
+    msg += `--------------------------------\n`;
+    msg += `📄 *View / Download Digital Bill:*\n${invoiceUrl}\n\n`;
+    msg += `🙏 Thank you for dining with us! Have a wonderful day.`;
+    
+    return msg;
+}
+
+function openWhatsappModal() {
+    let msg = generateWhatsappMessage();
+    $('#whatsappMsgPreview').val(msg);
+
+    const modalEl = document.getElementById('shareWhatsappModal');
+    if (!whatsappModalInstance) {
+        whatsappModalInstance = new bootstrap.Modal(modalEl);
+    }
+    whatsappModalInstance.show();
 }
 
 function getMethodClass(method) {
@@ -1199,6 +1507,15 @@ function getMethodClass(method) {
         'OTHER': 'other'
     };
     return map[method] || 'other';
+}
+
+function getMethodIcon(method) {
+    let m = (method || '').toLowerCase();
+    if (m.includes('cash')) return '<i class="fa-solid fa-money-bill-wave me-1"></i>';
+    if (m.includes('upi')) return '<i class="fa-solid fa-qrcode me-1"></i>';
+    if (m.includes('card')) return '<i class="fa-solid fa-credit-card me-1"></i>';
+    if (m.includes('bank')) return '<i class="fa-solid fa-building-columns me-1"></i>';
+    return '<i class="fa-solid fa-wallet me-1"></i>';
 }
 
 function refreshPaymentsTable() {
@@ -1215,7 +1532,7 @@ function refreshPaymentsTable() {
                     tbody.append(`
                         <tr>
                             <td colspan="7" class="text-center py-4 text-muted">
-                                <i class="fas fa-credit-card fa-2x mb-2 d-block text-muted opacity-50"></i>
+                                <i class="fa-solid fa-credit-card fa-2x mb-2 d-block text-muted opacity-50"></i>
                                 No payments recorded yet for this order.
                             </td>
                         </tr>
@@ -1223,6 +1540,7 @@ function refreshPaymentsTable() {
                 } else {
                     $.each(response.payments, function(index, payment) {
                         let methodClass = getMethodClass(payment.payment_method);
+                        let methodIcon = getMethodIcon(payment.payment_method);
                         let paymentDate = new Date(payment.payment_date || payment.created_at);
                         let dateStr = paymentDate.toLocaleString('en-IN', {
                             day: '2-digit', month: 'short', year: 'numeric',
@@ -1238,6 +1556,7 @@ function refreshPaymentsTable() {
                                 </td>
                                 <td>
                                     <span class="payment-method-badge method-${methodClass}">
+                                        ${methodIcon}
                                         ${payment.payment_method}
                                     </span>
                                 </td>
@@ -1245,11 +1564,11 @@ function refreshPaymentsTable() {
                                 <td class="text-muted small">${payment.remarks || '-'}</td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-sm btn-outline-danger delete-payment rounded-circle"
-                                            style="width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center;"
+                                            style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;"
                                             data-id="${payment.id}"
                                             data-amount="${payment.amount}"
                                             title="Delete Payment Record">
-                                        <i class="fas fa-trash-can" style="font-size: 0.75rem;"></i>
+                                        <i class="fa-solid fa-trash-can" style="font-size: 0.75rem;"></i>
                                     </button>
                                 </td>
                             </tr>
@@ -1260,11 +1579,13 @@ function refreshPaymentsTable() {
                 // Update summary amounts
                 let totalPaid = parseFloat(response.total_paid || 0);
                 let balanceDue = parseFloat(response.balance_due || 0);
+                currentBalanceDue = Math.max(0, balanceDue);
 
                 $('#totalPaidFooter').text(`₹${totalPaid.toFixed(2)}`);
                 $('#totalPaidAmount').text(totalPaid.toFixed(2));
-                $('#balanceDueAmount').text(Math.max(0, balanceDue).toFixed(2));
-                $('#modalBalanceHint').text(Math.max(0, balanceDue).toFixed(2));
+                $('#balanceDueAmount').text(currentBalanceDue.toFixed(2));
+                $('#modalBalanceHint').text(currentBalanceDue.toFixed(2));
+                $('#chipFullVal').text(currentBalanceDue.toFixed(2));
 
                 // Update column styling for balance due
                 let dueCol = $('.inv-fin-col.col-due');
@@ -1280,16 +1601,16 @@ function refreshPaymentsTable() {
                 // Update status badge
                 let statusHtml = '';
                 if (balanceDue <= 0) {
-                    statusHtml = '<span class="inv-status-pill status-paid"><i class="fas fa-check-circle"></i> FULLY SETTLED & PAID</span>';
+                    statusHtml = '<span class="inv-status-pill status-paid"><i class="fa-solid fa-circle-check"></i> FULLY SETTLED & PAID</span>';
                 } else if (totalPaid > 0) {
-                    statusHtml = '<span class="inv-status-pill status-partial"><i class="fas fa-clock"></i> PARTIAL PAYMENT RECEIVED</span>';
+                    statusHtml = '<span class="inv-status-pill status-partial"><i class="fa-solid fa-clock"></i> PARTIAL PAYMENT RECEIVED</span>';
                 } else {
-                    statusHtml = '<span class="inv-status-pill status-pending"><i class="fas fa-exclamation-circle"></i> PAYMENT PENDING</span>';
+                    statusHtml = '<span class="inv-status-pill status-pending"><i class="fa-solid fa-circle-exclamation"></i> PAYMENT PENDING</span>';
                 }
                 $('#paymentStatusBadge').html(statusHtml);
 
                 // Update modal max limit
-                $('#paymentAmount').attr('max', Math.max(0, balanceDue));
+                $('#paymentAmount').attr('max', currentBalanceDue);
             }
         },
         error: function(xhr) {
@@ -1300,25 +1621,103 @@ function refreshPaymentsTable() {
 }
 
 $(document).ready(function() {
-    $('#showAddPaymentModal').click(function() { openModal(); });
-    $('#closeModalBtn, #cancelModalBtn').click(function() { closeModal(); });
-
-    $('#addPaymentModal').click(function(e) {
-        if (e.target === this) { closeModal(); }
+    // Show Payment Modal Button
+    $('#showAddPaymentModal').click(function() { 
+        openModal(); 
     });
 
-    // Add Payment AJAX
+    // Show WhatsApp Modal Button
+    $('#showWhatsappModalBtn').click(function() {
+        openWhatsappModal();
+    });
+
+    // Copy Invoice Link
+    $('#btnCopyInvoiceLink').click(function() {
+        let link = $('#invoiceShareUrl').val();
+        navigator.clipboard.writeText(link).then(function() {
+            showToast('Invoice link copied to clipboard!');
+        }).catch(function() {
+            let temp = $('<input>').val(link).appendTo('body').select();
+            document.execCommand('copy');
+            temp.remove();
+            showToast('Invoice link copied to clipboard!');
+        });
+    });
+
+    // Copy WhatsApp Message Text
+    $('#btnCopyWhatsappMsg').click(function() {
+        let msg = $('#whatsappMsgPreview').val();
+        navigator.clipboard.writeText(msg).then(function() {
+            showToast('WhatsApp message copied to clipboard!');
+        }).catch(function() {
+            let temp = $('<textarea>').val(msg).appendTo('body').select();
+            document.execCommand('copy');
+            temp.remove();
+            showToast('WhatsApp message copied to clipboard!');
+        });
+    });
+
+    // Send on WhatsApp Button
+    $('#btnSendWhatsapp').click(function() {
+        let phoneInput = $('#whatsappPhone').val().trim();
+        let cleanPhone = phoneInput.replace(/[^0-9]/g, '');
+        
+        // If 10 digits without country code, add 91
+        if (cleanPhone.length === 10) {
+            cleanPhone = '91' + cleanPhone;
+        }
+
+        let msg = $('#whatsappMsgPreview').val();
+        let encodedMsg = encodeURIComponent(msg);
+        
+        let waUrl = '';
+        if (cleanPhone.length >= 10) {
+            waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMsg}`;
+        } else {
+            waUrl = `https://api.whatsapp.com/send?text=${encodedMsg}`;
+        }
+
+        window.open(waUrl, '_blank');
+        showToast('Opening WhatsApp...');
+    });
+
+    // Preset Chip Clicks
+    $('#btnFillFullBalance').click(function() {
+        $('#paymentAmount').val(currentBalanceDue.toFixed(2)).focus();
+    });
+
+    $('#btnFillHalfBalance').click(function() {
+        let half = (currentBalanceDue / 2).toFixed(2);
+        $('#paymentAmount').val(half).focus();
+    });
+
+    $('.btn-quick-amt').click(function() {
+        let amt = parseFloat($(this).data('amt'));
+        if (currentBalanceDue > 0 && amt > currentBalanceDue) {
+            $('#paymentAmount').val(currentBalanceDue.toFixed(2)).focus();
+        } else {
+            $('#paymentAmount').val(amt.toFixed(2)).focus();
+        }
+    });
+
+    // Add Payment AJAX Submit
     $('#addPaymentForm').on('submit', function(e) {
         e.preventDefault();
 
-        let amount = $('#paymentAmount').val();
-        let paymentMethod = $('#paymentMethod').val();
+        let amount = parseFloat($('#paymentAmount').val());
+        let paymentMethod = $('input[name="payment_method"]:checked').val();
 
-        if (!amount || amount <= 0) { showToast('Please enter a valid amount', true); return; }
-        if (!paymentMethod) { showToast('Please select payment method', true); return; }
+        if (!amount || amount <= 0) { 
+            showToast('Please enter a valid payment amount', true); 
+            return; 
+        }
+        if (!paymentMethod) { 
+            showToast('Please select a payment mode', true); 
+            return; 
+        }
 
         let submitBtn = $('#submitPaymentBtn');
-        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+        submitBtn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i> Saving...');
 
         $.ajax({
             url: "{{ route('order.add.payment', $order->id) }}",
@@ -1338,7 +1737,7 @@ $(document).ready(function() {
                 showToast(xhr.responseJSON?.message || 'Error adding payment', true);
             },
             complete: function() {
-                submitBtn.prop('disabled', false).html('<i class="fas fa-check-circle"></i> Save Payment');
+                submitBtn.prop('disabled', false).html('<i class="fa-solid fa-check-circle"></i> Save Payment');
             }
         });
     });
@@ -1350,7 +1749,7 @@ $(document).ready(function() {
 
         if (confirm(`Delete payment of ₹${amount}? This action cannot be undone.`)) {
             let deleteBtn = $(this);
-            deleteBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+            deleteBtn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i>');
 
             $.ajax({
                 url: "{{ route('order.delete.payment', '') }}/" + paymentId,
@@ -1367,7 +1766,7 @@ $(document).ready(function() {
                 },
                 error: function() {
                     showToast('Error deleting payment', true);
-                    deleteBtn.prop('disabled', false).html('<i class="fas fa-trash-can"></i>');
+                    deleteBtn.prop('disabled', false).html('<i class="fa-solid fa-trash-can"></i>');
                 }
             });
         }
@@ -1376,7 +1775,7 @@ $(document).ready(function() {
     // Print Invoice Button
     $('#printInvoiceBtn').click(function() {
         let btn = $(this);
-        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Preparing...');
+        btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i> Preparing...');
 
         let pdfUrl = "{{ route('order.receipt.pdf', $order->id) }}";
         
@@ -1389,7 +1788,7 @@ $(document).ready(function() {
         }).appendTo('body');
 
         iframe[0].onload = function() {
-            btn.prop('disabled', false).html('<i class="fas fa-print"></i> Print Invoice');
+            btn.prop('disabled', false).html('<i class="fa-solid fa-print"></i> Print Invoice');
             try {
                 iframe[0].contentWindow.focus();
                 iframe[0].contentWindow.print();
@@ -1399,7 +1798,7 @@ $(document).ready(function() {
         };
 
         setTimeout(function() {
-            btn.prop('disabled', false).html('<i class="fas fa-print"></i> Print Invoice');
+            btn.prop('disabled', false).html('<i class="fa-solid fa-print"></i> Print Invoice');
         }, 5000);
     });
 });

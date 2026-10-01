@@ -201,16 +201,19 @@ Route::get('order-management-dashboard', [App\Http\Controllers\OrderManagementCo
 
 Route::get('order-create/{table_id?}', [App\Http\Controllers\OrderManagementController::class, 'create'])
     ->name('order.create');
+Route::get('admin/order-create/{table_id?}', [App\Http\Controllers\OrderManagementController::class, 'create']);
 
 Route::get('order-edit/{order_id}', [App\Http\Controllers\OrderManagementController::class, 'edit'])
     ->name('order.edit');
+Route::get('admin/order-edit/{order_id}', [App\Http\Controllers\OrderManagementController::class, 'edit']);
 
 Route::post('order-save', [App\Http\Controllers\OrderManagementController::class, 'store'])
     ->name('order.save');
 
-    // Invoice Page (iframe)
+    // Invoice Page (iframe & direct)
 Route::get('order/{id}/invoice', [OrderManagementController::class, 'invoicePage'])
     ->name('order.invoice');
+Route::get('admin/order/{id}/invoice', [OrderManagementController::class, 'invoicePage']);
 
 // PDF Receipt
 Route::get('order/{id}/receipt-pdf', [OrderManagementController::class, 'pdfReceipt'])
@@ -229,8 +232,11 @@ Route::post('order-item-delete/{id}', [App\Http\Controllers\OrderManagementContr
 
 // Make sure these routes exist
 Route::get('order/{order_id}/get-payments', [OrderManagementController::class, 'getPayments'])->name('order.get.payments');
+Route::get('admin/order/{order_id}/get-payments', [OrderManagementController::class, 'getPayments']);
 Route::post('order/{order_id}/add-payment', [OrderManagementController::class, 'addPayment'])->name('order.add.payment');
+Route::post('admin/order/{order_id}/add-payment', [OrderManagementController::class, 'addPayment']);
 Route::delete('order/delete-payment/{payment_id}', [OrderManagementController::class, 'deletePayment'])->name('order.delete.payment');
+Route::delete('admin/order/delete-payment/{payment_id}', [OrderManagementController::class, 'deletePayment']);
 
 // order-report
 Route::get('order-report',[App\Http\Controllers\OrderFilterController::class,'index'])->name('order.report');    
