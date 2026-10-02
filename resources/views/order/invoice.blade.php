@@ -896,9 +896,15 @@
                     <button type="button" class="btn-inv-slate" id="printInvoiceBtn">
                         <i class="fa-solid fa-print"></i> Print Invoice
                     </button>
+                    @if(request('return') == 'rapid_bill' || request('return') == 'rapid-bill')
+                    <a href="{{ route('rapid.bill') }}" class="btn-inv-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <i class="fa-solid fa-bolt"></i> Back to Rapid Bill
+                    </a>
+                    @else
                     <a href="{{ route('order.management.dashboard') }}" class="btn-inv-back">
                         <i class="fa-solid fa-arrow-left"></i> Back to Orders
                     </a>
+                    @endif
                 </div>
             </div>
 
@@ -1801,6 +1807,12 @@ $(document).ready(function() {
             btn.prop('disabled', false).html('<i class="fa-solid fa-print"></i> Print Invoice');
         }, 5000);
     });
+
+    @if(request('autoprint') == '1' || request('print') == '1')
+    setTimeout(function() {
+        $('#printInvoiceBtn').trigger('click');
+    }, 600);
+    @endif
 });
 </script>
 </body>

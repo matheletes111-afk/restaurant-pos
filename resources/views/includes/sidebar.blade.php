@@ -349,9 +349,21 @@
         </li>
         @endif
 
+        @if(auth()->user()->hasPermission('rapid_bill') || auth()->user()->hasPermission('order_master'))
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{route('rapid.bill')}}" class="pc-link @if(Request::is('*rapid-bill*')) active_class @endif">
+            <span class="pc-micon" style="color: #ff6a00;"><i class="fa-solid fa-bolt-lightning"></i></span>
+            <span class="pc-mtext d-flex align-items-center justify-content-between">
+              <span>Rapid Bill</span>
+              <span class="badge bg-warning text-dark font-weight-bold ms-2" style="font-size: 0.65rem; border-radius: 6px; padding: 2px 6px;">FAST POS</span>
+            </span>
+          </a>
+        </li>
+        @endif
+
         @if(auth()->user()->hasPermission('order_master'))
         <li class="pc-item {{ $disabledClass }}">
-          <a href="{{route('order.management.dashboard')}}" class="pc-link @if(Request::is('*order-management*') || Request::is('*order-management-dashboard*') || Request::is('admin/order*') || Request::is('order/*')) active_class @endif">
+          <a href="{{route('order.management.dashboard')}}" class="pc-link @if((Request::is('*order-management*') || Request::is('*order-management-dashboard*') || Request::is('admin/order*') || Request::is('order/*')) && !Request::is('*rapid-bill*')) active_class @endif">
             <span class="pc-micon"><i class="fas fa-receipt"></i></span>
             <span class="pc-mtext">Order Master</span>
           </a>
@@ -500,10 +512,26 @@
         @endif
         @endif
 
-        {{-- Reports Dropdown --}}
-        @if(auth()->user()->hasPermission('reports'))
+        {{-- Master Report Standalone Menu Item --}}
+        @if(auth()->user()->hasPermission('master_report'))
         @php
-          $isReportsActive = Request::is('*report*') || Request::is('*item-gst-summary*') || Request::is('*inventory/live*');
+          $isMasterReportActive = Request::is('*admin/reports/master*') || Request::is('*master-report*');
+        @endphp
+        <li class="pc-item {{ $isMasterReportActive ? 'active' : '' }} {{ $disabledClass }}">
+          <a href="{{ route('admin.reports.master.overview') }}" class="pc-link {{ $isMasterReportActive ? 'active_class' : '' }}">
+            <span class="pc-micon">
+              <i class="fas fa-crown text-warning"></i>
+            </span>
+            <span class="pc-mtext font-weight-bold">Master Report</span>
+            <span class="badge bg-warning text-dark ms-auto" style="font-size: 9px; padding: 2px 6px;">VIP</span>
+          </a>
+        </li>
+        @endif
+
+        {{-- Reports Dropdown --}}
+        @if(auth()->user()->hasPermission('reports') || auth()->user()->hasPermission('master_report'))
+        @php
+          $isReportsActive = Request::is('*report*') || Request::is('*item-gst-summary*') || Request::is('*inventory/live*') || Request::is('*admin/reports/master*');
         @endphp
         <li class="pc-item pc-hasmenu {{ $isReportsActive ? 'pc-trigger active' : '' }} {{ $disabledClass }}">
           <a href="#!" class="pc-link {{ $isReportsActive ? 'active-parent' : '' }}">
@@ -517,6 +545,15 @@
           </a>
 
           <ul class="pc-submenu" style="{{ $isReportsActive ? 'display: block;' : '' }}">
+            @if(auth()->user()->hasPermission('master_report'))
+            <li class="pc-item">
+              <a href="{{ route('admin.reports.master.overview') }}" class="pc-link @if(Request::is('*admin/reports/master*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-crown text-warning"></i></span>
+                <span class="pc-mtext font-weight-bold text-warning">Master Executive</span>
+              </a>
+            </li>
+            @endif
+
             <li class="pc-item">
               <a href="{{ route('order.report.management') }}" class="pc-link @if(Request::is('*report-order-management*')) active_class @endif">
                 <span class="pc-micon"><i class="ti ti-file-text"></i></span>
@@ -683,8 +720,7 @@
           <div class="d-flex mb-1">
             
             <div class="flex-grow-1 ms-3">
-              <a href="{{route('restaurant.profile.index')}}">
-              <h6 class="mb-1">@if(auth()->user()->role=="RES"){{auth()->user()->restaurant->name}} @endif</h6>
+              <h6 class="mb-1">@if(auth()->user()->role=="RES"){{ optional(auth()->user()->restaurant)->name ?? auth()->user()->name }} @endif</h6>
               <span style="color:orange;"><i class="fas fa-user me-2"></i>View Profile</span>
             </a>
             

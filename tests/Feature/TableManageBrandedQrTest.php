@@ -5,12 +5,27 @@ namespace Tests\Feature;
 use App\Models\RestaurantMaster;
 use App\Models\TableManage;
 use App\Models\User;
+use App\Models\Plan;
+use App\Models\Subscription;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class TableManageBrandedQrTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function getRestaurantOwner()
     {
+        $restaurant = RestaurantMaster::first();
+        if (!$restaurant) {
+            $restaurant = new RestaurantMaster();
+            $restaurant->name = 'Test Restaurant';
+            $restaurant->phone = '9876543210';
+            $restaurant->email = 'test_restaurant@example.com';
+            $restaurant->status = 'A';
+            $restaurant->save();
+        }
+
         $user = User::where('role', 'RES')->first();
         if (!$user) {
             $user = new User();
@@ -20,9 +35,35 @@ class TableManageBrandedQrTest extends TestCase
             $user->phone = '9876543210';
             $user->role = 'RES';
             $user->role_type = 'ADMIN';
-            $user->restaurant_id = 1;
+            $user->restaurant_id = $restaurant->id;
+            $user->save();
+        } else {
+            $user->restaurant_id = $restaurant->id;
             $user->save();
         }
+
+        // Ensure active subscription exists for test user's restaurant
+        $sub = Subscription::where('user_id', $restaurant->id)->where('status', 'active')->first();
+        if (!$sub) {
+            $plan = Plan::first() ?? Plan::create([
+                'name' => 'Basic Plan',
+                'price' => 999,
+                'duration' => 365,
+                'billing_cycle' => 'monthly',
+                'inventory_checkbox' => 'Y',
+                'status' => 'A'
+            ]);
+
+            Subscription::create([
+                'user_id' => $restaurant->id,
+                'plan_id' => $plan->id,
+                'status' => 'active',
+                'start_date' => now()->subDays(5),
+                'end_date' => now()->addDays(300),
+                'amount' => 999
+            ]);
+        }
+
         return $user;
     }
 

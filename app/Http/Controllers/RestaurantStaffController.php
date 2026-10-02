@@ -172,6 +172,12 @@ class RestaurantStaffController extends Controller
                 'icon' => 'fas fa-receipt'
             ],
             [
+                'key' => 'rapid_bill',
+                'title' => 'Rapid Bill POS',
+                'description' => 'Ultra-fast counter billing with keyword search, split Cash/UPI, and instant bill printing.',
+                'icon' => 'fas fa-bolt'
+            ],
+            [
                 'key' => 'kitchen_order',
                 'title' => 'Kitchen Order',
                 'description' => 'Access to the kitchen panel to view and process active food items.',
@@ -224,6 +230,12 @@ class RestaurantStaffController extends Controller
                 'title' => 'Inventory Setting',
                 'description' => 'Access to units, products, suppliers, purchases, stockouts, and debit notes.',
                 'icon' => 'fas fa-boxes'
+            ],
+            [
+                'key' => 'master_report',
+                'title' => 'Master Report',
+                'description' => 'Comprehensive executive overview, orders, item-level sales, stock, purchases, expenses & BI analytics.',
+                'icon' => 'fas fa-chart-pie'
             ],
             [
                 'key' => 'reports',

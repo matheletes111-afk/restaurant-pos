@@ -193,12 +193,12 @@
                     <div class="form-group">
                       <label>Set as Default Plan</label>
                       <div class="custom-control custom-checkbox mt-2">
-                        <input type="checkbox" class="custom-control-input" id="is_default_plan">
+                        <input type="checkbox" class="custom-control-input" id="is_default_plan" {{ old('is_default_plan') == 'Y' ? 'checked' : '' }}>
                         <label class="custom-control-label" for="is_default_plan">
                           Set as Default Plan (This will be the recommended plan for new restaurants)
                         </label>
                       </div>
-                      <input type="hidden" name="is_default_plan" id="is_default_plan_value" value="N">
+                      <input type="hidden" name="is_default_plan" id="is_default_plan_value" value="{{ old('is_default_plan', 'N') }}">
                       <small class="text-muted">Only one default plan can exist. Existing default will be replaced.</small>
                     </div>
                   </div>

@@ -9,12 +9,17 @@ use App\Models\SubCategory;
 use App\Models\TableManage;
 use App\Models\TempOrder;
 use App\Models\User;
+use App\Models\Plan;
+use App\Models\Subscription;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class QrOrderNotificationTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected $restaurant;
     protected $ownerUser;
     protected $table;
@@ -36,6 +41,12 @@ class QrOrderNotificationTest extends TestCase
                 'status' => 'A',
             ]);
         }
+
+        $plan = Plan::first() ?? Plan::create(['name' => 'Diamond', 'price' => 2999, 'duration_days' => 365, 'billing_cycle' => 'monthly', 'inventory_checkbox' => 'Y', 'plan_status' => 'A', 'is_delete' => 'N']);
+        Subscription::firstOrCreate(
+            ['user_id' => $this->restaurant->id, 'status' => 'active'],
+            ['plan_id' => $plan->id, 'start_date' => now()->subDay(), 'end_date' => now()->addYear()]
+        );
 
         // Ensure owner user with email
         if ($this->restaurant->owner_id) {

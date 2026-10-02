@@ -13,6 +13,9 @@ use App\Models\TableManage;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Carbon\Carbon;
 
+use App\Models\Subscription;
+use App\Models\Plan;
+
 class KotNumberProgressionTest extends TestCase
 {
     use DatabaseTransactions;
@@ -30,6 +33,12 @@ class KotNumberProgressionTest extends TestCase
                 'prefix' => 'REST',
             ]);
         }
+
+        $plan = Plan::first() ?? Plan::create(['name' => 'Diamond', 'price' => 2999, 'duration_days' => 365, 'billing_cycle' => 'monthly', 'inventory_checkbox' => 'Y', 'plan_status' => 'A', 'is_delete' => 'N']);
+        Subscription::firstOrCreate(
+            ['user_id' => $restaurant->id, 'status' => 'active'],
+            ['plan_id' => $plan->id, 'start_date' => now()->subDay(), 'end_date' => now()->addYear()]
+        );
 
         // Find or create user
         $user = User::where('restaurant_id', $restaurant->id)->first();

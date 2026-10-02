@@ -4,24 +4,45 @@ namespace Tests\Feature;
 
 use App\Models\RestaurantMaster;
 use App\Models\User;
+use App\Models\Plan;
+use App\Models\Subscription;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class RestaurantProfileLogoTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function getRestaurantOwner()
     {
-        $user = User::where('role', 'RES')->first();
+        $restaurant = RestaurantMaster::first();
+        if (!$restaurant) {
+            $restaurant = RestaurantMaster::create([
+                'name' => 'Logo Restro',
+                'email' => 'logo@example.com',
+                'phone' => '9876543210',
+                'status' => 'A'
+            ]);
+        }
+
+        $plan = Plan::first() ?? Plan::create(['name' => 'Diamond', 'price' => 2999, 'duration_days' => 365, 'billing_cycle' => 'monthly', 'inventory_checkbox' => 'Y', 'plan_status' => 'A', 'is_delete' => 'N']);
+        Subscription::firstOrCreate(
+            ['user_id' => $restaurant->id, 'status' => 'active'],
+            ['plan_id' => $plan->id, 'start_date' => now()->subDay(), 'end_date' => now()->addYear()]
+        );
+
+        $user = User::where('restaurant_id', $restaurant->id)->first();
         if (!$user) {
             $user = new User();
             $user->name = 'Test Owner';
-            $user->email = 'owner_test@example.com';
+            $user->email = 'owner_test_' . uniqid() . '@example.com';
             $user->password = bcrypt('123456');
             $user->phone = '9876543210';
             $user->role = 'RES';
             $user->role_type = 'ADMIN';
-            $user->restaurant_id = 1;
+            $user->restaurant_id = $restaurant->id;
             $user->save();
         }
         return $user;

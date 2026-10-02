@@ -15,6 +15,7 @@ use App\Http\Controllers\RestaurantAnalyticsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\RapidBillController;
 
 /*
 |--------------------------------------------------------------------------
@@ -206,6 +207,12 @@ Route::get('admin/order-create/{table_id?}', [App\Http\Controllers\OrderManageme
 Route::get('order-edit/{order_id}', [App\Http\Controllers\OrderManagementController::class, 'edit'])
     ->name('order.edit');
 Route::get('admin/order-edit/{order_id}', [App\Http\Controllers\OrderManagementController::class, 'edit']);
+
+// Rapid Bill One-Page POS Interface
+Route::get('rapid-bill', [RapidBillController::class, 'index'])->name('rapid.bill');
+Route::get('admin/rapid-bill', [RapidBillController::class, 'index']);
+Route::post('rapid-bill/store', [RapidBillController::class, 'store'])->name('rapid.bill.store');
+Route::post('admin/rapid-bill/store', [RapidBillController::class, 'store']);
 
 Route::post('order-save', [App\Http\Controllers\OrderManagementController::class, 'store'])
     ->name('order.save');
@@ -434,6 +441,21 @@ Route::get('admin/temp-order/reject/{id}', [App\Http\Controllers\TempOrderAdminC
     Route::get('inventory/live', [App\Http\Controllers\InventoryController::class, 'live'])->name('inventory.live');
 
 
+
+    // Master Report Routes (7 Dedicated Pages & Routes)
+    Route::prefix('admin/reports/master')->name('admin.reports.master.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\MasterReportController::class, 'overview'])->name('index');
+        Route::get('/overview', [\App\Http\Controllers\MasterReportController::class, 'overview'])->name('overview');
+        Route::get('/orders', [\App\Http\Controllers\MasterReportController::class, 'orders'])->name('orders');
+        Route::get('/order-items', [\App\Http\Controllers\MasterReportController::class, 'orderItems'])->name('order-items');
+        Route::get('/purchases', [\App\Http\Controllers\MasterReportController::class, 'purchases'])->name('purchases');
+        Route::get('/stock', [\App\Http\Controllers\MasterReportController::class, 'stock'])->name('stock');
+        Route::get('/expenses', [\App\Http\Controllers\MasterReportController::class, 'expenses'])->name('expenses');
+        Route::get('/analytics', [\App\Http\Controllers\MasterReportController::class, 'analytics'])->name('analytics');
+    });
+    Route::get('/master-report', function() {
+        return redirect()->route('admin.reports.master.overview');
+    })->name('master.report.index');
 
     // Reports Routes
     Route::get('report-top-analysis', [App\Http\Controllers\ReportController::class, 'topAnalysisReport'])->name('order.report.top.analysis');

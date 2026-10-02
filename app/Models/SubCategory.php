@@ -9,6 +9,7 @@ class SubCategory extends Model
 {
     use HasFactory;
     protected $table = "sub_category";
+    protected $guarded = [];
     // 🔗 Belongs to a Category
     public function category()
     {
