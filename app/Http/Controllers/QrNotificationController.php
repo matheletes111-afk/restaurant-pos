@@ -21,14 +21,21 @@ class QrNotificationController extends Controller
 
         $restaurantId = $user->restaurant_id;
 
-        $query = TempOrder::with(['table_details', 'items.menuItem'])
-            ->where('created_at', '>=', Carbon::now()->subDays(7));
-
-        if ($restaurantId) {
-            $query->where('restaurant_id', $restaurantId);
+        if (!$restaurantId) {
+            return response()->json([
+                'success' => true,
+                'unread_count' => 0,
+                'total_count' => 0,
+                'notifications' => [],
+                'latest_id' => 0,
+            ]);
         }
 
-        $orders = $query->orderBy('id', 'DESC')->get();
+        $orders = TempOrder::with(['table_details', 'items.menuItem'])
+            ->where('restaurant_id', $restaurantId)
+            ->where('created_at', '>=', Carbon::now()->subDays(7))
+            ->orderBy('id', 'DESC')
+            ->get();
         $unreadCount = $orders->where('is_read', false)->count();
 
         $notifications = $orders->map(function ($order) {
@@ -81,12 +88,15 @@ class QrNotificationController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
         }
 
-        $query = TempOrder::where('id', $id);
-        if ($user->restaurant_id) {
-            $query->where('restaurant_id', $user->restaurant_id);
+        $restaurantId = $user->restaurant_id;
+        if (!$restaurantId) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized - No restaurant assigned'], 403);
         }
 
-        $order = $query->first();
+        $order = TempOrder::where('id', $id)
+            ->where('restaurant_id', $restaurantId)
+            ->first();
+
         if ($order) {
             $order->update([
                 'is_read' => true,
@@ -109,21 +119,19 @@ class QrNotificationController extends Controller
         }
 
         $restaurantId = $user->restaurant_id;
-
-        $query = TempOrder::query();
-
-        if ($restaurantId) {
-            $query->where('restaurant_id', $restaurantId);
+        if (!$restaurantId) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized - No restaurant assigned'], 403);
         }
 
-        $query->where(function ($q) {
-            $q->where('is_read', false)
-              ->orWhereNull('is_read')
-              ->orWhere('is_read', 0);
-        })->update([
-            'is_read' => true,
-            'read_at' => Carbon::now()
-        ]);
+        TempOrder::where('restaurant_id', $restaurantId)
+            ->where(function ($q) {
+                $q->where('is_read', false)
+                  ->orWhereNull('is_read')
+                  ->orWhere('is_read', 0);
+            })->update([
+                'is_read' => true,
+                'read_at' => Carbon::now()
+            ]);
 
         return response()->json([
             'success' => true,

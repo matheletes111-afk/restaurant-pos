@@ -386,19 +386,104 @@
             </div>
 
             <!-- Checkout / Order Status -->
-            @if(in_array(auth()->user()->role_type, ["Manager", "Cashier", "ADMIN"]))
-              <div class="mt-4">
-                <label class="pos-form-label">Order Status &amp; Complete</label>
+            <div class="mt-4">
+              @if(empty($order->table_id) || (isset($order->order_type) && strtoupper($order->order_type) === 'TAKEAWAY'))
+                <label class="pos-form-label d-flex align-items-center justify-content-between">
+                  <span><i class="fa-solid fa-bag-shopping me-1 text-primary"></i> Order Type &amp; Status</span>
+                  <span class="badge bg-success text-white font-weight-bold">
+                    <i class="fa-solid fa-bolt me-1"></i> Express Takeaway
+                  </span>
+                </label>
+                <input type="hidden" id="order_complete" value="DONE">
+                <div class="p-2 rounded bg-light border text-muted small mb-2 d-flex align-items-center justify-content-between">
+                  <span><i class="fa-solid fa-lock text-success me-1"></i> Takeaway Status:</span>
+                  <strong class="text-dark">Done &amp; Direct Checkout</strong>
+                </div>
+              @else
+                <label class="pos-form-label d-flex align-items-center justify-content-between">
+                  <span><i class="fa-solid fa-list-check me-1 text-primary"></i> Order Status &amp; Action</span>
+                  <span class="badge bg-light text-dark font-weight-bold" id="statusBadgeTag">
+                    {{ $order->order_complete == 'DONE' ? 'Done & Checkout' : 'Running Service' }}
+                  </span>
+                </label>
                 <select class="pos-form-control" id="order_complete">
                   <option value="PENDING" {{ $order->order_complete == 'PENDING' ? 'selected' : '' }}>⏳ Active / Running in Service</option>
                   <option value="DONE" {{ $order->order_complete == 'DONE' ? 'selected' : '' }}>✅ Done &amp; Checkout Bill</option>
                 </select>
+              @endif
+            </div>
+
+            <!-- Instant Checkout Split Payment Box -->
+            <div class="checkout-payment-box active-mode" id="checkoutPaymentSection" style="display: {{ (empty($order->table_id) || (isset($order->order_type) && strtoupper($order->order_type) === 'TAKEAWAY') || $order->order_complete == 'DONE') ? 'block' : 'none' }};">
+              <div class="payment-box-header">
+                <div class="payment-box-title">
+                  <i class="fa-solid fa-cash-register text-success"></i> Settlement Mode
+                </div>
+                <span class="payment-badge-status" id="paymentStatusBadge">
+                  @if(($total_paid ?? 0) >= $final_total)
+                    Settled Full
+                  @else
+                    Due ₹{{ number_format($balance_due ?? 0, 2) }}
+                  @endif
+                </span>
               </div>
-            @endif
+
+              @if(($total_paid ?? 0) > 0)
+                <div class="d-flex align-items-center justify-content-between mb-2 p-2 rounded" style="background:#f1f5f9; font-size: 0.78rem;">
+                  <span class="text-muted"><i class="fa-solid fa-clock-rotate-left me-1"></i> Paid in History:</span>
+                  <strong class="text-success">₹{{ number_format($total_paid, 2) }}</strong>
+                </div>
+              @endif
+
+              <!-- Quick Split Helper Pills -->
+              <div class="payment-quick-pills">
+                <button type="button" class="btn-quick-split active" id="btnAllCash">
+                  <i class="fa-solid fa-money-bill-wave text-success"></i> All Cash
+                </button>
+                <button type="button" class="btn-quick-split" id="btnAllUpi">
+                  <i class="fa-solid fa-qrcode text-primary"></i> All UPI
+                </button>
+                <button type="button" class="btn-quick-split" id="btnSplitFifty">
+                  <i class="fa-solid fa-arrows-split-up-and-left text-warning"></i> 50/50 Split
+                </button>
+              </div>
+
+              <!-- Payment Inputs: Cash & UPI -->
+              <div class="pos-pay-grid">
+                <div class="pos-pay-field">
+                  <label class="pos-pay-label" for="cash_payment_amount">
+                    <span class="method-tag text-success"><i class="fa-solid fa-money-bill-wave"></i> Cash (₹)</span>
+                  </label>
+                  <div class="pos-pay-input-wrap">
+                    <span class="pay-currency-prefix">₹</span>
+                    <input type="number" step="any" min="0" class="pos-pay-input cash-focus" id="cash_payment_amount" placeholder="0.00" value="0.00">
+                  </div>
+                </div>
+
+                <div class="pos-pay-field">
+                  <label class="pos-pay-label" for="upi_payment_amount">
+                    <span class="method-tag text-primary"><i class="fa-solid fa-qrcode"></i> UPI (₹)</span>
+                  </label>
+                  <div class="pos-pay-input-wrap">
+                    <span class="pay-currency-prefix">₹</span>
+                    <input type="number" step="any" min="0" class="pos-pay-input upi-focus" id="upi_payment_amount" placeholder="0.00" value="0.00">
+                  </div>
+                </div>
+              </div>
+
+              <div class="payment-split-summary">
+                <span>Paying Now: <strong id="totalPayingText">₹0.00</strong></span>
+                <span id="balanceDueText">Remaining: <strong>₹0.00</strong></span>
+              </div>
+            </div>
 
             <div class="mt-4">
               <button type="button" class="btn-terminal-save" id="saveOrderBtn">
-                <i class="fa-solid fa-floppy-disk"></i> Save &amp; Update Order
+                @if($order->order_complete == 'DONE')
+                  <i class="fa-solid fa-circle-check"></i> Done &amp; Checkout Bill
+                @else
+                  <i class="fa-solid fa-floppy-disk"></i> Save &amp; Update Order
+                @endif
               </button>
             </div>
           </div>
@@ -515,6 +600,72 @@ function updateSummary() {
     
     $('#final_total').text(finalTotal.toFixed(2));
     $('#newItemsCountBadge').text(newCount + (newCount === 1 ? ' New Item' : ' New Items'));
+
+    // Automatically synchronize cash / upi split payment amounts with remaining net due
+    syncPaymentSplit('total_change');
+}
+
+let alreadyPaidHistory = {{ (float)($total_paid ?? 0) }};
+let userEditedSplit = false;
+
+function syncPaymentSplit(triggerSource = 'none') {
+    let finalTotal = parseFloat($('#final_total').text()) || 0;
+    let netDue = Math.max(0, finalTotal - alreadyPaidHistory);
+    
+    let cashInput = $('#cash_payment_amount');
+    let upiInput = $('#upi_payment_amount');
+    
+    let isCheckoutActive = $('#order_complete').val() === 'DONE';
+    if (!isCheckoutActive) {
+        return;
+    }
+
+    // On total change, if user hasn't typed custom amounts, default Cash to the new net due
+    if (triggerSource === 'total_change') {
+        if (!userEditedSplit) {
+            cashInput.val(netDue.toFixed(2));
+            upiInput.val('0.00');
+        }
+    } else if (triggerSource === 'user_input') {
+        userEditedSplit = true;
+    }
+
+    let cashVal = parseFloat(cashInput.val()) || 0;
+    let upiVal = parseFloat(upiInput.val()) || 0;
+
+    let totalPayingNow = cashVal + upiVal;
+    let remainingDue = netDue - totalPayingNow;
+
+    $('#totalPayingText').text(`₹${totalPayingNow.toFixed(2)}`);
+
+    let badge = $('#paymentStatusBadge');
+    if (netDue <= 0.01) {
+        $('#balanceDueText').html('Remaining: <strong class="text-success">₹0.00</strong>');
+        badge.attr('class', 'payment-badge-status').text('Settled Full');
+    } else if (Math.abs(remainingDue) < 0.01 && totalPayingNow > 0) {
+        $('#balanceDueText').html('Remaining: <strong class="text-success">₹0.00</strong>');
+        badge.attr('class', 'payment-badge-status').text('Settled Full');
+    } else if (remainingDue > 0) {
+        $('#balanceDueText').html(`Remaining: <strong class="text-warning">₹${remainingDue.toFixed(2)}</strong>`);
+        badge.attr('class', 'payment-badge-status partial').text(`Partial (₹${remainingDue.toFixed(2)} due)`);
+    } else if (totalPayingNow === 0) {
+        $('#balanceDueText').html(`Remaining: <strong class="text-warning">₹${netDue.toFixed(2)}</strong>`);
+        badge.attr('class', 'payment-badge-status partial').text(`Due ₹${netDue.toFixed(2)}`);
+    } else {
+        let change = Math.abs(remainingDue);
+        $('#balanceDueText').html(`Change: <strong class="text-primary">₹${change.toFixed(2)}</strong>`);
+        badge.attr('class', 'payment-badge-status').text(`Change ₹${change.toFixed(2)}`);
+    }
+
+    // Update quick pill highlights
+    $('.btn-quick-split').removeClass('active');
+    if (Math.abs(cashVal - netDue) < 0.01 && upiVal === 0 && netDue > 0) {
+        $('#btnAllCash').addClass('active');
+    } else if (Math.abs(upiVal - netDue) < 0.01 && cashVal === 0 && netDue > 0) {
+        $('#btnAllUpi').addClass('active');
+    } else if (Math.abs(cashVal - upiVal) < 1.0 && cashVal > 0 && Math.abs(totalPayingNow - netDue) < 0.01) {
+        $('#btnSplitFifty').addClass('active');
+    }
 }
 
 function escapeHtml(str) {
@@ -747,13 +898,64 @@ $(document).ready(function() {
             }
         });
     });
+
+    // Order status dropdown change (Done & Checkout Bill vs Running Service)
+    $('#order_complete').on('change', function() {
+        let val = $(this).val();
+        if (val === 'DONE') {
+            $('#checkoutPaymentSection').slideDown(250);
+            $('#statusBadgeTag').text('Done & Checkout');
+            $('#saveOrderBtn').html('<i class="fa-solid fa-circle-check"></i> Done &amp; Checkout Bill');
+            syncPaymentSplit('total_change');
+        } else {
+            $('#checkoutPaymentSection').slideUp(250);
+            $('#statusBadgeTag').text('Running Service');
+            $('#saveOrderBtn').html('<i class="fa-solid fa-floppy-disk"></i> Save &amp; Update Order');
+        }
+    });
+
+    // Quick Split Buttons
+    $('#btnAllCash').on('click', function(e) {
+        e.preventDefault();
+        userEditedSplit = true;
+        let finalTotal = parseFloat($('#final_total').text()) || 0;
+        let netDue = Math.max(0, finalTotal - alreadyPaidHistory);
+        $('#cash_payment_amount').val(netDue.toFixed(2));
+        $('#upi_payment_amount').val('0.00');
+        syncPaymentSplit('quick_all_cash');
+    });
+
+    $('#btnAllUpi').on('click', function(e) {
+        e.preventDefault();
+        userEditedSplit = true;
+        let finalTotal = parseFloat($('#final_total').text()) || 0;
+        let netDue = Math.max(0, finalTotal - alreadyPaidHistory);
+        $('#cash_payment_amount').val('0.00');
+        $('#upi_payment_amount').val(netDue.toFixed(2));
+        syncPaymentSplit('quick_all_upi');
+    });
+
+    $('#btnSplitFifty').on('click', function(e) {
+        e.preventDefault();
+        userEditedSplit = true;
+        let finalTotal = parseFloat($('#final_total').text()) || 0;
+        let netDue = Math.max(0, finalTotal - alreadyPaidHistory);
+        let half = Math.round((netDue / 2) * 100) / 100;
+        let otherHalf = Math.round((netDue - half) * 100) / 100;
+        $('#cash_payment_amount').val(half.toFixed(2));
+        $('#upi_payment_amount').val(otherHalf.toFixed(2));
+        syncPaymentSplit('quick_split');
+    });
+
+    // Live interactive edit on Cash and UPI fields without auto-overwriting
+    $('#upi_payment_amount, #cash_payment_amount').on('input keyup change', function() {
+        syncPaymentSplit('user_input');
+    });
     
     // Save Order Changes
     $('#saveOrderBtn').click(function() {
         let customer_phone = $('#customer_phone').val().trim();
         let order_complete = $('#order_complete').val();
-        let payment_method = $('#payment_method').val();
-        let amount_paid = $('#amount_paid').val();
         let remarks = $('#remarks').val();
         
         if (customer_phone && !/^[0-9]{10}$/.test(customer_phone)) {
@@ -761,12 +963,20 @@ $(document).ready(function() {
             $('#customer_phone').focus();
             return;
         }
+
+        let cashAmount = 0;
+        let upiAmount = 0;
+
+        if (order_complete === 'DONE') {
+            cashAmount = parseFloat($('#cash_payment_amount').val()) || 0;
+            upiAmount = parseFloat($('#upi_payment_amount').val()) || 0;
+        }
         
         let data = {
             _token: "{{ csrf_token() }}",
             order_complete: order_complete,
-            payment_method: payment_method,
-            amount_paid: amount_paid,
+            cash_amount: cashAmount,
+            upi_amount: upiAmount,
             customer_phone: customer_phone,
             remarks: remarks,
             is_gst_registered: isGstRegistered,
@@ -787,7 +997,8 @@ $(document).ready(function() {
             }));
         }
         
-        $(this).prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-2"></i> Saving Changes...');
+        let btnText = (order_complete === 'DONE') ? 'Updating & Processing Checkout...' : 'Saving Changes...';
+        $(this).prop('disabled', true).html(`<i class="fa-solid fa-spinner fa-spin me-2"></i> ${btnText}`);
         
         $.ajax({
             url: "{{ route('order.update', $order->id) }}",
@@ -795,11 +1006,14 @@ $(document).ready(function() {
             data: data,
             success: function(response) {
                 if (response.success) {
-                    showToast('Order updated successfully!', false);
-                    if (response.redirect_url) {
-                        setTimeout(() => { window.location.href = response.redirect_url; }, 800);
+                    showToast('Order and Payment updated successfully!', false);
+                    let targetUrl = response.redirect_url || "{{ route('order.invoice', $order->id) }}?autoprint=1";
+                    if (order_complete === 'DONE' || response.redirect_url) {
+                        setTimeout(() => { 
+                            window.location.href = targetUrl; 
+                        }, 600);
                     } else {
-                        setTimeout(() => { location.reload(); }, 800);
+                        setTimeout(() => { location.reload(); }, 600);
                     }
                 } else {
                     showToast(response.message || 'Error saving order', true);

@@ -30,16 +30,19 @@ class CheckMenuPermission
         // Restrict access for restaurant level users without an active subscription
         if ($user->role === 'RES') {
             $subRestaurantId = method_exists($user, 'getSubscriptionRestaurantId') ? $user->getSubscriptionRestaurantId() : $user->restaurant_id;
-            $hasActiveSubscription = \DB::table('subscriptions')
-                ->where('user_id', $subRestaurantId)
-                ->where(function ($query) {
-                    $query->where('status', 'active')
-                          ->orWhere(function ($q) {
-                              $q->where('status', 'completed')
-                                ->whereDate('end_date', '>=', now());
-                          });
-                })
-                ->exists();
+            $hasActiveSubscription = false;
+            if (!empty($subRestaurantId)) {
+                $hasActiveSubscription = \DB::table('subscriptions')
+                    ->where('user_id', $subRestaurantId)
+                    ->where(function ($query) {
+                        $query->where('status', 'active')
+                              ->orWhere(function ($q) {
+                                  $q->where('status', 'completed')
+                                    ->whereDate('end_date', '>=', now());
+                              });
+                    })
+                    ->exists();
+            }
 
             if (!$hasActiveSubscription) {
                 $allowedRoutes = [

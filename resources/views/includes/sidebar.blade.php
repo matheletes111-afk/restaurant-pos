@@ -298,21 +298,24 @@
 
         @php
           $subRestId = method_exists(auth()->user(), 'getSubscriptionRestaurantId') ? auth()->user()->getSubscriptionRestaurantId() : auth()->user()->restaurant_id;
-          $active = DB::table('subscriptions')
-            ->where('user_id', $subRestId)
-            ->where(function($query) {
-                $query->where('status', 'active')
-                      ->orWhere(function($q) {
-                          $q->where('status', 'completed')
-                            ->whereDate('end_date', '>=', now());
-                      });
-            })
-            ->first();
-          $plan_details = DB::table('plans')->where('id',@$active->plan_id)->first();
-          $disabledClass = $active == "" ? 'sidebar-disabled-item' : '';
+          $active = null;
+          if (!empty($subRestId)) {
+            $active = DB::table('subscriptions')
+              ->where('user_id', $subRestId)
+              ->where(function($query) {
+                  $query->where('status', 'active')
+                        ->orWhere(function($q) {
+                            $q->where('status', 'completed')
+                              ->whereDate('end_date', '>=', now());
+                        });
+              })
+              ->first();
+          }
+          $plan_details = $active ? DB::table('plans')->where('id', $active->plan_id)->first() : null;
+          $disabledClass = empty($active) ? 'sidebar-disabled-item' : '';
         @endphp
 
-        @if(auth()->user()->role == "RES" || $active != "")
+        @if(auth()->user()->role == "RES")
         {{-- ==================== RESTAURANT ROUTES ==================== --}}
 
         <li class="pc-item {{ $disabledClass }}">
@@ -330,6 +333,15 @@
           </a>
         </li>
         @endif
+
+        <!-- @if(auth()->user()->hasPermission('dish_addon_master') || auth()->user()->hasPermission('menu_master'))
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{route('addon.index')}}" class="pc-link @if(Request::is('*dish-addons*') || Request::is('*addon*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-puzzle-piece"></i></span>
+            <span class="pc-mtext">Dish Addon Master</span>
+          </a>
+        </li>
+        @endif -->
 
         @if(auth()->user()->hasPermission('menu_availability'))
         <li class="pc-item {{ $disabledClass }}">

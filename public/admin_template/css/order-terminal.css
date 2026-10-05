@@ -787,6 +787,195 @@ body {
 }
 
 /* ===================================================
+   ON-PAGE CHECKOUT SPLIT PAYMENT SYSTEM
+   =================================================== */
+.checkout-payment-box {
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  border: 1.5px solid #cbd5e1;
+  border-radius: var(--pos-radius-lg);
+  padding: 16px;
+  margin-top: 14px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.checkout-payment-box.active-mode {
+  border-color: #10b981;
+  background: linear-gradient(145deg, #f0fdf4 0%, #ffffff 100%);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.12);
+}
+
+.payment-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #cbd5e1;
+}
+
+.payment-box-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.payment-badge-status {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.payment-badge-status.partial {
+  background: #fffbeb;
+  color: #d97706;
+  border-color: #fde68a;
+}
+
+.payment-badge-status.exceeded {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.pos-pay-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pos-pay-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pos-pay-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pos-pay-label span.method-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pos-pay-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pos-pay-input-wrap .pay-currency-prefix {
+  position: absolute;
+  left: 12px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.pos-pay-input {
+  width: 100%;
+  height: 42px;
+  padding-left: 28px;
+  padding-right: 12px;
+  font-family: 'Public Sans', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  text-align: right;
+  transition: all 0.2s ease;
+}
+
+.pos-pay-input:focus {
+  outline: none;
+  border-color: #ff5e14;
+  box-shadow: 0 0 0 3px rgba(255, 94, 20, 0.15);
+  background: #fff;
+}
+
+.pos-pay-input.cash-focus:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.pos-pay-input.upi-focus:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.payment-quick-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.btn-quick-split {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-quick-split:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.btn-quick-split.active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+.payment-split-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  padding-top: 6px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.payment-split-summary strong {
+  color: #0f172a;
+}
+
+/* ===================================================
    RESPONSIVE BREAKPOINTS
    =================================================== */
 @media (max-width: 992px) {
@@ -823,5 +1012,8 @@ body {
   }
   .price-final {
     font-size: 1.05rem;
+  }
+  .pos-pay-grid {
+    grid-template-columns: 1fr;
   }
 }

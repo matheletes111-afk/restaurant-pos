@@ -120,11 +120,21 @@ class User extends Authenticatable implements JWTSubject
 
     public function getAvailableOutlets()
     {
+        $mainRest = $this->getMainRestaurant();
+        if ($mainRest && ($this->isOwner() || $this->hasPermission('master_report'))) {
+            // Return main restaurant plus all non-deleted outlets
+            $outlets = \App\Models\RestaurantMaster::where('parent_id', $mainRest->id)
+                ->where('status', '!=', 'D')
+                ->orderBy('id', 'asc')
+                ->get();
+
+            return collect([$mainRest])->merge($outlets);
+        }
+
         if (!$this->isOwner()) {
             return collect([$this->restaurant ?: \App\Models\RestaurantMaster::find($this->restaurant_id)])->filter();
         }
 
-        $mainRest = $this->getMainRestaurant();
         if (!$mainRest) {
             return collect();
         }

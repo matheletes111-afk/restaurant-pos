@@ -710,11 +710,13 @@ public function store(Request $request)
                 return true;
             }
 
-            // B) If $orderId is a TempOrder, find if its linked main order is in customer session
-            $tempOrder = TempOrder::find($orderId);
-            if ($tempOrder && $tempOrder->order_id && in_array((string) $tempOrder->order_id, $allowedIds, true)) {
-                session()->push('customer_qr_allowed_orders', (int) $orderId);
-                return true;
+            // B) If $orderId is a TempOrder (not an existing OrderManage), find if its linked main order is in customer session
+            if ($orderType === 'temp' || !OrderManage::where('id', $orderId)->exists()) {
+                $tempOrder = TempOrder::find($orderId);
+                if ($tempOrder && $tempOrder->order_id && in_array((string) $tempOrder->order_id, $allowedIds, true)) {
+                    session()->push('customer_qr_allowed_orders', (int) $orderId);
+                    return true;
+                }
             }
         }
 

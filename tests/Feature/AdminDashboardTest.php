@@ -23,6 +23,7 @@ class AdminDashboardTest extends TestCase
             'password' => bcrypt('password'),
             'role' => 'SA',
             'role_type' => 'ADMIN',
+            'permissions' => ['restaurant_master', 'plan_master', 'payment_history', 'admin_crm', 'marketing_notifications', 'customer_support', 'admin_user_management'],
         ]);
     }
 
@@ -143,6 +144,12 @@ class AdminDashboardTest extends TestCase
         $response->assertSee('Most Popular Package');
         $response->assertSee('Best Performing Restaurant');
         $response->assertSee('Yearly Platform Growth');
+        $response->assertSee('Restaurant Master');
+        $response->assertSee('Plan Master');
+        $response->assertDontSee('Menu Master');
+        $response->assertDontSee('Table Master');
+        $response->assertDontSee('Rapid Bill');
+        $response->assertDontSee('Kitchen Order');
     }
 
     public function test_yearly_chart_ajax_endpoint_returns_json()

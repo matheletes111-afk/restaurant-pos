@@ -14,7 +14,10 @@ class VerifyCsrfToken extends Middleware
     protected $except = [
         'admin/razorpay/webhook',
         'razorpay/webhook',
+        'api/razorpay/webhook',
         'admin/razorpay/*',
+        'razorpay/*',
+        'api/razorpay/*',
         'restaurant/qr-notifications/*',
     ];
 }

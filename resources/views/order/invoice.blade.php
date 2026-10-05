@@ -890,6 +890,9 @@
                     <button type="button" class="btn-inv-whatsapp" id="showWhatsappModalBtn">
                         <i class="fa-brands fa-whatsapp"></i> Share Bill WhatsApp
                     </button>
+                    <a href="{{ route('order.public.download', ['id' => $order->id, 'download' => 1]) }}" class="btn-inv-slate" target="_blank" title="Direct PDF Download">
+                        <i class="fa-solid fa-file-arrow-down text-warning"></i> Download PDF
+                    </a>
                     <button type="button" class="btn-inv-primary" id="showAddPaymentModal">
                         <i class="fa-solid fa-circle-plus"></i> Add Payment
                     </button>
@@ -1381,10 +1384,15 @@
 
                 {{-- 2. Invoice Link & Copy --}}
                 <div class="mb-3">
-                    <label class="pm-label">Invoice Download / View Link</label>
+                    <label class="pm-label">
+                        <span>Invoice Download Link (Outside Auth)</span>
+                        <a href="{{ route('order.public.invoice', $order->id) }}" target="_blank" class="small text-primary text-decoration-none fw-bold">
+                            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Public View
+                        </a>
+                    </label>
                     <div class="input-group">
                         <input type="text" id="invoiceShareUrl" class="pm-input-control font-monospace small" 
-                               value="{{ route('order.invoice', $order->id) }}" readonly style="border-radius: 12px 0 0 12px;">
+                               value="{{ route('order.public.download', $order->id) }}" readonly style="border-radius: 12px 0 0 12px;">
                         <button class="btn btn-outline-secondary px-3" type="button" id="btnCopyInvoiceLink" title="Copy Link" style="border-radius: 0 12px 12px 0; border: 1.5px solid var(--inv-border); border-left: none;">
                             <i class="fa-regular fa-copy"></i> Copy
                         </button>
@@ -1462,7 +1470,8 @@ function generateWhatsappMessage() {
     let grandTotal = "₹{{ number_format($order->grand_total, 2) }}";
     let paidAmount = "₹" + parseFloat($('#totalPaidAmount').text() || '{{ $totalPaid }}').toFixed(2);
     let balanceVal = parseFloat($('#balanceDueAmount').text() || '{{ $balanceDue }}');
-    let invoiceUrl = "{{ route('order.invoice', $order->id) }}";
+    let downloadUrl = "{{ route('order.public.download', $order->id) }}";
+    let viewUrl = "{{ route('order.public.invoice', $order->id) }}";
     
     let msg = `🧾 *${restaurantName} - Bill & Receipt*\n`;
     msg += `--------------------------------\n`;
@@ -1487,13 +1496,23 @@ function generateWhatsappMessage() {
         msg += `✨ *Status:* Fully Paid & Settled\n`;
     }
     msg += `--------------------------------\n`;
-    msg += `📄 *View / Download Digital Bill:*\n${invoiceUrl}\n\n`;
+    msg += `📄 *Download Bill PDF:*\n${downloadUrl}\n\n`;
+    msg += `🌐 *View Online Bill:*\n${viewUrl}\n\n`;
     msg += `🙏 Thank you for dining with us! Have a wonderful day.`;
     
     return msg;
 }
 
+let autoPrintTimer = null;
+
 function openWhatsappModal() {
+    // Cancel any pending print triggers and clean background print iframes
+    if (autoPrintTimer) {
+        clearTimeout(autoPrintTimer);
+        autoPrintTimer = null;
+    }
+    $('#pdfFrame').remove();
+
     let msg = generateWhatsappMessage();
     $('#whatsappMsgPreview').val(msg);
 
@@ -1664,7 +1683,17 @@ $(document).ready(function() {
     });
 
     // Send on WhatsApp Button
-    $('#btnSendWhatsapp').click(function() {
+    $('#btnSendWhatsapp').click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Ensure no print dialog or timer fires
+        if (autoPrintTimer) {
+            clearTimeout(autoPrintTimer);
+            autoPrintTimer = null;
+        }
+        $('#pdfFrame').remove();
+
         let phoneInput = $('#whatsappPhone').val().trim();
         let cleanPhone = phoneInput.replace(/[^0-9]/g, '');
         
@@ -1808,9 +1837,16 @@ $(document).ready(function() {
         }, 5000);
     });
 
-    @if(request('autoprint') == '1' || request('print') == '1')
-    setTimeout(function() {
-        $('#printInvoiceBtn').trigger('click');
+    @if(request('autoprint') == '1' || request('print') == '1' || request('auto_print') == '1')
+    // Clean URL query parameters so print dialog doesn't re-trigger
+    if (window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    autoPrintTimer = setTimeout(function() {
+        // Only trigger if WhatsApp modal is not currently open
+        if (!$('#shareWhatsappModal').hasClass('show')) {
+            $('#printInvoiceBtn').trigger('click');
+        }
     }, 600);
     @endif
 });

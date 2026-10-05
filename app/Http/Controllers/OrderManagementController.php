@@ -123,8 +123,18 @@ class OrderManagementController extends Controller
         $finalTotal = round($grandTotal);
         $roundOff = $finalTotal - $grandTotal;
 
+        // Get all payments for this order
+        $payments = OrderToPayment::where('order_id', $order_id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+        $totalPaid = (float)$payments->sum('amount');
+        $balanceDue = max(0, $finalTotal - $totalPaid);
+
         $data['order'] = $order;
         $data['table'] = $order->table_id ? TableManage::find($order->table_id) : null;
+        $data['payments'] = $payments;
+        $data['total_paid'] = $totalPaid;
+        $data['balance_due'] = $balanceDue;
         
         // Get categories with subcategories including discount_percentage
         $data['categories'] = Category::where('restaurant_id', auth()->user()->restaurant_id)
@@ -324,22 +334,78 @@ class OrderManagementController extends Controller
             $order->restaurant_gst_percentage = $restaurantGstPercentage;
             $order->restaurant_gstin = $restaurantGstin;
             
-            // Payment info
-            if ($isTakeaway) {
-                $order->amount_paid = $request->payment_status === 'PAID' ? $totals['final_total'] : 0;
-                $order->payment_status = $request->payment_status ?? 'PENDING';
-                $order->payment_method = $request->payment_method ?? null;
+            // Payment and Checkout info
+            $cashAmount = floatval($request->cash_amount ?? 0);
+            $upiAmount = floatval($request->upi_amount ?? 0);
+            $orderComplete = $request->order_complete ?? ($isTakeaway ? 'DONE' : 'PENDING');
+            $totalPaying = $cashAmount + $upiAmount;
+
+            // Fallback if marked PAID but explicit amounts weren't supplied in input
+            if ($orderComplete === 'DONE' && $totalPaying == 0 && ($request->payment_status === 'PAID')) {
+                $cashAmount = $totals['final_total'];
+                $totalPaying = $cashAmount;
+            }
+
+            $grandTotal = $totals['final_total'];
+            if ($totalPaying >= $grandTotal && $grandTotal > 0) {
+                $order->payment_status = 'PAID';
+                $order->amount_paid = $grandTotal;
+                $order->order_complete = 'DONE';
+                $order->order_status = 'COMPLETED';
+            } elseif ($totalPaying > 0) {
+                $order->payment_status = 'PARTIAL';
+                $order->amount_paid = $totalPaying;
+                $order->order_complete = $orderComplete;
+                $order->order_status = ($orderComplete === 'DONE') ? 'COMPLETED' : 'PENDING';
             } else {
-                $order->payment_status = 'PENDING';
-                $order->payment_method = null;
+                $order->payment_status = $request->payment_status ?? 'PENDING';
                 $order->amount_paid = 0;
+                $order->order_complete = $orderComplete;
+                $order->order_status = ($orderComplete === 'DONE') ? 'COMPLETED' : 'PENDING';
+            }
+
+            if ($cashAmount > 0 && $upiAmount > 0) {
+                $order->payment_method = 'SPLIT';
+            } elseif ($cashAmount > 0) {
+                $order->payment_method = 'CASH';
+            } elseif ($upiAmount > 0) {
+                $order->payment_method = 'UPI';
+            } else {
+                $order->payment_method = $request->payment_method ?? null;
             }
             
             $order->remarks = $request->remarks ?? null;
-            $order->order_status = 'PENDING';
             $order->restaurant_id = auth()->user()->restaurant_id;
             $order->user_id = auth()->user()->id;
             $order->save();
+
+            // Record split payments in OrderToPayment history
+            if ($cashAmount > 0) {
+                $cashPayment = OrderToPayment::create([
+                    'order_id' => $order->id,
+                    'restaurant_id' => $order->restaurant_id,
+                    'amount' => $cashAmount,
+                    'payment_method' => 'CASH',
+                    'transaction_no' => $request->transaction_no ?? null,
+                    'remarks' => 'POS Cash Payment at checkout',
+                    'payment_date' => now(),
+                    'created_by' => auth()->id()
+                ]);
+                app(CashDrawerService::class)->recordOrderPayment($cashPayment, $order);
+            }
+
+            if ($upiAmount > 0) {
+                OrderToPayment::create([
+                    'order_id' => $order->id,
+                    'restaurant_id' => $order->restaurant_id,
+                    'amount' => $upiAmount,
+                    'payment_method' => 'UPI',
+                    'transaction_no' => $request->upi_transaction_no ?? $request->transaction_no ?? null,
+                    'remarks' => 'POS UPI Payment at checkout',
+                    'payment_date' => now(),
+                    'created_by' => auth()->id()
+                ]);
+            }
        
             // Generate a single KOT number for all items in this initial order batch
             $kotNo = $this->generateKOTNumber($restaurantId);
@@ -372,17 +438,22 @@ class OrderManagementController extends Controller
 
             // Update table status if dine-in
             if ($request->table_id) {
-                TableManage::where('id', $request->table_id)->update([
-                    'table_status' => 'OCCUPIED',
-                    'order_id' => $order->id,
-                ]);
+                if ($order->order_complete === 'DONE') {
+                    $this->updateTableStatus($request->table_id);
+                } else {
+                    TableManage::where('id', $request->table_id)->update([
+                        'table_status' => 'OCCUPIED',
+                        'order_id' => $order->id,
+                    ]);
+                }
             }
 
             DB::commit();
 
-            // Return different redirect URLs based on order type
-            $redirectUrl = $isTakeaway 
-                ? route('order.invoice', $order->id) 
+            // Return redirect URLs based on order state (Auto-print trigger on checkout)
+            $isCompleteOrPaid = ($order->order_complete === 'DONE' || $order->payment_status === 'PAID');
+            $redirectUrl = ($isCompleteOrPaid || $isTakeaway)
+                ? route('order.invoice', $order->id) . '?autoprint=1' 
                 : route('order.management.dashboard');
 
             return response()->json([
@@ -393,7 +464,7 @@ class OrderManagementController extends Controller
                 'order_id' => $order->id,
                 'order_type' => $isTakeaway ? 'TAKEAWAY' : 'DINE_IN',
                 'redirect_url' => $redirectUrl,
-                'invoice_url' => $isTakeaway ? route('order.invoice', $order->id) : null
+                'invoice_url' => route('order.invoice', $order->id) . '?autoprint=1'
             ]);
 
         } catch (\Exception $e) {
@@ -521,8 +592,75 @@ class OrderManagementController extends Controller
             $order->discount = $discountAmount; // Discount amount in rupees
             $order->discount_percentage = $orderDiscountPercent; // Discount percentage
             
-            $order->grand_total = $finalTotal;
-            $order->round_off = $roundOff;
+            // Process new Cash & UPI payments if provided
+            $cashAmount = floatval($request->cash_amount ?? 0);
+            $upiAmount = floatval($request->upi_amount ?? 0);
+
+            if ($cashAmount > 0) {
+                $cashPayment = OrderToPayment::create([
+                    'order_id' => $order->id,
+                    'restaurant_id' => $order->restaurant_id,
+                    'amount' => $cashAmount,
+                    'payment_method' => 'CASH',
+                    'transaction_no' => $request->transaction_no ?? null,
+                    'remarks' => 'POS Cash Payment on order update',
+                    'payment_date' => now(),
+                    'created_by' => auth()->id()
+                ]);
+                app(CashDrawerService::class)->recordOrderPayment($cashPayment, $order);
+            }
+
+            if ($upiAmount > 0) {
+                OrderToPayment::create([
+                    'order_id' => $order->id,
+                    'restaurant_id' => $order->restaurant_id,
+                    'amount' => $upiAmount,
+                    'payment_method' => 'UPI',
+                    'transaction_no' => $request->upi_transaction_no ?? $request->transaction_no ?? null,
+                    'remarks' => 'POS UPI Payment on order update',
+                    'payment_date' => now(),
+                    'created_by' => auth()->id()
+                ]);
+            }
+
+            // Recalculate total payments from OrderToPayment history
+            $totalPaid = (float)OrderToPayment::where('order_id', $order->id)->sum('amount');
+            $orderComplete = $request->order_complete ?? $order->order_complete;
+            $order->order_complete = $orderComplete;
+            $order->amount_paid = $totalPaid;
+
+            if ($totalPaid >= $finalTotal && $finalTotal > 0) {
+                $order->payment_status = 'PAID';
+                $order->amount_paid = $finalTotal;
+                if ($orderComplete === 'DONE') {
+                    $order->order_status = 'COMPLETED';
+                }
+            } elseif ($totalPaid > 0) {
+                $order->payment_status = 'PARTIAL';
+                if ($orderComplete === 'DONE') {
+                    $order->order_status = 'COMPLETED';
+                }
+            } else {
+                $order->payment_status = $request->payment_status ?? $order->payment_status ?? 'PENDING';
+                if ($orderComplete === 'DONE') {
+                    $order->order_status = 'COMPLETED';
+                }
+            }
+
+            // Update primary payment method name
+            $distinctMethods = OrderToPayment::where('order_id', $order->id)
+                ->pluck('payment_method')
+                ->unique()
+                ->filter()
+                ->values()
+                ->toArray();
+
+            if (count($distinctMethods) > 1) {
+                $order->payment_method = 'SPLIT';
+            } elseif (count($distinctMethods) === 1) {
+                $order->payment_method = $distinctMethods[0];
+            }
+
             $order->save();
 
             // Release/Update table status based on remaining active orders
@@ -533,6 +671,7 @@ class OrderManagementController extends Controller
             DB::commit();
 
             if ($request->expectsJson() || $request->ajax()) {
+                $isDoneOrPaid = ($order->order_complete === 'DONE' || $order->payment_status === 'PAID');
                 return response()->json([
                     'success' => true,
                     'final_total' => number_format($finalTotal, 2),
@@ -546,8 +685,9 @@ class OrderManagementController extends Controller
                     'total_igst' => $totalIgst,
                     'discount_amount' => $discountAmount,
                     'discount_percentage' => $orderDiscountPercent,
-                    'redirect_url' => (in_array($order->payment_status, ['PAID', 'MISCORDER']) || $order->order_complete === 'DONE') 
-                        ? route('order.invoice', $order->id) : null
+                    'redirect_url' => $isDoneOrPaid 
+                        ? route('order.invoice', $order->id) . '?autoprint=1' 
+                        : null
                 ]);
             }
 
@@ -583,6 +723,111 @@ public function invoicePage($order_id)
     $balanceDue = $order->grand_total - $totalPaid;
     
     return view('order.invoice', compact('order', 'payments', 'totalPaid', 'balanceDue'));
+}
+
+/**
+ * Public Invoice View (Outside Auth - for Customer WhatsApp Sharing & Web View)
+ */
+public function publicInvoice($order_id)
+{
+    $order = OrderManage::with(['orderItems.subcategory', 'table', 'restaurant'])->findOrFail($order_id);
+    
+    $payments = OrderToPayment::where('order_id', $order_id)
+        ->orderBy('created_at', 'desc')
+        ->get();
+    
+    $totalPaid = $payments->sum('amount');
+    $balanceDue = $order->grand_total - $totalPaid;
+    $isPublic = true;
+    
+    return view('order.public_invoice', compact('order', 'payments', 'totalPaid', 'balanceDue', 'isPublic'));
+}
+
+/**
+ * Public Invoice Download / PDF Stream (Outside Auth - One Click Invoice Download)
+ */
+public function publicDownloadInvoice($order_id)
+{
+    $order = OrderManage::with(['orderItems.subcategory', 'table', 'restaurant'])->findOrFail($order_id);
+    $restaurant_details = $order->restaurant ?? RestaurantMaster::where('id', $order->restaurant_id)->first();
+
+    $originalSubtotal = 0;
+    $totalTaxable = 0;
+    $totalGst = 0;
+    $totalCgst = 0;
+    $totalSgst = 0;
+    $totalIgst = 0;
+    $totalItemDiscount = 0;
+    
+    foreach ($order->orderItems as $item) {
+        $itemDiscount = (float)($item->item_discount_percentage ?? 0);
+        $originalPrice = (float)$item->price;
+        $quantity = (int)$item->quantity;
+        
+        $discountedPrice = $originalPrice - ($originalPrice * $itemDiscount / 100);
+        $taxableAmount = $discountedPrice * $quantity;
+        
+        $gstRate = (float)($item->gst_rate ?? 0);
+        $gstAmount = ($taxableAmount * $gstRate) / 100;
+        
+        $halfGstRate = $gstRate / 2;
+        $cgstAmount = ($taxableAmount * $halfGstRate) / 100;
+        $sgstAmount = ($taxableAmount * $halfGstRate) / 100;
+        
+        $originalSubtotal += $originalPrice * $quantity;
+        $totalTaxable += $taxableAmount;
+        $totalGst += $gstAmount;
+        $totalCgst += $cgstAmount;
+        $totalSgst += $sgstAmount;
+        $totalItemDiscount += ($originalPrice * $quantity) - $taxableAmount;
+    }
+    
+    $orderDiscountPercent = (float)($order->discount_percentage ?? 0);
+    $totalBeforeOrderDiscount = $totalTaxable + $totalGst;
+    $orderDiscountAmount = ($totalBeforeOrderDiscount * $orderDiscountPercent) / 100;
+    $grandTotal = $totalBeforeOrderDiscount - $orderDiscountAmount;
+    $finalTotal = round($grandTotal);
+    $roundOff = $finalTotal - $grandTotal;
+
+    $payments = OrderToPayment::where('order_id', $order->id)
+        ->orderBy('created_at', 'desc')
+        ->get();
+    $totalPaid = $payments->sum('amount');
+    $balanceDue = max(0, $finalTotal - $totalPaid);
+
+    $data = [
+        'order' => $order,
+        'restaurant_details' => $restaurant_details,
+        'original_subtotal' => $originalSubtotal,
+        'total_taxable' => $totalTaxable,
+        'total_gst' => $totalGst,
+        'total_cgst' => $totalCgst,
+        'total_sgst' => $totalSgst,
+        'total_igst' => $totalIgst,
+        'total_item_discount' => $totalItemDiscount,
+        'order_discount_percent' => $orderDiscountPercent,
+        'order_discount_amount' => $orderDiscountAmount,
+        'grand_total' => $grandTotal,
+        'final_total' => $finalTotal,
+        'round_off' => $roundOff,
+        'payments' => $payments,
+        'totalPaid' => $totalPaid,
+        'balanceDue' => $balanceDue,
+    ];
+
+    $itemCount = count($order->orderItems ?? []);
+    $paperHeight = max(550, 320 + ($itemCount * 45));
+
+    $pdf = Pdf::loadView('receipt', $data)
+        ->setPaper([0, 0, 226, $paperHeight]);
+
+    $filename = 'invoice_' . ($order->order_id ?? $order->id) . '.pdf';
+    
+    if (request()->has('download') || request()->get('action') === 'download') {
+        return $pdf->download($filename);
+    }
+    
+    return $pdf->stream($filename);
 }
 
 /**

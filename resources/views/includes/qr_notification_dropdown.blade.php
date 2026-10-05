@@ -1,11 +1,15 @@
 @php
   $userRestId = auth()->user()->restaurant_id ?? null;
-  $initialQrOrdersQuery = \App\Models\TempOrder::with(['table_details', 'items.menuItem'])
-      ->where('created_at', '>=', now()->subDays(7));
   if ($userRestId) {
-      $initialQrOrdersQuery->where('restaurant_id', $userRestId);
+      $initialQrOrders = \App\Models\TempOrder::with(['table_details', 'items.menuItem'])
+          ->where('restaurant_id', $userRestId)
+          ->where('created_at', '>=', now()->subDays(7))
+          ->orderBy('id', 'desc')
+          ->take(30)
+          ->get();
+  } else {
+      $initialQrOrders = collect();
   }
-  $initialQrOrders = $initialQrOrdersQuery->orderBy('id', 'desc')->take(30)->get();
   $initialUnreadCount = $initialQrOrders->where('is_read', false)->count();
 @endphp
 

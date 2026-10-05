@@ -49,12 +49,21 @@ class MasterReportController extends Controller
             ];
         }
 
-        // 2. Restaurant Owner or Staff
-        $availableOutlets = $user->getAvailableOutlets();
-        if ($availableOutlets->isEmpty() && $user->restaurant_id) {
-            $myRest = RestaurantMaster::find($user->restaurant_id);
-            if ($myRest) {
-                $availableOutlets = collect([$myRest]);
+        // 2. Restaurant Owner, Admin, or Staff with Master Report access
+        $mainRest = $user->getMainRestaurant();
+        if ($mainRest) {
+            $outlets = RestaurantMaster::where('parent_id', $mainRest->id)
+                ->where('status', '!=', 'D')
+                ->orderBy('id', 'asc')
+                ->get();
+            $availableOutlets = collect([$mainRest])->merge($outlets);
+        } else {
+            $availableOutlets = $user->getAvailableOutlets();
+            if ($availableOutlets->isEmpty() && $user->restaurant_id) {
+                $myRest = RestaurantMaster::find($user->restaurant_id);
+                if ($myRest) {
+                    $availableOutlets = collect([$myRest]);
+                }
             }
         }
 

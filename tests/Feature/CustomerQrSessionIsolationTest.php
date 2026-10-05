@@ -168,7 +168,7 @@ class CustomerQrSessionIsolationTest extends TestCase
         // Admin approves Rohi's order
         $this->actingAs($adminUser);
         $this->get(route('admin.temporder.approve', $rohiTempOrder->id));
-        $this->app['auth']->guard()->logout();
+        auth()->logout();
         $this->app['auth']->forgetGuards();
         $rohiTempOrder->refresh();
         $rohiActiveOrderId = $rohiTempOrder->order_id;

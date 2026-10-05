@@ -282,4 +282,58 @@ class QrOrderNotificationTest extends TestCase
             'is_read' => 1,
         ]);
     }
+
+    public function test_qr_notifications_are_strictly_isolated_between_different_restaurants()
+    {
+        // Restaurant A order
+        $orderA = TempOrder::create([
+            'restaurant_id' => $this->restaurant->id,
+            'table_id' => $this->table->id,
+            'customer_name' => 'Restaurant A Customer',
+            'order_type' => 'DINE_IN',
+            'total_amount' => 100.00,
+            'grand_total' => 100.00,
+            'order_status' => 'PENDING',
+            'is_read' => 0,
+            'created_at' => Carbon::now(),
+        ]);
+
+        // Create Restaurant B
+        $restaurantB = RestaurantMaster::create([
+            'name' => 'Other Restaurant B',
+            'status' => 'A'
+        ]);
+        $userB = User::create([
+            'name' => 'Owner B',
+            'email' => 'owner_b_' . uniqid() . '@example.com',
+            'password' => bcrypt('password123'),
+            'role' => 'RES',
+            'role_type' => 'ADMIN',
+            'restaurant_id' => $restaurantB->id,
+            'status' => 'A'
+        ]);
+
+        // Restaurant B order
+        $orderB = TempOrder::create([
+            'restaurant_id' => $restaurantB->id,
+            'customer_name' => 'Restaurant B Customer',
+            'order_type' => 'DINE_IN',
+            'total_amount' => 200.00,
+            'grand_total' => 200.00,
+            'order_status' => 'PENDING',
+            'is_read' => 0,
+            'created_at' => Carbon::now(),
+        ]);
+
+        // Logged in as User B
+        $this->actingAs($userB);
+
+        $response = $this->get(route('restaurant.qr.notifications'));
+        $response->assertStatus(200);
+        $data = $response->json();
+
+        $returnedIds = collect($data['notifications'])->pluck('id')->toArray();
+        $this->assertContains($orderB->id, $returnedIds);
+        $this->assertNotContains($orderA->id, $returnedIds);
+    }
 }

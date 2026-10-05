@@ -232,4 +232,23 @@ class MasterReportTest extends TestCase
         $responseAnalytics->assertSee('Cold Coffee');
         $responseAnalytics->assertSee('Alice VIP');
     }
+
+    /** @test */
+    public function staff_with_master_report_provision_can_switch_branches_from_tab_dropdown()
+    {
+        // 1. Staff views HQ
+        $responseHq = $this->actingAs($this->staffWithPerm)->get(route('admin.reports.master.overview', ['outlet_id' => $this->restaurant->id]));
+        $responseHq->assertStatus(200);
+        $responseHq->assertSee('Main HQ Restaurant');
+
+        // 2. Staff switches to Downtown Branch directly from tab dropdown
+        $responseBranch = $this->actingAs($this->staffWithPerm)->get(route('admin.reports.master.overview', ['outlet_id' => $this->branch->id]));
+        $responseBranch->assertStatus(200);
+        $responseBranch->assertSee('Downtown Branch');
+
+        // 3. Staff on Orders tab with branch selected
+        $responseOrders = $this->actingAs($this->staffWithPerm)->get(route('admin.reports.master.orders', ['outlet_id' => $this->branch->id]));
+        $responseOrders->assertStatus(200);
+        $responseOrders->assertSee('Downtown Branch');
+    }
 }

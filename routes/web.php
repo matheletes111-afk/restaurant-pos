@@ -71,12 +71,22 @@ Route::post('/order-customer/item/update-qty/{id}', [App\Http\Controllers\TempOr
 Route::post('/order-customer/cancel/{id}', [App\Http\Controllers\TempOrderController::class, 'cancelPendingOrder'])->name('temp.order.cancel');
 Route::get('/order-customer/fresh/{table_id}/{restaurant_id}', [App\Http\Controllers\TempOrderController::class, 'startFreshOrder'])->name('temp.order.fresh');
 
+// Public Bill & Invoice Download (Outside Auth for Customer WhatsApp sharing & Direct Download)
+Route::get('/bill/invoice/{id}', [App\Http\Controllers\OrderManagementController::class, 'publicInvoice'])->name('order.public.invoice');
+Route::get('/bill/download/{id}', [App\Http\Controllers\OrderManagementController::class, 'publicDownloadInvoice'])->name('order.public.download');
+Route::get('/public/invoice/{id}', [App\Http\Controllers\OrderManagementController::class, 'publicInvoice']);
+Route::get('/public/order/{id}/download', [App\Http\Controllers\OrderManagementController::class, 'publicDownloadInvoice']);
+
 // QR Order Notifications (Accessible to all authenticated staff & admins)
 Route::middleware('auth')->group(function () {
     Route::get('/restaurant/qr-notifications', [App\Http\Controllers\QrNotificationController::class, 'getNotifications'])->name('restaurant.qr.notifications');
     Route::match(['GET', 'POST'], '/restaurant/qr-notifications/mark-read/{id}', [App\Http\Controllers\QrNotificationController::class, 'markRead'])->name('restaurant.qr.notifications.mark-read');
     Route::match(['GET', 'POST'], '/restaurant/qr-notifications/mark-all-read', [App\Http\Controllers\QrNotificationController::class, 'markAllRead'])->name('restaurant.qr.notifications.mark-all-read');
 });
+
+// Razorpay Webhook Routes (Public endpoints for Razorpay server-to-server callbacks)
+Route::match(['GET', 'POST'], 'razorpay/webhook', [\App\Http\Controllers\Admin\WebhookController::class, 'handle'])->name('razorpay.webhook');
+Route::match(['GET', 'POST'], 'admin/razorpay/webhook', [\App\Http\Controllers\Admin\WebhookController::class, 'handle'])->name('admin.razorpay.webhook');
 
 Route::group(['middleware' => ['auth', 'menu.permission', 'secure.restro.data']], function () {
 
@@ -170,6 +180,16 @@ Route::get('manage-category/manage-food-items/status-sub-category/{id}',[App\Htt
 
 Route::post('manage-category/manage-food-items/bulk-upload', [App\Http\Controllers\Category\CategoryController::class, 'bulkUpload'])->name('manage.subcategory.category.bulk.upload');
 Route::get('manage-category/bulk-upload-template/{id?}', [App\Http\Controllers\Category\CategoryController::class, 'downloadTemplate'])->name('manage.subcategory.category.template');
+
+// Dish Addon Master Routes
+Route::get('dish-addons', [App\Http\Controllers\DishAddonController::class, 'index'])->name('addon.index');
+Route::post('dish-addons/store', [App\Http\Controllers\DishAddonController::class, 'store'])->name('addon.store');
+Route::get('dish-addons/{id}/edit', [App\Http\Controllers\DishAddonController::class, 'edit'])->name('addon.edit');
+Route::post('dish-addons/{id}/update', [App\Http\Controllers\DishAddonController::class, 'update'])->name('addon.update');
+Route::delete('dish-addons/{id}', [App\Http\Controllers\DishAddonController::class, 'destroy'])->name('addon.destroy');
+Route::post('dish-addons/{id}/toggle-status', [App\Http\Controllers\DishAddonController::class, 'toggleStatus'])->name('addon.toggle.status');
+Route::get('dish-addons/template/download', [App\Http\Controllers\DishAddonController::class, 'downloadTemplate'])->name('addon.template.download');
+Route::post('dish-addons/bulk-upload', [App\Http\Controllers\DishAddonController::class, 'bulkUpload'])->name('addon.bulk.upload');
 
 // manage-table
 Route::get('table-manage', [TableManageController::class, 'index'])->name('table.manage');
@@ -377,7 +397,6 @@ Route::get('admin/temp-order/reject/{id}', [App\Http\Controllers\TempOrderAdminC
     Route::delete('subscriptions/{id}/cancel', [\App\Http\Controllers\SubscriptionController::class, 'cancel'])->name('admin.subscriptions.cancel');
     Route::post('subscriptions/{id}/toggle-auto-renew', [\App\Http\Controllers\SubscriptionController::class, 'toggleAutoRenew'])->name('admin.subscriptions.toggleAutoRenew');
     Route::get('subscriptions/{id}/change-payment-method', [\App\Http\Controllers\SubscriptionController::class, 'changePaymentMethod'])->name('admin.subscriptions.changePaymentMethod')->where('id', '[0-9]+');
-    Route::post('razorpay/webhook', [\App\Http\Controllers\Admin\WebhookController::class, 'handle']);
     
     // Restaurant Plans View
     Route::get('restaurant/plans', [App\Http\Controllers\RestaurantPlanController::class, 'showPlans'])->name('restaurant.plans');
