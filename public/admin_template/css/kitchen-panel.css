@@ -749,6 +749,85 @@ body {
   background: var(--kds-nonveg);
 }
 
+/* KDS Dish Add-ons Box & Items */
+.kds-addons-container {
+  margin-top: 10px;
+  background: #fffcf8;
+  border: 1.5px solid #fed7aa;
+  border-left: 3.5px solid #ff5e14;
+  border-radius: var(--kds-radius-sm);
+  padding: 8px 10px;
+}
+
+.kds-addons-header {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #c2410c;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.kds-addons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.kds-addon-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  background: #ffffff;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.kds-addon-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.kds-addon-pill {
+  background: #ffedd5;
+  color: #c2410c;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.kds-addon-title {
+  font-weight: 700;
+  color: var(--kds-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kds-addon-qty-chip {
+  background: #0f172a;
+  color: #ffffff;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 0.76rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
 /* Chef Special Instruction Note */
 .kds-order-note {
   margin-top: 8px;

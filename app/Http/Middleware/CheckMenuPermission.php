@@ -144,13 +144,13 @@ class CheckMenuPermission
         $mappings = [
             'master_report' => ['admin/reports/master', 'reports.master', 'admin.reports.master', 'master-report'],
             'menu_master' => ['manage-menu-category', 'manage.category'],
+            'dish_addon_master' => ['dish-addons', 'addon.index', 'addon.store', 'addon.edit', 'addon.update', 'addon.destroy', 'addon.toggle.status', 'addon.template.download', 'addon.bulk.upload'],
             'menu_availability' => ['menu-availability', 'menu.availability'],
             'table_master' => ['table-manage', 'table.manage'],
             'order_master' => ['order-management-dashboard', 'order.management.dashboard', 'order-create', 'order.create', 'order-edit', 'order.edit', 'order-save', 'order.save', 'order-update', 'order.update', 'order/payment', 'order.payment', 'order/print', 'order.print', 'order/receipt', 'order.receipt.pdf', 'order-item-delete', 'order.item.delete', 'add-payment', 'order.add.payment', 'delete-payment', 'order.delete.payment', 'get-payments', 'order.get.payments', 'invoice', 'order.invoice'],
             'rapid_bill' => ['rapid-bill', 'rapid.bill', 'rapid.bill.store', 'admin/rapid-bill'],
             'kitchen_order' => ['kitchen-panel', 'manage.kitchen-panel', 'update-kitchen-status', 'update.kitchen.status', 'kitchen/orders/refresh', 'kitchen.orders.refresh'],
             'pending_order' => ['pending-temp-orders', 'temp.orders', 'temp-order', 'admin.temporder'],
-            'restro_ai' => ['ask-ai'],
             'billing_subscription' => ['subscriptions', 'admin.subscriptions.index', 'plans/subscribe', 'admin.subscriptions.create', 'subscriptions/payment', 'admin.subscriptions.payment', 'razorpay/webhook'],
             'customer_support' => ['restaurant-support', 'restaurant.support.tickets'],
             'staff' => ['restaurant-staff', 'restaurant.staff.index'],
@@ -164,14 +164,14 @@ class CheckMenuPermission
         foreach ($mappings as $permission => $patterns) {
             foreach ($patterns as $pattern) {
                 if (($routeName && str_starts_with($routeName, $pattern)) || str_contains($path, $pattern)) {
-                    $granularModules = ['menu_master', 'table_master', 'staff', 'inventory_setting'];
+                    $granularModules = ['menu_master', 'dish_addon_master', 'table_master', 'staff', 'inventory_setting'];
                     if (in_array($permission, $granularModules)) {
                         $action = $this->getRequiredAction($request, $routeName, $path);
                     } else {
                         $action = 'view';
                     }
 
-                    if (!$user->hasPermission($permission, $action)) {
+                    if (!$user->hasPermission($permission, $action) && !($permission === 'dish_addon_master' && $user->hasPermission('menu_master', $action))) {
                         abort(403, 'Unauthorized access to this menu/module.');
                     }
                     return $next($request);

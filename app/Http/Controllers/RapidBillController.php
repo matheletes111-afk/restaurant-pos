@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\DishAddon;
 use App\Models\TableManage;
 use App\Models\Category;
 use App\Models\SubCategory;
@@ -32,13 +33,23 @@ class RapidBillController extends Controller
         $isGstEnabled = !empty($restaurantGstin) || (!empty($restaurant->is_gst_enable) && $restaurant->is_gst_enable != 0);
         $isGstRegistered = $isGstEnabled;
 
-        // Fetch all active categories with their active subcategory dishes
+        // Fetch all active categories with their active subcategory dishes and mapped addons
         $categories = Category::where('restaurant_id', $activeRestId)
             ->where('status', '!=', 'D')
             ->with(['subcategories' => function($q) use ($activeRestId) {
-                $q->where('restaurant_id', $activeRestId)
-                  ->where('status', '!=', 'D');
+                $q->where('sub_category.restaurant_id', $activeRestId)
+                  ->where('sub_category.status', '!=', 'D')
+                  ->with(['addons' => function($aq) use ($activeRestId) {
+                      $aq->where('dish_addons.restaurant_id', $activeRestId)
+                         ->where('dish_addons.status', '!=', 'D');
+                  }]);
             }])
+            ->orderBy('name', 'asc')
+            ->get();
+
+        // Fetch all active restaurant addons
+        $restaurant_addons = DishAddon::where('restaurant_id', $activeRestId)
+            ->where('status', '!=', 'D')
             ->orderBy('name', 'asc')
             ->get();
 
@@ -56,6 +67,7 @@ class RapidBillController extends Controller
             'isGstRegistered',
             'isGstEnabled',
             'categories',
+            'restaurant_addons',
             'tables'
         ));
     }
@@ -92,7 +104,7 @@ class RapidBillController extends Controller
         $customerName = trim($request->customer_name ?: '') ?: 'Walk-in Customer';
         $customerPhone = trim($request->customer_phone ?: '');
 
-        // 1. Calculate items with GST
+        // 1. Calculate items with GST & Addons
         $calculatedItems = [];
         $originalSubtotal = 0;
         $totalTaxable = 0;
@@ -106,6 +118,33 @@ class RapidBillController extends Controller
             $origPrice = floatval($item['price'] ?? 0);
             $qty = floatval($item['quantity'] ?? $item['qty'] ?? 1);
             $itemDiscountPercent = floatval($item['discount_percentage'] ?? $item['item_discount'] ?? 0);
+            $selectedAddons = $item['addons'] ?? [];
+
+            // Calculate addons cost and summary with quantity support
+            $addonsCost = 0;
+            $addonNames = [];
+            $cleanAddons = [];
+            if (is_array($selectedAddons) && !empty($selectedAddons)) {
+                foreach ($selectedAddons as $addon) {
+                    $aPrice = floatval($addon['price'] ?? 0);
+                    $aQty = max(1, intval($addon['qty'] ?? $addon['quantity'] ?? 1));
+                    $aName = trim($addon['name'] ?? '');
+                    $aId = $addon['id'] ?? null;
+                    $addonLineTotal = $aPrice * $aQty;
+                    $addonsCost += $addonLineTotal;
+                    if ($aName) {
+                        $addonNames[] = $aQty > 1 ? "{$aName} x{$aQty}" : $aName;
+                        $cleanAddons[] = [
+                            'id' => $aId,
+                            'name' => $aName,
+                            'price' => $aPrice,
+                            'qty' => $aQty,
+                            'quantity' => $aQty,
+                            'total' => $addonLineTotal,
+                        ];
+                    }
+                }
+            }
 
             // Fetch dish name if missing
             $dishName = $item['name'] ?? null;
@@ -120,8 +159,25 @@ class RapidBillController extends Controller
                 $dishName = 'Dish Item';
             }
 
+            $isAddonItem = !empty($item['is_addon']) || str_starts_with(strval($dishId ?? ''), 'addon_') || !is_numeric($dishId);
+
+            if ($isAddonItem && empty($cleanAddons)) {
+                $cleanAddons[] = [
+                    'id' => is_numeric($dishId) ? $dishId : null,
+                    'name' => $dishName ?: 'Add-on',
+                    'price' => $origPrice,
+                    'qty' => 1,
+                    'quantity' => 1,
+                    'total' => $origPrice,
+                    'food_type' => $item['food_type'] ?? 'VEG',
+                ];
+            }
+
+            // Total unit price includes base price and any selected addons
+            $unitPriceWithAddons = $isAddonItem ? $origPrice : ($origPrice + $addonsCost);
+
             // Step A: Item discounted unit price
-            $discountedUnitPrice = $origPrice - ($origPrice * $itemDiscountPercent / 100);
+            $discountedUnitPrice = $unitPriceWithAddons - ($unitPriceWithAddons * $itemDiscountPercent / 100);
             $taxableAmount = $discountedUnitPrice * $qty;
 
             // Step B: GST Calculation
@@ -133,11 +189,20 @@ class RapidBillController extends Controller
             $igst = 0;
             $itemTotal = $taxableAmount + $gstAmount;
 
+            $displayName = $dishName;
+            if (!empty($addonNames)) {
+                $displayName .= ' (' . implode(', ', $addonNames) . ')';
+            }
+
             $calculatedItems[] = [
                 'id' => $dishId,
-                'name' => $dishName,
+                'name' => $displayName,
+                'dish_name' => $dishName,
+                'addons' => $cleanAddons,
+                'addons_cost' => $addonsCost,
+                'base_price' => $origPrice,
                 'quantity' => $qty,
-                'original_price' => $origPrice,
+                'original_price' => $unitPriceWithAddons,
                 'discounted_price' => $discountedUnitPrice,
                 'item_discount_percentage' => $itemDiscountPercent,
                 'taxable_amount' => $taxableAmount,
@@ -147,9 +212,10 @@ class RapidBillController extends Controller
                 'sgst_amount' => $sgst,
                 'igst_amount' => $igst,
                 'total_amount' => $itemTotal,
+                'is_addon_item' => $isAddonItem,
             ];
 
-            $originalSubtotal += ($origPrice * $qty);
+            $originalSubtotal += ($unitPriceWithAddons * $qty);
             $totalTaxable += $taxableAmount;
             if ($isGstRegistered) {
                 $totalGst += $gstAmount;
@@ -235,11 +301,14 @@ class RapidBillController extends Controller
 
             // Save Order Items
             foreach ($calculatedItems as $cItem) {
+                $isNumericSubcat = is_numeric($cItem['id']) && intval($cItem['id']) > 0 && empty($cItem['is_addon_item']);
+
                 $orderItem = new OrderItems();
                 $orderItem->order_id = $order->id;
-                $orderItem->subcategory_id = $cItem['id'];
+                $orderItem->subcategory_id = $isNumericSubcat ? intval($cItem['id']) : null;
                 $orderItem->quantity = $cItem['quantity'];
                 $orderItem->price = $cItem['original_price'];
+                $orderItem->addons = !empty($cItem['addons']) ? $cItem['addons'] : null;
                 $orderItem->discounted_price = $cItem['discounted_price'];
                 $orderItem->item_discount_percentage = $cItem['item_discount_percentage'];
                 $orderItem->taxable_amount = $cItem['taxable_amount'];

@@ -377,44 +377,72 @@
     }
 
     /* ===================================================
-       FOOD ITEM CARDS GRID (100% RESPONSIVE)
+       FOOD ITEM CARDS GRID (6 DISHES PER ROW ON DESKTOP)
        =================================================== */
     .product-grid-container {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 14px;
       margin-bottom: 30px;
     }
 
-    @media (max-width: 576px) {
+    @media (max-width: 1599px) {
       .product-grid-container {
-        grid-template-columns: 1fr;
-        gap: 16px;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 12px;
+      }
+    }
+
+    @media (max-width: 1280px) {
+      .product-grid-container {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+    }
+
+    @media (max-width: 991px) {
+      .product-grid-container {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .product-grid-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .product-grid-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
       }
     }
 
     .luxury-product-card {
       background: #ffffff;
-      border-radius: var(--radius-lg);
+      border-radius: var(--radius-md);
       border: 1px solid #eef2f6;
-      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
     }
 
     .luxury-product-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
       border-color: rgba(255, 94, 20, 0.3);
     }
 
     /* Media Header Area */
     .product-media-wrap {
       position: relative;
-      height: 175px;
+      height: 115px;
       background: #f8fafc;
       overflow: hidden;
       display: flex;
@@ -424,7 +452,7 @@
 
     @media (max-width: 576px) {
       .product-media-wrap {
-        height: 190px;
+        height: 105px;
       }
     }
 
@@ -459,14 +487,14 @@
     }
 
     .product-media-placeholder i {
-      font-size: 2.2rem;
+      font-size: 1.6rem;
       color: #ff8c42;
       z-index: 1;
-      margin-bottom: 6px;
+      margin-bottom: 2px;
     }
 
     .product-media-placeholder span {
-      font-size: 0.76rem;
+      font-size: 0.68rem;
       color: #94a3b8;
       z-index: 1;
     }
@@ -474,25 +502,25 @@
     /* Food Type FSSAI Badges */
     .fssai-food-badge {
       position: absolute;
-      top: 12px;
-      left: 12px;
+      top: 6px;
+      left: 6px;
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      border-radius: 8px;
-      padding: 4px 8px;
+      border-radius: 6px;
+      padding: 2px 6px;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      font-size: 0.72rem;
+      gap: 4px;
+      font-size: 0.65rem;
       font-weight: 800;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
       z-index: 2;
     }
 
     .fssai-box {
-      width: 14px;
-      height: 14px;
+      width: 12px;
+      height: 12px;
       border: 2px solid;
       border-radius: 3px;
       display: flex;
@@ -505,8 +533,8 @@
     }
 
     .fssai-dot.veg {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
       background: #10b981;
     }
@@ -516,8 +544,8 @@
     }
 
     .fssai-dot.non-veg {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
       background: #ef4444;
     }
@@ -525,11 +553,11 @@
     /* Availability Pill on Card Top Right */
     .status-badge-chip {
       position: absolute;
-      top: 12px;
-      right: 12px;
-      font-size: 0.7rem;
+      top: 6px;
+      right: 6px;
+      font-size: 0.62rem;
       font-weight: 700;
-      padding: 4px 10px;
+      padding: 2px 7px;
       border-radius: 20px;
       z-index: 2;
       backdrop-filter: blur(8px);
@@ -539,18 +567,18 @@
     .status-badge-chip.active {
       background: rgba(16, 185, 129, 0.9);
       color: #ffffff;
-      box-shadow: 0 3px 8px rgba(16, 185, 129, 0.3);
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
     }
 
     .status-badge-chip.inactive {
       background: rgba(245, 158, 11, 0.9);
       color: #ffffff;
-      box-shadow: 0 3px 8px rgba(245, 158, 11, 0.3);
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
     }
 
     /* Content Area */
     .product-content-area {
-      padding: 18px 20px;
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
       flex: 1;
@@ -559,45 +587,46 @@
 
     .product-title-text {
       font-family: 'Outfit', sans-serif;
-      font-size: 1.12rem;
-      font-weight: 800;
+      font-size: 0.9rem;
+      font-weight: 700;
       color: var(--dark-slate);
-      margin: 0 0 8px 0;
-      line-height: 1.35;
+      margin: 0 0 2px 0;
+      line-height: 1.25;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
-      min-height: 2.7em;
+      min-height: auto;
+      max-height: 2.5em;
     }
 
     .product-pricing-bar {
       display: flex;
       align-items: baseline;
-      gap: 6px;
-      margin-bottom: 14px;
+      gap: 4px;
+      margin-bottom: 6px;
     }
 
     .price-currency-tag {
-      font-size: 0.95rem;
+      font-size: 0.82rem;
       font-weight: 700;
       color: var(--primary);
     }
 
     .price-amount-text {
       font-family: 'Outfit', sans-serif;
-      font-size: 1.35rem;
+      font-size: 1.05rem;
       font-weight: 800;
       color: #0f172a;
       letter-spacing: -0.02em;
     }
 
     .gst-rate-tag {
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       font-weight: 600;
       color: #64748b;
       background: #f1f5f9;
-      padding: 2px 7px;
+      padding: 1px 5px;
       border-radius: 4px;
       margin-left: auto;
     }
@@ -606,8 +635,8 @@
     .product-actions-dock {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding-top: 14px;
+      gap: 6px;
+      padding-top: 8px;
       border-top: 1px solid #f1f5f9;
       margin-top: auto;
       position: relative;
@@ -615,25 +644,25 @@
     }
 
     .btn-action-tile {
-      height: 40px;
-      border-radius: 10px;
+      height: 32px;
+      border-radius: 8px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.84rem;
+      font-size: 0.78rem;
       font-weight: 700;
       border: 1px solid transparent;
       transition: all 0.2s ease;
       cursor: pointer;
       text-decoration: none;
-      gap: 6px;
+      gap: 4px;
       position: relative;
       z-index: 10;
     }
 
     .btn-action-tile i {
       pointer-events: none;
-      font-size: 0.92rem;
+      font-size: 0.82rem;
     }
 
     .btn-action-tile.edit-action {
@@ -651,7 +680,7 @@
     }
 
     .btn-action-tile.status-toggle {
-      width: 40px;
+      width: 32px;
       background: #f8fafc;
       border-color: #e2e8f0;
       color: #64748b;
@@ -664,7 +693,7 @@
     }
 
     .btn-action-tile.delete-action {
-      width: 40px;
+      width: 32px;
       background: #fff1f2;
       border-color: #ffe4e6;
       color: #e11d48;
@@ -675,6 +704,30 @@
       color: #ffffff;
       transform: translateY(-1px);
       box-shadow: 0 4px 10px rgba(225, 29, 72, 0.25);
+    }
+
+    /* Addon Mapping in Modals */
+    .addon-item-row {
+      display: flex !important;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .addon-item-row:hover {
+      border-color: var(--primary) !important;
+      background: #fff8f5 !important;
+    }
+    .addon-item-row.is-checked {
+      border-color: rgba(255, 94, 20, 0.45) !important;
+      background: #fff9f6 !important;
+    }
+    .addon-item-row.is-hidden-addon {
+      display: none !important;
+    }
+
+    .product-item-card.is-hidden-dish {
+      display: none !important;
     }
 
     /* ===================================================
@@ -1040,6 +1093,14 @@
                 <span class="gst-rate-tag">{{ $value->gst_rate }}% GST</span>
                 @endif
               </div>
+
+              @if($value->addons && $value->addons->count() > 0)
+              <div class="mb-2">
+                <span class="badge" style="background:#fff3ed; color:#ff5e14; border:1px solid #ffdecb; font-size:0.65rem; padding: 2px 6px;">
+                  <i class="fa-solid fa-puzzle-piece me-1"></i>{{ $value->addons->count() }} Addon{{ $value->addons->count() > 1 ? 's' : '' }}
+                </span>
+              </div>
+              @endif
             </div>
 
             <!-- Action Buttons Dock -->
@@ -1053,6 +1114,7 @@
                       data-price="{{ $value->price }}"
                       data-type="{{ $value->food_type }}"
                       data-image="{{ $value->image }}"
+                      data-addons="{{ $value->addons ? $value->addons->pluck('id')->join(',') : '' }}"
                       title="Edit Food Item">
                 <i class="fa-solid fa-pen-to-square"></i>
                 <span>Edit</span>
@@ -1129,7 +1191,7 @@
        MODAL: ADD PRODUCT
        =================================================== -->
   <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 600px;">
       <form method="POST" action="{{ route('manage.subcategory.category.insert') }}" enctype="multipart/form-data" style="width: 100%;">
         @csrf
         <input type="hidden" name="category_id" value="{{ @$id }}">
@@ -1173,7 +1235,7 @@
               </div>
             </div>
 
-            <div class="form-group mb-2">
+            <div class="form-group mb-3">
               <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
                 Dish Photo <small class="text-muted font-weight-normal">(Optional)</small>
               </label>
@@ -1184,6 +1246,84 @@
                 <img id="add_dish_image_preview" src="" alt="Selected Preview">
               </div>
             </div>
+
+            <!-- Dish Addon Mapping Section -->
+            <div class="form-group mb-2">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <label class="form-label font-weight-bold mb-0" style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
+                  <i class="fa-solid fa-puzzle-piece text-primary me-1"></i> Map Dish Addons <small class="text-muted font-weight-normal">(Optional)</small>
+                </label>
+                <span class="badge font-weight-bold" id="add_addon_count_badge" style="background: #fff3ed; color: #ff5e14; border: 1px solid #ffdecb; font-size: 0.72rem; padding: 3px 8px; border-radius: 10px;">
+                  0 Selected
+                </span>
+              </div>
+
+              @if(isset($addons) && count($addons) > 0)
+                <!-- Search Filter for Addons -->
+                <div class="input-group input-group-sm mb-2">
+                  <span class="input-group-text bg-light border-end-0" style="border-radius: 8px 0 0 8px;">
+                    <i class="fa-solid fa-magnifying-glass text-muted" style="font-size: 0.8rem;"></i>
+                  </span>
+                  <input type="text" class="form-control form-control-sm border-start-0 addon-search-filter" 
+                         data-target="#add_addon_list" 
+                         placeholder="Search addons by name or price..." 
+                         style="border-radius: 0 8px 8px 0; font-size: 0.82rem;">
+                </div>
+
+                <!-- Quick Action Select/Clear -->
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <small class="text-muted" style="font-size: 0.72rem;">Check addons to map them with this dish:</small>
+                  <div>
+                    <a href="javascript:void(0)" class="text-primary small fw-bold me-2 select-all-addons" data-target="#add_addon_list" style="font-size: 0.72rem; text-decoration: none;">Select All</a>
+                    <a href="javascript:void(0)" class="text-muted small fw-bold deselect-all-addons" data-target="#add_addon_list" style="font-size: 0.72rem; text-decoration: none;">Clear</a>
+                  </div>
+                </div>
+
+                <!-- Scrollable Addons Checkbox List -->
+                <div class="addon-mapping-list border rounded p-2" id="add_addon_list" style="max-height: 180px; overflow-y: auto; background: #f8fafc;">
+                  @foreach($addons as $addon)
+                  <label class="addon-item-row p-2 mb-1 rounded bg-white border" 
+                         for="add_addon_{{ $addon->id }}" 
+                         data-name="{{ strtolower($addon->name) }}"
+                         data-price="{{ $addon->price }}">
+                    <div class="d-flex align-items-center gap-2">
+                      <input type="checkbox" name="addon_ids[]" value="{{ $addon->id }}" 
+                             class="form-check-input addon-checkbox mt-0" 
+                             id="add_addon_{{ $addon->id }}"
+                             data-badge="#add_addon_count_badge"
+                             data-container="#add_addon_list"
+                             style="cursor: pointer; width: 16px; height: 16px;">
+                      
+                      @if($addon->food_type == 'NON-VEG')
+                        <span class="badge" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; font-size:0.65rem; padding: 2px 5px;">🔴 Non-Veg</span>
+                      @else
+                        <span class="badge" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-size:0.65rem; padding: 2px 5px;">🟢 Veg</span>
+                      @endif
+                      
+                      <span class="addon-name-text fw-bold text-dark" style="font-size: 0.82rem;">{{ $addon->name }}</span>
+                    </div>
+                    <span class="badge bg-light text-dark font-monospace fw-bold" style="font-size: 0.8rem; border: 1px solid #e2e8f0;">
+                      +₹{{ number_format($addon->price, 2) }}
+                    </span>
+                  </label>
+                  @endforeach
+                  
+                  <div class="no-addon-search-match text-center py-2 text-muted small" style="display: none;">
+                    <i class="fa-solid fa-magnifying-glass me-1 opacity-50"></i> No matching addons found
+                  </div>
+                </div>
+              @else
+                <div class="alert alert-light border text-center py-3 mb-0" style="border-radius: 10px; background: #f8fafc;">
+                  <i class="fa-solid fa-puzzle-piece text-muted fa-2x mb-2 opacity-50"></i>
+                  <p class="mb-1 text-dark fw-bold" style="font-size: 0.82rem;">No Dish Addons Available</p>
+                  <p class="small text-muted mb-2" style="font-size: 0.74rem;">Create toppings, dips, cheese, or sides in Addon Master.</p>
+                  <a href="{{ route('addon.index') }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill fw-bold" style="font-size: 0.75rem;">
+                    <i class="fa-solid fa-plus me-1"></i> Open Addon Master
+                  </a>
+                </div>
+              @endif
+            </div>
+
           </div>
 
           <div class="modal-pos-footer">
@@ -1204,7 +1344,7 @@
        MODAL: EDIT PRODUCT
        =================================================== -->
   <div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 600px;">
       <form method="POST" action="{{ route('manage.subcategory.category.update') }}" enctype="multipart/form-data" style="width: 100%;">
         @csrf
         <input type="hidden" name="id" id="edit_id">
@@ -1248,7 +1388,7 @@
               </div>
             </div>
 
-            <div class="form-group mb-2">
+            <div class="form-group mb-3">
               <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
                 Update Photo <small class="text-muted font-weight-normal">(Leave empty to retain current)</small>
               </label>
@@ -1259,6 +1399,84 @@
                 <img id="edit_dish_image_preview" src="" alt="Food Image Preview">
               </div>
             </div>
+
+            <!-- Dish Addon Mapping Section -->
+            <div class="form-group mb-2">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <label class="form-label font-weight-bold mb-0" style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
+                  <i class="fa-solid fa-puzzle-piece text-primary me-1"></i> Map Dish Addons <small class="text-muted font-weight-normal">(Optional)</small>
+                </label>
+                <span class="badge font-weight-bold" id="edit_addon_count_badge" style="background: #fff3ed; color: #ff5e14; border: 1px solid #ffdecb; font-size: 0.72rem; padding: 3px 8px; border-radius: 10px;">
+                  0 Selected
+                </span>
+              </div>
+
+              @if(isset($addons) && count($addons) > 0)
+                <!-- Search Filter for Addons -->
+                <div class="input-group input-group-sm mb-2">
+                  <span class="input-group-text bg-light border-end-0" style="border-radius: 8px 0 0 8px;">
+                    <i class="fa-solid fa-magnifying-glass text-muted" style="font-size: 0.8rem;"></i>
+                  </span>
+                  <input type="text" class="form-control form-control-sm border-start-0 addon-search-filter" 
+                         data-target="#edit_addon_list" 
+                         placeholder="Search addons by name or price..." 
+                         style="border-radius: 0 8px 8px 0; font-size: 0.82rem;">
+                </div>
+
+                <!-- Quick Action Select/Clear -->
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <small class="text-muted" style="font-size: 0.72rem;">Check addons to map them with this dish:</small>
+                  <div>
+                    <a href="javascript:void(0)" class="text-primary small fw-bold me-2 select-all-addons" data-target="#edit_addon_list" style="font-size: 0.72rem; text-decoration: none;">Select All</a>
+                    <a href="javascript:void(0)" class="text-muted small fw-bold deselect-all-addons" data-target="#edit_addon_list" style="font-size: 0.72rem; text-decoration: none;">Clear</a>
+                  </div>
+                </div>
+
+                <!-- Scrollable Addons Checkbox List -->
+                <div class="addon-mapping-list border rounded p-2" id="edit_addon_list" style="max-height: 180px; overflow-y: auto; background: #f8fafc;">
+                  @foreach($addons as $addon)
+                  <label class="addon-item-row p-2 mb-1 rounded bg-white border" 
+                         for="edit_addon_{{ $addon->id }}" 
+                         data-name="{{ strtolower($addon->name) }}"
+                         data-price="{{ $addon->price }}">
+                    <div class="d-flex align-items-center gap-2">
+                      <input type="checkbox" name="addon_ids[]" value="{{ $addon->id }}" 
+                             class="form-check-input addon-checkbox mt-0" 
+                             id="edit_addon_{{ $addon->id }}"
+                             data-badge="#edit_addon_count_badge"
+                             data-container="#edit_addon_list"
+                             style="cursor: pointer; width: 16px; height: 16px;">
+                      
+                      @if($addon->food_type == 'NON-VEG')
+                        <span class="badge" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; font-size:0.65rem; padding: 2px 5px;">🔴 Non-Veg</span>
+                      @else
+                        <span class="badge" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-size:0.65rem; padding: 2px 5px;">🟢 Veg</span>
+                      @endif
+                      
+                      <span class="addon-name-text fw-bold text-dark" style="font-size: 0.82rem;">{{ $addon->name }}</span>
+                    </div>
+                    <span class="badge bg-light text-dark font-monospace fw-bold" style="font-size: 0.8rem; border: 1px solid #e2e8f0;">
+                      +₹{{ number_format($addon->price, 2) }}
+                    </span>
+                  </label>
+                  @endforeach
+                  
+                  <div class="no-addon-search-match text-center py-2 text-muted small" style="display: none;">
+                    <i class="fa-solid fa-magnifying-glass me-1 opacity-50"></i> No matching addons found
+                  </div>
+                </div>
+              @else
+                <div class="alert alert-light border text-center py-3 mb-0" style="border-radius: 10px; background: #f8fafc;">
+                  <i class="fa-solid fa-puzzle-piece text-muted fa-2x mb-2 opacity-50"></i>
+                  <p class="mb-1 text-dark fw-bold" style="font-size: 0.82rem;">No Dish Addons Available</p>
+                  <p class="small text-muted mb-2" style="font-size: 0.74rem;">Create toppings, dips, cheese, or sides in Addon Master.</p>
+                  <a href="{{ route('addon.index') }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill fw-bold" style="font-size: 0.75rem;">
+                    <i class="fa-solid fa-plus me-1"></i> Open Addon Master
+                  </a>
+                </div>
+              @endif
+            </div>
+
           </div>
 
           <div class="modal-pos-footer">
@@ -1378,8 +1596,79 @@
 
   <script>
     $(document).ready(function() {
+      // Helper function to update count badge
+      function updateAddonCount(containerSelector, badgeSelector) {
+        let count = $(containerSelector).find('.addon-checkbox:checked').length;
+        $(badgeSelector).text(count + ' Selected');
+      }
+
+      // Live Checkbox change event
+      $(document).on('change', '.addon-checkbox', function() {
+        let badgeSelector = $(this).attr('data-badge') || $(this).data('badge');
+        let containerSelector = $(this).attr('data-container') || $(this).data('container');
+        if (badgeSelector && containerSelector) {
+          updateAddonCount(containerSelector, badgeSelector);
+        }
+      });
+
+      // Live Addon Search filtering (instant on type, paste, clear, keyup)
+      $(document).on('input keyup search change paste', '.addon-search-filter', function() {
+        let targetSelector = $(this).attr('data-target') || $(this).data('target');
+        let query = ($(this).val() || '').toLowerCase().trim();
+        let matchedCount = 0;
+
+        $(targetSelector).find('.addon-item-row').each(function() {
+          let name = String($(this).attr('data-name') || $(this).find('.addon-name-text').text() || '').toLowerCase();
+          let price = String($(this).attr('data-price') || '').toLowerCase();
+          let rowText = $(this).text().toLowerCase();
+
+          if (!query || name.includes(query) || price.includes(query) || rowText.includes(query)) {
+            $(this).removeClass('is-hidden-addon');
+            matchedCount++;
+          } else {
+            $(this).addClass('is-hidden-addon');
+          }
+        });
+
+        if (matchedCount === 0 && query.length > 0) {
+          $(targetSelector).find('.no-addon-search-match').removeClass('is-hidden-addon').show();
+        } else {
+          $(targetSelector).find('.no-addon-search-match').addClass('is-hidden-addon').hide();
+        }
+      });
+
+      // Select All Addons (only visible ones)
+      $(document).on('click', '.select-all-addons', function(e) {
+        e.preventDefault();
+        let targetSelector = $(this).attr('data-target') || $(this).data('target');
+        $(targetSelector).find('.addon-item-row:not(.is-hidden-addon) .addon-checkbox').prop('checked', true);
+        
+        let badgeSelector = targetSelector === '#add_addon_list' ? '#add_addon_count_badge' : '#edit_addon_count_badge';
+        updateAddonCount(targetSelector, badgeSelector);
+      });
+
+      // Deselect All / Clear Addons
+      $(document).on('click', '.deselect-all-addons', function(e) {
+        e.preventDefault();
+        let targetSelector = $(this).attr('data-target') || $(this).data('target');
+        $(targetSelector).find('.addon-checkbox').prop('checked', false);
+        
+        let badgeSelector = targetSelector === '#add_addon_list' ? '#add_addon_count_badge' : '#edit_addon_count_badge';
+        updateAddonCount(targetSelector, badgeSelector);
+      });
+
+      // Reset Add Product Modal when opened
+      $('#addProductModal').on('show.bs.modal', function() {
+        $('#add_addon_list .addon-checkbox').prop('checked', false);
+        $('#add_addon_list .addon-item-row').removeClass('is-hidden-addon');
+        $('#add_addon_list .no-addon-search-match').addClass('is-hidden-addon').hide();
+        $('.addon-search-filter[data-target="#add_addon_list"]').val('');
+        updateAddonCount('#add_addon_list', '#add_addon_count_badge');
+        $('#add_dish_preview_wrap').hide();
+      });
+
       // 1. Live Client-Side Dishes Search Filter
-      $('#dishSearchInput').on('keyup', function() {
+      $(document).on('input keyup search change paste', '#dishSearchInput', function() {
         applyFilters();
       });
 
@@ -1396,12 +1685,13 @@
         const query = ($('#dishSearchInput').val() || '').toLowerCase().trim();
 
         $('.product-item-card').each(function() {
-          const name = $(this).data('name') || '';
-          const price = String($(this).data('price') || '');
-          const type = $(this).data('type') || '';
-          const status = $(this).data('status') || '';
+          const name = String($(this).attr('data-name') || $(this).find('.product-title-text').text() || '').toLowerCase();
+          const price = String($(this).attr('data-price') || '').toLowerCase();
+          const type = String($(this).attr('data-type') || '').toLowerCase();
+          const status = String($(this).attr('data-status') || '').toLowerCase();
+          const cardText = $(this).text().toLowerCase();
 
-          const matchesQuery = name.includes(query) || price.includes(query);
+          const matchesQuery = !query || name.includes(query) || price.includes(query) || cardText.includes(query);
           let matchesFilter = true;
 
           if (activeFilter === 'veg') {
@@ -1415,14 +1705,14 @@
           }
 
           if (matchesQuery && matchesFilter) {
-            $(this).show();
+            $(this).removeClass('is-hidden-dish');
           } else {
-            $(this).hide();
+            $(this).addClass('is-hidden-dish');
           }
         });
       }
 
-      // 3. Edit Modal Population
+      // 3. Edit Modal Population with Addon Mapping
       $('.edit-btn').on('click', function(e) {
         e.preventDefault();
         let id = $(this).data('id');
@@ -1430,11 +1720,25 @@
         let price = $(this).data('price');
         let type = $(this).data('type');
         let image = $(this).data('image');
+        let addonIdsRaw = String($(this).data('addons') || '');
+        let mappedAddonIds = addonIdsRaw ? addonIdsRaw.split(',').map(function(s) { return s.trim(); }) : [];
 
         $('#edit_id').val(id);
         $('#edit_name').val(name);
         $('#edit_price').val(price);
         $('#edit_food_type').val(type);
+
+        // Pre-check mapped addons for this dish
+        $('#edit_addon_list .addon-checkbox').each(function() {
+          let val = String($(this).val());
+          $(this).prop('checked', mappedAddonIds.includes(val));
+        });
+
+        // Reset search filter and item visibility
+        $('#edit_addon_list .addon-item-row').removeClass('is-hidden-addon');
+        $('#edit_addon_list .no-addon-search-match').addClass('is-hidden-addon').hide();
+        $('.addon-search-filter[data-target="#edit_addon_list"]').val('');
+        updateAddonCount('#edit_addon_list', '#edit_addon_count_badge');
 
         if (image) {
           $('#edit_dish_image_preview').attr('src', '{{ URL::to("storage/category") }}/' + image);

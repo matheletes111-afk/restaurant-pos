@@ -445,12 +445,14 @@
         <a href="{{ route('addon.template.download') }}" class="btn-addon-outline">
           <i class="fa-solid fa-file-excel text-success"></i> Download Template
         </a>
+        @if(auth()->user()->hasPermission('dish_addon_master', 'add') || auth()->user()->hasPermission('menu_master', 'add'))
         <button type="button" class="btn-addon-outline" data-bs-toggle="modal" data-bs-target="#bulkUploadModal">
           <i class="fa-solid fa-cloud-arrow-up text-primary"></i> Bulk Upload Excel
         </button>
         <button type="button" class="btn-addon-primary text-white" data-bs-toggle="modal" data-bs-target="#addAddonModal" style="color: #ffffff !important;">
           <i class="fa-solid fa-circle-plus text-white"></i> <span style="color: #ffffff !important;">+ Add New Dish Addon</span>
         </button>
+        @endif
       </div>
     </div>
 
@@ -589,17 +591,22 @@
                 <div class="form-check form-switch d-inline-block">
                   <input class="form-check-input toggle-status-switch" type="checkbox" role="switch"
                          data-id="{{ $addon->id }}" {{ $addon->status == 'A' ? 'checked' : '' }}
+                         @if(!auth()->user()->hasPermission('dish_addon_master', 'edit') && !auth()->user()->hasPermission('menu_master', 'edit')) disabled @endif
                          style="cursor: pointer; width: 38px; height: 20px;">
                 </div>
               </td>
               <td class="text-center">
                 <div class="d-inline-flex gap-1">
+                  @if(auth()->user()->hasPermission('dish_addon_master', 'edit') || auth()->user()->hasPermission('menu_master', 'edit'))
                   <button type="button" class="btn-table-action btn-edit btnEditAddon" data-id="{{ $addon->id }}" title="Edit Addon">
                     <i class="fa-solid fa-pen-to-square"></i>
                   </button>
+                  @endif
+                  @if(auth()->user()->hasPermission('dish_addon_master', 'delete') || auth()->user()->hasPermission('menu_master', 'delete'))
                   <button type="button" class="btn-table-action btn-delete btnDeleteAddon" data-id="{{ $addon->id }}" data-name="{{ $addon->name }}" title="Delete Addon">
                     <i class="fa-solid fa-trash"></i>
                   </button>
+                  @endif
                 </div>
               </td>
             </tr>
@@ -808,13 +815,16 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label-custom">Select Excel / CSV File <span class="text-danger">*</span></label>
-            <div class="excel-upload-zone" onclick="$('#bulkFileInput').click()">
-              <i class="fa-solid fa-file-excel fa-2x text-success mb-2"></i>
-              <div class="fw-bold text-dark" id="fileNameDisplay">Click or Drag &amp; Drop Excel File Here</div>
+            <label class="form-label-custom" for="bulkFileInput">Select Excel / CSV File <span class="text-danger">*</span></label>
+            
+            <label for="bulkFileInput" class="excel-upload-zone d-block mb-2" id="excelDropZone" style="cursor: pointer;">
+              <i class="fa-solid fa-cloud-arrow-up fa-2x text-primary mb-2"></i>
+              <div class="fw-bold text-dark" id="fileNameDisplay">Click to Browse or Drag &amp; Drop Excel File Here</div>
               <div class="text-muted small">Supports .xlsx, .xls, .csv files up to 10MB</div>
-              <input type="file" name="bulk_file" id="bulkFileInput" class="d-none" accept=".xlsx,.xls,.csv" required onchange="handleFileSelected(this)">
-            </div>
+            </label>
+
+            <input type="file" name="bulk_file" id="bulkFileInput" class="form-control form-control-custom" accept=".xlsx,.xls,.csv" required onchange="handleFileSelected(this)">
+            <small class="text-muted d-block mt-1" style="font-size: 0.76rem;">Supported file formats: .xlsx, .xls, .csv (Maximum file size: 10MB)</small>
           </div>
 
         </div>
@@ -845,7 +855,9 @@ function updateFoodTypeSelection(modalPrefix, type) {
 
 function handleFileSelected(input) {
     if (input.files && input.files[0]) {
-        $('#fileNameDisplay').html(`<span class="text-success"><i class="fa-solid fa-check-circle me-1"></i> ${input.files[0].name}</span>`);
+        $('#fileNameDisplay').html(`<span class="text-success fw-bold"><i class="fa-solid fa-file-circle-check me-1"></i> Selected: ${input.files[0].name}</span>`);
+    } else {
+        $('#fileNameDisplay').html('Click to Browse or Drag &amp; Drop Excel File Here');
     }
 }
 
@@ -936,6 +948,36 @@ $(document).ready(function() {
             });
         }
     });
+
+    // Drag and Drop Zone support
+    let dropZone = document.getElementById('excelDropZone');
+    let fileInput = document.getElementById('bulkFileInput');
+    if (dropZone && fileInput) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                $(dropZone).css('border-color', '#ff5e14').css('background', '#fff3ed');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                $(dropZone).css('border-color', '#cbd5e1').css('background', '#f8fafc');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            let dt = e.dataTransfer;
+            let files = dt.files;
+            if (files && files.length) {
+                fileInput.files = files;
+                handleFileSelected(fileInput);
+            }
+        }, false);
+    }
 });
 </script>
 </body>

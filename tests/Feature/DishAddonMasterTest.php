@@ -297,4 +297,101 @@ class DishAddonMasterTest extends TestCase
         $responseUpdate->assertStatus(404);
         $this->assertEquals('Private Addon', $addon->fresh()->name);
     }
+
+    public function test_dish_can_be_created_with_mapped_addons()
+    {
+        $category = \App\Models\Category::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Burgers',
+            'status' => 'A'
+        ]);
+
+        $addon1 = DishAddon::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Extra Cheese Slice',
+            'price' => 20.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon2 = DishAddon::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Bacon Jam',
+            'price' => 40.00,
+            'food_type' => 'NON-VEG',
+            'status' => 'A'
+        ]);
+
+        $payload = [
+            'name' => 'Signature Beef Burger',
+            'price' => 250.00,
+            'food_type' => 'NON-VEG',
+            'category_id' => $category->id,
+            'addon_ids' => [$addon1->id, $addon2->id]
+        ];
+
+        $response = $this->actingAs($this->user)->post(route('manage.subcategory.category.insert'), $payload);
+        $response->assertRedirect();
+
+        $dish = \App\Models\SubCategory::where('name', 'Signature Beef Burger')->first();
+        $this->assertNotNull($dish);
+        $this->assertEquals(2, $dish->addons()->count());
+        $this->assertTrue($dish->addons->contains($addon1->id));
+        $this->assertTrue($dish->addons->contains($addon2->id));
+    }
+
+    public function test_dish_can_be_updated_with_synced_addons()
+    {
+        $category = \App\Models\Category::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Pizzas',
+            'status' => 'A'
+        ]);
+
+        $addon1 = DishAddon::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Extra Mozzarella',
+            'price' => 50.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon2 = DishAddon::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Olives & Jalapenos',
+            'price' => 30.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $dish = \App\Models\SubCategory::create([
+            'restaurant_id' => $this->restaurant->id,
+            'category_id' => $category->id,
+            'name' => 'Margherita Supreme',
+            'price' => 300.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $dish->addons()->sync([$addon1->id]);
+        $this->assertEquals(1, $dish->fresh()->addons()->count());
+
+        // Update to swap addon1 with addon2
+        $updatePayload = [
+            'id' => $dish->id,
+            'name' => 'Margherita Supreme Deluxe',
+            'price' => 320.00,
+            'food_type' => 'VEG',
+            'addon_ids' => [$addon2->id]
+        ];
+
+        $response = $this->actingAs($this->user)->post(route('manage.subcategory.category.update'), $updatePayload);
+        $response->assertRedirect();
+
+        $dish = $dish->fresh();
+        $this->assertEquals('Margherita Supreme Deluxe', $dish->name);
+        $this->assertEquals(1, $dish->addons()->count());
+        $this->assertFalse($dish->addons->contains($addon1->id));
+        $this->assertTrue($dish->addons->contains($addon2->id));
+    }
 }

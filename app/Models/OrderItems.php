@@ -15,6 +15,7 @@ class OrderItems extends Model
         'subcategory_id',
         'quantity',
         'price',
+        'addons',
         'discounted_price',
         'item_discount_percentage',
         'taxable_amount',
@@ -44,6 +45,7 @@ class OrderItems extends Model
         'total_amount' => 'decimal:2',
         'quantity' => 'integer',
         'is_new' => 'boolean',
+        'addons' => 'array',
     ];
 
     public function order()
@@ -53,7 +55,78 @@ class OrderItems extends Model
 
     public function subcategory()
     {
-        return $this->belongsTo(SubCategory::class, 'subcategory_id');
+        return $this->belongsTo(SubCategory::class, 'subcategory_id')->withDefault(function ($subcat, $orderItem) {
+            $firstAddon = $orderItem->addons_list[0] ?? null;
+            $subcat->name = $firstAddon['name'] ?? 'Add-on';
+            $subcat->food_type = $firstAddon['food_type'] ?? 'VEG';
+            $subcat->price = $orderItem->price ?? 0;
+            return $subcat;
+        });
+    }
+
+    /**
+     * Get structured array of addons associated with this order item
+     */
+    public function getAddonsListAttribute()
+    {
+        $raw = $this->addons;
+        if (!empty($raw)) {
+            if (is_array($raw)) {
+                return $raw;
+            }
+            if (is_string($raw)) {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded) && !empty($decoded)) {
+                    return $decoded;
+                }
+            }
+        }
+
+        // Smart fallback: if item unit price exceeds dish base price and dish has mapped addons
+        $basePrice = floatval($this->subcategory->price ?? 0);
+        $itemPrice = floatval($this->price ?? 0);
+        $diff = round($itemPrice - $basePrice, 2);
+
+        if ($diff > 0 && $this->subcategory && $this->subcategory->addons && $this->subcategory->addons->count() > 0) {
+            $mapped = $this->subcategory->addons;
+            
+            // Direct single addon check
+            foreach ($mapped as $a) {
+                $aPrice = floatval($a->price ?? 0);
+                if ($aPrice > 0 && round($aPrice, 2) == $diff) {
+                    return [[
+                        'id' => $a->id,
+                        'name' => $a->name,
+                        'price' => $aPrice,
+                        'qty' => 1,
+                        'quantity' => 1,
+                        'total' => $diff,
+                        'food_type' => $a->food_type ?? 'VEG'
+                    ]];
+                }
+            }
+
+            // Multiplier check (e.g. 2 x 30 = 60)
+            foreach ($mapped as $a) {
+                $aPrice = floatval($a->price ?? 0);
+                if ($aPrice > 0 && fmod($diff, $aPrice) == 0) {
+                    $multiplier = intval(round($diff / $aPrice));
+                    if ($multiplier >= 1 && $multiplier <= 20) {
+                        return [[
+                            'id' => $a->id,
+                            'name' => $a->name,
+                            'price' => $aPrice,
+                            'qty' => $multiplier,
+                            'quantity' => $multiplier,
+                            'total' => $diff,
+                            'food_type' => $a->food_type ?? 'VEG'
+                        ]];
+                    }
+                }
+            }
+        }
+
+        return [];
     }
 
     // Accessor to get item total before GST

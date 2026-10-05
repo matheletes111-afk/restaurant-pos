@@ -44,4 +44,11 @@ class DishAddon extends Model
     {
         return $query->where('restaurant_id', $restaurantId);
     }
+
+    public function dishes()
+    {
+        return $this->belongsToMany(SubCategory::class, 'dish_addon_mappings', 'dish_addon_id', 'sub_category_id')
+                    ->where('sub_category.status', '!=', 'D')
+                    ->withTimestamps();
+    }
 }

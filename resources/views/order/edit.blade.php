@@ -124,12 +124,19 @@
                   <span class="badge bg-light text-dark ms-1" style="font-size: 0.72rem;">{{ $category->subcategories->count() }}</span>
                 </button>
               @endforeach
+              @if(isset($restaurant_addons) && $restaurant_addons->count() > 0)
+                <button type="button" class="cat-pill-tab tab-addons" data-category-id="addons">
+                  <i class="fa-solid fa-puzzle-piece me-1 text-warning"></i> Add-ons
+                  <span class="badge bg-warning text-dark ms-1" style="font-size: 0.72rem;">{{ $restaurant_addons->count() }}</span>
+                </button>
+              @endif
             </div>
 
             <!-- All Dishes Unified Grid -->
             <div id="dishesContainer">
               <div class="food-items-grid" id="foodItemsGrid">
                 @php $hasAnyDishes = false; @endphp
+                
                 @foreach($categories as $category)
                   @foreach($category->subcategories as $item)
                     @php
@@ -137,6 +144,10 @@
                       $isNonVeg = (strtolower($item->food_type ?? 'veg') == 'non-veg');
                       $discount = (float)($item->discount_percentage ?? 0);
                       $finalPrice = $discount > 0 ? ($item->price - ($item->price * $discount / 100)) : $item->price;
+                      
+                      $mappedAddons = ($item->addons) ? $item->addons->where('status', '!=', 'D')->where('status', '!=', 'I')->values() : collect([]);
+                      $availableDishAddons = $mappedAddons->isNotEmpty() ? $mappedAddons : ($restaurant_addons ?? collect([]));
+                      $addonsCount = $availableDishAddons->count();
                     @endphp
                     <div class="food-menu-card food-card" 
                          data-category-id="{{ $category->id }}"
@@ -150,9 +161,11 @@
                             <i class="fa-solid {{ $isNonVeg ? 'fa-drumstick-bite' : 'fa-leaf' }}"></i>
                             {{ $item->food_type ?? 'Veg' }}
                           </span>
-                          <span class="badge-category-tag" title="Category: {{ $category->name }}">
-                            <i class="fa-solid fa-bookmark me-1 opacity-75"></i>{{ Str::limit($category->name, 14) }}
-                          </span>
+                          @if($addonsCount > 0)
+                            <span class="badge-addon-pill" title="{{ $addonsCount }} Add-ons available">
+                              <i class="fa-solid fa-plus-circle"></i> {{ $addonsCount }} Add-on{{ $addonsCount > 1 ? 's' : '' }}
+                            </span>
+                          @endif
                           @if($discount > 0)
                             <span class="badge-food-discount">
                               <i class="fa-solid fa-tag"></i> {{ $discount }}% OFF
@@ -171,17 +184,83 @@
                           @endif
                         </div>
 
-                        <button type="button" class="btn-add-food add-item-btn"
-                                data-id="{{ $item->id }}"
-                                data-name="{{ $item->name }}"
-                                data-price="{{ $item->price }}"
-                                data-discount="{{ $discount }}">
-                          <i class="fa-solid fa-plus"></i> Add Item
-                        </button>
+                        @if($addonsCount > 0)
+                          <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn-add-food add-item-btn flex-grow-1"
+                                    data-id="{{ $item->id }}"
+                                    data-name="{{ $item->name }}"
+                                    data-price="{{ $item->price }}"
+                                    data-discount="{{ $discount }}"
+                                    data-addons='@json($availableDishAddons)'>
+                              <i class="fa-solid fa-plus"></i> Add
+                            </button>
+                            <button type="button" class="btn-customize-addons-pos open-addon-modal-btn"
+                                    data-id="{{ $item->id }}"
+                                    data-name="{{ $item->name }}"
+                                    data-price="{{ $item->price }}"
+                                    data-discount="{{ $discount }}"
+                                    data-addons='@json($availableDishAddons)'
+                                    title="Customize with Add-ons">
+                              <i class="fa-solid fa-sliders"></i> Add-ons
+                            </button>
+                          </div>
+                        @else
+                          <button type="button" class="btn-add-food add-item-btn"
+                                  data-id="{{ $item->id }}"
+                                  data-name="{{ $item->name }}"
+                                  data-price="{{ $item->price }}"
+                                  data-discount="{{ $discount }}"
+                                  data-addons='@json($availableDishAddons)'>
+                            <i class="fa-solid fa-plus"></i> Add Item
+                          </button>
+                        @endif
                       </div>
                     </div>
                   @endforeach
                 @endforeach
+
+                @if(isset($restaurant_addons) && $restaurant_addons->count() > 0)
+                  @foreach($restaurant_addons as $addon)
+                    @php
+                      $hasAnyDishes = true;
+                      $addonPrice = floatval($addon->price ?? 0);
+                      $addonFoodType = strtolower($addon->food_type ?? 'veg');
+                      $isNonVeg = ($addonFoodType === 'non-veg' || $addonFoodType === 'nonveg');
+                    @endphp
+                    <div class="food-menu-card food-card addon-card"
+                         data-category-id="addons"
+                         data-category-name="addons"
+                         data-type="{{ $isNonVeg ? 'non-veg' : 'veg' }}"
+                         data-name="{{ strtolower($addon->name) }}"
+                         data-is-addon="1">
+                      <div>
+                        <div class="food-badge-strip">
+                          <span class="badge-food-type {{ $isNonVeg ? 'badge-food-nonveg' : 'badge-food-veg' }}">
+                            <i class="fa-solid {{ $isNonVeg ? 'fa-drumstick-bite' : 'fa-leaf' }}"></i>
+                            {{ $addon->food_type ?? 'Veg' }}
+                          </span>
+                          <span class="badge-addon-pill" style="background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa;">
+                            <i class="fa-solid fa-puzzle-piece"></i> Standalone Add-on
+                          </span>
+                        </div>
+                        <h4 class="food-item-name">{{ $addon->name }}</h4>
+                      </div>
+                      <div>
+                        <div class="food-pricing-row">
+                          <span class="price-final">₹{{ number_format($addonPrice, 2) }}</span>
+                          <span class="small text-muted">/ portion</span>
+                        </div>
+                        <button type="button" class="btn-add-food btn-add-addon-direct add-addon-direct-btn"
+                                data-id="{{ $addon->id }}"
+                                data-name="{{ $addon->name }}"
+                                data-price="{{ $addonPrice }}"
+                                data-food-type="{{ $addon->food_type ?? 'VEG' }}">
+                          <i class="fa-solid fa-plus"></i> Add Add-on
+                        </button>
+                      </div>
+                    </div>
+                  @endforeach
+                @endif
               </div>
 
               <!-- No Matching Dishes Notice -->
@@ -233,12 +312,51 @@
                       $taxableAmount = $discountedPrice * $item->quantity;
                       $gstAmount = ($taxableAmount * ($item->gst_rate ?? 0)) / 100;
                       $itemTotal = $taxableAmount + $gstAmount;
+                      $addonsList = $item->addons_list ?? [];
                     @endphp
                     <tr data-item-id="{{ $item->id }}">
                       <td>
                         <strong class="text-dark">{{ $item->subcategory->name ?? 'Dish Item' }}</strong>
                         @if(!empty($item->kot_no))
                           <span class="badge bg-dark text-white ms-1" style="font-size: 0.72rem;">{{ $item->kot_no }}</span>
+                        @endif
+                        @if(!empty($addonsList) && count($addonsList) > 0)
+                          <div class="terminal-item-addons-box mt-2">
+                            <div class="terminal-addons-header">
+                              <span class="terminal-addons-title">
+                                <i class="fa-solid fa-plus-circle"></i> Dish Add-ons ({{ count($addonsList) }})
+                              </span>
+                            </div>
+                            <table class="terminal-addons-table">
+                              <thead>
+                                <tr>
+                                  <th>Add-on Name</th>
+                                  <th class="text-end">Unit Price</th>
+                                  <th class="text-center">Qty</th>
+                                  <th class="text-end">Total</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                @foreach($addonsList as $addon)
+                                  @php
+                                    $aPrice = floatval($addon['price'] ?? 0);
+                                    $aQty = intval($addon['quantity'] ?? $addon['qty'] ?? 1);
+                                    $aTotal = $aPrice * $aQty;
+                                    $isAddonNonVeg = (strtolower($addon['food_type'] ?? 'veg') === 'non-veg');
+                                  @endphp
+                                  <tr>
+                                    <td>
+                                      <span class="badge {{ $isAddonNonVeg ? 'bg-danger' : 'bg-success' }} rounded-circle me-1" style="display: inline-block; width: 7px; height: 7px; padding: 0;"></span>
+                                      <strong class="text-dark">{{ $addon['name'] ?? 'Add-on' }}</strong>
+                                    </td>
+                                    <td class="text-end">₹{{ number_format($aPrice, 2) }}</td>
+                                    <td class="text-center fw-bold text-dark">×{{ $aQty }}</td>
+                                    <td class="text-end fw-bold text-dark">₹{{ number_format($aTotal, 2) }}</td>
+                                  </tr>
+                                @endforeach
+                              </tbody>
+                            </table>
+                          </div>
                         @endif
                       </td>
                       <td class="text-end">₹{{ number_format($item->price, 2) }}</td>
@@ -496,6 +614,61 @@
   </div>
 </div>
 
+<!-- Dish Add-on Customization Modal -->
+<div class="pos-addon-modal-backdrop" id="addonModalBackdrop" style="display: none;">
+  <div class="pos-addon-modal-box">
+    <div class="pos-addon-modal-header">
+      <div>
+        <h4 class="pos-addon-modal-title" id="addonModalDishName">Customize Dish</h4>
+        <div class="pos-addon-modal-subtitle">Base Dish Price: ₹<span id="addonModalBasePrice">0.00</span></div>
+      </div>
+      <button type="button" class="btn-close-addon-modal" id="closeAddonModalBtn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="pos-addon-modal-body" id="addonModalBody">
+      <!-- Dynamically rendered add-on options -->
+    </div>
+    <div class="pos-addon-modal-footer">
+      <div class="addon-modal-total-preview">
+        <span>Unit Price (Dish + Add-ons):</span>
+        <strong id="addonModalFinalItemTotal">₹0.00</strong>
+      </div>
+      <button type="button" class="btn-confirm-addons" id="btnConfirmAddons">
+        <i class="fa-solid fa-check"></i> Add to Order Cart
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Map Standalone Add-on to Dish in Cart Modal -->
+<div class="pos-addon-modal-backdrop" id="mapAddonModalBackdrop" style="display: none;">
+  <div class="pos-addon-modal-box" style="max-width: 480px;">
+    <div class="pos-addon-modal-header" style="background: #0f172a; color: #fff;">
+      <div>
+        <h4 class="pos-addon-modal-title text-white" id="mapAddonModalTitle">Map Add-on to Dish</h4>
+        <div class="pos-addon-modal-subtitle text-white-50" id="mapAddonModalSubtitle">Select a dish from newly added items</div>
+      </div>
+      <button type="button" class="btn-close-addon-modal text-white" id="closeMapAddonModalBtn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="pos-addon-modal-body" style="padding: 16px;">
+      <div class="p-3 mb-3 rounded-3" style="background: #fff8f5; border: 1px solid #fed7aa;">
+        <div class="d-flex align-items-center justify-content-between">
+          <strong class="text-dark" id="mapAddonName" style="font-size: 1rem;">Add-on Name</strong>
+          <span class="badge bg-warning text-dark font-monospace fw-bold fs-6" id="mapAddonRate">+₹0.00</span>
+        </div>
+      </div>
+      <label class="fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.05em;">Attach to which dish in order?</label>
+      <div class="d-flex flex-column gap-2" id="mapAddonDishesList">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+    <div class="pos-addon-modal-footer">
+      <button type="button" class="btn btn-secondary w-100 fw-bold" id="cancelMapAddonBtn" style="border-radius: 8px;">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Luxury Toast Notification -->
 <div class="pos-toast" id="toastNotification">
   <i class="fa-solid fa-circle-check text-success"></i>
@@ -513,6 +686,8 @@ let restaurantGstPercentage = {{ $restaurant_gst_percentage ?? 0 }};
 let existingSubtotal = {{ $original_subtotal ?? 0 }};
 let existingTaxable = {{ $total_taxable ?? 0 }};
 let existingGst = {{ $total_gst ?? 0 }};
+let currentCustomizingDish = null;
+window.POS_RESTAURANT_ADDONS = @json($restaurant_addons ?? []);
 
 function showToast(message, isError = false) {
     let toast = $('#toastNotification');
@@ -555,6 +730,22 @@ function calculateItemDetails(originalPrice, qty, discountPercent = 0) {
     };
 }
 
+function getItemEffectiveUnitPrice(item) {
+    if (item.is_addon) {
+        return parseFloat(item.price) || 0;
+    }
+    let basePrice = parseFloat(item.price) || 0;
+    let addonsCost = 0;
+    if (item.addons && Array.isArray(item.addons)) {
+        item.addons.forEach(a => {
+            let p = parseFloat(a.price) || 0;
+            let q = parseInt(a.qty || a.quantity) || 1;
+            addonsCost += (p * q);
+        });
+    }
+    return basePrice + addonsCost;
+}
+
 function updateSummary() {
     let newOriginalSubtotal = 0;
     let newTaxable = 0;
@@ -563,8 +754,9 @@ function updateSummary() {
     let newCount = 0;
     
     newOrderItems.forEach(item => {
-        let details = calculateItemDetails(item.price, item.qty, item.itemDiscount || 0);
-        newOriginalSubtotal += item.price * item.qty;
+        let unitPrice = getItemEffectiveUnitPrice(item);
+        let details = calculateItemDetails(unitPrice, item.qty, item.itemDiscount || 0);
+        newOriginalSubtotal += unitPrice * item.qty;
         newTaxable += details.taxableAmount;
         newGst += details.gstAmount;
         newItemDiscount += details.itemDiscountAmount;
@@ -693,12 +885,77 @@ function updateNewItemsTable() {
     tbody.empty();
     
     newOrderItems.forEach((item, index) => {
-        let details = calculateItemDetails(item.price, item.qty, item.itemDiscount || 0);
+        let isStandaloneAddon = !!item.is_addon;
+        let effectiveUnitPrice = getItemEffectiveUnitPrice(item);
+        let details = calculateItemDetails(effectiveUnitPrice, item.qty, item.itemDiscount || 0);
+        let hasAddons = !isStandaloneAddon && item.addons && Array.isArray(item.addons) && item.addons.length > 0;
         
+        let addonsHtml = '';
+        if (hasAddons) {
+            let addonRows = item.addons.map((addon, aIdx) => {
+                let aPrice = parseFloat(addon.price) || 0;
+                let aQty = parseInt(addon.qty || addon.quantity) || 1;
+                let aTotal = aPrice * aQty;
+                let isNonVeg = String(addon.food_type || '').toLowerCase() === 'non-veg';
+                
+                return `
+                    <div class="pos-cart-addon-row">
+                        <div class="addon-info">
+                            <span class="addon-dot ${isNonVeg ? 'nonveg' : 'veg'}"></span>
+                            <span class="addon-name" title="${escapeHtml(addon.name)}">${escapeHtml(addon.name)}</span>
+                            <span class="addon-unit-rate">₹${aPrice.toFixed(2)}</span>
+                        </div>
+                        <div class="addon-controls">
+                            <div class="addon-stepper">
+                                <button type="button" class="addon-step-btn dec-cart-addon-qty" data-item-idx="${index}" data-addon-idx="${aIdx}" title="Decrease">-</button>
+                                <span class="addon-step-qty">${aQty}</span>
+                                <button type="button" class="addon-step-btn inc-cart-addon-qty" data-item-idx="${index}" data-addon-idx="${aIdx}" title="Increase">+</button>
+                            </div>
+                            <span class="addon-subtotal">+₹${aTotal.toFixed(2)}</span>
+                            <button type="button" class="btn-delete-addon remove-cart-addon" data-item-idx="${index}" data-addon-idx="${aIdx}" title="Remove">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            addonsHtml = `
+                <div class="pos-cart-addons-box">
+                    <div class="pos-cart-addons-title">
+                        <span><i class="fa-solid fa-puzzle-piece text-primary"></i> Add-ons (${item.addons.length})</span>
+                        <button type="button" class="btn-clear-cart-addons clear-all-addons-btn" data-item-idx="${index}" title="Remove all add-ons">Clear all</button>
+                    </div>
+                    <div class="pos-cart-addons-list">
+                        ${addonRows}
+                    </div>
+                </div>
+            `;
+        }
+        
+        let itemTitleHtml = isStandaloneAddon
+            ? `<div class="d-flex align-items-center gap-2">
+                 <span class="addon-dot ${String(item.food_type || '').toLowerCase() === 'non-veg' ? 'nonveg' : 'veg'}"></span>
+                 <strong class="text-dark" style="font-size: 0.95rem;">${escapeHtml(item.name)}</strong>
+                 <span class="badge bg-warning text-dark border ms-1" style="font-size: 0.68rem; font-weight: 800;">Add-on</span>
+               </div>`
+            : `<div class="d-flex align-items-center justify-content-between">
+                 <strong class="text-dark" style="font-size: 0.95rem;">${escapeHtml(item.name)}</strong>
+                 <button type="button" class="btn-cart-customize-item cart-customize-btn" data-index="${index}" title="Edit add-ons">
+                     <i class="fa-solid fa-sliders"></i> ${hasAddons ? 'Edit Add-ons' : '+ Add-ons'}
+                 </button>
+               </div>`;
+
         let row = `
             <tr data-index="${index}">
-                <td><strong class="text-dark">${escapeHtml(item.name)}</strong></td>
-                <td class="text-end">₹${item.price.toFixed(2)}</td>
+                <td>
+                    ${itemTitleHtml}
+                    ${addonsHtml}
+                </td>
+                <td class="text-end">
+                    <div class="fw-bold text-dark">₹${effectiveUnitPrice.toFixed(2)}</div>
+                    ${(hasAddons && !isStandaloneAddon) ? `<div class="small text-muted" style="font-size: 0.72rem;">Base: ₹${parseFloat(item.price).toFixed(2)}</div>` : ''}
+                </td>
                 <td class="text-center">
                     <input type="number" class="item-disc-input item-discount-input" 
                            data-index="${index}" value="${item.itemDiscount || 0}" 
@@ -766,6 +1023,158 @@ function applyFoodFilters() {
     }
 }
 
+// Update Modal Total Calculation
+function updateAddonModalTotal() {
+    if (!currentCustomizingDish) return;
+    let basePrice = parseFloat(currentCustomizingDish.price) || 0;
+    let addonsTotal = 0;
+    
+    currentCustomizingDish.availableAddons.forEach(addon => {
+        let aId = String(addon.id);
+        let count = currentCustomizingDish.selectedCounts[aId] || 0;
+        let price = parseFloat(addon.price) || 0;
+        addonsTotal += (price * count);
+    });
+    
+    let finalItemTotal = basePrice + addonsTotal;
+    $('#addonModalFinalItemTotal').text(`₹${finalItemTotal.toFixed(2)}`);
+}
+
+// Open Addon Customization Modal
+function openAddonModal(dishData) {
+    let availableAddons = [];
+    let rawAddons = dishData.addons;
+    if (typeof rawAddons === 'string') {
+        try { 
+            let decoded = rawAddons;
+            if (decoded.includes('&quot;') || decoded.includes('&#039;') || decoded.includes('&amp;')) {
+                let txt = document.createElement('textarea');
+                txt.innerHTML = decoded;
+                decoded = txt.value;
+            }
+            availableAddons = JSON.parse(decoded); 
+        } catch(e) { 
+            availableAddons = []; 
+        }
+    } else if (Array.isArray(rawAddons)) {
+        availableAddons = rawAddons;
+    } else if (typeof rawAddons === 'object' && rawAddons !== null) {
+        availableAddons = Object.values(rawAddons);
+    }
+
+    // Fallback to global restaurant addons if dish-specific list is empty
+    if ((!availableAddons || availableAddons.length === 0) && window.POS_RESTAURANT_ADDONS && window.POS_RESTAURANT_ADDONS.length > 0) {
+        availableAddons = window.POS_RESTAURANT_ADDONS;
+    }
+
+    // Filter only active addons (status !== 'D' and status !== 'I')
+    if (Array.isArray(availableAddons)) {
+        availableAddons = availableAddons.filter(a => a && a.status !== 'D' && a.status !== 'I');
+    } else {
+        availableAddons = [];
+    }
+
+    if (availableAddons.length === 0) {
+        showToast('No active add-ons found. Please create or activate add-ons in Add-on Master.', true);
+        return;
+    }
+
+    let prefillCounts = {};
+    if (dishData.prefillAddons && Array.isArray(dishData.prefillAddons)) {
+        dishData.prefillAddons.forEach(pa => {
+            let paId = String(pa.id);
+            prefillCounts[paId] = parseInt(pa.qty || pa.quantity) || 1;
+        });
+    }
+
+    currentCustomizingDish = {
+        id: dishData.id,
+        name: dishData.name,
+        price: parseFloat(dishData.price) || 0,
+        discount: parseFloat(dishData.discount) || 0,
+        cartItemIndex: (dishData.cartItemIndex !== undefined) ? dishData.cartItemIndex : null,
+        availableAddons: availableAddons,
+        selectedCounts: {}
+    };
+
+    availableAddons.forEach(a => {
+        let aId = String(a.id);
+        currentCustomizingDish.selectedCounts[aId] = prefillCounts[aId] || 0;
+    });
+
+    $('#addonModalDishName').text(dishData.name);
+    $('#addonModalBasePrice').text(currentCustomizingDish.price.toFixed(2));
+
+    let modalBody = $('#addonModalBody');
+    modalBody.empty();
+
+    availableAddons.forEach(addon => {
+        let aId = String(addon.id);
+        let count = currentCustomizingDish.selectedCounts[aId] || 0;
+        let isNonVeg = String(addon.food_type || '').toLowerCase() === 'non-veg';
+        let price = parseFloat(addon.price) || 0;
+        let lineTotal = price * count;
+        
+        let addonRow = `
+            <div class="pos-addon-selection-row ${count > 0 ? 'is-selected' : ''}" data-addon-id="${addon.id}">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge ${isNonVeg ? 'bg-danger' : 'bg-success'} rounded-circle" style="width: 10px; height: 10px; padding: 0;"></span>
+                    <div>
+                        <div class="fw-bold text-dark" style="font-size: 0.95rem;">${escapeHtml(addon.name)}</div>
+                        <div class="small text-muted">+₹${price.toFixed(2)} / portion</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="fw-bold text-primary modal-addon-line-total" style="font-size: 0.95rem;">₹${lineTotal.toFixed(2)}</span>
+                    <div class="pos-addon-ctrl-wrap" style="padding: 2px 4px;">
+                        <button type="button" class="btn-addon-step modal-addon-dec" data-addon-id="${addon.id}">-</button>
+                        <span class="addon-qty-num modal-addon-qty-val" data-addon-id="${addon.id}" style="min-width: 24px;">${count}</span>
+                        <button type="button" class="btn-addon-step modal-addon-inc" data-addon-id="${addon.id}">+</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        modalBody.append(addonRow);
+    });
+
+    updateAddonModalTotal();
+    $('#addonModalBackdrop').addClass('is-open').css('display', 'flex').hide().fadeIn(180);
+}
+
+function closeAddonModal() {
+    $('#addonModalBackdrop').fadeOut(150, function() {
+        $(this).removeClass('is-open');
+    });
+    currentCustomizingDish = null;
+}
+
+let pendingStandaloneAddon = null;
+
+function attachAddonToCartItem(itemIndex, addonData) {
+    if (!newOrderItems[itemIndex]) return;
+    if (!newOrderItems[itemIndex].addons) newOrderItems[itemIndex].addons = [];
+
+    let existing = newOrderItems[itemIndex].addons.find(a => String(a.id) === String(addonData.id));
+    if (existing) {
+        existing.qty = (parseInt(existing.qty || existing.quantity) || 1) + 1;
+        existing.quantity = existing.qty;
+    } else {
+        newOrderItems[itemIndex].addons.push({
+            id: addonData.id,
+            name: addonData.name,
+            price: parseFloat(addonData.price) || 0,
+            qty: 1,
+            quantity: 1,
+            food_type: addonData.food_type || 'VEG'
+        });
+    }
+
+    $('#mapAddonModalBackdrop').fadeOut(150);
+    pendingStandaloneAddon = null;
+    updateNewItemsTable();
+    showToast(`Mapped ${addonData.name} to ${newOrderItems[itemIndex].name}`);
+}
+
 $(document).ready(function() {
     // Category pill tab click
     $(document).on('click', '.cat-pill-tab', function(e) {
@@ -780,7 +1189,59 @@ $(document).ready(function() {
         applyFoodFilters();
     });
 
-    // Add new item button
+    // Add standalone add-on directly button
+    $(document).on('click', '.add-addon-direct-btn', function(e) {
+        e.preventDefault();
+        let addonId = $(this).data('id');
+        let addonName = $(this).data('name');
+        let addonPrice = parseFloat($(this).data('price')) || 0;
+        let foodType = $(this).data('food-type') || 'VEG';
+
+        let cartKey = 'addon_' + addonId;
+        let existing = newOrderItems.find(i => i.id === cartKey || (i.is_addon && i.addon_id == addonId));
+
+        if (existing) {
+            existing.qty += 1;
+            showToast(`${addonName} quantity increased to ${existing.qty}`);
+        } else {
+            newOrderItems.push({
+                id: cartKey,
+                name: addonName,
+                price: addonPrice,
+                qty: 1,
+                itemDiscount: 0,
+                is_addon: true,
+                addon_id: addonId,
+                food_type: foodType,
+                addons: [{
+                    id: addonId,
+                    name: addonName,
+                    price: addonPrice,
+                    qty: 1,
+                    quantity: 1,
+                    food_type: foodType
+                }]
+            });
+            showToast(`${addonName} added to order`);
+        }
+        updateNewItemsTable();
+    });
+
+    $(document).on('click', '.btn-map-dish-target', function(e) {
+        e.preventDefault();
+        let itemIdx = $(this).data('item-index');
+        if (pendingStandaloneAddon && itemIdx !== undefined) {
+            attachAddonToCartItem(itemIdx, pendingStandaloneAddon);
+        }
+    });
+
+    $(document).on('click', '#closeMapAddonModalBtn, #cancelMapAddonBtn', function(e) {
+        e.preventDefault();
+        $('#mapAddonModalBackdrop').fadeOut(150);
+        pendingStandaloneAddon = null;
+    });
+
+    // Add new item button from dish card
     $(document).on('click', '.add-item-btn', function(e) {
         e.preventDefault();
         let itemId = $(this).data('id');
@@ -788,7 +1249,7 @@ $(document).ready(function() {
         let itemPrice = parseFloat($(this).data('price'));
         let itemDiscount = parseFloat($(this).data('discount')) || 0;
         
-        let existingItem = newOrderItems.find(i => i.id === itemId);
+        let existingItem = newOrderItems.find(i => i.id == itemId && (!i.addons || i.addons.length === 0));
         
         if (existingItem) {
             existingItem.qty += 1;
@@ -799,12 +1260,240 @@ $(document).ready(function() {
                 name: itemName,
                 price: itemPrice,
                 qty: 1,
-                itemDiscount: itemDiscount
+                itemDiscount: itemDiscount,
+                addons: []
             });
             showToast(`${itemName} added to order`);
         }
         
         updateNewItemsTable();
+    });
+
+    // Open Add-on Customization modal button from Dish Card
+    $(document).on('click', '.open-addon-modal-btn', function(e) {
+        e.preventDefault();
+        let dishData = {
+            id: $(this).data('id'),
+            name: $(this).data('name'),
+            price: $(this).data('price'),
+            discount: $(this).data('discount'),
+            addons: $(this).attr('data-addons') || $(this).data('addons')
+        };
+        openAddonModal(dishData);
+    });
+
+    // Open Add-on Customization modal from Cart Row
+    $(document).on('click', '.cart-customize-btn', function(e) {
+        e.preventDefault();
+        let index = $(this).data('index');
+        let item = newOrderItems[index];
+        if (!item) return;
+        
+        let dishCardBtn = $(`.open-addon-modal-btn[data-id="${item.id}"]`);
+        let rawAddons = dishCardBtn.length ? (dishCardBtn.attr('data-addons') || dishCardBtn.data('addons')) : window.POS_RESTAURANT_ADDONS;
+        
+        openAddonModal({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            discount: item.itemDiscount || 0,
+            cartItemIndex: index,
+            prefillAddons: item.addons || [],
+            addons: rawAddons
+        });
+    });
+
+    // Close Addon Modal
+    $(document).on('click', '#closeAddonModalBtn', function(e) {
+        e.preventDefault();
+        closeAddonModal();
+    });
+
+    $(document).on('click', '#addonModalBackdrop', function(e) {
+        if (e.target === this) {
+            closeAddonModal();
+        }
+    });
+
+    // Modal Addon Increment
+    $(document).on('click', '.modal-addon-inc', function(e) {
+        e.preventDefault();
+        let addonId = String($(this).attr('data-addon-id') || $(this).data('addon-id'));
+        if (!currentCustomizingDish) return;
+        let count = (parseInt(currentCustomizingDish.selectedCounts[addonId]) || 0) + 1;
+        currentCustomizingDish.selectedCounts[addonId] = count;
+        
+        let row = $(`.pos-addon-selection-row[data-addon-id="${addonId}"]`);
+        row.find('.modal-addon-qty-val').text(count);
+        
+        let addon = currentCustomizingDish.availableAddons.find(a => String(a.id) === addonId);
+        let lineTotal = addon ? (parseFloat(addon.price) * count) : 0;
+        row.find('.modal-addon-line-total').text(`₹${lineTotal.toFixed(2)}`);
+        
+        if (count > 0) {
+            row.addClass('is-selected');
+        }
+        
+        updateAddonModalTotal();
+    });
+
+    // Modal Addon Decrement
+    $(document).on('click', '.modal-addon-dec', function(e) {
+        e.preventDefault();
+        let addonId = String($(this).attr('data-addon-id') || $(this).data('addon-id'));
+        if (!currentCustomizingDish) return;
+        let count = Math.max(0, (parseInt(currentCustomizingDish.selectedCounts[addonId]) || 0) - 1);
+        currentCustomizingDish.selectedCounts[addonId] = count;
+        
+        let row = $(`.pos-addon-selection-row[data-addon-id="${addonId}"]`);
+        row.find('.modal-addon-qty-val').text(count);
+        
+        let addon = currentCustomizingDish.availableAddons.find(a => String(a.id) === addonId);
+        let lineTotal = addon ? (parseFloat(addon.price) * count) : 0;
+        row.find('.modal-addon-line-total').text(`₹${lineTotal.toFixed(2)}`);
+        
+        if (count === 0) {
+            row.removeClass('is-selected');
+        }
+        
+        updateAddonModalTotal();
+    });
+
+    // Toggle selection on row click
+    $(document).on('click', '.pos-addon-selection-row', function(e) {
+        if ($(e.target).closest('.pos-addon-ctrl-wrap, .btn-addon-step').length) {
+            return;
+        }
+        let addonId = String($(this).attr('data-addon-id') || $(this).data('addon-id'));
+        if (!currentCustomizingDish) return;
+        let currentCount = parseInt(currentCustomizingDish.selectedCounts[addonId]) || 0;
+        let count = currentCount === 0 ? 1 : 0;
+        currentCustomizingDish.selectedCounts[addonId] = count;
+        
+        $(this).find('.modal-addon-qty-val').text(count);
+        let addon = currentCustomizingDish.availableAddons.find(a => String(a.id) === addonId);
+        let lineTotal = addon ? (parseFloat(addon.price) * count) : 0;
+        $(this).find('.modal-addon-line-total').text(`₹${lineTotal.toFixed(2)}`);
+        
+        if (count > 0) {
+            $(this).addClass('is-selected');
+        } else {
+            $(this).removeClass('is-selected');
+        }
+        updateAddonModalTotal();
+    });
+
+    // Confirm Addons & Add to Cart
+    $('#btnConfirmAddons').on('click', function() {
+        if (!currentCustomizingDish) return;
+        
+        let selectedAddonsList = [];
+        currentCustomizingDish.availableAddons.forEach(addon => {
+            let aId = String(addon.id);
+            let count = currentCustomizingDish.selectedCounts[aId] || 0;
+            if (count > 0) {
+                let price = parseFloat(addon.price) || 0;
+                selectedAddonsList.push({
+                    id: addon.id,
+                    name: addon.name,
+                    price: price,
+                    qty: count,
+                    quantity: count,
+                    total: price * count,
+                    food_type: addon.food_type || 'VEG'
+                });
+            }
+        });
+
+        // Case 1: Editing existing cart item directly
+        if (currentCustomizingDish.cartItemIndex !== null && newOrderItems[currentCustomizingDish.cartItemIndex]) {
+            newOrderItems[currentCustomizingDish.cartItemIndex].addons = selectedAddonsList;
+            showToast(`Updated add-ons for ${currentCustomizingDish.name}`);
+        } else {
+            // Case 2: Opened from dish card
+            // Check if there is an uncustomized dish in cart with 0 addons: update that item!
+            let uncustomizedIndex = newOrderItems.findIndex(i => i.id == currentCustomizingDish.id && (!i.addons || i.addons.length === 0));
+            
+            if (uncustomizedIndex !== -1 && selectedAddonsList.length > 0) {
+                newOrderItems[uncustomizedIndex].addons = selectedAddonsList;
+                showToast(`${currentCustomizingDish.name} updated with add-ons`);
+            } else {
+                // Check if exact same dish + same addons already exists
+                let exactMatch = newOrderItems.find(i => {
+                    if (i.id != currentCustomizingDish.id) return false;
+                    let iAddons = i.addons || [];
+                    if (iAddons.length !== selectedAddonsList.length) return false;
+                    return selectedAddonsList.every(sa => {
+                        let match = iAddons.find(ia => String(ia.id) === String(sa.id));
+                        return match && (parseInt(match.qty || match.quantity) === parseInt(sa.qty));
+                    });
+                });
+
+                if (exactMatch) {
+                    exactMatch.qty += 1;
+                    showToast(`${currentCustomizingDish.name} quantity increased to ${exactMatch.qty}`);
+                } else {
+                    newOrderItems.push({
+                        id: currentCustomizingDish.id,
+                        name: currentCustomizingDish.name,
+                        price: currentCustomizingDish.price,
+                        qty: 1,
+                        itemDiscount: currentCustomizingDish.discount,
+                        addons: selectedAddonsList
+                    });
+                    showToast(`${currentCustomizingDish.name} added to order`);
+                }
+            }
+        }
+
+        closeAddonModal();
+        updateNewItemsTable();
+    });
+
+    // Cart Addon Quantity Step Controls
+    $(document).on('click', '.inc-cart-addon-qty', function() {
+        let itemIdx = $(this).data('item-idx');
+        let addonIdx = $(this).data('addon-idx');
+        if (newOrderItems[itemIdx] && newOrderItems[itemIdx].addons && newOrderItems[itemIdx].addons[addonIdx]) {
+            newOrderItems[itemIdx].addons[addonIdx].qty = (parseInt(newOrderItems[itemIdx].addons[addonIdx].qty) || 1) + 1;
+            newOrderItems[itemIdx].addons[addonIdx].quantity = newOrderItems[itemIdx].addons[addonIdx].qty;
+            updateNewItemsTable();
+        }
+    });
+
+    $(document).on('click', '.dec-cart-addon-qty', function() {
+        let itemIdx = $(this).data('item-idx');
+        let addonIdx = $(this).data('addon-idx');
+        if (newOrderItems[itemIdx] && newOrderItems[itemIdx].addons && newOrderItems[itemIdx].addons[addonIdx]) {
+            let currentQty = parseInt(newOrderItems[itemIdx].addons[addonIdx].qty) || 1;
+            if (currentQty > 1) {
+                newOrderItems[itemIdx].addons[addonIdx].qty = currentQty - 1;
+                newOrderItems[itemIdx].addons[addonIdx].quantity = newOrderItems[itemIdx].addons[addonIdx].qty;
+            } else {
+                newOrderItems[itemIdx].addons.splice(addonIdx, 1);
+            }
+            updateNewItemsTable();
+        }
+    });
+
+    $(document).on('click', '.remove-cart-addon', function() {
+        let itemIdx = $(this).data('item-idx');
+        let addonIdx = $(this).data('addon-idx');
+        if (newOrderItems[itemIdx] && newOrderItems[itemIdx].addons && newOrderItems[itemIdx].addons[addonIdx]) {
+            let removedName = newOrderItems[itemIdx].addons[addonIdx].name;
+            newOrderItems[itemIdx].addons.splice(addonIdx, 1);
+            updateNewItemsTable();
+            showToast(`Removed add-on "${removedName}"`, false);
+        }
+    });
+
+    $(document).on('click', '.clear-all-addons-btn', function() {
+        let itemIdx = $(this).data('item-idx');
+        if (newOrderItems[itemIdx]) {
+            newOrderItems[itemIdx].addons = [];
+            updateNewItemsTable();
+            showToast(`Cleared add-ons for ${newOrderItems[itemIdx].name}`);
+        }
     });
     
     // Discount change
@@ -993,7 +1682,8 @@ $(document).ready(function() {
                 name: item.name,
                 price: item.price,
                 qty: item.qty,
-                item_discount: item.itemDiscount || 0
+                item_discount: item.itemDiscount || 0,
+                addons: item.addons || []
             }));
         }
         
@@ -1027,7 +1717,7 @@ $(document).ready(function() {
         });
     });
     
-    updateSummary();
+    updateNewItemsTable();
     applyFoodFilters();
 });
 </script>

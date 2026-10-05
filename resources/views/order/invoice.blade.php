@@ -491,6 +491,84 @@
         .food-type-dot.veg { border-color: #10b981; color: #10b981; }
         .food-type-dot.nonveg { border-color: #ef4444; color: #ef4444; }
 
+        /* Itemized Addons Display in Invoice */
+        .inv-item-addons-box {
+            margin-top: 6px;
+            background: #fffcf8;
+            border: 1px solid #fed7aa;
+            border-left: 3px solid #ff5e14;
+            border-radius: 8px;
+            padding: 5px 10px;
+            display: inline-block;
+            max-width: 100%;
+        }
+
+        .inv-addons-header {
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: #c2410c;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .inv-addons-list {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .inv-addon-line {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            color: #1e293b;
+            flex-wrap: wrap;
+        }
+
+        .inv-addon-food-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .inv-addon-food-dot.veg { background: #10b981; }
+        .inv-addon-food-dot.nonveg { background: #ef4444; }
+
+        .inv-addon-name {
+            font-weight: 600;
+        }
+
+        .inv-addon-qty-badge {
+            background: #ffedd5;
+            color: #c2410c;
+            font-weight: 800;
+            font-size: 0.7rem;
+            padding: 1px 5px;
+            border-radius: 4px;
+        }
+
+        .inv-addon-rate {
+            color: var(--inv-muted);
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        .inv-addon-cost {
+            font-weight: 700;
+            color: #0f172a;
+        }
+        
+        .inv-base-price-note {
+            font-size: 0.72rem;
+            color: var(--inv-muted);
+            margin-top: 3px;
+        }
+
         /* Calculation Summary Box */
         .inv-calc-container {
             display: flex;
@@ -1005,18 +1083,18 @@
                     <div class="inv-fin-grid">
                         <div class="inv-fin-col col-total">
                             <span class="inv-fin-label">Total Payable</span>
-                            <div class="inv-fin-val text-total">₹{{ number_format($order->grand_total, 2) }}</div>
+                            <div class="inv-fin-val text-total">{{ number_format($order->grand_total, 2) }}</div>
                         </div>
 
                         <div class="inv-fin-col col-paid">
                             <span class="inv-fin-label">Total Paid Amount</span>
-                            <div class="inv-fin-val text-paid">₹<span id="totalPaidAmount">{{ number_format($totalPaid, 2) }}</span></div>
+                            <div class="inv-fin-val text-paid"><span id="totalPaidAmount">{{ number_format($totalPaid, 2) }}</span></div>
                         </div>
 
                         <div class="inv-fin-col col-due {{ $balanceDue <= 0 ? 'settled' : '' }}">
                             <span class="inv-fin-label">Remaining Balance</span>
                             <div class="inv-fin-val text-due {{ $balanceDue <= 0 ? 'settled' : '' }}">
-                                ₹<span id="balanceDueAmount">{{ number_format(max(0, $balanceDue), 2) }}</span>
+                                <span id="balanceDueAmount">{{ number_format(max(0, $balanceDue), 2) }}</span>
                             </div>
                         </div>
                     </div>
@@ -1060,35 +1138,68 @@
                                     <th class="text-center">Disc %</th>
                                     <th class="text-end">Taxable Val</th>
                                     <th class="text-end">GST Amt</th>
-                                    <th class="text-end">Total (₹)</th>
+                                    <th class="text-end">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($order->orderItems as $idx => $item)
+                                @php
+                                    $addons = $item->addons_list;
+                                    $basePrice = $item->subcategory->price ?? $item->price;
+                                    $hasAddons = !empty($addons);
+                                @endphp
                                 <tr>
                                     <td>{{ $idx + 1 }}</td>
                                     <td>
-                                        <div class="d-flex align-items-center">
+                                        <div class="d-flex align-items-start">
                                             @if(@$item->subcategory->food_type == 'non-veg')
-                                                <span class="food-type-dot nonveg" title="Non-Veg"><i class="fa-solid fa-circle"></i></span>
+                                                <span class="food-type-dot nonveg mt-1" title="Non-Veg"><i class="fa-solid fa-circle"></i></span>
                                             @else
-                                                <span class="food-type-dot veg" title="Veg"><i class="fa-solid fa-circle"></i></span>
+                                                <span class="food-type-dot veg mt-1" title="Veg"><i class="fa-solid fa-circle"></i></span>
                                             @endif
                                             <div>
                                                 <strong class="text-dark">{{ $item->subcategory->name ?? 'Custom Item' }}</strong>
+
+                                                @if($hasAddons)
+                                                    <div class="inv-item-addons-box">
+                                                        <div class="inv-addons-header">
+                                                            <i class="fa-solid fa-puzzle-piece"></i> Mapped Add-ons ({{ count($addons) }})
+                                                        </div>
+                                                        <div class="inv-addons-list">
+                                                            @foreach($addons as $a)
+                                                                @php
+                                                                    $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
+                                                                    $aPrice = floatval($a['price'] ?? 0);
+                                                                    $aTotal = $aPrice * $aQty;
+                                                                    $isNonVeg = isset($a['food_type']) && in_array(strtoupper($a['food_type']), ['NON-VEG', 'NONVEG']);
+                                                                @endphp
+                                                                <div class="inv-addon-line">
+                                                                    <span class="inv-addon-food-dot {{ $isNonVeg ? 'nonveg' : 'veg' }}"></span>
+                                                                    <span class="inv-addon-name">{{ $a['name'] ?? 'Add-on' }}</span>
+                                                                    <span class="inv-addon-rate">({{ number_format($aPrice, 2) }})</span>
+                                                                    <span class="inv-addon-qty-badge">x{{ $aQty }}</span>
+                                                                    <span class="inv-addon-cost">+{{ number_format($aTotal, 2) }}</span>
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                    <div class="inv-base-price-note">
+                                                        Base: {{ number_format($basePrice, 2) }} • Unit: {{ number_format($item->price, 2) }}
+                                                    </div>
+                                                @endif
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="text-end">₹{{ number_format($item->price, 2) }}</td>
+                                    <td class="text-end">{{ number_format($item->price, 2) }}</td>
                                     <td class="text-center">
                                         <span class="badge bg-light text-dark border px-2 py-1">{{ $item->quantity }}</span>
                                     </td>
                                     <td class="text-center text-muted small">
                                         {{ $item->item_discount_percentage > 0 ? $item->item_discount_percentage . '%' : '-' }}
                                     </td>
-                                    <td class="text-end">₹{{ number_format($item->taxable_amount ?? ($item->price * $item->quantity), 2) }}</td>
-                                    <td class="text-end text-muted">₹{{ number_format($item->gst_amount ?? 0, 2) }}</td>
-                                    <td class="text-end fw-bold text-dark">₹{{ number_format($item->total_amount ?? ($item->price * $item->quantity), 2) }}</td>
+                                    <td class="text-end">{{ number_format($item->taxable_amount ?? ($item->price * $item->quantity), 2) }}</td>
+                                    <td class="text-end text-muted">{{ number_format($item->gst_amount ?? 0, 2) }}</td>
+                                    <td class="text-end fw-bold text-dark">{{ number_format($item->total_amount ?? ($item->price * $item->quantity), 2) }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -1100,33 +1211,33 @@
                         <div class="inv-calc-box">
                             <div class="inv-calc-row">
                                 <span class="text-muted">Item Subtotal:</span>
-                                <span class="fw-semibold">₹{{ number_format($order->total_amount, 2) }}</span>
+                                <span class="fw-semibold">{{ number_format($order->total_amount, 2) }}</span>
                             </div>
 
                             @if($order->discount > 0)
                             <div class="inv-calc-row text-danger">
                                 <span>Order Discount ({{ $order->discount_percentage ?? 0 }}%):</span>
-                                <span class="fw-semibold">- ₹{{ number_format($order->discount, 2) }}</span>
+                                <span class="fw-semibold">- {{ number_format($order->discount, 2) }}</span>
                             </div>
                             @endif
 
                             @if($order->is_gst_bill == 'YES' && $order->gst_amount > 0)
                             <div class="inv-calc-row text-primary">
                                 <span>GST ({{ $order->restaurant_gst_percentage ?? 0 }}%):</span>
-                                <span class="fw-semibold">+ ₹{{ number_format($order->gst_amount, 2) }}</span>
+                                <span class="fw-semibold">+ {{ number_format($order->gst_amount, 2) }}</span>
                             </div>
                             @endif
 
                             @if($order->round_off != 0)
                             <div class="inv-calc-row text-muted small">
                                 <span>Round Off:</span>
-                                <span>{{ $order->round_off > 0 ? '+' : '' }}₹{{ number_format($order->round_off, 2) }}</span>
+                                <span>{{ $order->round_off > 0 ? '+' : '' }}{{ number_format($order->round_off, 2) }}</span>
                             </div>
                             @endif
 
                             <div class="inv-calc-row grand-total">
                                 <span>Grand Total:</span>
-                                <span class="text-primary">₹{{ number_format($order->grand_total, 2) }}</span>
+                                <span class="text-primary">{{ number_format($order->grand_total, 2) }}</span>
                             </div>
                         </div>
                     </div>
@@ -1148,7 +1259,7 @@
                                 <tr>
                                     <th width="40">#</th>
                                     <th>Date &amp; Time</th>
-                                    <th class="text-end">Amount (₹)</th>
+                                    <th class="text-end">Amount</th>
                                     <th>Payment Mode</th>
                                     <th>Reference / TXN No</th>
                                     <th>Remarks</th>
@@ -1163,7 +1274,7 @@
                                         {{ $payment->payment_date ? $payment->payment_date->format('d M Y, h:i A') : $payment->created_at->format('d M Y, h:i A') }}
                                     </td>
                                     <td class="text-end fw-extrabold text-success" style="font-family: 'Outfit', sans-serif; font-size: 0.95rem;">
-                                        ₹{{ number_format($payment->amount, 2) }}
+                                        {{ number_format($payment->amount, 2) }}
                                     </td>
                                     <td>
                                         <span class="payment-method-badge method-{{ strtolower(str_replace(' ', '_', $payment->payment_method)) }}">
@@ -1203,7 +1314,7 @@
                             <tfoot>
                                 <tr>
                                     <th colspan="2" class="text-end">Total Realized Payments:</th>
-                                    <th class="text-end text-success fw-bold" id="totalPaidFooter">₹{{ number_format($totalPaid, 2) }}</th>
+                                    <th class="text-end text-success fw-bold" id="totalPaidFooter">{{ number_format($totalPaid, 2) }}</th>
                                     <th colspan="4"></th>
                                 </tr>
                             </tfoot>
@@ -1267,26 +1378,25 @@
                         <label class="pm-label">
                             <span>Amount to Settle <span class="text-danger">*</span></span>
                             <span class="text-muted fw-normal">
-                                Due: <strong class="text-danger">₹<span id="modalBalanceHint">{{ number_format(max(0, $balanceDue), 2) }}</span></strong>
+                                Due: <strong class="text-danger"><span id="modalBalanceHint">{{ number_format(max(0, $balanceDue), 2) }}</span></strong>
                             </span>
                         </label>
                         <div class="pm-input-wrap">
-                            <span class="pm-input-prefix">₹</span>
-                            <input type="number" name="amount" id="paymentAmount" class="pm-input-control has-prefix" step="0.01" 
+                            <input type="number" name="amount" id="paymentAmount" class="pm-input-control" step="0.01" 
                                    max="{{ max(0, $balanceDue) }}" required placeholder="0.00" autofocus>
                         </div>
                         
                         {{-- Quick Presets --}}
                         <div class="quick-presets-row">
                             <button type="button" class="preset-chip chip-full" id="btnFillFullBalance">
-                                <i class="fa-solid fa-bolt me-1"></i> Full Balance (₹<span id="chipFullVal">{{ number_format(max(0, $balanceDue), 2) }}</span>)
+                                <i class="fa-solid fa-bolt me-1"></i> Full Balance (<span id="chipFullVal">{{ number_format(max(0, $balanceDue), 2) }}</span>)
                             </button>
                             @if($balanceDue > 100)
                                 <button type="button" class="preset-chip" id="btnFillHalfBalance">50% Balance</button>
                             @endif
-                            <button type="button" class="preset-chip btn-quick-amt" data-amt="100">₹100</button>
-                            <button type="button" class="preset-chip btn-quick-amt" data-amt="500">₹500</button>
-                            <button type="button" class="preset-chip btn-quick-amt" data-amt="1000">₹1000</button>
+                            <button type="button" class="preset-chip btn-quick-amt" data-amt="100">100</button>
+                            <button type="button" class="preset-chip btn-quick-amt" data-amt="500">500</button>
+                            <button type="button" class="preset-chip btn-quick-amt" data-amt="1000">1000</button>
                         </div>
                     </div>
 
@@ -1467,8 +1577,8 @@ function generateWhatsappMessage() {
     let invoiceNo = "#{{ $order->order_id ?? $order->id }}";
     let orderDate = "{{ $order->created_at->format('d M Y, h:i A') }}";
     let orderType = "{{ $order->order_type == 'DINE_IN' ? 'Dine In (' . (@$order->table->name ?? 'Table') . ')' : 'Takeaway' }}";
-    let grandTotal = "₹{{ number_format($order->grand_total, 2) }}";
-    let paidAmount = "₹" + parseFloat($('#totalPaidAmount').text() || '{{ $totalPaid }}').toFixed(2);
+    let grandTotal = "{{ number_format($order->grand_total, 2) }}";
+    let paidAmount = "" + parseFloat($('#totalPaidAmount').text() || '{{ $totalPaid }}').toFixed(2);
     let balanceVal = parseFloat($('#balanceDueAmount').text() || '{{ $balanceDue }}');
     let downloadUrl = "{{ route('order.public.download', $order->id) }}";
     let viewUrl = "{{ route('order.public.invoice', $order->id) }}";
@@ -1483,7 +1593,7 @@ function generateWhatsappMessage() {
     msg += `📋 *Ordered Items:*\n`;
     @if($order->orderItems && count($order->orderItems) > 0)
         @foreach($order->orderItems as $item)
-            msg += `• {{ $item->quantity }}x {{ addslashes($item->subcategory->name ?? 'Item') }} - ₹{{ number_format($item->total_amount ?? ($item->price * $item->quantity), 2) }}\n`;
+            msg += `• {{ $item->quantity }}x {{ addslashes($item->subcategory->name ?? 'Item') }} - {{ number_format($item->total_amount ?? ($item->price * $item->quantity), 2) }}\n`;
         @endforeach
     @endif
     
@@ -1491,7 +1601,7 @@ function generateWhatsappMessage() {
     msg += `💰 *Grand Total:* ${grandTotal}\n`;
     msg += `✅ *Paid Amount:* ${paidAmount}\n`;
     if (balanceVal > 0) {
-        msg += `⚠️ *Balance Due:* ₹${balanceVal.toFixed(2)}\n`;
+        msg += `⚠️ *Balance Due:* ${balanceVal.toFixed(2)}\n`;
     } else {
         msg += `✨ *Status:* Fully Paid & Settled\n`;
     }
@@ -1577,7 +1687,7 @@ function refreshPaymentsTable() {
                                 <td>${index + 1}</td>
                                 <td class="text-muted font-monospace small">${dateStr}</td>
                                 <td class="text-end fw-extrabold text-success" style="font-family: 'Outfit', sans-serif; font-size: 0.95rem;">
-                                    ₹${parseFloat(payment.amount).toFixed(2)}
+                                    ${parseFloat(payment.amount).toFixed(2)}
                                 </td>
                                 <td>
                                     <span class="payment-method-badge method-${methodClass}">
@@ -1606,7 +1716,7 @@ function refreshPaymentsTable() {
                 let balanceDue = parseFloat(response.balance_due || 0);
                 currentBalanceDue = Math.max(0, balanceDue);
 
-                $('#totalPaidFooter').text(`₹${totalPaid.toFixed(2)}`);
+                $('#totalPaidFooter').text(totalPaid.toFixed(2));
                 $('#totalPaidAmount').text(totalPaid.toFixed(2));
                 $('#balanceDueAmount').text(currentBalanceDue.toFixed(2));
                 $('#modalBalanceHint').text(currentBalanceDue.toFixed(2));
@@ -1782,7 +1892,7 @@ $(document).ready(function() {
         let paymentId = $(this).data('id');
         let amount = $(this).data('amount');
 
-        if (confirm(`Delete payment of ₹${amount}? This action cannot be undone.`)) {
+        if (confirm(`Delete payment of ${amount}? This action cannot be undone.`)) {
             let deleteBtn = $(this);
             deleteBtn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i>');
 

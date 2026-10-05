@@ -266,4 +266,257 @@ class RapidBillTest extends TestCase
         $drawerTx = CashDrawerTransaction::where('reference_id', $upiPayment->id)->first();
         $this->assertNull($drawerTx);
     }
+
+    public function test_create_rapid_bill_with_mapped_addons()
+    {
+        $data = $this->setupRestaurantAndUser();
+
+        $addon1 = \App\Models\DishAddon::create([
+            'restaurant_id' => $data['restaurant']->id,
+            'name' => 'Extra Cheese Slice',
+            'price' => 25.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon2 = \App\Models\DishAddon::create([
+            'restaurant_id' => $data['restaurant']->id,
+            'name' => 'Smoked Bacon',
+            'price' => 50.00,
+            'food_type' => 'NON-VEG',
+            'status' => 'A'
+        ]);
+
+        $data['dish1']->addons()->sync([$addon1->id, $addon2->id]);
+
+        $payload = [
+            'customer_name' => 'Karan Malhotra',
+            'customer_phone' => '9811223344',
+            'order_type' => 'takeaway',
+            'cash_amount' => 195,
+            'upi_amount' => 0,
+            'print_bill' => 1,
+            'items' => [
+                [
+                    'dish_id' => $data['dish1']->id,
+                    'quantity' => 1,
+                    'price' => 120, // Base price
+                    'discount_percentage' => 0,
+                    'addons' => [
+                        [
+                            'id' => $addon1->id,
+                            'name' => 'Extra Cheese Slice',
+                            'price' => 25.00,
+                        ],
+                        [
+                            'id' => $addon2->id,
+                            'name' => 'Smoked Bacon',
+                            'price' => 50.00,
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        $response = $this->actingAs($data['user'])
+            ->postJson(route('rapid.bill.store'), $payload);
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+
+        $order = OrderManage::find($response->json('order_id'));
+        $this->assertNotNull($order);
+        // Base 120 + 25 + 50 = 195 (plus GST if enabled)
+        $this->assertGreaterThanOrEqual(195, $order->grand_total);
+
+        $orderItem = OrderItems::where('order_id', $order->id)->first();
+        $this->assertEquals(195, $orderItem->price);
+    }
+
+    public function test_create_rapid_bill_with_multiple_quantity_addons()
+    {
+        $data = $this->setupRestaurantAndUser();
+
+        $addon1 = \App\Models\DishAddon::create([
+            'restaurant_id' => $data['restaurant']->id,
+            'name' => 'Extra Cheese Dip',
+            'price' => 30.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $data['dish1']->addons()->sync([$addon1->id]);
+
+        $payload = [
+            'customer_name' => 'Aditya Roy',
+            'customer_phone' => '9877665544',
+            'order_type' => 'takeaway',
+            'cash_amount' => 180,
+            'upi_amount' => 0,
+            'print_bill' => 1,
+            'items' => [
+                [
+                    'dish_id' => $data['dish1']->id,
+                    'quantity' => 1,
+                    'price' => 120, // Base price
+                    'discount_percentage' => 0,
+                    'addons' => [
+                        [
+                            'id' => $addon1->id,
+                            'name' => 'Extra Cheese Dip',
+                            'price' => 30.00,
+                            'qty' => 2, // 2x Cheese Dip = 60
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        $response = $this->actingAs($data['user'])
+            ->postJson(route('rapid.bill.store'), $payload);
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+
+        $order = OrderManage::find($response->json('order_id'));
+        $this->assertNotNull($order);
+        // Base 120 + (30 * 2) = 180 (plus GST if enabled)
+        $this->assertGreaterThanOrEqual(180, $order->grand_total);
+
+        $orderItem = OrderItems::where('order_id', $order->id)->first();
+        $this->assertEquals(180, $orderItem->price);
+        $this->assertNotEmpty($orderItem->addons_list);
+        $this->assertEquals('Extra Cheese Dip', $orderItem->addons_list[0]['name']);
+        $this->assertEquals(2, $orderItem->addons_list[0]['qty']);
+    }
+
+    public function test_order_invoice_page_renders_addons()
+    {
+        $data = $this->setupRestaurantAndUser();
+
+        $addon = \App\Models\DishAddon::create([
+            'restaurant_id' => $data['restaurant']->id,
+            'name' => 'Garlic Mayo Dip',
+            'price' => 35.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $order = OrderManage::create([
+            'restaurant_id' => $data['restaurant']->id,
+            'user_id' => $data['user']->id,
+            'customer_name' => 'Invoice Customer',
+            'customer_phone' => '9888877777',
+            'order_id' => 'ORD-INV-001',
+            'order_type' => 'TAKEAWAY',
+            'total_amount' => 155.00,
+            'taxable_amount' => 155.00,
+            'gst_amount' => 0.00,
+            'grand_total' => 155.00,
+            'amount_paid' => 155.00,
+            'payment_status' => 'PAID',
+            'payment_method' => 'CASH',
+            'order_status' => 'PENDING',
+        ]);
+
+        OrderItems::create([
+            'order_id' => $order->id,
+            'subcategory_id' => $data['dish1']->id,
+            'quantity' => 1,
+            'price' => 155.00,
+            'addons' => [
+                [
+                    'id' => $addon->id,
+                    'name' => 'Garlic Mayo Dip',
+                    'price' => 35.00,
+                    'qty' => 1,
+                    'quantity' => 1,
+                    'total' => 35.00,
+                    'food_type' => 'VEG'
+                ]
+            ],
+            'discounted_price' => 155.00,
+            'taxable_amount' => 155.00,
+            'total_amount' => 155.00,
+            'restaurant_id' => $data['restaurant']->id,
+            'user_id' => $data['user']->id,
+        ]);
+
+        $response = $this->actingAs($data['user'])
+            ->get('/admin/order/' . $order->id . '/invoice');
+
+        $response->assertStatus(200);
+        $response->assertSee('Garlic Mayo Dip');
+        $response->assertSee('Mapped Add-ons');
+        $response->assertSee('35.00');
+    }
+
+    public function test_kitchen_panel_renders_addon_items()
+    {
+        $data = $this->setupRestaurantAndUser();
+
+        $addon = \App\Models\DishAddon::create([
+            'restaurant_id' => $data['restaurant']->id,
+            'name' => 'Spicy Peri Peri Dip',
+            'price' => 25.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $order = OrderManage::create([
+            'restaurant_id' => $data['restaurant']->id,
+            'user_id' => $data['user']->id,
+            'customer_name' => 'Kitchen Customer',
+            'customer_phone' => '9888877777',
+            'order_id' => 'ORD-KDS-001',
+            'order_type' => 'TAKEAWAY',
+            'total_amount' => 145.00,
+            'taxable_amount' => 145.00,
+            'gst_amount' => 0.00,
+            'grand_total' => 145.00,
+            'amount_paid' => 145.00,
+            'payment_status' => 'PAID',
+            'payment_method' => 'CASH',
+            'order_status' => 'PENDING',
+        ]);
+
+        $orderItem = OrderItems::create([
+            'order_id' => $order->id,
+            'subcategory_id' => $data['dish1']->id,
+            'quantity' => 1,
+            'price' => 145.00,
+            'kot_no' => 'KOT-261005-001',
+            'addons' => [
+                [
+                    'id' => $addon->id,
+                    'name' => 'Spicy Peri Peri Dip',
+                    'price' => 25.00,
+                    'qty' => 2,
+                    'quantity' => 2,
+                    'total' => 50.00,
+                    'food_type' => 'VEG'
+                ]
+            ],
+            'discounted_price' => 145.00,
+            'taxable_amount' => 145.00,
+            'total_amount' => 145.00,
+            'order_status' => 'PENDING',
+            'restaurant_id' => $data['restaurant']->id,
+            'user_id' => $data['user']->id,
+        ]);
+
+        $response = $this->actingAs($data['user'])
+            ->get(route('manage.kitchen-panel'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Spicy Peri Peri Dip');
+        $response->assertSee('ADD-ON');
+        $response->assertSee('x2');
+
+        // Verify KOT PDF ticket generation works seamlessly with addons
+        $kotPdfResponse = $this->actingAs($data['user'])
+            ->get(route('kitchen.kot.pdf', $orderItem->id));
+
+        $kotPdfResponse->assertStatus(200);
+    }
 }

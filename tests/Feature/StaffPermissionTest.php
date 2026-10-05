@@ -72,5 +72,16 @@ class StaffPermissionTest extends TestCase
         $this->assertTrue($legacyStaff->hasPermission('menu_master', 'add'));
         $this->assertTrue($legacyStaff->hasPermission('menu_master', 'edit'));
         $this->assertTrue($legacyStaff->hasPermission('menu_master', 'delete'));
+
+        // dish_addon_master granular check
+        $addonStaff = new User();
+        $addonStaff->role = 'RES';
+        $addonStaff->role_type = 'Staff';
+        $addonStaff->permissions = ['dish_addon_master.view', 'dish_addon_master.edit'];
+
+        $this->assertTrue($addonStaff->hasPermission('dish_addon_master', 'view'));
+        $this->assertFalse($addonStaff->hasPermission('dish_addon_master', 'add'));
+        $this->assertTrue($addonStaff->hasPermission('dish_addon_master', 'edit'));
+        $this->assertFalse($addonStaff->hasPermission('dish_addon_master', 'delete'));
     }
 }

@@ -190,10 +190,10 @@ class RestaurantStaffController extends Controller
                 'icon' => 'fas fa-clock'
             ],
             [
-                'key' => 'restro_ai',
-                'title' => 'Restro AI',
-                'description' => 'Interact with the AI Chat assistant for restro analytics and help.',
-                'icon' => 'fas fa-robot'
+                'key' => 'dish_addon_master',
+                'title' => 'Dish Addon Master',
+                'description' => 'Manage dish add-ons, portion pricing, food types, and status toggles.',
+                'icon' => 'fas fa-puzzle-piece'
             ],
             [
                 'key' => 'billing_subscription',

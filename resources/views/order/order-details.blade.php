@@ -207,6 +207,69 @@
             color: var(--gray);
         }
 
+        .item-addons-box {
+            margin-top: 6px;
+            padding: 6px 10px;
+            background: #f8fafc;
+            border-left: 3px solid #6366f1;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            max-width: 320px;
+        }
+
+        .item-addons-header {
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .addon-line {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #334155;
+            padding: 2px 0;
+        }
+
+        .addon-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .addon-dot.veg { background: #16a34a; }
+        .addon-dot.nonveg { background: #dc2626; }
+
+        .addon-qty {
+            font-weight: 700;
+            color: #6366f1;
+            background: #ede9fe;
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+        }
+
+        .addon-price {
+            color: #64748b;
+        }
+
+        .addon-cost {
+            font-weight: 600;
+            color: #0f172a;
+            margin-left: auto;
+        }
+
+        .base-price-hint {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            margin-top: 3px;
+        }
+
         /* Payment Table */
         .payment-method-badge {
             display: inline-block;
@@ -667,13 +730,45 @@
                                     $gstTotal += $itemGst;
                                     $discountTotal += ($originalPrice * $quantity) - $taxableAmount;
                                 @endphp
+                                @php
+                                    $addons = $item->addons_list ?? [];
+                                    $hasAddons = !empty($addons);
+                                    $basePrice = $item->subcategory->price ?? $originalPrice;
+                                @endphp
                                 <tr>
-                                    <td>{{ $index + 1 }}</div>
+                                    <td>{{ $index + 1 }}</td>
                                     <td>
-                                        <div class="item-name">{{ $item->subcategory->name ?? 'N/A' }}</div>
-                                        <div class="item-category">{{ $item->subcategory->category->name ?? '' }}</div>
-                                    </div>
-                                    <td>{{ $quantity }}</div>
+                                        <div class="item-name">{{ $item->subcategory->name ?? 'Custom Item' }}</div>
+                                        @if(!empty($item->subcategory->category->name))
+                                            <div class="item-category">{{ $item->subcategory->category->name }}</div>
+                                        @endif
+                                        @if($hasAddons)
+                                            <div class="item-addons-box">
+                                                <div class="item-addons-header">
+                                                    <i class="fa-solid fa-puzzle-piece text-primary"></i> Add-ons ({{ count($addons) }})
+                                                </div>
+                                                @foreach($addons as $a)
+                                                    @php
+                                                        $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
+                                                        $aPrice = floatval($a['price'] ?? 0);
+                                                        $aTotal = $aPrice * $aQty;
+                                                        $isNonVeg = isset($a['food_type']) && in_array(strtoupper($a['food_type']), ['NON-VEG', 'NONVEG']);
+                                                    @endphp
+                                                    <div class="addon-line">
+                                                        <span class="addon-dot {{ $isNonVeg ? 'nonveg' : 'veg' }}"></span>
+                                                        <span class="addon-name">{{ $a['name'] ?? 'Add-on' }}</span>
+                                                        <span class="addon-price">(₹{{ number_format($aPrice, 2) }})</span>
+                                                        <span class="addon-qty">x{{ $aQty }}</span>
+                                                        <span class="addon-cost">+₹{{ number_format($aTotal, 2) }}</span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                            <div class="base-price-hint">
+                                                Base: ₹{{ number_format($basePrice, 2) }} • Unit: ₹{{ number_format($originalPrice, 2) }}
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td>{{ $quantity }}</td>
                                     <td>
                                         @if($itemDiscount > 0)
                                             <del class="text-muted">₹{{ number_format($originalPrice, 2) }}</del><br>
@@ -681,24 +776,24 @@
                                         @else
                                             ₹{{ number_format($originalPrice, 2) }}
                                         @endif
-                                    </div>
+                                    </td>
                                     <td>
                                         @if($itemDiscount > 0)
                                             <span class="discount-badge">{{ $itemDiscount }}% OFF</span>
                                         @else
                                             <span class="text-muted">-</span>
                                         @endif
-                                    </div>
+                                    </td>
                                     @if($isGstBill)
                                     <td class="text-center">
                                         {{ $gstRate }}%
                                         <br><small class="text-muted">₹{{ number_format($itemGst, 2) }}</small>
-                                    </div>
+                                    </td>
                                     @endif
                                     <td class="text-end">
                                         <strong class="text-primary">₹{{ number_format($itemTotal, 2) }}</strong>
-                                    </div>
-                                </td>
+                                    </td>
+                                </tr>
                                 @endforeach
                             </tbody>
                         </table>

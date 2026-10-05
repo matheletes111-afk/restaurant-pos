@@ -43,7 +43,9 @@
       --rp-radius-sm: 8px;
     }
 
-    * { box-sizing: border-box; }
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
 
     body {
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -57,77 +59,81 @@
     .rapid-topbar {
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
       color: #ffffff;
-      padding: 12px 24px;
+      padding: 10px 18px;
       border-radius: var(--rp-radius-lg);
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
       border-bottom: 3px solid var(--rp-primary);
     }
 
     .rapid-brand {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
     }
 
     .rapid-brand-icon {
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
       background: var(--rp-primary-gradient);
-      border-radius: 12px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #fff;
-      font-size: 1.3rem;
-      box-shadow: 0 4px 12px rgba(255, 94, 20, 0.4);
+      font-size: 1.2rem;
+      box-shadow: 0 4px 10px rgba(255, 94, 20, 0.35);
+      flex-shrink: 0;
     }
 
     .rapid-title {
       font-family: 'Outfit', sans-serif;
-      font-size: 1.35rem;
+      font-size: 1.25rem;
       font-weight: 800;
       color: #ffffff;
       margin: 0;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
+      flex-wrap: wrap;
     }
 
     .rapid-badge-speed {
       background: rgba(255, 94, 20, 0.2);
       border: 1px solid rgba(255, 94, 20, 0.4);
       color: #ff9d66;
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      padding: 3px 10px;
-      border-radius: 20px;
+      letter-spacing: 0.06em;
+      padding: 2px 8px;
+      border-radius: 16px;
     }
 
     .rapid-top-actions {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      flex-shrink: 0;
     }
 
     .rapid-btn-secondary {
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
       color: #ffffff !important;
-      padding: 7px 16px;
-      border-radius: 30px;
-      font-size: 0.85rem;
+      padding: 6px 14px;
+      border-radius: 24px;
+      font-size: 0.82rem;
       font-weight: 700;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       gap: 6px;
       transition: all 0.2s ease;
+      white-space: nowrap;
     }
 
     .rapid-btn-secondary:hover {
@@ -139,21 +145,76 @@
     /* Main Grid Layout */
     .rapid-workspace {
       display: grid;
-      grid-template-columns: 1fr 440px;
-      gap: 20px;
+      grid-template-columns: minmax(0, 1fr) 420px;
+      gap: 16px;
       align-items: start;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
-    @media (max-width: 1200px) {
-      .rapid-workspace {
-        grid-template-columns: 1fr 400px;
-      }
+    .rapid-workspace > * {
+      min-width: 0;
     }
 
-    @media (max-width: 992px) {
-      .rapid-workspace {
-        grid-template-columns: 1fr;
-      }
+    /* Mobile Segmented Switcher */
+    .mobile-pos-switcher {
+      display: none;
+      background: #e2e8f0;
+      padding: 4px;
+      border-radius: 30px;
+      gap: 4px;
+      margin-bottom: 12px;
+      width: 100%;
+    }
+
+    .mobile-pos-tab {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 9px 12px;
+      border-radius: 24px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--rp-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .mobile-pos-tab.active {
+      background: #ffffff;
+      color: var(--rp-dark);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .mobile-pos-tab.active.tab-bill {
+      background: var(--rp-primary);
+      color: #ffffff;
+    }
+
+    /* Mobile Floating Cart Bar */
+    .mobile-floating-cart-bar {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #ffffff;
+      padding: 10px 16px;
+      z-index: 1040;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
+      border-top: 2px solid var(--rp-primary);
+      animation: slideUpFloat 0.25s ease-out;
+    }
+
+    @keyframes slideUpFloat {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
     }
 
     /* Menu Section Styles */
@@ -161,26 +222,29 @@
       background: var(--rp-card);
       border-radius: var(--rp-radius-lg);
       border: 1.5px solid var(--rp-border);
-      padding: 18px;
+      padding: 16px;
       box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+      min-width: 0;
     }
 
     .menu-filters-bar {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: 10px;
+      margin-bottom: 14px;
     }
 
     .search-veg-row {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .search-input-wrap {
       position: relative;
       flex: 1;
+      min-width: 180px;
     }
 
     .search-input-wrap i {
@@ -189,25 +253,26 @@
       top: 50%;
       transform: translateY(-50%);
       color: var(--rp-muted);
-      font-size: 0.95rem;
+      font-size: 0.9rem;
     }
 
     .search-input {
       width: 100%;
       border: 1.5px solid var(--rp-border);
       border-radius: 30px;
-      padding: 10px 18px 10px 40px;
-      font-size: 0.92rem;
+      padding: 8px 16px 8px 36px;
+      font-size: 0.88rem;
       font-weight: 600;
       background: #f8fafc;
       outline: none;
       transition: all 0.2s ease;
+      box-sizing: border-box;
     }
 
     .search-input:focus {
       background: #ffffff;
       border-color: var(--rp-primary);
-      box-shadow: 0 0 0 4px rgba(255, 94, 20, 0.12);
+      box-shadow: 0 0 0 3px rgba(255, 94, 20, 0.12);
     }
 
     .search-clear-btn {
@@ -220,6 +285,7 @@
       color: var(--rp-muted);
       cursor: pointer;
       display: none;
+      padding: 2px;
     }
 
     /* Food Type Switcher */
@@ -230,27 +296,28 @@
       border-radius: 30px;
       padding: 3px;
       gap: 2px;
+      flex-shrink: 0;
     }
 
     .type-toggle-btn {
       border: none;
       background: transparent;
-      padding: 7px 14px;
-      border-radius: 24px;
-      font-size: 0.8rem;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
       font-weight: 700;
       color: var(--rp-muted);
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       transition: all 0.2s ease;
     }
 
     .type-toggle-btn.active {
       background: #ffffff;
       color: var(--rp-dark);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     }
 
     .type-toggle-btn.active.veg { color: var(--rp-success-dark); }
@@ -260,10 +327,11 @@
     .category-scroll-tabs {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       overflow-x: auto;
-      padding-bottom: 6px;
+      padding-bottom: 4px;
       scrollbar-width: thin;
+      width: 100%;
     }
 
     .category-scroll-tabs::-webkit-scrollbar { height: 4px; }
@@ -274,15 +342,16 @@
       border: 1.5px solid var(--rp-border);
       background: #f8fafc;
       color: var(--rp-slate);
-      padding: 7px 14px;
-      border-radius: 30px;
-      font-size: 0.82rem;
+      padding: 6px 12px;
+      border-radius: 24px;
+      font-size: 0.78rem;
       font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       transition: all 0.2s ease;
+      flex-shrink: 0;
     }
 
     .cat-tab-btn:hover {
@@ -294,14 +363,14 @@
       background: var(--rp-primary);
       border-color: var(--rp-primary);
       color: #ffffff;
-      box-shadow: 0 4px 12px rgba(255, 94, 20, 0.3);
+      box-shadow: 0 3px 10px rgba(255, 94, 20, 0.3);
     }
 
     .cat-tab-badge {
       background: rgba(0, 0, 0, 0.08);
       padding: 1px 6px;
       border-radius: 10px;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
     }
 
     .cat-tab-btn.active .cat-tab-badge {
@@ -312,10 +381,11 @@
     /* Dish Cards Grid */
     .dishes-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 12px;
-      max-height: calc(100vh - 270px);
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+      max-height: calc(100vh - 240px);
       overflow-y: auto;
+      overflow-x: hidden;
       padding-right: 4px;
     }
 
@@ -326,7 +396,7 @@
       background: #ffffff;
       border: 1.5px solid var(--rp-border);
       border-radius: var(--rp-radius-md);
-      padding: 12px;
+      padding: 10px;
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
@@ -334,6 +404,8 @@
       flex-direction: column;
       justify-content: space-between;
       user-select: none;
+      min-width: 0;
+      box-sizing: border-box;
     }
 
     .dish-card:hover {
@@ -352,25 +424,27 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
+      gap: 4px;
     }
 
     .food-symbol {
-      width: 16px;
-      height: 16px;
+      width: 15px;
+      height: 15px;
       border: 1.5px solid #ccc;
       border-radius: 3px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       padding: 1px;
+      flex-shrink: 0;
     }
 
     .food-symbol.veg { border-color: #10b981; }
     .food-symbol.veg::after {
       content: '';
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       background: #10b981;
       border-radius: 50%;
     }
@@ -378,8 +452,8 @@
     .food-symbol.nonveg { border-color: #ef4444; }
     .food-symbol.nonveg::after {
       content: '';
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       background: #ef4444;
       border-radius: 50%;
     }
@@ -387,10 +461,10 @@
     .dish-cart-badge {
       background: var(--rp-primary);
       color: #ffffff;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 800;
-      padding: 2px 7px;
-      border-radius: 12px;
+      padding: 1px 6px;
+      border-radius: 10px;
       display: none;
     }
 
@@ -400,23 +474,23 @@
 
     .dish-title {
       font-family: 'Outfit', sans-serif;
-      font-size: 0.92rem;
+      font-size: 0.88rem;
       font-weight: 700;
       color: var(--rp-dark);
-      margin: 0 0 4px 0;
+      margin: 0 0 3px 0;
       line-height: 1.25;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
-      min-height: 2.3em;
+      min-height: 2.2em;
     }
 
     .dish-category-label {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       color: var(--rp-muted);
       font-weight: 600;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .dish-bottom-bar {
@@ -424,29 +498,30 @@
       align-items: center;
       justify-content: space-between;
       margin-top: auto;
-      padding-top: 6px;
+      padding-top: 5px;
       border-top: 1px dashed var(--rp-border-light);
     }
 
     .dish-price {
       font-family: 'Outfit', sans-serif;
-      font-size: 1.05rem;
+      font-size: 0.98rem;
       font-weight: 800;
       color: var(--rp-dark);
     }
 
     .dish-add-btn {
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       background: var(--rp-primary-light);
       border: 1px solid rgba(255, 94, 20, 0.3);
       color: var(--rp-primary);
-      border-radius: 8px;
+      border-radius: 7px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       transition: all 0.15s ease;
+      flex-shrink: 0;
     }
 
     .dish-card:hover .dish-add-btn {
@@ -463,42 +538,48 @@
       display: flex;
       flex-direction: column;
       position: sticky;
-      top: 20px;
+      top: 16px;
+      max-height: calc(100vh - 32px);
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
       overflow: hidden;
     }
 
     .checkout-header {
       background: #f8fafc;
-      padding: 14px 18px;
+      padding: 10px 14px;
       border-bottom: 1.5px solid var(--rp-border);
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-shrink: 0;
     }
 
     .checkout-title {
       font-family: 'Outfit', sans-serif;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 800;
       color: var(--rp-dark);
       margin: 0;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .btn-clear-all {
       background: transparent;
       border: none;
       color: var(--rp-danger);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 4px;
-      padding: 4px 8px;
+      padding: 3px 6px;
       border-radius: 6px;
+      flex-shrink: 0;
     }
 
     .btn-clear-all:hover {
@@ -507,27 +588,30 @@
 
     /* Customer & Dining Meta Row */
     .customer-meta-box {
-      padding: 14px 18px 10px;
+      padding: 10px 14px 8px;
       background: #ffffff;
       border-bottom: 1px solid var(--rp-border-light);
+      flex-shrink: 0;
     }
 
     .customer-input-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 8px;
+      gap: 6px;
+      margin-bottom: 6px;
     }
 
     .c-input {
       width: 100%;
+      min-width: 0;
       border: 1px solid var(--rp-border);
-      border-radius: 8px;
-      padding: 7px 10px;
-      font-size: 0.82rem;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 0.8rem;
       font-weight: 600;
       background: #f8fafc;
       outline: none;
+      box-sizing: border-box;
     }
 
     .c-input:focus {
@@ -544,17 +628,18 @@
     .dining-btn {
       border: 1.5px solid var(--rp-border);
       background: #f8fafc;
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 0.78rem;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 0.76rem;
       font-weight: 700;
       color: var(--rp-slate);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 4px;
       transition: all 0.15s ease;
+      white-space: nowrap;
     }
 
     .dining-btn.active {
@@ -564,15 +649,18 @@
     }
 
     .table-select-wrap {
-      margin-top: 8px;
+      margin-top: 6px;
       display: none;
     }
 
     /* Cart Items Container */
     .cart-items-wrapper {
-      max-height: 230px;
+      flex: 1 1 auto;
+      min-height: 90px;
+      max-height: 240px;
       overflow-y: auto;
-      padding: 8px 14px;
+      overflow-x: hidden;
+      padding: 6px 12px;
       background: #ffffff;
       border-bottom: 1.5px solid var(--rp-border);
     }
@@ -581,27 +669,45 @@
     .cart-items-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
     .cart-empty-state {
-      padding: 36px 16px;
+      padding: 24px 12px;
       text-align: center;
       color: var(--rp-muted);
     }
 
     .cart-empty-icon {
-      font-size: 2.2rem;
+      font-size: 1.8rem;
       color: #cbd5e1;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
 
-    .cart-item-row {
-      display: grid;
-      grid-template-columns: 1fr auto auto auto auto;
+    /* Cart Item Card & Main Row */
+    .cart-item-card {
+      padding: 7px 0 5px;
+      border-bottom: 1px dashed var(--rp-border);
+      transition: background 0.15s ease;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .cart-item-card:last-child {
+      border-bottom: none;
+    }
+
+    .cart-item-main-row {
+      display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 6px;
-      padding: 8px 4px;
-      border-bottom: 1px dashed var(--rp-border-light);
+      min-width: 0;
+      width: 100%;
     }
 
-    .cart-item-row:last-child { border-bottom: none; }
+    .cart-item-info {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      padding-right: 2px;
+    }
 
     .cart-item-title {
       font-size: 0.84rem;
@@ -610,31 +716,337 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 110px;
+      display: block;
+      min-width: 0;
     }
 
-    .cart-item-price {
-      font-size: 0.74rem;
+    .cart-item-price-meta {
+      font-size: 0.7rem;
       color: var(--rp-muted);
       font-weight: 600;
+      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cart-item-actions-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    /* Associated Addons Nested Panel & Table */
+    .cart-dish-addons-panel {
+      margin-top: 5px;
+      margin-left: 6px;
+      background: #fffcf8;
+      border: 1px solid #ffedd5;
+      border-left: 3px solid #ff5e14;
+      border-radius: 6px;
+      padding: 4px 6px;
+      box-shadow: 0 1px 3px rgba(255, 94, 20, 0.05);
+      animation: fadeIn 0.15s ease-out;
+    }
+
+    .addons-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 3px;
+      padding-bottom: 2px;
+      border-bottom: 1px dashed #fed7aa;
+    }
+
+    .addons-panel-title {
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #c2410c;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-clear-all-addons {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      font-size: 0.65rem;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0 3px;
+    }
+
+    .btn-clear-all-addons:hover {
+      text-decoration: underline;
+    }
+
+    .addons-nested-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.72rem;
+    }
+
+    .nested-addon-row td {
+      padding: 2px 2px;
+      vertical-align: middle;
+    }
+
+    .addon-td-name {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+      color: #1e293b;
+      max-width: 110px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .addon-name-txt {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .addon-td-rate {
+      font-size: 0.68rem;
+      color: var(--rp-muted);
+      font-weight: 600;
+      text-align: right;
+      padding-right: 3px !important;
+      white-space: nowrap;
+    }
+
+    .addon-td-qty {
+      text-align: center;
+      width: 50px;
+    }
+
+    .nested-addon-qty-ctrl {
+      display: inline-flex;
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 1px;
+    }
+
+    .nested-addon-qty-ctrl .btn-addon-chip-dec,
+    .nested-addon-qty-ctrl .btn-addon-chip-inc {
+      width: 15px;
+      height: 15px;
+      background: #f1f5f9;
+      border: none;
+      border-radius: 2px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      transition: all 0.1s ease;
+    }
+
+    .nested-addon-qty-ctrl .btn-addon-chip-dec:hover,
+    .nested-addon-qty-ctrl .btn-addon-chip-inc:hover {
+      background: var(--rp-primary);
+      color: #ffffff;
+    }
+
+    .nested-addon-qty-num {
+      font-size: 0.72rem;
+      font-weight: 800;
+      min-width: 14px;
+      text-align: center;
+      color: #0f172a;
+    }
+
+    .addon-td-total {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 0.75rem;
+      color: #0f172a;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .addon-td-del {
+      text-align: right;
+      width: 16px;
+    }
+
+    .addon-td-del .btn-remove-addon {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 1px 2px;
+      font-size: 0.72rem;
+      transition: color 0.15s ease;
+    }
+
+    .addon-td-del .btn-remove-addon:hover {
+      color: #ef4444;
+    }
+
+    /* Addon Badges & Customization in Rapid Bill */
+    .dish-addon-pill {
+      background: #fff3ed;
+      color: #ff5e14;
+      border: 1px solid #ffdecb;
+      font-size: 0.62rem;
+      font-weight: 700;
+      border-radius: 8px;
+      padding: 1px 5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .btn-customize-addons {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      color: #0284c7;
+      border-radius: 5px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 1px 5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .btn-customize-addons:hover {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+    }
+
+    .btn-customize-addons.active {
+      background: #fff3ed;
+      border-color: #ffdecb;
+      color: #ff5e14;
+    }
+
+    .btn-customize-addons.active:hover {
+      background: #ff5e14;
+      color: #ffffff;
+      border-color: #ff5e14;
+    }
+
+    .food-symbol-micro {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .food-symbol-micro.veg {
+      background: #10b981;
+    }
+
+    .food-symbol-micro.nonveg {
+      background: #ef4444;
+    }
+
+    .addon-selection-row {
+      display: flex !important;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+      margin-bottom: 5px;
+    }
+
+    .addon-selection-row:hover {
+      background: #fff8f5;
+      border-color: #ff5e14;
+    }
+
+    .addon-selection-row.is-selected {
+      background: #fff9f6;
+      border-color: #ff5e14;
+      box-shadow: 0 2px 6px rgba(255, 94, 20, 0.12);
+    }
+
+    .addon-selection-row.is-hidden-addon {
+      display: none !important;
+    }
+
+    .addon-modal-qty-control {
+      display: inline-flex;
+      align-items: center;
+      background: #ffffff;
+      border: 1.5px solid var(--rp-primary);
+      border-radius: 5px;
+      padding: 1px 2px;
+      gap: 3px;
+    }
+
+    .btn-addon-modal-qty {
+      width: 20px;
+      height: 20px;
+      background: #fff3ed;
+      border: none;
+      border-radius: 3px;
+      color: var(--rp-primary);
+      font-size: 0.8rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.1s ease;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .btn-addon-modal-qty:hover {
+      background: var(--rp-primary);
+      color: #ffffff;
+    }
+
+    .addon-modal-qty-val {
+      min-width: 16px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.8rem;
+      color: var(--rp-dark);
     }
 
     /* Qty Control */
     .qty-control {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       background: #f1f5f9;
-      border-radius: 6px;
-      padding: 2px;
+      border-radius: 5px;
+      padding: 1px;
+      flex-shrink: 0;
     }
 
     .btn-qty {
-      width: 20px;
-      height: 20px;
+      width: 19px;
+      height: 19px;
       border: none;
       background: #ffffff;
-      border-radius: 4px;
-      font-size: 0.75rem;
+      border-radius: 3px;
+      font-size: 0.72rem;
       font-weight: 800;
       color: var(--rp-slate);
       cursor: pointer;
@@ -642,40 +1054,43 @@
       align-items: center;
       justify-content: center;
       transition: all 0.1s ease;
+      padding: 0;
     }
 
     .btn-qty:hover { background: var(--rp-primary); color: #fff; }
 
     .qty-display {
-      width: 22px;
+      min-width: 18px;
       text-align: center;
-      font-size: 0.8rem;
+      font-size: 0.76rem;
       font-weight: 800;
       color: var(--rp-dark);
+      padding: 0 1px;
     }
 
     /* Item-wise Discount Box */
     .item-disc-wrap {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       background: #f8fafc;
       border: 1px solid var(--rp-border);
-      border-radius: 6px;
-      padding: 2px 4px;
+      border-radius: 5px;
+      padding: 1px 3px;
       gap: 1px;
+      flex-shrink: 0;
     }
 
     .item-disc-label {
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       font-weight: 700;
       color: var(--rp-muted);
     }
 
     .item-disc-input {
-      width: 32px;
+      width: 24px;
       border: none;
       background: transparent;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 800;
       color: #059669;
       text-align: right;
@@ -684,26 +1099,27 @@
     }
 
     .item-disc-unit {
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       font-weight: 800;
       color: var(--rp-muted);
     }
 
     .cart-item-total {
       font-family: 'Outfit', sans-serif;
-      min-width: 60px;
+      min-width: 48px;
       text-align: right;
+      flex-shrink: 0;
     }
 
     .cart-item-net-val {
-      font-size: 0.9rem;
+      font-size: 0.84rem;
       font-weight: 800;
       color: var(--rp-dark);
       line-height: 1.1;
     }
 
     .item-disc-tag {
-      font-size: 0.65rem;
+      font-size: 0.6rem;
       color: #059669;
       font-weight: 700;
       line-height: 1;
@@ -714,9 +1130,10 @@
       border: none;
       color: #94a3b8;
       cursor: pointer;
-      padding: 3px;
-      font-size: 0.82rem;
+      padding: 2px 3px;
+      font-size: 0.78rem;
       transition: color 0.15s ease;
+      flex-shrink: 0;
     }
 
     .btn-remove-item:hover { color: var(--rp-danger); }
@@ -724,25 +1141,26 @@
     /* Summary Calculation Deck */
     .summary-deck {
       background: #f8fafc;
-      padding: 12px 18px;
+      padding: 8px 14px;
       border-bottom: 1.5px solid var(--rp-border);
+      flex-shrink: 0;
     }
 
     .summary-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 600;
       color: var(--rp-muted);
-      margin-bottom: 5px;
+      margin-bottom: 2px;
     }
 
     .summary-row.grand-total-row {
-      margin-top: 8px;
-      padding-top: 8px;
+      margin-top: 5px;
+      padding-top: 5px;
       border-top: 1.5px dashed #cbd5e1;
-      font-size: 1.25rem;
+      font-size: 1.12rem;
       font-weight: 900;
       color: var(--rp-dark);
     }
@@ -750,40 +1168,45 @@
     .grand-total-val {
       font-family: 'Outfit', sans-serif;
       color: var(--rp-primary);
-      font-size: 1.45rem;
+      font-size: 1.32rem;
     }
 
     /* Split Payment Box (Cash & UPI) */
     .split-payment-box {
-      padding: 14px 18px;
+      padding: 8px 14px;
       background: #ffffff;
       border-bottom: 1.5px solid var(--rp-border);
+      flex-shrink: 0;
     }
 
     .split-header {
-      font-size: 0.82rem;
+      font-size: 0.76rem;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
       color: var(--rp-dark);
-      margin-bottom: 10px;
+      margin-bottom: 6px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 4px;
     }
 
     .split-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 8px;
+      gap: 6px;
+      margin-bottom: 6px;
     }
 
     .payment-field-card {
       border: 1.5px solid var(--rp-border);
-      border-radius: 10px;
-      padding: 8px 10px;
+      border-radius: 8px;
+      padding: 5px 8px;
       background: #f8fafc;
+      min-width: 0;
+      box-sizing: border-box;
       transition: all 0.2s ease;
     }
 
@@ -798,10 +1221,10 @@
     }
 
     .p-label {
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       font-weight: 800;
       text-transform: uppercase;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -814,6 +1237,7 @@
       position: relative;
       display: flex;
       align-items: center;
+      width: 100%;
     }
 
     .p-input-wrap span {
@@ -821,20 +1245,21 @@
       left: 6px;
       font-weight: 800;
       color: var(--rp-slate);
-      font-size: 0.85rem;
+      font-size: 0.8rem;
     }
 
     .p-input {
       width: 100%;
       border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      padding: 6px 6px 6px 20px;
+      border-radius: 5px;
+      padding: 4px 6px 4px 18px;
       font-family: 'Outfit', monospace;
-      font-size: 1.05rem;
+      font-size: 0.95rem;
       font-weight: 800;
       color: var(--rp-dark);
       background: #ffffff;
       outline: none;
+      box-sizing: border-box;
     }
 
     .p-input:focus {
@@ -845,16 +1270,16 @@
     .quick-split-bar {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       flex-wrap: wrap;
     }
 
     .btn-split-chip {
       background: #f1f5f9;
       border: 1px solid var(--rp-border);
-      border-radius: 14px;
-      padding: 3px 9px;
-      font-size: 0.72rem;
+      border-radius: 12px;
+      padding: 2px 7px;
+      font-size: 0.68rem;
       font-weight: 700;
       color: var(--rp-slate);
       cursor: pointer;
@@ -882,10 +1307,10 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-top: 8px;
-      padding: 6px 10px;
-      border-radius: 8px;
-      font-size: 0.78rem;
+      margin-top: 5px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.74rem;
       font-weight: 700;
     }
 
@@ -909,24 +1334,25 @@
 
     /* Action Footer */
     .checkout-footer {
-      padding: 14px 18px;
+      padding: 10px 14px;
       background: #ffffff;
+      flex-shrink: 0;
     }
 
     .print-toggle-wrap {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 12px;
-      font-size: 0.85rem;
+      gap: 6px;
+      margin-bottom: 8px;
+      font-size: 0.8rem;
       font-weight: 700;
       color: var(--rp-dark);
       cursor: pointer;
     }
 
     .print-toggle-checkbox {
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
       accent-color: var(--rp-primary);
       cursor: pointer;
     }
@@ -936,23 +1362,23 @@
       background: var(--rp-primary-gradient);
       color: #ffffff;
       border: none;
-      border-radius: 12px;
-      padding: 13px;
+      border-radius: 10px;
+      padding: 11px;
       font-family: 'Outfit', sans-serif;
-      font-size: 1.1rem;
+      font-size: 1.02rem;
       font-weight: 800;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      box-shadow: 0 6px 20px rgba(255, 94, 20, 0.35);
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(255, 94, 20, 0.3);
       cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .btn-submit-rapid:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(255, 94, 20, 0.45);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(255, 94, 20, 0.4);
       color: #ffffff;
     }
 
@@ -997,7 +1423,7 @@
     .modal-header-custom {
       background: #0f172a;
       color: #ffffff;
-      padding: 16px 20px;
+      padding: 14px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -1006,17 +1432,186 @@
     .receipt-paper {
       background: #fdfdfd;
       border: 1px solid #e2e8f0;
-      padding: 16px;
+      padding: 14px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       line-height: 1.4;
       color: #1e293b;
-      max-height: 380px;
+      max-height: 360px;
       overflow-y: auto;
     }
 
     .receipt-center { text-align: center; }
-    .receipt-divider { border-top: 1px dashed #94a3b8; margin: 8px 0; }
+    .receipt-divider { border-top: 1px dashed #94a3b8; margin: 6px 0; }
+
+    /* ===================================================
+       RESPONSIVE BREAKPOINTS
+       =================================================== */
+    @media (max-width: 1300px) {
+      .rapid-workspace {
+        grid-template-columns: minmax(0, 1fr) 380px;
+        gap: 12px;
+      }
+      .dishes-grid {
+        grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .rapid-workspace {
+        grid-template-columns: minmax(0, 1fr) 350px;
+        gap: 10px;
+      }
+      .dishes-grid {
+        grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+      }
+      .dish-title {
+        font-size: 0.82rem;
+      }
+      .dish-price {
+        font-size: 0.92rem;
+      }
+    }
+
+    @media (max-width: 991.98px) {
+      .pc-content {
+        padding: 10px 8px 90px 8px !important;
+      }
+      .rapid-workspace {
+        display: block !important;
+      }
+      .mobile-pos-switcher {
+        display: flex !important;
+      }
+      .menu-panel {
+        display: none;
+        padding: 12px;
+      }
+      .menu-panel.mobile-active {
+        display: block !important;
+      }
+      .bill-checkout-panel {
+        display: none;
+        max-height: none !important;
+      }
+      .bill-checkout-panel.mobile-active {
+        display: flex !important;
+        position: static !important;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+        border-radius: var(--rp-radius-md);
+      }
+      .cart-items-wrapper {
+        max-height: 320px;
+      }
+      .dishes-grid {
+        max-height: calc(100vh - 260px);
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      }
+    }
+
+    @media (max-width: 768px) {
+      .search-veg-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+      .food-type-toggles {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .type-toggle-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 7px 10px;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .rapid-topbar {
+        padding: 8px 12px;
+        margin-bottom: 10px;
+        border-radius: 10px;
+      }
+      .rapid-brand {
+        gap: 8px;
+      }
+      .rapid-brand-icon {
+        width: 34px;
+        height: 34px;
+        font-size: 1rem;
+        border-radius: 8px;
+      }
+      .rapid-title {
+        font-size: 1rem;
+      }
+      .rapid-badge-speed {
+        font-size: 0.62rem;
+        padding: 1px 5px;
+      }
+      .rapid-btn-secondary {
+        padding: 4px 8px;
+        font-size: 0.72rem;
+      }
+      .dishes-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        max-height: calc(100vh - 280px);
+      }
+      .dish-card {
+        padding: 8px !important;
+      }
+      .dish-title {
+        font-size: 0.8rem;
+        min-height: 2em;
+        margin-bottom: 2px;
+      }
+      .dish-category-label {
+        font-size: 0.65rem;
+        margin-bottom: 3px;
+      }
+      .dish-price {
+        font-size: 0.9rem;
+      }
+      .dish-add-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 0.72rem;
+      }
+      .customer-input-grid {
+        grid-template-columns: 1fr;
+        gap: 5px;
+      }
+      .split-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+      .quick-split-bar {
+        gap: 3px;
+      }
+      .btn-split-chip {
+        padding: 2px 6px;
+        font-size: 0.66rem;
+      }
+      .cart-item-main-row {
+        flex-wrap: wrap;
+      }
+      .cart-item-info {
+        width: 100%;
+        margin-bottom: 3px;
+      }
+      .cart-item-actions-wrap {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .cart-dish-addons-panel {
+        margin-left: 2px;
+      }
+      .modal-box-custom {
+        max-width: 95% !important;
+        margin: 10px auto;
+        border-radius: 12px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1053,11 +1648,22 @@
       </div>
     </div>
 
+    <!-- Mobile View Segmented Switcher (Visible on <= 991px) -->
+    <div class="mobile-pos-switcher" id="mobilePosSwitcher">
+      <button type="button" class="mobile-pos-tab active" data-tab="menu" id="tabMobileMenu">
+        <i class="fa-solid fa-utensils"></i> Menu Items
+      </button>
+      <button type="button" class="mobile-pos-tab tab-bill" data-tab="bill" id="tabMobileBill">
+        <i class="fa-solid fa-receipt"></i> Current Bill
+        <span class="badge bg-white text-dark ms-1" id="mobileBillBadge" style="display: none;">0</span>
+      </button>
+    </div>
+
     <!-- Main Workspace Grid -->
     <div class="rapid-workspace">
 
       <!-- LEFT: Fast Menu & Dish Explorer -->
-      <div class="menu-panel">
+      <div class="menu-panel mobile-active" id="menuPanelSection">
         
         <div class="menu-filters-bar">
           <!-- Search & Veg/Non-veg Row -->
@@ -1093,6 +1699,12 @@
                 <span class="cat-tab-badge">{{ $cat->subcategories->count() }}</span>
               </button>
             @endforeach
+            @if(isset($restaurant_addons) && $restaurant_addons->count() > 0)
+              <button type="button" class="cat-tab-btn cat-tab-addons" data-category="addons" style="background: #fff7ed; border-color: #fed7aa; color: #c2410c; font-weight: 800;">
+                <i class="fa-solid fa-puzzle-piece text-warning"></i> Add-ons
+                <span class="cat-tab-badge" style="background: #ea580c; color: #fff;">{{ $restaurant_addons->count() }}</span>
+              </button>
+            @endif
           </div>
         </div>
 
@@ -1104,6 +1716,7 @@
                 $dishPrice = floatval($dish->price ?? 0);
                 $dishFoodType = strtolower($dish->food_type ?? 'veg');
                 $dishDiscount = floatval($dish->discount ?? 0);
+                $dishAddons = $dish->addons ?? collect([]);
               @endphp
               <div class="dish-card" 
                    data-id="{{ $dish->id }}"
@@ -1112,16 +1725,23 @@
                    data-category-id="{{ $category->id }}"
                    data-food-type="{{ $dishFoodType }}"
                    data-discount="{{ $dishDiscount }}"
+                   data-addons='@json($dishAddons)'
                    data-search-terms="{{ strtolower($dish->name . ' ' . $category->name . ' ' . ($dish->code ?? '')) }}">
                 
                 <div>
                   <div class="dish-top-meta">
                     <span class="food-symbol {{ $dishFoodType === 'non-veg' || $dishFoodType === 'nonveg' ? 'nonveg' : 'veg' }}"></span>
-                    <span class="dish-cart-badge" id="dishBadge-{{ $dish->id }}">0</span>
+                    <div class="d-flex align-items-center gap-1">
+                      @if($dishAddons->count() > 0)
+                      <span class="dish-addon-pill" title="{{ $dishAddons->count() }} Addon(s) Available">
+                        <i class="fa-solid fa-puzzle-piece"></i> {{ $dishAddons->count() }} Addon{{ $dishAddons->count() > 1 ? 's' : '' }}
+                      </span>
+                      @endif
+                      <span class="dish-cart-badge" id="dishBadge-{{ $dish->id }}">0</span>
+                    </div>
                   </div>
 
                   <h3 class="dish-title" title="{{ $dish->name }}">{{ $dish->name }}</h3>
-                  <div class="dish-category-label">{{ $category->name }}</div>
                 </div>
 
                 <div class="dish-bottom-bar">
@@ -1138,15 +1758,55 @@
               <p class="fw-bold">No active dishes found in the menu.</p>
             </div>
           @endforelse
+
+          @if(isset($restaurant_addons) && $restaurant_addons->count() > 0)
+            @foreach($restaurant_addons as $addon)
+              @php
+                $addonPrice = floatval($addon->price ?? 0);
+                $addonFoodType = strtolower($addon->food_type ?? 'veg');
+                $isNonVeg = ($addonFoodType === 'non-veg' || $addonFoodType === 'nonveg');
+              @endphp
+              <div class="dish-card addon-menu-card"
+                   data-id="addon-{{ $addon->id }}"
+                   data-addon-id="{{ $addon->id }}"
+                   data-name="{{ $addon->name }}"
+                   data-price="{{ $addonPrice }}"
+                   data-category-id="addons"
+                   data-food-type="{{ $addonFoodType }}"
+                   data-is-addon="1"
+                   data-search-terms="{{ strtolower($addon->name . ' addon add-on extra topping portion') }}"
+                   style="border-color: #fed7aa; background: linear-gradient(180deg, #ffffff 0%, #fffbf8 100%);">
+                <div>
+                  <div class="dish-top-meta">
+                    <span class="food-symbol {{ $isNonVeg ? 'nonveg' : 'veg' }}"></span>
+                    <span class="badge bg-warning-subtle text-warning border px-2 py-1" style="font-size: 0.65rem; font-weight: 800; border-radius: 6px;">
+                      <i class="fa-solid fa-puzzle-piece"></i> ADD-ON
+                    </span>
+                  </div>
+                  <h3 class="dish-title" title="{{ $addon->name }}">{{ $addon->name }}</h3>
+                </div>
+
+                <div class="dish-bottom-bar">
+                  <div class="dish-price">₹{{ number_format($addonPrice, 2) }}</div>
+                  <div class="dish-add-btn" style="background: linear-gradient(135deg, #ff5e14 0%, #ff8c42 100%); color: #fff;">
+                    <i class="fa-solid fa-plus"></i>
+                  </div>
+                </div>
+              </div>
+            @endforeach
+          @endif
         </div>
 
       </div>
 
       <!-- RIGHT: Rapid Checkout & Split Payment Pane -->
-      <div class="bill-checkout-panel">
+      <div class="bill-checkout-panel" id="billCheckoutSection">
         
         <div class="checkout-header">
-          <h2 class="checkout-title">
+          <button type="button" class="btn btn-sm btn-outline-primary fw-bold d-lg-none me-2" id="btnBackToMenuMobile" style="border-radius: 20px; font-size: 0.78rem; padding: 4px 10px;">
+            <i class="fa-solid fa-arrow-left me-1"></i> Menu
+          </button>
+          <h2 class="checkout-title me-auto">
             <i class="fa-solid fa-receipt text-warning"></i> Current Bill
           </h2>
           <button type="button" class="btn-clear-all" id="clearCartBtn">
@@ -1284,6 +1944,69 @@
   </div>
 </div>
 
+<!-- ===================================================
+     MODAL: DISH ADDONS CUSTOMIZATION
+     =================================================== -->
+<div class="modal-backdrop-custom" id="rapidAddonModal">
+  <div class="modal-box-custom" style="max-width: 480px;">
+    <div class="modal-header-custom" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+      <div class="d-flex align-items-center gap-2">
+        <span class="food-symbol veg" id="addonModalFoodSymbol"></span>
+        <div>
+          <h5 class="m-0 text-white fw-bold" id="addonModalDishTitle" style="font-size: 1.05rem;">Customize Add-ons</h5>
+          <small class="text-white-50" id="addonModalBasePrice" style="font-size: 0.78rem;">Base Price: ₹0.00</small>
+        </div>
+      </div>
+      <button type="button" class="btn-close btn-close-white" id="btnCloseAddonModal"></button>
+    </div>
+    
+    <div class="p-3" style="background: #ffffff;">
+      <!-- Search filter for addons inside modal -->
+      <div class="input-group input-group-sm mb-2" id="addonModalSearchWrap">
+        <span class="input-group-text bg-light border-end-0" style="border-radius: 8px 0 0 8px;">
+          <i class="fa-solid fa-magnifying-glass text-muted" style="font-size: 0.8rem;"></i>
+        </span>
+        <input type="text" id="addonModalSearchInput" class="form-control form-control-sm border-start-0" placeholder="Search toppings, cheese, dips..." style="border-radius: 0 8px 8px 0; font-size: 0.82rem;">
+      </div>
+
+      <!-- Quick select all / clear -->
+      <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+        <span class="text-muted" style="font-size: 0.75rem;">Select toppings or sides for this dish:</span>
+        <div>
+          <a href="javascript:void(0)" class="text-primary small fw-bold me-2" id="btnSelectAllAddons" style="font-size: 0.75rem; text-decoration: none;">Select All</a>
+          <a href="javascript:void(0)" class="text-muted small fw-bold" id="btnClearAllAddons" style="font-size: 0.75rem; text-decoration: none;">Clear</a>
+        </div>
+      </div>
+
+      <!-- Scrollable list of addons -->
+      <div class="addon-selection-list" id="addonModalItemsList" style="max-height: 250px; overflow-y: auto;">
+        <!-- Rendered dynamically -->
+      </div>
+      
+      <!-- Summary Bar in Modal -->
+      <div class="mt-3 p-2 rounded d-flex align-items-center justify-content-between" style="background: #f8fafc; border: 1.5px solid #e2e8f0;">
+        <div>
+          <div class="small text-muted" style="font-size: 0.72rem;">Selected Add-ons</div>
+          <div class="fw-bold text-dark" id="addonModalSelectedSummary" style="font-size: 0.86rem;">0 Add-ons (+₹0.00)</div>
+        </div>
+        <div class="text-end">
+          <div class="small text-muted" style="font-size: 0.72rem;">New Unit Price</div>
+          <div class="fw-bold text-primary" id="addonModalNewUnitPrice" style="font-size: 1.05rem; font-family: 'Outfit', sans-serif;">₹0.00</div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 mt-3">
+        <button type="button" class="btn btn-light flex-grow-1 fw-bold border" id="btnCancelAddonModal" style="border-radius: 8px;">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary flex-grow-1 fw-bold" id="btnApplyAddons" style="background: linear-gradient(135deg, #ff5e14 0%, #ff8c42 100%); border: none; border-radius: 8px; box-shadow: 0 4px 12px rgba(255, 94, 20, 0.3);">
+          <i class="fa-solid fa-check me-1"></i> Apply Add-ons
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Print Preview & Receipt Modal -->
 <div class="modal-backdrop-custom" id="rapidReceiptModal">
   <div class="modal-box-custom">
@@ -1312,11 +2035,63 @@
   </div>
 </div>
 
+<!-- Mobile Floating Cart Bar (Appears when cart has items on mobile) -->
+<div class="mobile-floating-cart-bar" id="mobileFloatingCartBar">
+  <div class="d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-2">
+      <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; font-size: 0.95rem;">
+        <i class="fa-solid fa-cart-shopping"></i>
+      </div>
+      <div>
+        <div class="fw-bold text-white" style="font-size: 0.95rem;" id="floatCartItemCount">0 Items</div>
+        <div class="text-warning fw-bold" style="font-size: 0.85rem;" id="floatCartTotal">₹0.00</div>
+      </div>
+    </div>
+    <button type="button" class="btn btn-sm btn-light fw-bold px-3 py-2 text-dark shadow-sm" id="btnFloatViewBill" style="border-radius: 20px; font-size: 0.84rem;">
+      View Bill & Pay <i class="fa-solid fa-arrow-right ms-1 text-primary"></i>
+    </button>
+  </div>
+<!-- Map Addon To Dish Modal -->
+<div class="modal-backdrop-custom" id="rapidMapAddonModal" style="display: none; z-index: 100000;">
+  <div class="modal-box-custom" style="max-width: 440px; border-radius: 18px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+    <div class="modal-header-custom" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 16px 20px;">
+      <div class="d-flex align-items-center gap-2">
+        <span class="food-symbol veg" id="mapAddonFoodSymbol"></span>
+        <div>
+          <h5 class="m-0 text-white fw-bold" id="mapAddonTitle" style="font-size: 1.02rem;">Add Add-on</h5>
+          <small class="text-warning fw-bold" id="mapAddonPrice" style="font-size: 0.8rem;">+₹0.00 / portion</small>
+        </div>
+      </div>
+      <button type="button" class="btn-close btn-close-white" id="btnCloseMapAddonModal"></button>
+    </div>
+
+    <div class="p-3" style="background: #ffffff;">
+      <div class="mb-3 text-center">
+        <span class="badge bg-light text-dark border px-3 py-1 fw-semibold" style="font-size: 0.8rem;">
+          <i class="fa-solid fa-layer-group text-primary me-1"></i> Choose which dish in bill to attach this add-on to:
+        </span>
+      </div>
+
+      <!-- Dishes in Cart Options -->
+      <div class="d-flex flex-column gap-2 mb-3" id="mapAddonDishesList" style="max-height: 240px; overflow-y: auto;">
+        <!-- Injected dynamically based on cart -->
+      </div>
+
+      <div class="pt-2 border-top">
+        <button type="button" class="btn btn-light w-100 fw-bold border text-muted" id="btnCancelMapAddon">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 @include('includes.footer')
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
+window.POS_RESTAURANT_ADDONS = @json($restaurant_addons ?? []);
 $(document).ready(function() {
   // Global POS State
   const RESTAURANT_GST_PERCENT = parseFloat("{{ $gstPercentage ?? 0 }}");
@@ -1327,6 +2102,53 @@ $(document).ready(function() {
   let activeCategoryId = 'all';
   let activeFoodType = 'all';
   let lastOrderInvoiceUrl = null;
+  let currentMobileTab = 'menu';
+
+  // Mobile POS Tab Switcher
+  function switchMobileTab(tab) {
+    currentMobileTab = tab;
+    $('.mobile-pos-tab').removeClass('active');
+    $(`.mobile-pos-tab[data-tab="${tab}"]`).addClass('active');
+
+    if (tab === 'menu') {
+      $('#menuPanelSection').addClass('mobile-active');
+      $('#billCheckoutSection').removeClass('mobile-active');
+      let itemCount = Object.values(cart).reduce(function(sum, it) { return sum + it.qty; }, 0);
+      if (itemCount > 0 && window.innerWidth <= 991.98) {
+        $('#mobileFloatingCartBar').fadeIn(150);
+      } else {
+        $('#mobileFloatingCartBar').hide();
+      }
+    } else {
+      $('#billCheckoutSection').addClass('mobile-active');
+      $('#menuPanelSection').removeClass('mobile-active');
+      $('#mobileFloatingCartBar').hide();
+      if ($('#billCheckoutSection').length && window.innerWidth <= 991.98) {
+        $('html, body').animate({ scrollTop: $('#billCheckoutSection').offset().top - 20 }, 200);
+      }
+    }
+  }
+
+  $('.mobile-pos-tab').on('click', function() {
+    let tab = $(this).data('tab');
+    switchMobileTab(tab);
+  });
+
+  $('#btnFloatViewBill').on('click', function() {
+    switchMobileTab('bill');
+  });
+
+  $('#btnBackToMenuMobile').on('click', function() {
+    switchMobileTab('menu');
+  });
+
+  $(window).on('resize', function() {
+    if (window.innerWidth > 991.98) {
+      $('#mobileFloatingCartBar').hide();
+    } else {
+      switchMobileTab(currentMobileTab);
+    }
+  });
 
   // Live Clock
   function updateLiveClock() {
@@ -1406,12 +2228,64 @@ $(document).ready(function() {
     }
   });
 
-  // Add Dish to Cart
+  let pendingMappingAddon = null;
+
+  // Add Dish or Map Add-on to Cart
   $(document).on('click', '.dish-card', function(e) {
+    let isAddon = $(this).data('is-addon');
+
+    if (isAddon) {
+      let addonId = $(this).data('addon-id') || String($(this).data('id')).replace('addon-', '');
+      let addonName = $(this).data('name');
+      let addonPrice = parseFloat($(this).data('price')) || 0;
+      let foodType = $(this).data('food-type') || 'veg';
+      let cartKey = 'addon_' + addonId;
+
+      if (cart[cartKey]) {
+        cart[cartKey].qty += 1;
+      } else {
+        cart[cartKey] = {
+          id: cartKey,
+          name: addonName,
+          base_price: addonPrice,
+          price: addonPrice,
+          qty: 1,
+          discount_percent: 0,
+          food_type: foodType,
+          is_addon: true,
+          addon_id: addonId,
+          available_addons: [],
+          addons: [{
+            id: addonId,
+            name: addonName,
+            price: addonPrice,
+            qty: 1,
+            quantity: 1,
+            food_type: foodType
+          }]
+        };
+      }
+      renderCart();
+      return;
+    }
+
     let dishId = $(this).data('id');
     let dishName = $(this).data('name');
     let dishPrice = parseFloat($(this).data('price')) || 0;
     let dishDiscount = parseFloat($(this).data('discount')) || 0;
+    let foodType = $(this).data('food-type') || 'veg';
+    
+    let rawAddons = $(this).attr('data-addons') || $(this).data('addons');
+    let availableAddons = [];
+    if (typeof rawAddons === 'string') {
+      try { availableAddons = JSON.parse(rawAddons); } catch (err) { availableAddons = []; }
+    } else if (Array.isArray(rawAddons)) {
+      availableAddons = rawAddons;
+    }
+
+    if ((!availableAddons || availableAddons.length === 0) && window.POS_RESTAURANT_ADDONS && window.POS_RESTAURANT_ADDONS.length > 0) {
+      availableAddons = window.POS_RESTAURANT_ADDONS;
+    }
 
     if (cart[dishId]) {
       cart[dishId].qty += 1;
@@ -1419,12 +2293,56 @@ $(document).ready(function() {
       cart[dishId] = {
         id: dishId,
         name: dishName,
+        base_price: dishPrice,
         price: dishPrice,
         qty: 1,
-        discount_percent: dishDiscount
+        discount_percent: dishDiscount,
+        food_type: foodType,
+        available_addons: availableAddons,
+        addons: []
       };
     }
     renderCart();
+  });
+
+  function attachAddonToDish(dishId, addonData) {
+    if (!cart[dishId]) return;
+    if (!cart[dishId].addons) cart[dishId].addons = [];
+
+    let existing = cart[dishId].addons.find(a => String(a.id) === String(addonData.id));
+    if (existing) {
+      existing.qty = (existing.qty || existing.quantity || 1) + 1;
+      existing.quantity = existing.qty;
+    } else {
+      cart[dishId].addons.push({
+        id: addonData.id,
+        name: addonData.name,
+        price: addonData.price,
+        qty: 1,
+        quantity: 1,
+        food_type: addonData.food_type || 'VEG'
+      });
+    }
+
+    let totalAddonsCost = cart[dishId].addons.reduce((sum, a) => sum + ((parseFloat(a.price) || 0) * (a.qty || 1)), 0);
+    let base = cart[dishId].base_price !== undefined ? cart[dishId].base_price : cart[dishId].price;
+    cart[dishId].price = base + totalAddonsCost;
+
+    $('#rapidMapAddonModal').fadeOut(150);
+    renderCart();
+  }
+
+  $(document).on('click', '.btn-attach-addon-target', function(e) {
+    e.preventDefault();
+    let dishId = $(this).data('dish-id');
+    if (pendingMappingAddon && dishId) {
+      attachAddonToDish(dishId, pendingMappingAddon);
+    }
+  });
+
+  $('#btnCloseMapAddonModal, #btnCancelMapAddon').on('click', function() {
+    $('#rapidMapAddonModal').fadeOut(150);
+    pendingMappingAddon = null;
   });
 
   // Quantity and Remove Handlers in Cart
@@ -1475,7 +2393,7 @@ $(document).ready(function() {
       let origTotal = item.price * item.qty;
       let discAmt = (origTotal * (item.discount_percent || 0)) / 100;
       let netTotal = origTotal - discAmt;
-      let row = $(`.cart-item-row[data-id="${id}"]`);
+      let row = $(this).closest('.cart-item-card');
       row.find('.cart-item-net-val').text('₹' + netTotal.toFixed(2));
       if (discAmt > 0) {
         row.find('.item-disc-tag').text(`-₹${discAmt.toFixed(2)}`).show();
@@ -1513,6 +2431,366 @@ $(document).ready(function() {
     updatePaymentIndicator();
   });
 
+  // ===================================================
+  // DISH ADDON CUSTOMIZATION MODAL LOGIC WITH QUANTITY
+  // ===================================================
+  let currentEditingDishId = null;
+
+  function openAddonModal(dishId) {
+    currentEditingDishId = dishId;
+    let item = cart[dishId];
+    if (!item) return;
+
+    let availableAddons = item.available_addons || [];
+    if (availableAddons.length === 0 && window.POS_RESTAURANT_ADDONS && window.POS_RESTAURANT_ADDONS.length > 0) {
+      availableAddons = window.POS_RESTAURANT_ADDONS;
+    }
+    if (availableAddons.length === 0) return;
+
+    let selectedAddonMap = {};
+    (item.addons || []).forEach(function(a) {
+      selectedAddonMap[String(a.id)] = a.qty || a.quantity || 1;
+    });
+
+    $('#addonModalDishTitle').text(item.name);
+    $('#addonModalBasePrice').text('Base Price: ₹' + (item.base_price || item.price).toFixed(2));
+    
+    let foodSymbol = $('#addonModalFoodSymbol');
+    foodSymbol.removeClass('veg nonveg');
+    let foodType = item.food_type || 'veg';
+    foodSymbol.addClass(foodType === 'non-veg' || foodType === 'nonveg' ? 'nonveg' : 'veg');
+
+    let listHtml = '';
+    availableAddons.forEach(function(addon) {
+      let isChecked = selectedAddonMap.hasOwnProperty(String(addon.id));
+      let initialQty = isChecked ? (selectedAddonMap[String(addon.id)] || 1) : 1;
+      let isNonVeg = (addon.food_type === 'NON-VEG' || addon.food_type === 'non-veg');
+
+      listHtml += `
+        <div class="addon-selection-row ${isChecked ? 'is-selected' : ''}" 
+             data-id="${addon.id}"
+             data-name="${(addon.name || '').toLowerCase()}"
+             data-price="${addon.price}">
+          <div class="d-flex align-items-center gap-2">
+            <input type="checkbox" class="form-check-input addon-modal-checkbox mt-0" 
+                   value="${addon.id}" 
+                   data-id="${addon.id}"
+                   data-name="${addon.name}"
+                   data-price="${addon.price}"
+                   data-food-type="${addon.food_type || 'VEG'}"
+                   ${isChecked ? 'checked' : ''}
+                   style="width: 18px; height: 18px; cursor: pointer;">
+            
+            <span class="badge ${isNonVeg ? 'bg-danger' : 'bg-success'} text-white" style="font-size: 0.65rem; padding: 2px 5px;">
+              ${isNonVeg ? '🔴 Non-Veg' : '🟢 Veg'}
+            </span>
+            
+            <span class="fw-bold text-dark" style="font-size: 0.86rem;">${addon.name}</span>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-light text-dark font-monospace fw-bold border" style="font-size: 0.82rem;">
+              +₹${parseFloat(addon.price).toFixed(2)}
+            </span>
+            <div class="addon-modal-qty-control ${isChecked ? '' : 'd-none'}" data-id="${addon.id}">
+              <button type="button" class="btn-addon-modal-qty btn-addon-modal-dec" data-id="${addon.id}" title="Decrease quantity">-</button>
+              <span class="addon-modal-qty-val" data-id="${addon.id}">${initialQty}</span>
+              <button type="button" class="btn-addon-modal-qty btn-addon-modal-inc" data-id="${addon.id}" title="Increase quantity">+</button>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    $('#addonModalItemsList').html(listHtml);
+    $('#addonModalSearchInput').val('');
+    updateAddonModalSummary();
+    $('#rapidAddonModal').css('display', 'flex').fadeIn(150);
+  }
+
+  function updateAddonModalSummary() {
+    if (!currentEditingDishId || !cart[currentEditingDishId]) return;
+    let item = cart[currentEditingDishId];
+
+    let selectedAddons = [];
+    let totalAddonsCost = 0;
+    let totalAddonQty = 0;
+
+    $('#addonModalItemsList .addon-selection-row').each(function() {
+      let chk = $(this).find('.addon-modal-checkbox');
+      if (chk.is(':checked')) {
+        let price = parseFloat(chk.data('price')) || 0;
+        let name = chk.data('name');
+        let id = chk.data('id');
+        let foodType = chk.data('food-type');
+        let qty = parseInt($(this).find('.addon-modal-qty-val').text()) || 1;
+
+        let lineCost = price * qty;
+        totalAddonsCost += lineCost;
+        totalAddonQty += qty;
+
+        selectedAddons.push({
+          id: id,
+          name: name,
+          price: price,
+          qty: qty,
+          quantity: qty,
+          food_type: foodType
+        });
+      }
+    });
+
+    let countTypes = selectedAddons.length;
+    $('#addonModalSelectedSummary').text(countTypes + ' Add-on' + (countTypes === 1 ? '' : 's') + ' (' + totalAddonQty + ' item' + (totalAddonQty === 1 ? '' : 's') + ') (+₹' + totalAddonsCost.toFixed(2) + ')');
+    
+    let base = item.base_price !== undefined ? item.base_price : item.price;
+    let newUnitPrice = base + totalAddonsCost;
+    $('#addonModalNewUnitPrice').text('₹' + newUnitPrice.toFixed(2));
+  }
+
+  // Live Checkbox toggle inside Modal
+  $(document).on('change', '.addon-modal-checkbox', function() {
+    let row = $(this).closest('.addon-selection-row');
+    let qtyCtrl = row.find('.addon-modal-qty-control');
+    let qtyVal = row.find('.addon-modal-qty-val');
+
+    if ($(this).is(':checked')) {
+      row.addClass('is-selected');
+      let currentVal = parseInt(qtyVal.text()) || 0;
+      if (currentVal <= 0) {
+        qtyVal.text(1);
+      }
+      qtyCtrl.removeClass('d-none');
+    } else {
+      row.removeClass('is-selected');
+      qtyCtrl.addClass('d-none');
+    }
+    updateAddonModalSummary();
+  });
+
+  // Increment Addon Qty inside Modal
+  $(document).on('click', '.btn-addon-modal-inc', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    let row = $(this).closest('.addon-selection-row');
+    let chk = row.find('.addon-modal-checkbox');
+    let qtySpan = row.find('.addon-modal-qty-val');
+    let currentVal = parseInt(qtySpan.text()) || 1;
+    let newVal = currentVal + 1;
+    qtySpan.text(newVal);
+
+    if (!chk.is(':checked')) {
+      chk.prop('checked', true);
+      row.addClass('is-selected');
+      row.find('.addon-modal-qty-control').removeClass('d-none');
+    }
+    updateAddonModalSummary();
+  });
+
+  // Decrement Addon Qty inside Modal
+  $(document).on('click', '.btn-addon-modal-dec', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    let row = $(this).closest('.addon-selection-row');
+    let chk = row.find('.addon-modal-checkbox');
+    let qtySpan = row.find('.addon-modal-qty-val');
+    let currentVal = parseInt(qtySpan.text()) || 1;
+
+    if (currentVal > 1) {
+      qtySpan.text(currentVal - 1);
+    } else {
+      // Reached 0 -> uncheck
+      qtySpan.text(1);
+      chk.prop('checked', false);
+      row.removeClass('is-selected');
+      row.find('.addon-modal-qty-control').addClass('d-none');
+    }
+    updateAddonModalSummary();
+  });
+
+  // Search Addons inside Modal
+  $(document).on('input keyup search change paste', '#addonModalSearchInput', function() {
+    let query = ($(this).val() || '').toLowerCase().trim();
+    $('#addonModalItemsList .addon-selection-row').each(function() {
+      let name = String($(this).data('name') || '').toLowerCase();
+      let price = String($(this).data('price') || '').toLowerCase();
+      let text = $(this).text().toLowerCase();
+
+      if (!query || name.includes(query) || price.includes(query) || text.includes(query)) {
+        $(this).removeClass('is-hidden-addon');
+      } else {
+        $(this).addClass('is-hidden-addon');
+      }
+    });
+  });
+
+  // Select All / Clear inside Modal
+  $('#btnSelectAllAddons').on('click', function() {
+    $('#addonModalItemsList .addon-selection-row:not(.is-hidden-addon)').each(function() {
+      let row = $(this);
+      row.find('.addon-modal-checkbox').prop('checked', true);
+      row.addClass('is-selected');
+      let qtySpan = row.find('.addon-modal-qty-val');
+      let currentVal = parseInt(qtySpan.text()) || 0;
+      if (currentVal <= 0) qtySpan.text(1);
+      row.find('.addon-modal-qty-control').removeClass('d-none');
+    });
+    updateAddonModalSummary();
+  });
+
+  $('#btnClearAllAddons').on('click', function() {
+    $('#addonModalItemsList .addon-selection-row').each(function() {
+      let row = $(this);
+      row.find('.addon-modal-checkbox').prop('checked', false);
+      row.removeClass('is-selected');
+      row.find('.addon-modal-qty-control').addClass('d-none');
+      row.find('.addon-modal-qty-val').text(1);
+    });
+    updateAddonModalSummary();
+  });
+
+  // Apply Addons
+  $('#btnApplyAddons').on('click', function() {
+    if (!currentEditingDishId || !cart[currentEditingDishId]) {
+      $('#rapidAddonModal').fadeOut(150);
+      return;
+    }
+
+    let selectedAddons = [];
+    let totalAddonsCost = 0;
+
+    $('#addonModalItemsList .addon-selection-row').each(function() {
+      let chk = $(this).find('.addon-modal-checkbox');
+      if (chk.is(':checked')) {
+        let price = parseFloat(chk.data('price')) || 0;
+        let name = chk.data('name');
+        let id = chk.data('id');
+        let foodType = chk.data('food-type');
+        let qty = parseInt($(this).find('.addon-modal-qty-val').text()) || 1;
+
+        let lineCost = price * qty;
+        totalAddonsCost += lineCost;
+        selectedAddons.push({
+          id: id,
+          name: name,
+          price: price,
+          qty: qty,
+          quantity: qty,
+          food_type: foodType
+        });
+      }
+    });
+
+    let base = cart[currentEditingDishId].base_price !== undefined ? cart[currentEditingDishId].base_price : cart[currentEditingDishId].price;
+    cart[currentEditingDishId].addons = selectedAddons;
+    cart[currentEditingDishId].price = base + totalAddonsCost;
+
+    $('#rapidAddonModal').fadeOut(150);
+    renderCart();
+  });
+
+  // Close / Cancel Addon Modal
+  $('#btnCloseAddonModal, #btnCancelAddonModal').on('click', function() {
+    $('#rapidAddonModal').fadeOut(150);
+  });
+
+  // Increment addon qty from cart chip
+  $(document).on('click', '.btn-addon-chip-inc', function(e) {
+    e.stopPropagation();
+    let dishId = $(this).data('dish-id');
+    let addonId = $(this).data('addon-id');
+
+    if (cart[dishId] && cart[dishId].addons) {
+      let addon = cart[dishId].addons.find(function(a) { return String(a.id) === String(addonId); });
+      if (addon) {
+        addon.qty = (addon.qty || addon.quantity || 1) + 1;
+        addon.quantity = addon.qty;
+
+        let totalAddonsCost = cart[dishId].addons.reduce(function(sum, a) {
+          return sum + ((parseFloat(a.price) || 0) * (a.qty || 1));
+        }, 0);
+
+        let base = cart[dishId].base_price !== undefined ? cart[dishId].base_price : cart[dishId].price;
+        cart[dishId].price = base + totalAddonsCost;
+
+        renderCart();
+      }
+    }
+  });
+
+  // Decrement addon qty from cart chip
+  $(document).on('click', '.btn-addon-chip-dec', function(e) {
+    e.stopPropagation();
+    let dishId = $(this).data('dish-id');
+    let addonId = $(this).data('addon-id');
+
+    if (cart[dishId] && cart[dishId].addons) {
+      let addon = cart[dishId].addons.find(function(a) { return String(a.id) === String(addonId); });
+      if (addon) {
+        let currentQty = addon.qty || addon.quantity || 1;
+        if (currentQty > 1) {
+          addon.qty = currentQty - 1;
+          addon.quantity = addon.qty;
+        } else {
+          cart[dishId].addons = cart[dishId].addons.filter(function(a) {
+            return String(a.id) !== String(addonId);
+          });
+        }
+
+        let totalAddonsCost = cart[dishId].addons.reduce(function(sum, a) {
+          return sum + ((parseFloat(a.price) || 0) * (a.qty || 1));
+        }, 0);
+
+        let base = cart[dishId].base_price !== undefined ? cart[dishId].base_price : cart[dishId].price;
+        cart[dishId].price = base + totalAddonsCost;
+
+        renderCart();
+      }
+    }
+  });
+
+  // Remove individual addon directly from cart item
+  $(document).on('click', '.btn-remove-addon', function(e) {
+    e.stopPropagation();
+    let dishId = $(this).data('dish-id');
+    let addonId = $(this).data('addon-id');
+
+    if (cart[dishId] && cart[dishId].addons) {
+      cart[dishId].addons = cart[dishId].addons.filter(function(a) {
+        return String(a.id) !== String(addonId);
+      });
+
+      let totalAddonsCost = cart[dishId].addons.reduce(function(sum, a) {
+        return sum + ((parseFloat(a.price) || 0) * (a.qty || 1));
+      }, 0);
+
+      let base = cart[dishId].base_price !== undefined ? cart[dishId].base_price : cart[dishId].price;
+      cart[dishId].price = base + totalAddonsCost;
+
+      renderCart();
+    }
+  });
+
+  // Clear all addons from a cart item directly
+  $(document).on('click', '.btn-clear-all-addons', function(e) {
+    e.stopPropagation();
+    let dishId = $(this).data('dish-id');
+
+    if (cart[dishId]) {
+      cart[dishId].addons = [];
+      let base = cart[dishId].base_price !== undefined ? cart[dishId].base_price : cart[dishId].price;
+      cart[dishId].price = base;
+      renderCart();
+    }
+  });
+
+  // Click Customize button on cart row
+  $(document).on('click', '.btn-customize-addons', function(e) {
+    e.stopPropagation();
+    let id = $(this).data('id') || $(this).closest('.cart-item-card').data('id');
+    openAddonModal(id);
+  });
+
   // Render Cart Function
   function renderCart() {
     let container = $('#cartItemsList');
@@ -1548,33 +2826,128 @@ $(document).ready(function() {
       let discAmt = (lineOriginal * discPercent) / 100;
       let lineNet = lineOriginal - discAmt;
 
+      let hasAvailableAddons = item.available_addons && item.available_addons.length > 0;
+      let totalAddonsQtyCount = (item.addons || []).reduce(function(sum, a) { return sum + (a.qty || 1); }, 0);
+
+      let customizeBtnHtml = '';
+      if (hasAvailableAddons) {
+        let btnClass = totalAddonsQtyCount > 0 ? 'btn-customize-addons active' : 'btn-customize-addons';
+        let btnText = totalAddonsQtyCount > 0 ? `<i class="fa-solid fa-sliders"></i> ${totalAddonsQtyCount} Add-on${totalAddonsQtyCount > 1 ? 's' : ''}` : `<i class="fa-solid fa-plus"></i> Add-ons`;
+        customizeBtnHtml = `<button type="button" class="${btnClass}" data-id="${item.id}" title="Customize Add-ons">${btnText}</button>`;
+      }
+
+      let addonsSubTableHtml = '';
+      if (item.addons && item.addons.length > 0) {
+        let rowsHtml = '';
+        item.addons.forEach(function(a) {
+          let dotClass = (a.food_type === 'NON-VEG' || a.food_type === 'non-veg') ? 'nonveg' : 'veg';
+          let aQty = a.qty || a.quantity || 1;
+          let aPrice = parseFloat(a.price) || 0;
+          let aTotal = aPrice * aQty;
+
+          rowsHtml += `
+            <tr class="nested-addon-row">
+              <td class="addon-td-name">
+                <span class="food-symbol-micro ${dotClass}"></span>
+                <span class="addon-name-txt" title="${a.name}">${a.name}</span>
+              </td>
+              <td class="addon-td-rate">₹${aPrice.toFixed(0)}</td>
+              <td class="addon-td-qty">
+                <div class="nested-addon-qty-ctrl">
+                  <button type="button" class="btn-addon-chip-dec" data-dish-id="${item.id}" data-addon-id="${a.id}" title="Decrease quantity">-</button>
+                  <span class="nested-addon-qty-num">${aQty}</span>
+                  <button type="button" class="btn-addon-chip-inc" data-dish-id="${item.id}" data-addon-id="${a.id}" title="Increase quantity">+</button>
+                </div>
+              </td>
+              <td class="addon-td-total">₹${aTotal.toFixed(2)}</td>
+              <td class="addon-td-del">
+                <button type="button" class="btn-remove-addon" data-dish-id="${item.id}" data-addon-id="${a.id}" title="Remove ${a.name}">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+
+        addonsSubTableHtml = `
+          <div class="cart-dish-addons-panel">
+            <div class="addons-panel-header">
+              <span class="addons-panel-title">
+                <i class="fa-solid fa-puzzle-piece"></i> Mapped Add-ons
+              </span>
+              <button type="button" class="btn-clear-all-addons" data-dish-id="${item.id}" title="Clear all add-ons from this dish">
+                Clear all
+              </button>
+            </div>
+            <table class="addons-nested-table">
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      let basePrice = item.base_price !== undefined ? item.base_price : item.price;
+      let foodTypeDot = (item.food_type === 'non-veg' || item.food_type === 'nonveg') ? 'nonveg' : 'veg';
+
+      let itemHeaderHtml = '';
+      if (item.is_addon) {
+        itemHeaderHtml = `
+          <div class="d-flex align-items-center gap-1 min-w-0" style="min-width: 0;">
+            <span class="food-symbol-micro ${foodTypeDot}"></span>
+            <span class="cart-item-title text-truncate" title="${item.name}">${item.name}</span>
+            <span class="badge bg-warning text-dark ms-1" style="font-size: 0.6rem; font-weight: 800; padding: 1px 4px; border-radius: 4px; flex-shrink: 0;">Add-on</span>
+          </div>
+          <div class="cart-item-price-meta">
+            Rate: ₹${basePrice.toFixed(2)} / portion
+          </div>
+        `;
+      } else {
+        itemHeaderHtml = `
+          <div class="d-flex align-items-center gap-1 min-w-0" style="min-width: 0;">
+            <span class="food-symbol-micro ${foodTypeDot}"></span>
+            <span class="cart-item-title text-truncate" title="${item.name}">${item.name}</span>
+            ${customizeBtnHtml}
+          </div>
+          <div class="cart-item-price-meta">
+            Base: ₹${basePrice.toFixed(2)}${item.price > basePrice ? ` • <span class="text-primary fw-bold">Unit: ₹${item.price.toFixed(2)}</span>` : ''}
+          </div>
+        `;
+      }
+
       html += `
-        <div class="cart-item-row" data-id="${item.id}">
-          <div>
-            <div class="cart-item-title" title="${item.name}">${item.name}</div>
-            <div class="cart-item-price">₹${item.price.toFixed(2)}</div>
-          </div>
-          
-          <div class="qty-control">
-            <button type="button" class="btn-qty btn-dec-qty" data-id="${item.id}">-</button>
-            <div class="qty-display">${item.qty}</div>
-            <button type="button" class="btn-qty btn-inc-qty" data-id="${item.id}">+</button>
+        <div class="cart-item-card" data-id="${item.id}">
+          <div class="cart-item-main-row">
+            <div class="cart-item-info">
+              ${itemHeaderHtml}
+            </div>
+            
+            <div class="cart-item-actions-wrap">
+              <div class="qty-control">
+                <button type="button" class="btn-qty btn-dec-qty" data-id="${item.id}">-</button>
+                <div class="qty-display">${item.qty}</div>
+                <button type="button" class="btn-qty btn-inc-qty" data-id="${item.id}">+</button>
+              </div>
+
+              <div class="item-disc-wrap" title="Discount % for this item">
+                <span class="item-disc-label">Disc</span>
+                <input type="number" class="item-disc-input" data-id="${item.id}" min="0" max="100" step="1" value="${discPercent}" placeholder="0">
+                <span class="item-disc-unit">%</span>
+              </div>
+
+              <div class="cart-item-total">
+                <div class="cart-item-net-val">₹${lineNet.toFixed(2)}</div>
+                <div class="item-disc-tag" style="${discAmt > 0 ? '' : 'display: none;'}">-₹${discAmt.toFixed(2)}</div>
+              </div>
+
+              <button type="button" class="btn-remove-item" data-id="${item.id}" title="Remove item">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
           </div>
 
-          <div class="item-disc-wrap" title="Discount % for this item">
-            <span class="item-disc-label">Disc</span>
-            <input type="number" class="item-disc-input" data-id="${item.id}" min="0" max="100" step="1" value="${discPercent}" placeholder="0">
-            <span class="item-disc-unit">%</span>
-          </div>
-
-          <div class="cart-item-total">
-            <div class="cart-item-net-val">₹${lineNet.toFixed(2)}</div>
-            <div class="item-disc-tag" style="${discAmt > 0 ? '' : 'display: none;'}">-₹${discAmt.toFixed(2)}</div>
-          </div>
-
-          <button type="button" class="btn-remove-item" data-id="${item.id}">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
+          ${addonsSubTableHtml}
         </div>
       `;
     });
@@ -1661,6 +3034,21 @@ $(document).ready(function() {
       $('#inputUpiAmount').val(grandTotal);
     }
 
+    // Update Mobile POS Floating Bar & Badges
+    let totalItemCount = items.reduce(function(sum, it) { return sum + it.qty; }, 0);
+    $('#floatCartItemCount').text(totalItemCount + ' Item' + (totalItemCount === 1 ? '' : 's'));
+    $('#floatCartTotal').text('₹' + grandTotal.toFixed(2));
+
+    if (totalItemCount > 0) {
+      $('#mobileBillBadge').text(totalItemCount).show();
+      if (currentMobileTab === 'menu' && window.innerWidth <= 991.98) {
+        $('#mobileFloatingCartBar').fadeIn(150);
+      }
+    } else {
+      $('#mobileBillBadge').hide();
+      $('#mobileFloatingCartBar').hide();
+    }
+
     updatePaymentIndicator();
   }
 
@@ -1703,6 +3091,7 @@ $(document).ready(function() {
       $('#btnSubmitBill').trigger('click');
     }
     if (e.key === 'Escape') {
+      $('#rapidAddonModal').fadeOut(150);
       $('#rapidReceiptModal').fadeOut(150);
     }
   });
@@ -1740,8 +3129,17 @@ $(document).ready(function() {
         return {
           dish_id: i.id,
           quantity: i.qty,
-          price: i.price,
-          discount_percentage: parseFloat(i.discount_percent) || 0
+          price: i.base_price !== undefined ? i.base_price : i.price,
+          discount_percentage: parseFloat(i.discount_percent) || 0,
+          addons: (i.addons || []).map(function(a) {
+            return {
+              id: a.id,
+              name: a.name,
+              price: a.price,
+              qty: a.qty || a.quantity || 1,
+              quantity: a.qty || a.quantity || 1
+            };
+          })
         };
       })
     };
@@ -1797,10 +3195,21 @@ $(document).ready(function() {
     if (!r) return;
     let itemsHtml = '';
     r.items.forEach(function(it) {
+      let addonsLine = '';
+      if (it.addons && it.addons.length > 0) {
+        addonsLine = `<div style="font-size:0.72rem; color:#64748b; padding-left:6px;">${it.addons.map(function(a) { 
+          let qtyStr = (a.qty && a.qty > 1) ? ` x${a.qty}` : '';
+          return '+ ' + a.name + qtyStr + ' (₹' + (parseFloat(a.price) * (a.qty || 1)).toFixed(2) + ')'; 
+        }).join(', ')}</div>`;
+      }
+
       itemsHtml += `
-        <div style="display:flex; justify-content:space-between; margin-bottom: 3px;">
-          <span>${it.name} x${it.qty}</span>
-          <span>₹${parseFloat(it.total).toFixed(2)}</span>
+        <div style="margin-bottom: 4px;">
+          <div style="display:flex; justify-content:space-between;">
+            <span>${it.dish_name || it.name} x${it.qty}</span>
+            <span>₹${parseFloat(it.total).toFixed(2)}</span>
+          </div>
+          ${addonsLine}
         </div>
       `;
     });

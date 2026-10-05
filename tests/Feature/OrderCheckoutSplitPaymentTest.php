@@ -217,4 +217,94 @@ class OrderCheckoutSplitPaymentTest extends TestCase
         $table->refresh();
         $this->assertEquals('AVAILABLE', $table->table_status);
     }
+
+    public function test_create_order_with_addons_and_update_with_addons()
+    {
+        list($restaurant, $user, $dish1, $dish2, $table) = $this->setupRestaurantAndUser();
+
+        $addon1 = \App\Models\DishAddon::create([
+            'restaurant_id' => $restaurant->id,
+            'name' => 'Extra Butter',
+            'price' => 30.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon2 = \App\Models\DishAddon::create([
+            'restaurant_id' => $restaurant->id,
+            'name' => 'Extra Cheese Slice',
+            'price' => 20.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        // Create an order via Order Management with addons
+        // Base dish1 = 200, Addon1 = 30 * 2 = 60, Addon2 = 20 * 1 = 20. Unit price = 280.
+        // Qty = 1. Taxable = 280. GST 5% = 14. Grand total = 294.
+        $payload = [
+            'customer_name' => 'Addon Foodie',
+            'customer_phone' => '9123456789',
+            'table_id' => $table->id,
+            'order_complete' => 'PENDING',
+            'order_items' => [
+                [
+                    'id' => $dish1->id,
+                    'name' => $dish1->name,
+                    'price' => $dish1->price,
+                    'qty' => 1,
+                    'item_discount' => 0,
+                    'addons' => [
+                        ['id' => $addon1->id, 'name' => 'Extra Butter', 'price' => 30, 'qty' => 2, 'food_type' => 'VEG'],
+                        ['id' => $addon2->id, 'name' => 'Extra Cheese Slice', 'price' => 20, 'qty' => 1, 'food_type' => 'VEG']
+                    ]
+                ]
+            ]
+        ];
+
+        $response = $this->actingAs($user)->postJson(route('order.save'), $payload);
+        $response->assertStatus(200);
+        $this->assertTrue($response->json('success'));
+        $this->assertEquals(294, $response->json('final_total'));
+
+        $orderId = $response->json('order_id');
+        $orderItem = OrderItems::where('order_id', $orderId)->first();
+        $this->assertNotNull($orderItem);
+        $this->assertNotNull($orderItem->addons);
+        $this->assertCount(2, $orderItem->addons_list);
+        $this->assertEquals(280.00, (float)$orderItem->price);
+
+        // Test editing order to add new item with addons
+        // Add dish2 = 50 + Extra Butter (30 * 1) = 80. Taxable = 80. GST 5% = 4. Total = 84.
+        $updatePayload = [
+            'order_complete' => 'PENDING',
+            'order_items' => [
+                [
+                    'id' => $dish2->id,
+                    'name' => $dish2->name,
+                    'price' => $dish2->price,
+                    'qty' => 1,
+                    'item_discount' => 0,
+                    'addons' => [
+                        ['id' => $addon1->id, 'name' => 'Extra Butter', 'price' => 30, 'qty' => 1, 'food_type' => 'VEG']
+                    ]
+                ]
+            ]
+        ];
+
+        $updateResponse = $this->actingAs($user)->postJson(route('order.update', $orderId), $updatePayload);
+        $updateResponse->assertStatus(200);
+        $this->assertTrue($updateResponse->json('success'));
+
+        $newItem = OrderItems::where('order_id', $orderId)->where('subcategory_id', $dish2->id)->first();
+        $this->assertNotNull($newItem);
+        $this->assertNotNull($newItem->addons);
+        $this->assertEquals('Extra Butter', $newItem->addons_list[0]['name']);
+        $this->assertEquals(80.00, (float)$newItem->price);
+
+        // Verify edit view renders
+        $editViewResponse = $this->actingAs($user)->get(route('order.edit', $orderId));
+        $editViewResponse->assertStatus(200);
+        $editViewResponse->assertSee('Extra Butter');
+        $editViewResponse->assertSee('Extra Cheese Slice');
+    }
 }

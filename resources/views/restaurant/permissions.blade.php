@@ -95,7 +95,7 @@
             <div class="row g-3">
                 @foreach($menus as $menu)
                 @php
-                    $isGranular = in_array($menu['key'], ['menu_master', 'table_master', 'staff', 'inventory_setting']);
+                    $isGranular = in_array($menu['key'], ['menu_master', 'dish_addon_master', 'table_master', 'staff', 'inventory_setting']);
                     if ($isGranular) {
                         $hasView = in_array($menu['key'] . '.view', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
                         $hasAdd = in_array($menu['key'] . '.add', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);

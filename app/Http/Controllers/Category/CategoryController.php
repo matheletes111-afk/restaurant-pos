@@ -135,7 +135,8 @@ class CategoryController extends Controller
     {
         $data = [];
         $restaurantId = auth()->user()->restaurant_id;
-        $data['data'] = SubCategory::where('category_id',$id)->where('restaurant_id',$restaurantId)->where('status','!=','D')->get();
+        $data['data'] = SubCategory::with('addons')->where('category_id',$id)->where('restaurant_id',$restaurantId)->where('status','!=','D')->get();
+        $data['addons'] = \App\Models\DishAddon::where('restaurant_id', $restaurantId)->where('status', '!=', 'D')->orderBy('name', 'asc')->get();
         $data['details'] = Category::where('id',$id)->where('restaurant_id',$restaurantId)->first();
         if ($data['details']=="") {
            return redirect()->back()->with('error','Unauthorized Access');
@@ -202,6 +203,22 @@ class CategoryController extends Controller
                 $new->image = $filename;
             }
             $new->save();
+
+            // Map selected addons
+            if ($request->has('addon_ids') && is_array($request->addon_ids)) {
+                $validAddonIds = \App\Models\DishAddon::where('restaurant_id', $restaurantId)
+                    ->where('status', '!=', 'D')
+                    ->whereIn('id', $request->addon_ids)
+                    ->pluck('id')
+                    ->toArray();
+
+                $syncData = [];
+                foreach ($validAddonIds as $addonId) {
+                    $syncData[$addonId] = ['restaurant_id' => $restaurantId];
+                }
+                $new->addons()->sync($syncData);
+            }
+
             \Log::info('SubCategory Insert Success:', ['id' => $new->id]);
             return redirect()->back()->with('success','Product inserted successfully');
         } catch (\Exception $e) {
@@ -227,6 +244,8 @@ class CategoryController extends Controller
             'image.max'   => 'The food item image must not be greater than 5MB.',
         ]);
 
+        $restaurantId = auth()->user()->restaurant_id;
+
         try {
             $upd = [];
             $upd['name'] = $request->name;
@@ -234,7 +253,7 @@ class CategoryController extends Controller
             $upd['gst_rate'] = $request->gst_rate ?? 0;
             $upd['food_type'] = $request->food_type;
             if ($request->hasFile('image')) {
-                $check = SubCategory::where('id',$request->id)->first();
+                $check = SubCategory::where('id',$request->id)->where('restaurant_id', $restaurantId)->first();
                 if ($check && $check->image) {
                     $oldImagePath = storage_path('app/public/category/'.$check->image);
                     \Log::info('SubCategory Update: Unlinking old image', ['path' => $oldImagePath]);
@@ -249,7 +268,25 @@ class CategoryController extends Controller
                 $image->move(storage_path('app/public/category'),$filename);    
                 $upd['image'] = $filename;
             }
-            SubCategory::where('id',$request->id)->update($upd);
+            SubCategory::where('id',$request->id)->where('restaurant_id', $restaurantId)->update($upd);
+
+            $dish = SubCategory::where('id', $request->id)->where('restaurant_id', $restaurantId)->first();
+            if ($dish) {
+                $validAddonIds = [];
+                if ($request->has('addon_ids') && is_array($request->addon_ids)) {
+                    $validAddonIds = \App\Models\DishAddon::where('restaurant_id', $restaurantId)
+                        ->where('status', '!=', 'D')
+                        ->whereIn('id', $request->addon_ids)
+                        ->pluck('id')
+                        ->toArray();
+                }
+                $syncData = [];
+                foreach ($validAddonIds as $addonId) {
+                    $syncData[$addonId] = ['restaurant_id' => $restaurantId];
+                }
+                $dish->addons()->sync($syncData);
+            }
+
             \Log::info('SubCategory Update Success:', ['id' => $request->id]);
             return redirect()->back()->with('success','Product updated successfully');
         } catch (\Exception $e) {

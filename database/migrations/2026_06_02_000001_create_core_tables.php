@@ -288,7 +288,7 @@ return new class extends Migration
         Schema::create('order_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained('orders');
-            $table->unsignedBigInteger('subcategory_id');
+            $table->unsignedBigInteger('subcategory_id')->nullable();
             $table->integer('quantity')->default(1);
             $table->decimal('price', 10, 2)->default(0.00);
             $table->decimal('discounted_price', 10, 2)->default(0.00);
@@ -427,7 +427,7 @@ return new class extends Migration
         Schema::create('temp_order_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('temp_order_id')->constrained('temp_orders');
-            $table->unsignedBigInteger('subcategory_id');
+            $table->unsignedBigInteger('subcategory_id')->nullable();
             $table->integer('quantity')->default(1);
             $table->decimal('price', 10, 2)->default(0.00);
             $table->decimal('discounted_price', 10, 2)->default(0.00);

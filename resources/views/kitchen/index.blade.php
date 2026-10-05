@@ -218,7 +218,9 @@
           $orderNo = @$item->order->order_id ?? $item->order_id;
           $kotNo = $item->kot_no ?? 'N/A';
           $status = $item->order_status ?? 'PENDING';
-          $searchData = strtolower("{$dishName} {$orderNo} {$tableName} {$kotNo} {$item->note}");
+          $addons = $item->addons_list;
+          $addonSearch = collect($addons)->pluck('name')->join(' ');
+          $searchData = strtolower("{$dishName} {$orderNo} {$tableName} {$kotNo} {$item->note} {$addonSearch}");
         @endphp
         
         <div class="kds-order-card {{ $status }}" data-status="{{ $status }}" data-search="{{ $searchData }}" id="card_{{ $item->id }}">
@@ -276,6 +278,36 @@
                 x{{ $item->quantity }}
               </div>
             </div>
+
+            @if(!empty($addons))
+            <div class="kds-addons-container">
+              <div class="kds-addons-header">
+                <i class="fa-solid fa-puzzle-piece"></i> Mapped Add-ons ({{ count($addons) }})
+              </div>
+              <div class="kds-addons-list">
+                @foreach($addons as $a)
+                @php
+                  $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
+                  $aName = $a['name'] ?? 'Add-on';
+                  $aFoodType = strtoupper($a['food_type'] ?? 'VEG');
+                @endphp
+                <div class="kds-addon-item-row">
+                  <div class="kds-addon-left">
+                    <span class="kds-addon-pill"><i class="fa-solid fa-plus me-1"></i>ADD-ON</span>
+                    <span class="kds-food-type-tag {{ $aFoodType }}" style="margin-bottom: 0; padding: 1px 6px; font-size: 0.6rem;">
+                      <span class="kds-type-dot"></span>
+                      {{ $aFoodType }}
+                    </span>
+                    <span class="kds-addon-title" title="{{ $aName }}">{{ $aName }}</span>
+                  </div>
+                  <div class="kds-addon-qty-chip" title="Add-on Quantity">
+                    x{{ $aQty }}
+                  </div>
+                </div>
+                @endforeach
+              </div>
+            </div>
+            @endif
 
             @if($item->note)
             <div class="kds-order-note">

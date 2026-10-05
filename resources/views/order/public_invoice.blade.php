@@ -224,6 +224,34 @@
         .food-dot.veg { background: #10b981; }
         .food-dot.nonveg { background: #ef4444; }
 
+        .pub-item-addons-box {
+            margin-top: 4px;
+            background: #fffcf8;
+            border: 1px solid #fed7aa;
+            border-left: 2.5px solid #ff5e14;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            display: inline-block;
+        }
+
+        .pub-addon-line {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #334155;
+            margin-top: 2px;
+        }
+
+        .pub-addon-badge {
+            background: #ffedd5;
+            color: #c2410c;
+            font-size: 0.68rem;
+            font-weight: 800;
+            padding: 1px 4px;
+            border-radius: 4px;
+        }
+
         /* Calculation Box */
         .pub-calc-box {
             background: #f8fafc;
@@ -429,21 +457,45 @@
                     </thead>
                     <tbody>
                         @foreach($order->orderItems as $item)
+                        @php
+                            $addons = $item->addons_list;
+                            $hasAddons = !empty($addons);
+                        @endphp
                         <tr>
                             <td>
-                                @if(@$item->subcategory->food_type == 'non-veg')
-                                    <span class="food-dot nonveg" title="Non-Veg"></span>
-                                @else
-                                    <span class="food-dot veg" title="Veg"></span>
-                                @endif
-                                <strong class="text-dark">{{ $item->subcategory->name ?? 'Dish Item' }}</strong>
-                                @if($item->item_discount_percentage > 0)
-                                    <span class="badge bg-success-subtle text-success ms-1 small">{{ $item->item_discount_percentage }}% off</span>
-                                @endif
+                                <div class="d-flex align-items-start">
+                                    @if(@$item->subcategory->food_type == 'non-veg')
+                                        <span class="food-dot nonveg mt-1" title="Non-Veg"></span>
+                                    @else
+                                        <span class="food-dot veg mt-1" title="Veg"></span>
+                                    @endif
+                                    <div>
+                                        <strong class="text-dark">{{ $item->subcategory->name ?? 'Dish Item' }}</strong>
+                                        @if($item->item_discount_percentage > 0)
+                                            <span class="badge bg-success-subtle text-success ms-1 small">{{ $item->item_discount_percentage }}% off</span>
+                                        @endif
+                                        @if($hasAddons)
+                                            <div class="pub-item-addons-box">
+                                                @foreach($addons as $a)
+                                                    @php
+                                                        $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
+                                                        $aPrice = floatval($a['price'] ?? 0);
+                                                        $aTotal = $aPrice * $aQty;
+                                                    @endphp
+                                                    <div class="pub-addon-line">
+                                                        <span>+ {{ $a['name'] ?? 'Add-on' }}</span>
+                                                        <span class="pub-addon-badge">x{{ $aQty }}</span>
+                                                        <span class="text-muted small">({{ number_format($aTotal, 2) }})</span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
                             </td>
                             <td class="text-center font-monospace fw-bold">{{ $item->quantity }}</td>
-                            <td class="text-end text-muted font-monospace">₹{{ number_format($item->price, 2) }}</td>
-                            <td class="text-end fw-bold text-dark font-monospace">₹{{ number_format($item->total_amount ?? ($item->price * $item->quantity), 2) }}</td>
+                            <td class="text-end text-muted font-monospace">{{ number_format($item->price, 2) }}</td>
+                            <td class="text-end fw-bold text-dark font-monospace">{{ number_format($item->total_amount ?? ($item->price * $item->quantity), 2) }}</td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -455,30 +507,30 @@
             <div class="pub-calc-box">
                 <div class="pub-calc-row">
                     <span class="text-muted">Item Subtotal:</span>
-                    <span class="fw-semibold">₹{{ number_format($order->total_amount, 2) }}</span>
+                    <span class="fw-semibold">{{ number_format($order->total_amount, 2) }}</span>
                 </div>
 
                 @if($order->is_gst_bill == 'YES' && ($order->cgst_amount > 0 || $order->sgst_amount > 0))
                     <div class="pub-calc-row">
                         <span class="text-muted">CGST:</span>
-                        <span>₹{{ number_format($order->cgst_amount, 2) }}</span>
+                        <span>{{ number_format($order->cgst_amount, 2) }}</span>
                     </div>
                     <div class="pub-calc-row">
                         <span class="text-muted">SGST:</span>
-                        <span>₹{{ number_format($order->sgst_amount, 2) }}</span>
+                        <span>{{ number_format($order->sgst_amount, 2) }}</span>
                     </div>
                 @endif
 
                 @if($order->discount_amount > 0)
                     <div class="pub-calc-row text-success">
                         <span>Discount:</span>
-                        <span>- ₹{{ number_format($order->discount_amount, 2) }}</span>
+                        <span>- {{ number_format($order->discount_amount, 2) }}</span>
                     </div>
                 @endif
 
                 <div class="pub-calc-row grand">
                     <span>Grand Total:</span>
-                    <span class="text-primary font-monospace">₹{{ number_format($order->grand_total, 2) }}</span>
+                    <span class="text-primary font-monospace">{{ number_format($order->grand_total, 2) }}</span>
                 </div>
             </div>
 
@@ -488,11 +540,11 @@
                     <div class="small text-muted mb-1">Payment Status:</div>
                     @if($balanceDue <= 0)
                         <span class="pub-status-badge badge-settled">
-                            <i class="fa-solid fa-circle-check"></i> Fully Paid (₹{{ number_format($totalPaid, 2) }})
+                            <i class="fa-solid fa-circle-check"></i> Fully Paid ({{ number_format($totalPaid, 2) }})
                         </span>
                     @else
                         <span class="pub-status-badge badge-due">
-                            <i class="fa-solid fa-circle-exclamation"></i> ₹{{ number_format($balanceDue, 2) }} Due
+                            <i class="fa-solid fa-circle-exclamation"></i> {{ number_format($balanceDue, 2) }} Due
                         </span>
                     @endif
                 </div>
@@ -503,7 +555,7 @@
                     <div>
                         @foreach($payments as $p)
                             <span class="badge bg-light text-dark border px-2 py-1 font-monospace">
-                                {{ $p->payment_method }}: ₹{{ number_format($p->amount, 2) }}
+                                {{ $p->payment_method }}: {{ number_format($p->amount, 2) }}
                             </span>
                         @endforeach
                     </div>
@@ -515,7 +567,7 @@
             @if($balanceDue > 0 && (!empty($order->restaurant->qr_code_image) || !empty($order->restaurant->upi_id)))
             <div class="pub-qr-card">
                 <div class="fw-bold text-dark mb-1">
-                    <i class="fa-solid fa-qrcode text-primary me-1"></i> Scan &amp; Pay Remaining ₹{{ number_format($balanceDue, 2) }}
+                    <i class="fa-solid fa-qrcode text-primary me-1"></i> Scan &amp; Pay Remaining {{ number_format($balanceDue, 2) }}
                 </div>
                 @if(!empty($order->restaurant->qr_code_image))
                     <img src="{{ asset('storage/' . $order->restaurant->qr_code_image) }}" alt="QR" style="width: 130px; height: 130px; object-fit: contain; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 8px;">

@@ -265,7 +265,21 @@
                 @endphp
                 <tr>
                     <td class="item-name">
-                        {{ \Illuminate\Support\Str::limit($item->subcategory->name ?? 'Item', 22) }}
+                        {{ \Illuminate\Support\Str::limit($item->subcategory->name ?? 'Item', 26) }}
+                        @php
+                            $addons = $item->addons_list;
+                        @endphp
+                        @if(!empty($addons))
+                            @foreach($addons as $a)
+                                @php
+                                    $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
+                                    $aPrice = floatval($a['price'] ?? 0);
+                                @endphp
+                                <div style="font-size: 8px; color: #444; padding-left: 4px;">
+                                    + {{ $a['name'] ?? 'Addon' }} {{ $aQty > 1 ? 'x'.$aQty : '' }} ({{ number_format($aPrice * $aQty, 2) }})
+                                </div>
+                            @endforeach
+                        @endif
                         @if($itemDiscount > 0)
                             <div class="item-discount">-{{ $itemDiscount }}% off</div>
                         @endif
