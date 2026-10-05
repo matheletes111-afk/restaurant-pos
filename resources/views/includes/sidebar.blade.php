@@ -334,15 +334,6 @@
         </li>
         @endif
 
-        <!-- @if(auth()->user()->hasPermission('dish_addon_master') || auth()->user()->hasPermission('menu_master'))
-        <li class="pc-item {{ $disabledClass }}">
-          <a href="{{route('addon.index')}}" class="pc-link @if(Request::is('*dish-addons*') || Request::is('*addon*')) active_class @endif">
-            <span class="pc-micon"><i class="fas fa-puzzle-piece"></i></span>
-            <span class="pc-mtext">Dish Addon Master</span>
-          </a>
-        </li>
-        @endif -->
-
         @if(auth()->user()->hasPermission('menu_availability'))
         <li class="pc-item {{ $disabledClass }}">
           <a href="{{route('menu.availability')}}" class="pc-link @if(Request::is('*menu-availability*') || Request::is('*menu-discount*')) active_class @endif">
