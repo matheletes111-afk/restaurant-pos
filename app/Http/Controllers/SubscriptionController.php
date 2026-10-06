@@ -1055,8 +1055,11 @@ class SubscriptionController extends Controller
     public function toggleAutoRenew($id)
     {
         try {
+            $user = auth()->user();
+            $subRestaurantId = $user->getSubscriptionRestaurantId() ?? $user->restaurant_id ?? $user->id;
+
             $subscription = Subscription::where('id', $id)
-                ->where('user_id', auth()->user()->restaurant_id)
+                ->where('user_id', $subRestaurantId)
                 ->where('status', 'active')
                 ->firstOrFail();
 
@@ -1084,7 +1087,7 @@ class SubscriptionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Auto-renew updated successfully!',
+                'message' => 'Auto-renew has been turned ' . ($newStatus ? 'ON' : 'OFF') . ' successfully!',
                 'auto_renew' => $newStatus
             ]);
 
@@ -1101,8 +1104,11 @@ class SubscriptionController extends Controller
     public function cancel($id)
     {
         try {
+            $user = auth()->user();
+            $subRestaurantId = $user->getSubscriptionRestaurantId() ?? $user->restaurant_id ?? $user->id;
+
             $subscription = Subscription::where('id', $id)
-                ->where('user_id', auth()->user()->restaurant_id)
+                ->where('user_id', $subRestaurantId)
                 ->where('status', 'active')
                 ->firstOrFail();
 

@@ -75,6 +75,83 @@
       gap: 12px;
     }
 
+    .btn-rapid-hamburger {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      flex-shrink: 0;
+    }
+
+    .btn-rapid-hamburger:hover,
+    .btn-rapid-hamburger:active {
+      background: var(--rp-primary);
+      border-color: var(--rp-primary);
+      color: #ffffff;
+      transform: scale(1.05);
+      box-shadow: 0 4px 14px rgba(255, 94, 20, 0.4);
+    }
+
+    /* Sidebar Drawer & Toggle CSS Overrides */
+    .pc-sidebar {
+      z-index: 1030 !important;
+    }
+
+    @media (min-width: 1025px) {
+      .pc-sidebar {
+        transition: width 0.25s ease, margin 0.25s ease, transform 0.25s ease !important;
+      }
+      .pc-sidebar.pc-sidebar-hide {
+        width: 0 !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+        visibility: hidden !important;
+        border: none !important;
+        transform: translateX(-100%) !important;
+      }
+      .pc-sidebar.pc-sidebar-hide ~ .pc-container {
+        margin-left: 0 !important;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .pc-sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        left: -280px !important;
+        width: 280px !important;
+        max-width: 85vw !important;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: none !important;
+      }
+      .pc-sidebar.mob-sidebar-active {
+        left: 0 !important;
+        box-shadow: 10px 0 40px rgba(0, 0, 0, 0.5) !important;
+      }
+      .pc-menu-overlay {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        right: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: rgba(15, 23, 42, 0.6) !important;
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
+        z-index: 1020 !important;
+      }
+    }
+
     .rapid-brand-icon {
       width: 40px;
       height: 40px;
@@ -1624,6 +1701,9 @@
     <!-- Top Header Bar -->
     <div class="rapid-topbar">
       <div class="rapid-brand">
+        <button type="button" class="btn-rapid-hamburger" id="rapidSidebarToggle" title="Toggle Navigation Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
         <div class="rapid-brand-icon">
           <i class="fa-solid fa-bolt"></i>
         </div>
@@ -3252,6 +3332,52 @@ $(document).ready(function() {
     $('#receiptPaperBody').html(html);
   }
 
+  // Universal Sidebar Hamburger Toggle Handler
+  $(document).on('click', '#rapidSidebarToggle, #mobile-collapse, #sidebar-hide', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    let sidebar = $('.pc-sidebar');
+    let isMobile = (window.innerWidth <= 1024);
+    
+    if (isMobile) {
+      if (sidebar.hasClass('mob-sidebar-active')) {
+        sidebar.removeClass('mob-sidebar-active');
+        $('.pc-menu-overlay').remove();
+      } else {
+        sidebar.addClass('mob-sidebar-active');
+        if ($('.pc-menu-overlay').length === 0) {
+          let overlay = $('<div class="pc-menu-overlay"></div>');
+          $('body').append(overlay);
+          overlay.on('click', function() {
+            sidebar.removeClass('mob-sidebar-active');
+            $(this).remove();
+          });
+        }
+      }
+    } else {
+      sidebar.toggleClass('pc-sidebar-hide');
+      if (sidebar.hasClass('pc-sidebar-hide')) {
+        $('.pc-container').css('margin-left', '0px');
+      } else {
+        $('.pc-container').css('margin-left', '');
+      }
+    }
+  });
+
+  $(document).on('keydown', function(e) {
+    if (e.key === 'Escape') {
+      $('.pc-sidebar').removeClass('mob-sidebar-active');
+      $('.pc-menu-overlay').remove();
+    }
+  });
+
+  $(document).on('click', '.pc-sidebar a', function() {
+    if (window.innerWidth <= 1024 && !$(this).parent().hasClass('pc-hasmenu')) {
+      $('.pc-sidebar').removeClass('mob-sidebar-active');
+      $('.pc-menu-overlay').remove();
+    }
+  });
+
   $('#btnCloseModal, #btnNextBill').on('click', function() {
     $('#rapidReceiptModal').fadeOut(150);
   });
@@ -3264,6 +3390,8 @@ $(document).ready(function() {
 
 });
 </script>
+
+@include('includes.script')
 
 </body>
 </html>

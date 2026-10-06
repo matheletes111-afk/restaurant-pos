@@ -219,6 +219,7 @@ Route::get('/restaurant/table/{table_id}/{restaurant_id}', function($table_id,$r
 Route::get('/order/print/{order_id}', [App\Http\Controllers\OrderManagementController::class, 'pdfReceipt'])->name('order.print');
 Route::get('order-management-dashboard', [App\Http\Controllers\OrderManagementController::class, 'index'])
     ->name('order.management.dashboard');
+Route::get('admin/order-management-dashboard', [App\Http\Controllers\OrderManagementController::class, 'index']);
 
 Route::get('order-create/{table_id?}', [App\Http\Controllers\OrderManagementController::class, 'create'])
     ->name('order.create');
@@ -373,6 +374,7 @@ Route::get('admin/temp-order/reject/{id}', [App\Http\Controllers\TempOrderAdminC
     Route::resource('plans', \App\Http\Controllers\PlanController::class);
     Route::get('plans/{id}/history', [\App\Http\Controllers\PlanController::class, 'history'])->name('admin.plans.history');
     Route::post('plans/{id}/toggle-default', [\App\Http\Controllers\PlanController::class, 'toggleDefaultPlan'])->name('admin.plans.toggle-default');
+    Route::post('plans/{id}/toggle-status', [\App\Http\Controllers\PlanController::class, 'toggleStatus'])->name('admin.plans.toggle-status');
 
 
     // Payment History Routes

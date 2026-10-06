@@ -65,6 +65,9 @@
       </div>
       
       <div class="floor-header-actions">
+        <a href="{{ route('rapid.bill') }}" class="btn text-white fw-bold px-3 py-2 d-inline-flex align-items-center gap-2" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); border-radius: 30px; font-size: 0.88rem; text-decoration: none;" title="Open Rapid Bill POS">
+          <i class="fa-solid fa-receipt text-warning"></i> Rapid Bill POS
+        </a>
         @if($canOrder)
           <a href="{{ route('order.create', 'TAKEAWAY') }}" class="btn-header-takeaway" title="Start a fast takeaway / parcel order">
             <i class="fa-solid fa-bolt text-warning"></i> Fast Takeaway Order

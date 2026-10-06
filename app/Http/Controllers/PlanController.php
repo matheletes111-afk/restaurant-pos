@@ -569,6 +569,24 @@ public function update(Request $request, $id)
         ]);
     }
 
+    public function toggleStatus($id)
+    {
+        if (auth()->user()->role != "SA") {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $plan = Plan::findOrFail($id);
+        $plan->plan_status = ($plan->plan_status == 'A') ? 'I' : 'A';
+        $plan->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Plan status updated to ' . ($plan->plan_status == 'A' ? 'Active' : 'Inactive') . ' successfully!',
+            'plan_status' => $plan->plan_status,
+            'is_active' => ($plan->plan_status == 'A')
+        ]);
+    }
+
     public function updateOrder(Request $request)
     {
         if (auth()->user()->role != "SA") {
