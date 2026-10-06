@@ -186,6 +186,15 @@
                   <td>
                     <div>
                       <strong style="color: #0f172a; font-size: 0.92rem;">{{ $i->menuItem->name ?? 'Dish Item' }}</strong>
+                      @if(!empty($i->addons_list) && count($i->addons_list) > 0)
+                        <div class="mt-1 d-flex flex-wrap gap-1">
+                          @foreach($i->addons_list as $addon)
+                            <span class="badge" style="background: #fff3ed; color: #ff5e14; border: 1px solid #ffd8c7; font-size: 0.7rem; font-weight: 600; padding: 2px 6px;">
+                              + {{ $addon['name'] }} (₹{{ number_format($addon['price'], 2) }}{{ ($addon['qty'] ?? 1) > 1 ? ' x' . $addon['qty'] : '' }})
+                            </span>
+                          @endforeach
+                        </div>
+                      @endif
                       <div class="mt-1">
                         <span class="pos-bill-type-tag {{ $foodType == 'VEG' ? 'gst' : 'nongst' }}" style="font-size: 0.65rem; padding: 1px 6px;">
                           <i class="fa-solid fa-circle me-1" style="font-size: 0.45rem; color: {{ $foodType == 'VEG' ? '#10b981' : '#ef4444' }};"></i> {{ $foodType }}

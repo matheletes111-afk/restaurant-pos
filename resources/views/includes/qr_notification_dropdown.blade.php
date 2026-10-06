@@ -3,6 +3,10 @@
   if ($userRestId) {
       $initialQrOrders = \App\Models\TempOrder::with(['table_details', 'items.menuItem'])
           ->where('restaurant_id', $userRestId)
+          ->where(function ($q) {
+              $q->where('order_status', 'PENDING')
+                ->orWhereNull('order_status');
+          })
           ->where('created_at', '>=', now()->subDays(7))
           ->orderBy('id', 'desc')
           ->take(30)
@@ -23,7 +27,7 @@
     aria-haspopup="false"
     aria-expanded="false"
     id="qrNotifDropdownToggle"
-    title="Customer QR Orders (Past 1 Week)"
+    title="Pending Customer QR Orders"
   >
     <i class="ti ti-bell fs-4"></i>
     <span
@@ -44,12 +48,12 @@
         </span>
         <div>
           <h6 class="m-0 fw-bold text-dark" style="font-size: 0.95rem;">QR Code Orders</h6>
-          <span class="text-muted" style="font-size: 0.72rem;">Past 7 Days History</span>
+          <span class="text-muted" style="font-size: 0.72rem;">Pending Decisions</span>
         </div>
       </div>
       <div>
-        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1" style="font-size: 0.7rem; font-weight: 600;">
-          <i class="fas fa-circle text-success me-1" style="font-size: 0.45rem; vertical-align: middle;"></i>Live
+        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1" style="font-size: 0.7rem; font-weight: 600;">
+          <i class="fas fa-clock me-1" style="font-size: 0.65rem; vertical-align: middle;"></i>Pending
         </span>
       </div>
     </div>
@@ -130,7 +134,7 @@
           <div class="mb-2 text-muted opacity-50">
             <i class="fas fa-bell-slash fa-2x"></i>
           </div>
-          <p class="text-muted mb-0 fw-semibold" style="font-size: 0.85rem;">No QR orders in past 7 days</p>
+          <p class="text-muted mb-0 fw-semibold" style="font-size: 0.85rem;">No pending QR orders</p>
           <small class="text-muted" style="font-size: 0.75rem;">New customer QR orders will appear here automatically</small>
         </div>
       @endforelse

@@ -413,6 +413,8 @@
 @endsection
 
 @section('script')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+@include('includes.script')
 <script>
 function exportActiveReportToExcel() {
     exportTableToExcel('trendingDishesTable', 'Master_BI_Analytics_{{ $fromDate->format("Ymd") }}_to_{{ $toDate->format("Ymd") }}');

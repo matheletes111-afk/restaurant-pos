@@ -895,6 +895,15 @@
                                 <span class="dish-qty-chip">{{ $itm->quantity }}x</span>
                                 <span class="dish-name-text">{{ $itmName }}</span>
                             </div>
+                            @if(!empty($itm->addons_list) && count($itm->addons_list) > 0)
+                                <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
+                                    @foreach($itm->addons_list as $addon)
+                                        <span style="background: #fff3ed; color: #ff5e14; border: 1px solid #ffd8c7; border-radius: 6px; padding: 2px 6px; font-size: 0.72rem; font-weight: 600;">
+                                            + {{ $addon['name'] }} (₹{{ number_format($addon['price'], 2) }}{{ ($addon['qty'] ?? 1) > 1 ? ' x' . $addon['qty'] : '' }})
+                                        </span>
+                                    @endforeach
+                                </div>
+                            @endif
                             <div class="dish-unit-price-note">
                                 ₹{{ number_format($itmPrice, 2) }} each &bull; Line Total: ₹{{ number_format($itmTotal, 2) }}
                             </div>

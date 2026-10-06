@@ -394,4 +394,277 @@ class DishAddonMasterTest extends TestCase
         $this->assertFalse($dish->addons->contains($addon1->id));
         $this->assertTrue($dish->addons->contains($addon2->id));
     }
+
+    public function test_addon_index_shows_mapped_dishes_column()
+    {
+        $category = \App\Models\Category::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Pastas',
+            'status' => 'A'
+        ]);
+
+        $dish1 = \App\Models\SubCategory::create([
+            'restaurant_id' => $this->restaurant->id,
+            'category_id' => $category->id,
+            'name' => 'Alfredo Pasta',
+            'price' => 220.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $dish2 = \App\Models\SubCategory::create([
+            'restaurant_id' => $this->restaurant->id,
+            'category_id' => $category->id,
+            'name' => 'Arrabiata Pasta',
+            'price' => 210.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon = DishAddon::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Extra Parmesan',
+            'price' => 40.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon->dishes()->sync([$dish1->id, $dish2->id]);
+
+        $response = $this->actingAs($this->user)->get(route('addon.index'));
+        $response->assertStatus(200);
+        $response->assertSee('Mapped Dishes');
+        $response->assertSee('Extra Parmesan');
+        $response->assertSee('Alfredo Pasta');
+        $response->assertSee('Arrabiata Pasta');
+    }
+
+    public function test_can_get_dishes_list_for_mapping()
+    {
+        $category = \App\Models\Category::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Snacks',
+            'status' => 'A'
+        ]);
+
+        $dish = \App\Models\SubCategory::create([
+            'restaurant_id' => $this->restaurant->id,
+            'category_id' => $category->id,
+            'name' => 'French Fries',
+            'price' => 120.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon = DishAddon::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Peri Peri Sprinkler',
+            'price' => 25.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon->dishes()->sync([$dish->id]);
+
+        $response = $this->actingAs($this->user)->getJson(route('addon.dishes', $addon->id));
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'addon' => [
+                'id' => $addon->id,
+                'name' => 'Peri Peri Sprinkler'
+            ],
+            'mapped_dish_ids' => [$dish->id]
+        ]);
+    }
+
+    public function test_can_map_dishes_to_addon_via_endpoint()
+    {
+        $category = \App\Models\Category::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Wraps',
+            'status' => 'A'
+        ]);
+
+        $dish1 = \App\Models\SubCategory::create([
+            'restaurant_id' => $this->restaurant->id,
+            'category_id' => $category->id,
+            'name' => 'Paneer Tikka Wrap',
+            'price' => 180.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $dish2 = \App\Models\SubCategory::create([
+            'restaurant_id' => $this->restaurant->id,
+            'category_id' => $category->id,
+            'name' => 'Falafel Wrap',
+            'price' => 160.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon = DishAddon::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Mint Mayo',
+            'price' => 20.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $response = $this->actingAs($this->user)->postJson(route('addon.map.dishes', $addon->id), [
+            'dish_ids' => [$dish1->id, $dish2->id]
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'count' => 2
+        ]);
+
+        $this->assertEquals(2, $addon->fresh()->dishes()->count());
+        $this->assertTrue($addon->fresh()->dishes->contains($dish1->id));
+        $this->assertTrue($addon->fresh()->dishes->contains($dish2->id));
+
+        // Test unmapping by passing empty array
+        $unmapResponse = $this->actingAs($this->user)->postJson(route('addon.map.dishes', $addon->id), [
+            'dish_ids' => []
+        ]);
+        $unmapResponse->assertStatus(200);
+        $this->assertEquals(0, $addon->fresh()->dishes()->count());
+    }
+
+    public function test_mapping_dishes_enforces_restaurant_tenant_isolation()
+    {
+        $categoryOther = \App\Models\Category::create([
+            'restaurant_id' => $this->otherRestaurant->id,
+            'name' => 'Other Category',
+            'status' => 'A'
+        ]);
+
+        $dishOther = \App\Models\SubCategory::create([
+            'restaurant_id' => $this->otherRestaurant->id,
+            'category_id' => $categoryOther->id,
+            'name' => 'Other Dish',
+            'price' => 100.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon = DishAddon::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'My Addon',
+            'price' => 15.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        // Attempt to map a dish belonging to another restaurant
+        $response = $this->actingAs($this->user)->postJson(route('addon.map.dishes', $addon->id), [
+            'dish_ids' => [$dishOther->id]
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertEquals(0, $addon->fresh()->dishes()->count());
+
+        // Other user cannot map dishes to this addon
+        $otherResponse = $this->actingAs($this->otherUser)->postJson(route('addon.map.dishes', $addon->id), [
+            'dish_ids' => [$dishOther->id]
+        ]);
+        $otherResponse->assertStatus(404);
+    }
+
+    public function test_keyword_search_matches_mapped_dish_name()
+    {
+        $category = \App\Models\Category::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Desserts',
+            'status' => 'A'
+        ]);
+
+        $dish = \App\Models\SubCategory::create([
+            'restaurant_id' => $this->restaurant->id,
+            'category_id' => $category->id,
+            'name' => 'Belgian Chocolate Waffle',
+            'price' => 190.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon1 = DishAddon::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Vanilla Ice Cream Scoop',
+            'price' => 50.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon2 = DishAddon::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Extra Cheese Dip',
+            'price' => 30.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon1->dishes()->sync([$dish->id]);
+
+        // Search for "Waffle" should match addon1 via mapped dish name, but not addon2
+        $response = $this->actingAs($this->user)->get(route('addon.index', ['search' => 'Waffle']));
+        $response->assertStatus(200);
+        $response->assertSee('Vanilla Ice Cream Scoop');
+        $response->assertDontSee('Extra Cheese Dip');
+    }
+
+    public function test_dropdown_filter_matches_mapped_dish()
+    {
+        $category = \App\Models\Category::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Beverages',
+            'status' => 'A'
+        ]);
+
+        $dish1 = \App\Models\SubCategory::create([
+            'restaurant_id' => $this->restaurant->id,
+            'category_id' => $category->id,
+            'name' => 'Cold Coffee Frappe',
+            'price' => 150.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $dish2 = \App\Models\SubCategory::create([
+            'restaurant_id' => $this->restaurant->id,
+            'category_id' => $category->id,
+            'name' => 'Masala Chai',
+            'price' => 40.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon1 = DishAddon::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Whipped Cream Topping',
+            'price' => 35.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon2 = DishAddon::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Extra Ginger',
+            'price' => 10.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        $addon1->dishes()->sync([$dish1->id]);
+        $addon2->dishes()->sync([$dish2->id]);
+
+        // Filter by dish1 (Cold Coffee Frappe)
+        $response = $this->actingAs($this->user)->get(route('addon.index', ['dish_id' => $dish1->id]));
+        $response->assertStatus(200);
+        $response->assertSee('Whipped Cream Topping');
+        $response->assertDontSee('Extra Ginger');
+    }
 }

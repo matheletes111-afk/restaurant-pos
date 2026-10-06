@@ -22,8 +22,8 @@ class CheckMenuPermission
             return $next($request);
         }
 
-        // Default Super Admin ID 1 can do anything by default
-        if ($user->role === 'SA' && $user->id == 1) {
+        // Super Admin (role == 'SA') has full access to everything
+        if ($user->role === 'SA') {
             return $next($request);
         }
 

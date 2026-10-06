@@ -89,6 +89,7 @@ class PublicInvoiceDownloadTest extends TestCase
             'order_id' => $this->order->id,
             'amount' => 200.00,
             'payment_method' => 'CASH',
+            'payment_date' => now(),
             'status' => 'PAID',
             'restaurant_id' => $this->restaurant->id
         ]);
@@ -97,6 +98,7 @@ class PublicInvoiceDownloadTest extends TestCase
             'order_id' => $this->order->id,
             'amount' => 63.00,
             'payment_method' => 'UPI',
+            'payment_date' => now(),
             'status' => 'PAID',
             'restaurant_id' => $this->restaurant->id
         ]);

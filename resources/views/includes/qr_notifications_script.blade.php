@@ -146,7 +146,7 @@
                     <div class="mb-2 text-muted opacity-50">
                         <i class="fas fa-bell-slash fa-2x"></i>
                     </div>
-                    <p class="text-muted mb-0 fw-semibold" style="font-size: 0.85rem;">No QR orders in past 7 days</p>
+                    <p class="text-muted mb-0 fw-semibold" style="font-size: 0.85rem;">No pending QR orders</p>
                     <small class="text-muted" style="font-size: 0.75rem;">New customer QR orders will appear here automatically</small>
                 </div>
             `;
@@ -156,14 +156,7 @@
         let html = '';
         notifications.forEach(ord => {
             const isUnread = !ord.is_read;
-            let statusBadge = '';
-            if (ord.order_status === 'PENDING') {
-                statusBadge = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-1.5 py-0.5 rounded" style="font-size: 0.68rem; font-weight: 700;">PENDING</span>';
-            } else if (ord.order_status === 'APPROVED') {
-                statusBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5 rounded" style="font-size: 0.68rem; font-weight: 700;">APPROVED</span>';
-            } else if (ord.order_status === 'REJECTED') {
-                statusBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-1.5 py-0.5 rounded" style="font-size: 0.68rem; font-weight: 700;">REJECTED</span>';
-            }
+            let statusBadge = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-1.5 py-0.5 rounded" style="font-size: 0.68rem; font-weight: 700;">PENDING</span>';
 
             html += `
                 <a

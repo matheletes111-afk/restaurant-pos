@@ -3332,34 +3332,22 @@ $(document).ready(function() {
     $('#receiptPaperBody').html(html);
   }
 
-  // Universal Sidebar Hamburger Toggle Handler
-  $(document).on('click', '#rapidSidebarToggle, #mobile-collapse, #sidebar-hide', function(e) {
+  // Rapid Sidebar Toggle Handler (delegates to standard pcoded sidebar handlers)
+  $(document).on('click', '#rapidSidebarToggle', function(e) {
     e.preventDefault();
-    e.stopPropagation();
-    let sidebar = $('.pc-sidebar');
-    let isMobile = (window.innerWidth <= 1024);
-    
-    if (isMobile) {
-      if (sidebar.hasClass('mob-sidebar-active')) {
-        sidebar.removeClass('mob-sidebar-active');
-        $('.pc-menu-overlay').remove();
+    if (window.innerWidth <= 1024) {
+      let mobBtn = document.querySelector('#mobile-collapse');
+      if (mobBtn) {
+        mobBtn.click();
       } else {
-        sidebar.addClass('mob-sidebar-active');
-        if ($('.pc-menu-overlay').length === 0) {
-          let overlay = $('<div class="pc-menu-overlay"></div>');
-          $('body').append(overlay);
-          overlay.on('click', function() {
-            sidebar.removeClass('mob-sidebar-active');
-            $(this).remove();
-          });
-        }
+        document.querySelector('.pc-sidebar')?.classList.toggle('mob-sidebar-active');
       }
     } else {
-      sidebar.toggleClass('pc-sidebar-hide');
-      if (sidebar.hasClass('pc-sidebar-hide')) {
-        $('.pc-container').css('margin-left', '0px');
+      let deskBtn = document.querySelector('#sidebar-hide');
+      if (deskBtn) {
+        deskBtn.click();
       } else {
-        $('.pc-container').css('margin-left', '');
+        document.querySelector('.pc-sidebar')?.classList.toggle('pc-sidebar-hide');
       }
     }
   });

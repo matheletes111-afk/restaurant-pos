@@ -190,6 +190,8 @@ Route::delete('dish-addons/{id}', [App\Http\Controllers\DishAddonController::cla
 Route::post('dish-addons/{id}/toggle-status', [App\Http\Controllers\DishAddonController::class, 'toggleStatus'])->name('addon.toggle.status');
 Route::get('dish-addons/template/download', [App\Http\Controllers\DishAddonController::class, 'downloadTemplate'])->name('addon.template.download');
 Route::post('dish-addons/bulk-upload', [App\Http\Controllers\DishAddonController::class, 'bulkUpload'])->name('addon.bulk.upload');
+Route::get('dish-addons/{id}/dishes', [App\Http\Controllers\DishAddonController::class, 'getDishes'])->name('addon.dishes');
+Route::post('dish-addons/{id}/map-dishes', [App\Http\Controllers\DishAddonController::class, 'mapDishes'])->name('addon.map.dishes');
 
 // manage-table
 Route::get('table-manage', [TableManageController::class, 'index'])->name('table.manage');

@@ -33,6 +33,10 @@ class QrNotificationController extends Controller
 
         $orders = TempOrder::with(['table_details', 'items.menuItem'])
             ->where('restaurant_id', $restaurantId)
+            ->where(function ($q) {
+                $q->where('order_status', 'PENDING')
+                  ->orWhereNull('order_status');
+            })
             ->where('created_at', '>=', Carbon::now()->subDays(7))
             ->orderBy('id', 'DESC')
             ->get();

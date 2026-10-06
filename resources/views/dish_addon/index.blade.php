@@ -275,6 +275,12 @@
       transform: translateY(-1px);
     }
 
+    .btn-table-action.btn-map:hover {
+      background: #fff3ed;
+      border-color: #ff5e14;
+      color: #ff5e14;
+    }
+
     .btn-table-action.btn-edit:hover {
       background: #eff6ff;
       border-color: #3b82f6;
@@ -285,6 +291,88 @@
       background: #fef2f2;
       border-color: #ef4444;
       color: #dc2626;
+    }
+
+    /* Mapped Dishes Cell */
+    .mapped-dishes-cell {
+      max-width: 290px;
+      font-size: 0.85rem;
+    }
+
+    .mapped-names-text {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+      line-height: 1.4;
+      color: var(--addon-slate);
+    }
+
+    /* Dish Mapping Modal Styles */
+    .dish-mapping-search-wrap {
+      position: sticky;
+      top: 0;
+      background: #ffffff;
+      z-index: 10;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+      border-bottom: 1.5px solid var(--addon-border);
+    }
+
+    .dish-select-category-group {
+      background: #f8fafc;
+      border: 1px solid var(--addon-border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .dish-select-category-group.hidden-by-search {
+      display: none !important;
+    }
+
+    .dish-category-header {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: var(--addon-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .dishes-checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 8px;
+    }
+
+    .dish-check-card {
+      background: #ffffff;
+      border: 1.5px solid var(--addon-border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      transition: all 0.15s ease;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .dish-check-card:hover {
+      border-color: #cbd5e1;
+      background: #fafbfc;
+    }
+
+    .dish-check-card.checked {
+      border-color: var(--addon-primary);
+      background: #fff8f5;
+    }
+
+    .dish-check-card.hidden-by-search {
+      display: none !important;
     }
 
     /* Toggle Status Switch */
@@ -505,18 +593,41 @@
       {{-- Filter Toolbar --}}
       <div class="addon-filter-toolbar">
         <form method="GET" action="{{ route('addon.index') }}" class="row g-2 align-items-center">
-          <div class="col-md-5">
+          
+          {{-- Keyword Search (Addon Name, Description, or Mapped Dish Name) --}}
+          <div class="col-lg-4 col-md-6">
             <div class="input-group">
               <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px;">
                 <i class="fa-solid fa-magnifying-glass text-muted"></i>
               </span>
               <input type="text" name="search" class="form-control form-control-custom border-start-0" 
-                     placeholder="Search addon by name or description..." value="{{ request('search') }}"
+                     placeholder="Search addon or mapped dish name..." value="{{ request('search') }}"
                      style="border-radius: 0 12px 12px 0;">
             </div>
           </div>
 
-          <div class="col-md-3">
+          {{-- Mapped Dish Dropdown Filter --}}
+          <div class="col-lg-3 col-md-6">
+            <select name="dish_id" class="form-select form-control-custom" onchange="this.form.submit()">
+              <option value="">All Mapped Dishes</option>
+              @if(isset($categories) && $categories->isNotEmpty())
+                @foreach($categories as $cat)
+                  @if($cat->subcategories->isNotEmpty())
+                    <optgroup label="{{ $cat->name }}">
+                      @foreach($cat->subcategories as $dish)
+                        <option value="{{ $dish->id }}" {{ request('dish_id') == $dish->id ? 'selected' : '' }}>
+                          {{ $dish->name }} (₹{{ number_format($dish->price, 2) }})
+                        </option>
+                      @endforeach
+                    </optgroup>
+                  @endif
+                @endforeach
+              @endif
+            </select>
+          </div>
+
+          {{-- Food Type Filter --}}
+          <div class="col-lg-2 col-md-4">
             <select name="food_type" class="form-select form-control-custom" onchange="this.form.submit()">
               <option value="">All Food Types</option>
               <option value="VEG" {{ request('food_type') == 'VEG' ? 'selected' : '' }}>🟢 Veg</option>
@@ -524,7 +635,8 @@
             </select>
           </div>
 
-          <div class="col-md-2">
+          {{-- Status Filter --}}
+          <div class="col-lg-2 col-md-4">
             <select name="status" class="form-select form-control-custom" onchange="this.form.submit()">
               <option value="">All Statuses</option>
               <option value="A" {{ request('status') == 'A' ? 'selected' : '' }}>Active</option>
@@ -532,11 +644,12 @@
             </select>
           </div>
 
-          <div class="col-md-2 d-flex gap-2">
-            <button type="submit" class="btn btn-dark w-100 rounded-pill fw-bold">
-              Filter
+          {{-- Submit & Clear Actions --}}
+          <div class="col-lg-1 col-md-4 d-flex gap-1">
+            <button type="submit" class="btn btn-dark w-100 rounded-pill fw-bold" title="Filter Addons">
+              <i class="fa-solid fa-filter"></i>
             </button>
-            @if(request()->hasAny(['search', 'food_type', 'status']))
+            @if(request()->hasAny(['search', 'dish_id', 'food_type', 'status']))
               <a href="{{ route('addon.index') }}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear Filters">
                 <i class="fa-solid fa-rotate-left"></i>
               </a>
@@ -555,8 +668,9 @@
               <th>Description</th>
               <th>Food Type</th>
               <th class="text-end">Base Price</th>
-              <th class="text-center" width="120">Status</th>
-              <th class="text-center" width="120">Actions</th>
+              <th>Mapped Dishes</th>
+              <th class="text-center" width="100">Status</th>
+              <th class="text-center" width="130">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -587,6 +701,24 @@
               <td class="text-end">
                 <span class="price-tag">₹{{ number_format($addon->price, 2) }}</span>
               </td>
+              <td>
+                @php
+                  $dishNames = $addon->dishes->pluck('name');
+                @endphp
+                <div class="mapped-dishes-cell" id="mappedDishesCell_{{ $addon->id }}">
+                  @if($dishNames->isNotEmpty())
+                    <span class="badge bg-light text-primary border border-primary-subtle me-1 fw-bold align-middle">
+                      <i class="fa-solid fa-utensils me-1"></i>{{ $dishNames->count() }}
+                    </span>
+                    <span class="mapped-names-text d-inline" title="{{ $dishNames->implode(', ') }}">
+                      {{ $dishNames->implode(', ') }}
+                    </span>
+                  @else
+                    <span class="badge bg-light text-muted border fst-italic">0 Mapped</span>
+                    <span class="text-muted small fst-italic ms-1">—</span>
+                  @endif
+                </div>
+              </td>
               <td class="text-center">
                 <div class="form-check form-switch d-inline-block">
                   <input class="form-check-input toggle-status-switch" type="checkbox" role="switch"
@@ -598,6 +730,9 @@
               <td class="text-center">
                 <div class="d-inline-flex gap-1">
                   @if(auth()->user()->hasPermission('dish_addon_master', 'edit') || auth()->user()->hasPermission('menu_master', 'edit'))
+                  <button type="button" class="btn-table-action btn-map btnMapDishes" data-id="{{ $addon->id }}" data-name="{{ $addon->name }}" title="Map Dishes to Addon">
+                    <i class="fa-solid fa-link"></i>
+                  </button>
                   <button type="button" class="btn-table-action btn-edit btnEditAddon" data-id="{{ $addon->id }}" title="Edit Addon">
                     <i class="fa-solid fa-pen-to-square"></i>
                   </button>
@@ -612,7 +747,7 @@
             </tr>
             @empty
             <tr>
-              <td colspan="7" class="text-center py-5">
+              <td colspan="8" class="text-center py-5">
                 <div class="text-muted">
                   <i class="fa-solid fa-puzzle-piece fa-3x mb-3 text-muted opacity-50"></i>
                   <h5 class="fw-bold text-dark">No Dish Addons Found</h5>
@@ -839,6 +974,80 @@
   </div>
 </div>
 
+<!-- Modal 4: Map Dishes Modal -->
+<div class="modal fade" id="mapDishesModal" tabindex="-1" aria-labelledby="mapDishesModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content modal-content-premium">
+      <div class="modal-header modal-header-premium" style="color: #ffffff !important;">
+        <div class="d-flex flex-column">
+          <h5 class="modal-title text-white mb-1" id="mapDishesModalLabel" style="color: #ffffff !important;">
+            <i class="fa-solid fa-link text-primary"></i> <span style="color: #ffffff !important;">Map Dishes to Add-on: <span id="mapModalAddonName" class="text-warning"></span></span>
+          </h5>
+          <span class="text-white-50 small" id="mapModalSubtitle">Select dishes that will offer this customization add-on during ordering</span>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body modal-body-premium">
+        
+        {{-- Search & Selection Controls --}}
+        <div class="dish-mapping-search-wrap">
+          <div class="row g-2 align-items-center mb-2">
+            <div class="col-md-7">
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px;">
+                  <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                </span>
+                <input type="text" id="dishSearchKeyword" class="form-control form-control-custom border-start-0" 
+                       placeholder="Search dishes or categories by keyword..." style="border-radius: 0 12px 12px 0;">
+                <button type="button" class="btn btn-outline-secondary" id="btnClearDishSearch" style="border-radius: 0 12px 12px 0; display: none;" title="Clear search">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-5 d-flex gap-2 justify-content-md-end align-items-center flex-wrap">
+              <button type="button" id="btnSelectAllDishes" class="btn btn-sm btn-outline-primary rounded-pill fw-bold px-3">
+                <i class="fa-solid fa-check-double me-1"></i> Select All
+              </button>
+              <button type="button" id="btnDeselectAllDishes" class="btn btn-sm btn-outline-secondary rounded-pill fw-bold px-3">
+                <i class="fa-solid fa-rotate-left me-1"></i> Deselect
+              </button>
+              <span id="selectedDishesCounter" class="badge bg-primary-subtle text-primary fw-bold px-3 py-2 rounded-pill">
+                0 dishes selected
+              </span>
+            </div>
+          </div>
+          <div id="noSearchMatchAlert" class="alert alert-light border text-muted small py-2 mb-0 text-center" style="display: none;">
+            <i class="fa-solid fa-circle-exclamation me-1"></i> No dishes found matching "<span id="searchKeywordEcho"></span>"
+          </div>
+        </div>
+
+        {{-- Dishes List Container --}}
+        <div id="mappingDishesContainer">
+          <div class="text-center py-4 text-muted" id="mappingModalLoading">
+            <i class="fa-solid fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+            <div>Loading available dishes...</div>
+          </div>
+          <div id="mappingCategoriesList" style="display: none;">
+            {{-- Injected dynamically via JS --}}
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer modal-footer-premium d-flex justify-content-between flex-wrap gap-2">
+        <div class="text-muted small">
+          <i class="fa-solid fa-circle-info text-primary me-1"></i> Selected dishes will automatically show this add-on in POS, QR, and Online Ordering.
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn-addon-primary" id="btnSaveDishMapping">
+            <i class="fa-solid fa-floppy-disk"></i> Save Mappings
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 @include('includes.script')
 
@@ -896,6 +1105,269 @@ $(document).ready(function() {
             },
             error: function() {
                 alert('Error loading addon details');
+            }
+        });
+    });
+
+    // Map Dishes Modal handling
+    let currentMappingAddonId = null;
+
+    function updateSelectedDishesCount() {
+        let count = $('.dish-checkbox:checked').length;
+        $('#selectedDishesCounter').text(`${count} dish${count === 1 ? '' : 'es'} selected`);
+        if (count > 0) {
+            $('#selectedDishesCounter').removeClass('bg-secondary-subtle text-secondary').addClass('bg-primary-subtle text-primary');
+        } else {
+            $('#selectedDishesCounter').removeClass('bg-primary-subtle text-primary').addClass('bg-secondary-subtle text-secondary');
+        }
+    }
+
+    // Open Map Dishes Modal
+    $(document).on('click', '.btnMapDishes', function() {
+        let addonId = $(this).data('id');
+        let addonName = $(this).data('name');
+        currentMappingAddonId = addonId;
+
+        $('#mapModalAddonName').text(addonName);
+        $('#dishSearchKeyword').val('');
+        $('#btnClearDishSearch').hide();
+        $('#noSearchMatchAlert').hide();
+        $('#mappingModalLoading').show();
+        $('#mappingCategoriesList').hide().empty();
+
+        let modal = new bootstrap.Modal(document.getElementById('mapDishesModal'));
+        modal.show();
+
+        let dishesUrl = "{{ route('addon.dishes', ':id') }}".replace(':id', addonId);
+
+        $.ajax({
+            url: dishesUrl,
+            type: 'GET',
+            dataType: 'json',
+            success: function(res) {
+                $('#mappingModalLoading').hide();
+                if (res.success) {
+                    let mappedIds = res.mapped_dish_ids || [];
+                    let categories = res.categories || [];
+                    let container = $('#mappingCategoriesList');
+                    container.empty();
+
+                    if (categories.length === 0) {
+                        container.html(`
+                            <div class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-utensils fa-2x mb-2 text-muted opacity-50"></i>
+                                <h6>No Dishes Found in Menu</h6>
+                                <p class="small text-muted mb-0">Please add menu categories and dishes first before mapping addons.</p>
+                            </div>
+                        `).show();
+                        return;
+                    }
+
+                    categories.forEach(function(cat) {
+                        if (!cat.subcategories || cat.subcategories.length === 0) return;
+
+                        let catHtml = `
+                            <div class="dish-select-category-group" data-category-id="${cat.id}" data-category-name="${cat.name.toLowerCase()}">
+                                <div class="dish-category-header">
+                                    <span><i class="fa-solid fa-folder-open text-primary me-1"></i> ${cat.name}</span>
+                                    <span class="badge bg-white text-dark border cat-item-counter">${cat.subcategories.length} dishes</span>
+                                </div>
+                                <div class="dishes-checkbox-grid">
+                        `;
+
+                        cat.subcategories.forEach(function(dish) {
+                            let isChecked = mappedIds.includes(dish.id);
+                            let foodType = (dish.food_type || 'VEG').toUpperCase();
+                            let isNonVeg = (foodType === 'NON-VEG');
+
+                            catHtml += `
+                                <div class="dish-check-card ${isChecked ? 'checked' : ''}" 
+                                     data-dish-id="${dish.id}" 
+                                     data-dish-name="${dish.name.toLowerCase()}" 
+                                     data-category-name="${cat.name.toLowerCase()}">
+                                    <div class="form-check d-flex align-items-center gap-2 m-0 p-0">
+                                        <input class="form-check-input dish-checkbox ms-0 me-2" type="checkbox" 
+                                               name="dish_ids[]" value="${dish.id}" id="dishChk_${dish.id}"
+                                               ${isChecked ? 'checked' : ''} style="cursor: pointer; width: 18px; height: 18px;">
+                                        <label class="form-check-label d-flex align-items-center justify-content-between w-100 mb-0" 
+                                               for="dishChk_${dish.id}" style="cursor: pointer;">
+                                            <div class="d-flex align-items-center gap-2 text-truncate">
+                                                <span class="food-type-dot ${isNonVeg ? 'nonveg' : 'veg'}" title="${foodType}"></span>
+                                                <span class="fw-bold text-dark small text-truncate dish-name-text">${dish.name}</span>
+                                            </div>
+                                            <span class="text-muted small font-monospace ms-2">₹${parseFloat(dish.price).toFixed(2)}</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            `;
+                        });
+
+                        catHtml += `
+                                </div>
+                            </div>
+                        `;
+
+                        container.append(catHtml);
+                    });
+
+                    container.show();
+                    updateSelectedDishesCount();
+                } else {
+                    $('#mappingCategoriesList').html('<div class="alert alert-danger">Failed to load dishes.</div>').show();
+                }
+            },
+            error: function() {
+                $('#mappingModalLoading').hide();
+                $('#mappingCategoriesList').html('<div class="alert alert-danger">Error connecting to server.</div>').show();
+            }
+        });
+    });
+
+    // Toggle card selection state when clicking card or checkbox
+    $(document).on('change', '.dish-checkbox', function() {
+        let card = $(this).closest('.dish-check-card');
+        if ($(this).is(':checked')) {
+            card.addClass('checked');
+        } else {
+            card.removeClass('checked');
+        }
+        updateSelectedDishesCount();
+    });
+
+    // Real-time Keyword Search Filter for Dishes in Modal
+    function filterDishesByKeyword() {
+        let keyword = $('#dishSearchKeyword').val().toLowerCase().trim();
+        let matchedDishCount = 0;
+
+        if (keyword.length > 0) {
+            $('#btnClearDishSearch').show();
+            $('#searchKeywordEcho').text(keyword);
+        } else {
+            $('#btnClearDishSearch').hide();
+        }
+
+        $('.dish-select-category-group').each(function() {
+            let catGroup = $(this);
+            let catName = (catGroup.data('category-name') || '').toString();
+            let catMatches = catName.includes(keyword);
+            let visibleDishesInCat = 0;
+
+            catGroup.find('.dish-check-card').each(function() {
+                let dishCard = $(this);
+                let dishName = (dishCard.data('dish-name') || '').toString();
+
+                if (keyword === '' || catMatches || dishName.includes(keyword)) {
+                    dishCard.removeClass('hidden-by-search');
+                    visibleDishesInCat++;
+                    matchedDishCount++;
+                } else {
+                    dishCard.addClass('hidden-by-search');
+                }
+            });
+
+            if (visibleDishesInCat > 0) {
+                catGroup.removeClass('hidden-by-search');
+            } else {
+                catGroup.addClass('hidden-by-search');
+            }
+        });
+
+        if (matchedDishCount === 0 && keyword.length > 0) {
+            $('#noSearchMatchAlert').show();
+        } else {
+            $('#noSearchMatchAlert').hide();
+        }
+    }
+
+    $('#dishSearchKeyword').on('input', filterDishesByKeyword);
+
+    $('#btnClearDishSearch').on('click', function() {
+        $('#dishSearchKeyword').val('').focus();
+        filterDishesByKeyword();
+    });
+
+    // Select All Visible Dishes
+    $('#btnSelectAllDishes').on('click', function() {
+        $('.dish-check-card:not(.hidden-by-search) .dish-checkbox').each(function() {
+            $(this).prop('checked', true);
+            $(this).closest('.dish-check-card').addClass('checked');
+        });
+        updateSelectedDishesCount();
+    });
+
+    // Deselect All Visible Dishes
+    $('#btnDeselectAllDishes').on('click', function() {
+        $('.dish-check-card:not(.hidden-by-search) .dish-checkbox').each(function() {
+            $(this).prop('checked', false);
+            $(this).closest('.dish-check-card').removeClass('checked');
+        });
+        updateSelectedDishesCount();
+    });
+
+    // Save Dish Mappings AJAX
+    $('#btnSaveDishMapping').on('click', function() {
+        if (!currentMappingAddonId) return;
+
+        let $btn = $(this);
+        let origHtml = $btn.html();
+        $btn.html('<i class="fa-solid fa-spinner fa-spin"></i> Saving...').prop('disabled', true);
+
+        let selectedDishIds = [];
+        $('.dish-checkbox:checked').each(function() {
+            selectedDishIds.push($(this).val());
+        });
+
+        let mapUrl = "{{ route('addon.map.dishes', ':id') }}".replace(':id', currentMappingAddonId);
+
+        $.ajax({
+            url: mapUrl,
+            type: 'POST',
+            data: {
+                _token: "{{ csrf_token() }}",
+                dish_ids: selectedDishIds
+            },
+            dataType: 'json',
+            success: function(res) {
+                $btn.html(origHtml).prop('disabled', false);
+                if (res.success) {
+                    let modalEl = document.getElementById('mapDishesModal');
+                    let modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
+
+                    // Update table cell
+                    let targetCell = $(`#mappedDishesCell_${currentMappingAddonId}`);
+                    if (targetCell.length) {
+                        let count = res.count || 0;
+                        let names = res.names_string || '';
+                        if (count > 0) {
+                            targetCell.html(`
+                                <span class="badge bg-light text-primary border border-primary-subtle me-1 fw-bold align-middle">
+                                    <i class="fa-solid fa-utensils me-1"></i>${count}
+                                </span>
+                                <span class="mapped-names-text d-inline" title="${names}">
+                                    ${names}
+                                </span>
+                            `);
+                        } else {
+                            targetCell.html(`
+                                <span class="badge bg-light text-muted border fst-italic">0 Mapped</span>
+                                <span class="text-muted small fst-italic ms-1">—</span>
+                            `);
+                        }
+                    }
+
+                    alert(res.message || 'Dishes mapped successfully!');
+                } else {
+                    alert(res.message || 'Error mapping dishes');
+                }
+            },
+            error: function(xhr) {
+                $btn.html(origHtml).prop('disabled', false);
+                let msg = 'Error saving mapped dishes. Please try again.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    msg = xhr.responseJSON.message;
+                }
+                alert(msg);
             }
         });
     });

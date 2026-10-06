@@ -203,17 +203,9 @@
                   @endif
                 </td>
                 <td class="text-end pe-4">
-                  <button class="btn btn-sm btn-outline-secondary editOutletBtn"
-                          data-id="{{ $mainRestaurant->id }}"
-                          data-name="{{ $mainRestaurant->name }}"
-                          data-address="{{ $mainRestaurant->address }}"
-                          data-pincode="{{ $mainRestaurant->pincode }}"
-                          data-gstin="{{ $mainRestaurant->gstin }}"
-                          data-fssai="{{ $mainRestaurant->fssai_number }}"
-                          data-gst="{{ $mainRestaurant->gst_percentage }}"
-                          data-upi="{{ $mainRestaurant->upi_id }}">
+                  <a href="{{ route('restaurant.profile.index', ['outlet_id' => $mainRestaurant->id]) }}" class="btn btn-sm btn-outline-secondary" title="Edit Restaurant Profile">
                     <i class="fas fa-edit"></i> Edit
-                  </button>
+                  </a>
                 </td>
               </tr>
 
@@ -260,17 +252,9 @@
                   @endif
                 </td>
                 <td class="text-end pe-4">
-                  <button class="btn btn-sm btn-outline-secondary editOutletBtn me-1"
-                          data-id="{{ $outlet->id }}"
-                          data-name="{{ $outlet->name }}"
-                          data-address="{{ $outlet->address }}"
-                          data-pincode="{{ $outlet->pincode }}"
-                          data-gstin="{{ $outlet->gstin }}"
-                          data-fssai="{{ $outlet->fssai_number }}"
-                          data-gst="{{ $outlet->gst_percentage }}"
-                          data-upi="{{ $outlet->upi_id }}">
-                    <i class="fas fa-edit"></i>
-                  </button>
+                  <a href="{{ route('restaurant.profile.index', ['outlet_id' => $outlet->id]) }}" class="btn btn-sm btn-outline-secondary me-1" title="Edit Outlet Profile">
+                    <i class="fas fa-edit"></i> Edit
+                  </a>
 
                   <a href="{{ route('restaurant.outlets.delete', $outlet->id) }}"
                      class="btn btn-sm btn-outline-danger"

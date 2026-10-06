@@ -26,14 +26,31 @@ class DishAddonController extends Controller
         $restaurantId = auth()->user()->restaurant_id;
 
         $query = DishAddon::where('restaurant_id', $restaurantId)
-            ->where('status', '!=', 'D');
+            ->where('status', '!=', 'D')
+            ->with(['dishes' => function($q) {
+                $q->select('sub_category.id', 'sub_category.name', 'sub_category.price', 'sub_category.food_type', 'sub_category.category_id')
+                  ->where('sub_category.status', '!=', 'D');
+            }]);
 
-        // Search Filter
+        // Search Filter (Addon name, description, or mapped dish name)
         if ($request->filled('search')) {
             $search = trim($request->search);
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhereHas('dishes', function ($dq) use ($search) {
+                      $dq->where('sub_category.name', 'like', "%{$search}%")
+                         ->where('sub_category.status', '!=', 'D');
+                  });
+            });
+        }
+
+        // Mapped Dish Dropdown Filter
+        if ($request->filled('dish_id')) {
+            $dishId = (int)$request->dish_id;
+            $query->whereHas('dishes', function ($dq) use ($dishId) {
+                $dq->where('sub_category.id', $dishId)
+                   ->where('sub_category.status', '!=', 'D');
             });
         }
 
@@ -56,12 +73,22 @@ class DishAddonController extends Controller
         $nonVegCount = (clone $statsBase)->where('food_type', 'NON-VEG')->count();
         $activeCount = (clone $statsBase)->where('status', 'A')->count();
 
+        // Fetch all categories and dishes for mapping modal
+        $categories = \App\Models\Category::where('restaurant_id', $restaurantId)
+            ->where('status', '!=', 'D')
+            ->with(['subcategories' => function($q) {
+                $q->where('status', '!=', 'D')->orderBy('name', 'asc');
+            }])
+            ->orderBy('name', 'asc')
+            ->get();
+
         return view('dish_addon.index', compact(
             'addons',
             'totalCount',
             'vegCount',
             'nonVegCount',
-            'activeCount'
+            'activeCount',
+            'categories'
         ));
     }
 
@@ -198,6 +225,87 @@ class DishAddonController extends Controller
         }
 
         return redirect()->route('addon.index')->with('success', 'Dish addon deleted successfully!');
+    }
+
+    /**
+     * Get all categories and dishes with mapped status for a specific addon.
+     */
+    public function getDishes($id)
+    {
+        $restaurantId = auth()->user()->restaurant_id;
+        $addon = DishAddon::where('restaurant_id', $restaurantId)
+            ->where('id', $id)
+            ->where('status', '!=', 'D')
+            ->firstOrFail();
+
+        $mappedDishIds = $addon->dishes()->pluck('sub_category.id')->toArray();
+
+        $categories = \App\Models\Category::where('restaurant_id', $restaurantId)
+            ->where('status', '!=', 'D')
+            ->with(['subcategories' => function($q) {
+                $q->where('status', '!=', 'D')->orderBy('name', 'asc');
+            }])
+            ->orderBy('name', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'addon' => [
+                'id' => $addon->id,
+                'name' => $addon->name,
+                'food_type' => $addon->food_type,
+                'price' => $addon->price,
+            ],
+            'mapped_dish_ids' => $mappedDishIds,
+            'categories' => $categories
+        ]);
+    }
+
+    /**
+     * Map dishes to a specific addon.
+     */
+    public function mapDishes(Request $request, $id)
+    {
+        $restaurantId = auth()->user()->restaurant_id;
+        $addon = DishAddon::where('restaurant_id', $restaurantId)
+            ->where('id', $id)
+            ->where('status', '!=', 'D')
+            ->firstOrFail();
+
+        $request->validate([
+            'dish_ids' => 'nullable|array',
+            'dish_ids.*' => 'integer',
+        ]);
+
+        $dishIds = $request->input('dish_ids', []);
+        
+        // Ensure only dishes belonging to this restaurant and not deleted are mapped
+        $validDishIds = \App\Models\SubCategory::where('restaurant_id', $restaurantId)
+            ->where('status', '!=', 'D')
+            ->whereIn('id', $dishIds)
+            ->pluck('id')
+            ->toArray();
+
+        $addon->dishes()->sync($validDishIds);
+
+        // Fetch refreshed mapped dishes for clean UI response
+        $mappedDishes = $addon->dishes()
+            ->select('sub_category.id', 'sub_category.name')
+            ->where('sub_category.status', '!=', 'D')
+            ->orderBy('sub_category.name', 'asc')
+            ->get();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Dishes mapped to "' . $addon->name . '" successfully!',
+                'mapped_dishes' => $mappedDishes,
+                'count' => count($validDishIds),
+                'names_string' => $mappedDishes->pluck('name')->implode(', ')
+            ]);
+        }
+
+        return redirect()->route('addon.index')->with('success', 'Dishes mapped successfully to ' . $addon->name . '!');
     }
 
     /**

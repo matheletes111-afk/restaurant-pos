@@ -336,4 +336,54 @@ class QrOrderNotificationTest extends TestCase
         $this->assertContains($orderB->id, $returnedIds);
         $this->assertNotContains($orderA->id, $returnedIds);
     }
+
+    public function test_qr_notifications_only_returns_pending_orders_and_excludes_approved_or_rejected_orders()
+    {
+        $pendingOrder = TempOrder::create([
+            'restaurant_id' => $this->restaurant->id,
+            'table_id' => $this->table->id,
+            'customer_name' => 'Pending Customer',
+            'order_type' => 'DINE_IN',
+            'total_amount' => 150.00,
+            'grand_total' => 150.00,
+            'order_status' => 'PENDING',
+            'is_read' => 0,
+            'created_at' => Carbon::now()->subMinutes(10),
+        ]);
+
+        $approvedOrder = TempOrder::create([
+            'restaurant_id' => $this->restaurant->id,
+            'table_id' => $this->table->id,
+            'customer_name' => 'Approved Customer',
+            'order_type' => 'DINE_IN',
+            'total_amount' => 250.00,
+            'grand_total' => 250.00,
+            'order_status' => 'APPROVED',
+            'is_read' => 0,
+            'created_at' => Carbon::now()->subMinutes(20),
+        ]);
+
+        $rejectedOrder = TempOrder::create([
+            'restaurant_id' => $this->restaurant->id,
+            'table_id' => $this->table->id,
+            'customer_name' => 'Rejected Customer',
+            'order_type' => 'DINE_IN',
+            'total_amount' => 300.00,
+            'grand_total' => 300.00,
+            'order_status' => 'REJECTED',
+            'is_read' => 0,
+            'created_at' => Carbon::now()->subMinutes(30),
+        ]);
+
+        $this->actingAs($this->ownerUser);
+
+        $response = $this->get(route('restaurant.qr.notifications'));
+        $response->assertStatus(200);
+        $data = $response->json();
+
+        $returnedIds = collect($data['notifications'])->pluck('id')->toArray();
+        $this->assertContains($pendingOrder->id, $returnedIds);
+        $this->assertNotContains($approvedOrder->id, $returnedIds);
+        $this->assertNotContains($rejectedOrder->id, $returnedIds);
+    }
 }

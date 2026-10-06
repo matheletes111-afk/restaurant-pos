@@ -47,6 +47,15 @@ class RazorpayWebhookTest extends TestCase
 
     public function test_webhook_handles_subscription_charged()
     {
+        $user = User::create([
+            'name' => 'Webhook User',
+            'email' => 'wh_' . uniqid() . '@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'RES',
+            'role_type' => 'ADMIN',
+            'status' => 'A'
+        ]);
+
         $plan = Plan::create([
             'name' => 'Pro Webhook Plan',
             'price' => 500,
@@ -63,7 +72,7 @@ class RazorpayWebhookTest extends TestCase
                         'id' => 'sub_webhook_test_1',
                         'plan_id' => 'plan_webhook_test_1',
                         'notes' => [
-                            'user_id' => null
+                            'user_id' => $user->id
                         ]
                     ]
                 ],

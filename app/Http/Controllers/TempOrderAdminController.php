@@ -144,6 +144,7 @@ public function approveOrder($id)
             $orderItem->subcategory_id = $item->subcategory_id;
             $orderItem->quantity = $item->quantity;
             $orderItem->price = $item->price;
+            $orderItem->addons = $item->addons;
             $orderItem->discounted_price = $item->discounted_price;
             $orderItem->item_discount_percentage = $item->item_discount_percentage;
             $orderItem->taxable_amount = $item->taxable_amount;

@@ -15,10 +15,24 @@ class RestaurantProfileController extends Controller
     /**
      * Show restaurant profile
      */
-    public function showProfile()
+    public function showProfile(Request $request)
     {
+        $user = Auth::user();
+        $targetRestId = $user->restaurant_id;
+
+        if ($request->has('outlet_id')) {
+            $requestedId = (int) $request->get('outlet_id');
+            $mainRest = $user->getMainRestaurant();
+            if ($mainRest && ($mainRest->id === $requestedId || RestaurantMaster::where('parent_id', $mainRest->id)->where('id', $requestedId)->exists())) {
+                $targetRestId = $requestedId;
+                $user->restaurant_id = $targetRestId;
+                $user->save();
+                session(['active_restaurant_id' => $targetRestId]);
+            }
+        }
+
         $restaurant = RestaurantMaster::with('owner')
-            ->where('id', auth()->user()->restaurant_id)
+            ->where('id', $targetRestId)
             ->firstOrFail();
         
         return view('restaurant.profile', compact('restaurant'));
@@ -52,8 +66,17 @@ class RestaurantProfileController extends Controller
         try {
             DB::beginTransaction();
             
+            $targetRestId = auth()->user()->restaurant_id;
+            if ($request->has('outlet_id')) {
+                $requestedId = (int) $request->get('outlet_id');
+                $mainRest = Auth::user()->getMainRestaurant();
+                if ($mainRest && ($mainRest->id === $requestedId || RestaurantMaster::where('parent_id', $mainRest->id)->where('id', $requestedId)->exists())) {
+                    $targetRestId = $requestedId;
+                }
+            }
+
             // Get restaurant
-            $restaurant = RestaurantMaster::where('id', auth()->user()->restaurant_id)->firstOrFail();
+            $restaurant = RestaurantMaster::where('id', $targetRestId)->firstOrFail();
             
             // Get user (owner)
             $user = User::find($restaurant->owner_id) ?: Auth::user();

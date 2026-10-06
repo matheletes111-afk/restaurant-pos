@@ -37,8 +37,16 @@ class TempOrderController extends Controller
         }
 
         $categories = Category::where('restaurant_id', $restaurant_id)
-                                ->with('subcategories')
+                                ->with(['subcategories' => function($q) {
+                                    $q->where('status', '!=', 'D')->with(['addons' => function($aq) {
+                                        $aq->where('dish_addons.status', 'A');
+                                    }]);
+                                }])
                                 ->get();
+
+        $restaurant_addons = \App\Models\DishAddon::where('restaurant_id', $restaurant_id)
+            ->where('status', 'A')
+            ->get();
 
         // Retrieve customer's saved order ID from session or cookie
         // This ensures that Sayan only sees Sayan's order, and Rohi only sees Rohi's order!
@@ -164,7 +172,7 @@ class TempOrderController extends Controller
             }
         }
 
-        return view('temp_order', compact('categories', 'table_id', 'restaurant_id', 'restaurant_details', 'table_details', 'activeOrder', 'pendingTempOrder'));
+        return view('temp_order', compact('categories', 'table_id', 'restaurant_id', 'restaurant_details', 'table_details', 'activeOrder', 'pendingTempOrder', 'restaurant_addons'));
     }
 
 public function store(Request $request)
@@ -193,11 +201,52 @@ public function store(Request $request)
 
     foreach ($request->order_items as $item) {
         $itemDiscount = isset($item['item_discount']) ? floatval($item['item_discount']) : 0;
-        $originalPrice = floatval($item['price']);
-        $quantity = intval($item['qty']);
+        $basePrice = floatval($item['price']);
+        $quantity = max(1, intval($item['qty'] ?? 1));
         
+        $selectedAddons = $item['addons'] ?? [];
+        $addonsCost = 0;
+        $cleanAddons = [];
+        $isAddonItem = !empty($item['is_addon']) || str_starts_with(strval($item['id'] ?? ''), 'addon_') || !is_numeric($item['id'] ?? null);
+
+        if (is_array($selectedAddons) && !empty($selectedAddons)) {
+            foreach ($selectedAddons as $addon) {
+                $aPrice = floatval($addon['price'] ?? 0);
+                $aQty = max(1, intval($addon['qty'] ?? $addon['quantity'] ?? 1));
+                $aName = trim($addon['name'] ?? '');
+                $aId = $addon['id'] ?? null;
+                $addonLineTotal = $aPrice * $aQty;
+                $addonsCost += $addonLineTotal;
+                if ($aName) {
+                    $cleanAddons[] = [
+                        'id' => $aId,
+                        'name' => $aName,
+                        'price' => $aPrice,
+                        'qty' => $aQty,
+                        'quantity' => $aQty,
+                        'total' => $addonLineTotal,
+                        'food_type' => $addon['food_type'] ?? 'VEG',
+                    ];
+                }
+            }
+        }
+
+        if ($isAddonItem && empty($cleanAddons)) {
+            $cleanAddons[] = [
+                'id' => is_numeric($item['id'] ?? null) ? $item['id'] : null,
+                'name' => trim($item['name'] ?? 'Add-on'),
+                'price' => $basePrice,
+                'qty' => 1,
+                'quantity' => 1,
+                'total' => $basePrice,
+                'food_type' => $item['food_type'] ?? 'VEG',
+            ];
+        }
+
+        $unitPriceWithAddons = $isAddonItem ? $basePrice : ($basePrice + $addonsCost);
+
         // Calculate discounted price
-        $discountedPrice = $originalPrice - ($originalPrice * $itemDiscount / 100);
+        $discountedPrice = $unitPriceWithAddons - ($unitPriceWithAddons * $itemDiscount / 100);
         $taxableAmount = $discountedPrice * $quantity;
         
         // Calculate GST on discounted price
@@ -210,17 +259,18 @@ public function store(Request $request)
         $sgstAmount = ($taxableAmount * $halfGstRate) / 100;
         $totalAmount = $taxableAmount + $gstAmount;
         
-        $originalSubtotal += $originalPrice * $quantity;
+        $originalSubtotal += $unitPriceWithAddons * $quantity;
         $totalTaxable += $taxableAmount;
         $totalGst += $gstAmount;
         $totalCgst += $cgstAmount;
         $totalSgst += $sgstAmount;
-        $totalItemDiscount += ($originalPrice * $quantity) - $taxableAmount;
+        $totalItemDiscount += ($unitPriceWithAddons * $quantity) - $taxableAmount;
         
         $calculatedItems[] = [
-            'subcategory_id' => $item['id'],
+            'subcategory_id' => is_numeric($item['id'] ?? null) ? $item['id'] : null,
             'quantity' => $quantity,
-            'price' => $originalPrice,
+            'price' => $unitPriceWithAddons,
+            'addons' => $cleanAddons,
             'discounted_price' => $discountedPrice,
             'item_discount_percentage' => $itemDiscount,
             'taxable_amount' => $taxableAmount,
@@ -276,6 +326,7 @@ public function store(Request $request)
             'subcategory_id' => $item['subcategory_id'],
             'quantity' => $item['quantity'],
             'price' => $item['price'],
+            'addons' => $item['addons'],
             'discounted_price' => $item['discounted_price'],
             'item_discount_percentage' => $item['item_discount_percentage'],
             'taxable_amount' => $item['taxable_amount'],
@@ -585,6 +636,7 @@ public function store(Request $request)
                     'name' => $itm->subcategory->name ?? 'Dish',
                     'qty' => $itm->quantity,
                     'price' => floatval($itm->discounted_price ?? $itm->price),
+                    'addons' => $itm->addons_list,
                     'total' => floatval($itm->total_amount),
                     'kot_no' => $itm->kot_no,
                     'order_status' => $status,
@@ -638,6 +690,7 @@ public function store(Request $request)
                     'name' => $itm->menuItem->name ?? 'Dish',
                     'qty' => $itm->quantity,
                     'price' => floatval($itm->discounted_price ?? $itm->price),
+                    'addons' => $itm->addons_list,
                     'total' => floatval($itm->total_amount),
                     'kot_no' => 'Pending Approval',
                     'order_status' => 'PENDING',
@@ -816,13 +869,54 @@ public function store(Request $request)
             $kotNo = OrderItems::generateNextKotNumber($order->restaurant_id);
 
             foreach ($request->order_items as $item) {
-                $subcat = SubCategory::find($item['id']);
-                $originalPrice = floatval($item['price'] ?? ($subcat->price ?? 0));
-                $quantity = intval($item['qty'] ?? 1);
+                $subcat = is_numeric($item['id'] ?? null) ? SubCategory::find($item['id']) : null;
+                $basePrice = floatval($item['price'] ?? ($subcat->price ?? 0));
+                $quantity = max(1, intval($item['qty'] ?? 1));
                 $itemDiscount = isset($item['item_discount']) ? floatval($item['item_discount']) : floatval($subcat->discount_percentage ?? 0);
 
+                $selectedAddons = $item['addons'] ?? [];
+                $addonsCost = 0;
+                $cleanAddons = [];
+                $isAddonItem = !empty($item['is_addon']) || str_starts_with(strval($item['id'] ?? ''), 'addon_') || !is_numeric($item['id'] ?? null);
+
+                if (is_array($selectedAddons) && !empty($selectedAddons)) {
+                    foreach ($selectedAddons as $addon) {
+                        $aPrice = floatval($addon['price'] ?? 0);
+                        $aQty = max(1, intval($addon['qty'] ?? $addon['quantity'] ?? 1));
+                        $aName = trim($addon['name'] ?? '');
+                        $aId = $addon['id'] ?? null;
+                        $addonLineTotal = $aPrice * $aQty;
+                        $addonsCost += $addonLineTotal;
+                        if ($aName) {
+                            $cleanAddons[] = [
+                                'id' => $aId,
+                                'name' => $aName,
+                                'price' => $aPrice,
+                                'qty' => $aQty,
+                                'quantity' => $aQty,
+                                'total' => $addonLineTotal,
+                                'food_type' => $addon['food_type'] ?? 'VEG',
+                            ];
+                        }
+                    }
+                }
+
+                if ($isAddonItem && empty($cleanAddons)) {
+                    $cleanAddons[] = [
+                        'id' => is_numeric($item['id'] ?? null) ? $item['id'] : null,
+                        'name' => trim($item['name'] ?? 'Add-on'),
+                        'price' => $basePrice,
+                        'qty' => 1,
+                        'quantity' => 1,
+                        'total' => $basePrice,
+                        'food_type' => $item['food_type'] ?? 'VEG',
+                    ];
+                }
+
+                $unitPriceWithAddons = $isAddonItem ? $basePrice : ($basePrice + $addonsCost);
+
                 // Discounted price
-                $discountedPrice = $originalPrice - ($originalPrice * $itemDiscount / 100);
+                $discountedPrice = $unitPriceWithAddons - ($unitPriceWithAddons * $itemDiscount / 100);
                 $taxableAmount = $discountedPrice * $quantity;
 
                 // GST
@@ -835,9 +929,10 @@ public function store(Request $request)
 
                 OrderItems::create([
                     'order_id' => $order->id,
-                    'subcategory_id' => $item['id'],
+                    'subcategory_id' => is_numeric($item['id'] ?? null) ? $item['id'] : null,
                     'quantity' => $quantity,
-                    'price' => $originalPrice,
+                    'price' => $unitPriceWithAddons,
+                    'addons' => $cleanAddons,
                     'discounted_price' => $discountedPrice,
                     'item_discount_percentage' => $itemDiscount,
                     'taxable_amount' => $taxableAmount,

@@ -114,6 +114,7 @@
                     
                     <form method="POST" action="{{ route('restaurant.profile.update') }}" enctype="multipart/form-data">
                         @csrf
+                        <input type="hidden" name="outlet_id" value="{{ $restaurant->id }}">
                         
                         <div class="row">
                             <div class="col-md-6">
