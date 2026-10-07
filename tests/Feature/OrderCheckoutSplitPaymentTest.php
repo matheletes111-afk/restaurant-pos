@@ -271,7 +271,8 @@ class OrderCheckoutSplitPaymentTest extends TestCase
         $this->assertNotNull($orderItem);
         $this->assertNotNull($orderItem->addons);
         $this->assertCount(2, $orderItem->addons_list);
-        $this->assertEquals(280.00, (float)$orderItem->price);
+        $this->assertEquals(200.00, (float)$orderItem->price);
+        $this->assertEquals(280.00, (float)$orderItem->taxable_amount);
 
         // Test editing order to add new item with addons
         // Add dish2 = 50 + Extra Butter (30 * 1) = 80. Taxable = 80. GST 5% = 4. Total = 84.
@@ -299,12 +300,109 @@ class OrderCheckoutSplitPaymentTest extends TestCase
         $this->assertNotNull($newItem);
         $this->assertNotNull($newItem->addons);
         $this->assertEquals('Extra Butter', $newItem->addons_list[0]['name']);
-        $this->assertEquals(80.00, (float)$newItem->price);
+        $this->assertEquals(50.00, (float)$newItem->price);
+        $this->assertEquals(80.00, (float)$newItem->taxable_amount);
 
         // Verify edit view renders
         $editViewResponse = $this->actingAs($user)->get(route('order.edit', $orderId));
         $editViewResponse->assertStatus(200);
         $editViewResponse->assertSee('Extra Butter');
         $editViewResponse->assertSee('Extra Cheese Slice');
+    }
+
+    public function test_order_create_rejects_payment_exceeding_grand_total()
+    {
+        list($restaurant, $user, $dish1, $dish2, $table) = $this->setupRestaurantAndUser();
+
+        $payload = [
+            'customer_name' => 'Overpayer Create',
+            'customer_phone' => '9876543210',
+            'table_id' => null,
+            'order_complete' => 'DONE',
+            'cash_amount' => 500.00,
+            'upi_amount' => 500.00,
+            'order_items' => [
+                ['id' => $dish1->id, 'name' => $dish1->name, 'price' => $dish1->price, 'qty' => 1, 'item_discount' => 0],
+            ]
+        ];
+
+        $response = $this->actingAs($user)->postJson(route('order.save'), $payload);
+
+        $response->assertStatus(422);
+        $response->assertJson([
+            'success' => false,
+        ]);
+        $this->assertStringContainsString('cannot exceed the Grand Total', $response->json('message'));
+    }
+
+    public function test_order_edit_rejects_payment_exceeding_balance_due()
+    {
+        list($restaurant, $user, $dish1, $dish2, $table) = $this->setupRestaurantAndUser();
+
+        $order = OrderManage::create([
+            'order_id' => 'ORD-TEST-' . uniqid(),
+            'customer_name' => 'Table Guest',
+            'customer_phone' => '9888877777',
+            'table_id' => $table->id,
+            'order_type' => 'DINE_IN',
+            'total_amount' => 200.00,
+            'taxable_amount' => 200.00,
+            'gst_amount' => 10.00,
+            'grand_total' => 210.00,
+            'round_off' => 0.00,
+            'discount' => 0.00,
+            'discount_percentage' => 0,
+            'is_gst_bill' => 'YES',
+            'restaurant_gst_percentage' => 5,
+            'amount_paid' => 100.00,
+            'payment_status' => 'PARTIAL',
+            'payment_method' => 'CASH',
+            'order_complete' => 'PENDING',
+            'order_status' => 'PENDING',
+            'restaurant_id' => $restaurant->id,
+            'user_id' => $user->id,
+        ]);
+
+        OrderToPayment::create([
+            'order_id' => $order->id,
+            'restaurant_id' => $restaurant->id,
+            'amount' => 100.00,
+            'payment_method' => 'CASH',
+            'payment_date' => now(),
+            'created_by' => $user->id
+        ]);
+
+        OrderItems::create([
+            'order_id' => $order->id,
+            'subcategory_id' => $dish1->id,
+            'quantity' => 1,
+            'price' => 200.00,
+            'discounted_price' => 200.00,
+            'item_discount_percentage' => 0,
+            'taxable_amount' => 200.00,
+            'gst_rate' => 5,
+            'gst_amount' => 10.00,
+            'total_amount' => 210.00,
+            'restaurant_id' => $restaurant->id,
+            'user_id' => $user->id,
+            'order_status' => 'PENDING',
+            'is_new' => 0,
+            'kot_no' => 'KOT-261005-001'
+        ]);
+
+        // Remaining due is 210 - 100 = 110. Trying to pay 200 should be rejected
+        $updatePayload = [
+            'order_complete' => 'DONE',
+            'cash_amount' => 150.00,
+            'upi_amount' => 150.00,
+        ];
+
+        $response = $this->actingAs($user)->postJson(route('order.update', $order->id), $updatePayload);
+
+        $response->assertStatus(422);
+        $response->assertJson([
+            'success' => false,
+        ]);
+        $this->assertStringContainsString('cannot exceed the remaining balance due', $response->json('message'));
     }
 }

@@ -867,10 +867,23 @@
                     <div id="itemsContainerList">
                     @foreach($items as $itm)
                         @php
-                            $itemName = $itm->menuItem->name ?? ($itm->subcategory->name ?? ($itm->name ?? 'Dish'));
-                            $qty = $itm->quantity ?? ($itm->qty ?? 1);
-                            $price = $itm->discounted_price ?? ($itm->price ?? 0);
-                            $total = $itm->total_amount ?? ($price * $qty);
+                            $isStandaloneAddon = empty($itm->subcategory_id);
+                            $itemName = $itm->menuItem->name ?? ($itm->subcategory->name ?? ($itm->name ?? ($isStandaloneAddon ? 'Add-on' : 'Dish')));
+                            $qty = max(1, intval($itm->quantity ?? ($itm->qty ?? 1)));
+                            $basePrice = floatval($itm->price ?? 0);
+                            $discPercent = floatval($itm->item_discount_percentage ?? 0);
+                            $discPrice = floatval($itm->discounted_price ?? ($basePrice - ($basePrice * $discPercent / 100)));
+                            $addonsList = $itm->addons_list ?? [];
+                            $addonsCost = 0;
+                            if (!empty($addonsList) && is_array($addonsList)) {
+                                foreach ($addonsList as $a) {
+                                    $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                                }
+                            }
+                            $itemTaxable = $isStandaloneAddon ? ($discPrice * $qty) : (($discPrice * $qty) + $addonsCost);
+                            $itemGstRate = floatval($itm->gst_rate ?? 0);
+                            $itemGst = ($itemTaxable * $itemGstRate) / 100;
+                            $total = $isGstBill ? ($itemTaxable + $itemGst) : ($isStandaloneAddon ? ($basePrice * $qty) : (($basePrice * $qty) + $addonsCost));
                             $itemStatus = strtoupper($itm->order_status ?? 'PENDING');
                             $kotNo = $itm->kot_no ?? null;
                         @endphp
@@ -879,10 +892,31 @@
                                 <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 4px;">
                                     <span class="item-qty-badge">{{ $qty }}x</span>
                                     <strong style="color: var(--text-main); font-size: 0.94rem;">{{ $itemName }}</strong>
+                                    @if($isStandaloneAddon)
+                                        <span style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 4px; padding: 1px 6px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;">
+                                             Add-on
+                                        </span>
+                                    @endif
                                     @if(!empty($kotNo))
                                         <span class="kot-badge" id="kotBadge_{{ $itm->id }}"><i class="fas fa-receipt"></i> {{ $kotNo }}</span>
                                     @endif
                                 </div>
+                                @if(!empty($addonsList) && count($addonsList) > 0 && !$isStandaloneAddon)
+                                    <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; margin-bottom: 6px;">
+                                        @foreach($addonsList as $addon)
+                                            @php
+                                                $aQty = $addon['qty'] ?? $addon['quantity'] ?? 1;
+                                                $aPrice = floatval($addon['price'] ?? 0);
+                                            @endphp
+                                            <span style="background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; border-radius: 6px; padding: 2px 7px; font-size: 0.72rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                                                <i class="fas fa-plus-circle" style="font-size: 0.65rem;"></i>
+                                                <span>{{ $addon['name'] ?? 'Add-on' }}</span>
+                                                <span style="color: #c2410c;">(₹{{ number_format($aPrice, 2) }})</span>
+                                                <span style="background: #ffedd5; color: #c2410c; font-weight: 800; font-size: 0.68rem; padding: 0 4px; border-radius: 3px; border: 1px solid #fed7aa;">x{{ $aQty }}</span>
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @endif
                                 <div style="display: flex; align-items: center; gap: 8px;">
                                     <span class="item-status-pill status-{{ strtolower($itemStatus) }}" id="itemStatusBadge_{{ $itm->id }}">
                                         @if($itemStatus === 'COOKING')

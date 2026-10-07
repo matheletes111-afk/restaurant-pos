@@ -65,7 +65,36 @@
         $totalPendingCount = $orders->count();
         $dineInCount = $orders->where('order_type', 'DINE_IN')->count();
         $takeawayCount = $orders->where('order_type', '!=', 'DINE_IN')->count();
-        $totalPendingValue = $orders->sum('grand_total');
+        $totalPendingValue = 0;
+        foreach ($orders as $ord) {
+            $computedOrdGrand = 0;
+            if ($ord->items && $ord->items->isNotEmpty()) {
+                $ordTaxable = 0;
+                $ordGst = 0;
+                foreach ($ord->items as $itm) {
+                    $iDisc = floatval($itm->item_discount_percentage ?? 0);
+                    $iPrice = floatval($itm->price);
+                    $iQty = max(1, intval($itm->quantity ?? 1));
+                    $iDiscPrice = floatval($itm->discounted_price ?? ($iPrice - ($iPrice * $iDisc / 100)));
+                    $iAddons = $itm->addons_list ?? [];
+                    $iAddonsCost = 0;
+                    if (!empty($iAddons) && is_array($iAddons)) {
+                        foreach ($iAddons as $a) {
+                            $iAddonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                        }
+                    }
+                    $isAdd = empty($itm->subcategory_id);
+                    $lineTax = $isAdd ? ($iDiscPrice * $iQty) : (($iDiscPrice * $iQty) + $iAddonsCost);
+                    $lineGst = ($lineTax * floatval($itm->gst_rate ?? 0)) / 100;
+                    $ordTaxable += $lineTax;
+                    $ordGst += $lineGst;
+                }
+                $computedOrdGrand = $ordTaxable + $ordGst;
+            } else {
+                $computedOrdGrand = (float)($ord->grand_total ?? 0);
+            }
+            $totalPendingValue += $computedOrdGrand;
+        }
       @endphp
 
       <!-- ===================================================
@@ -155,10 +184,38 @@
             <tbody>
               @forelse($orders as $o)
               @php
-                $itemCount = $o->items->count();
+                $itemCount = $o->items ? $o->items->count() : 0;
                 $isGst = ($o->is_gst_bill ?? 'NO') == 'YES';
                 $customerInitial = strtoupper(substr($o->customer_name ?? 'G', 0, 1));
                 $orderDisplayNo = $o->order_id ?? ('#' . $o->id);
+
+                // Dynamically compute exact grand total for this order
+                $orderGrandTotal = 0;
+                if ($o->items && $o->items->isNotEmpty()) {
+                    $ordTax = 0;
+                    $ordG = 0;
+                    foreach ($o->items as $itm) {
+                        $iDisc = floatval($itm->item_discount_percentage ?? 0);
+                        $iPrice = floatval($itm->price);
+                        $iQty = max(1, intval($itm->quantity ?? 1));
+                        $iDiscPrice = floatval($itm->discounted_price ?? ($iPrice - ($iPrice * $iDisc / 100)));
+                        $iAddons = $itm->addons_list ?? [];
+                        $iAddonsCost = 0;
+                        if (!empty($iAddons) && is_array($iAddons)) {
+                            foreach ($iAddons as $a) {
+                                $iAddonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                            }
+                        }
+                        $isAdd = empty($itm->subcategory_id);
+                        $lineTax = $isAdd ? ($iDiscPrice * $iQty) : (($iDiscPrice * $iQty) + $iAddonsCost);
+                        $lineGst = ($lineTax * floatval($itm->gst_rate ?? 0)) / 100;
+                        $ordTax += $lineTax;
+                        $ordG += $lineGst;
+                    }
+                    $orderGrandTotal = $ordTax + $ordG;
+                } else {
+                    $orderGrandTotal = (float)($o->grand_total ?? 0);
+                }
               @endphp
               <tr>
                 <!-- Order ID -->
@@ -203,7 +260,7 @@
 
                 <!-- Grand Total -->
                 <td>
-                  <span class="pos-amount-text">₹{{ number_format($o->grand_total ?? 0, 2) }}</span>
+                  <span class="pos-amount-text">₹{{ number_format($orderGrandTotal, 2) }}</span>
                 </td>
 
                 <!-- Bill Type -->
@@ -242,10 +299,38 @@
         <div class="pos-mobile-cards-grid">
           @forelse($orders as $o)
           @php
-            $itemCount = $o->items->count();
+            $itemCount = $o->items ? $o->items->count() : 0;
             $isGst = ($o->is_gst_bill ?? 'NO') == 'YES';
             $customerInitial = strtoupper(substr($o->customer_name ?? 'G', 0, 1));
             $orderDisplayNo = $o->order_id ?? ('#' . $o->id);
+
+            // Dynamically compute exact grand total for this order
+            $orderGrandTotal = 0;
+            if ($o->items && $o->items->isNotEmpty()) {
+                $ordTax = 0;
+                $ordG = 0;
+                foreach ($o->items as $itm) {
+                    $iDisc = floatval($itm->item_discount_percentage ?? 0);
+                    $iPrice = floatval($itm->price);
+                    $iQty = max(1, intval($itm->quantity ?? 1));
+                    $iDiscPrice = floatval($itm->discounted_price ?? ($iPrice - ($iPrice * $iDisc / 100)));
+                    $iAddons = $itm->addons_list ?? [];
+                    $iAddonsCost = 0;
+                    if (!empty($iAddons) && is_array($iAddons)) {
+                        foreach ($iAddons as $a) {
+                            $iAddonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                        }
+                    }
+                    $isAdd = empty($itm->subcategory_id);
+                    $lineTax = $isAdd ? ($iDiscPrice * $iQty) : (($iDiscPrice * $iQty) + $iAddonsCost);
+                    $lineGst = ($lineTax * floatval($itm->gst_rate ?? 0)) / 100;
+                    $ordTax += $lineTax;
+                    $ordG += $lineGst;
+                }
+                $orderGrandTotal = $ordTax + $ordG;
+            } else {
+                $orderGrandTotal = (float)($o->grand_total ?? 0);
+            }
           @endphp
           <div class="pos-mobile-order-card">
             <div class="pos-mobile-card-header">
@@ -278,7 +363,7 @@
               <span class="text-muted" style="font-size: 0.8rem;">
                 <i class="fa-solid fa-utensils me-1"></i> {{ $itemCount }} items • {{ $isGst ? 'GST Bill' : 'Non-GST' }}
               </span>
-              <span class="pos-amount-text">₹{{ number_format($o->grand_total ?? 0, 2) }}</span>
+              <span class="pos-amount-text">₹{{ number_format($orderGrandTotal, 2) }}</span>
             </div>
 
             <a href="{{ route('temp.orders.view', $o->id) }}" class="btn-review-order" style="justify-content: center; height: 42px; width: 100%;">

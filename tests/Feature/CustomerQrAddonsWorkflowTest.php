@@ -11,12 +11,12 @@ use App\Models\TableManage;
 use App\Models\TempOrder;
 use App\Models\TempOrderItem;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class CustomerQrAddonsWorkflowTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     protected $restaurant;
     protected $table;
@@ -115,7 +115,7 @@ class CustomerQrAddonsWorkflowTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Gourmet Cheese Pizza');
-        $response->assertSee('Customisable');
+        $response->assertSee('customerAddonModal', false);
         $response->assertSee('Extra Mozzarella', false);
     }
 
@@ -168,16 +168,18 @@ class CustomerQrAddonsWorkflowTest extends TestCase
         $this->assertNotEmpty($tempItem->addons);
         $this->assertCount(2, $tempItem->addons_list);
 
-        // Unit price = (200 + 40 + (25*2)) = 290
-        // Discount 10% = 290 - 29 = 261
-        // Qty 2 -> Taxable = 261 * 2 = 522
-        // GST 5% = 26.10
-        // Total = 548.10
-        $this->assertEquals(290.00, floatval($tempItem->price));
-        $this->assertEquals(261.00, floatval($tempItem->discounted_price));
-        $this->assertEquals(522.00, floatval($tempItem->taxable_amount));
-        $this->assertEquals(26.10, floatval($tempItem->gst_amount));
-        $this->assertEquals(548.10, floatval($tempItem->total_amount));
+        // Base price: 200.00
+        // Discount 10% on dish: 180.00
+        // Qty 2 -> Dish taxable: 180 * 2 = 360.00
+        // Addons: 40 + (25*2) = 90.00
+        // Taxable = 360 + 90 = 450.00
+        // GST 5% = 22.50
+        // Total = 472.50
+        $this->assertEquals(200.00, floatval($tempItem->price));
+        $this->assertEquals(180.00, floatval($tempItem->discounted_price));
+        $this->assertEquals(450.00, floatval($tempItem->taxable_amount));
+        $this->assertEquals(22.50, floatval($tempItem->gst_amount));
+        $this->assertEquals(472.50, floatval($tempItem->total_amount));
 
         // 2. Admin approves temporary order
         $this->actingAs($this->adminUser);
@@ -192,7 +194,7 @@ class CustomerQrAddonsWorkflowTest extends TestCase
         $this->assertNotEmpty($mainOrderItem->addons);
         $this->assertCount(2, $mainOrderItem->addons_list);
         $this->assertEquals('Extra Mozzarella', $mainOrderItem->addons_list[0]['name']);
-        $this->assertEquals(548.10, floatval($mainOrderItem->total_amount));
+        $this->assertEquals(472.50, floatval($mainOrderItem->total_amount));
 
         // 3. Customer views active order details
         session(['customer_qr_allowed_orders' => [(int) $mainOrder->id]]);
@@ -209,8 +211,8 @@ class CustomerQrAddonsWorkflowTest extends TestCase
             'table_id' => $this->table->id,
             'customer_name' => 'Aditya Sharma',
             'phone' => '9876543210',
-            'order_status' => 'ACCEPTED',
-            'order_type' => 'DINEIN',
+            'order_status' => 'PENDING',
+            'order_type' => 'DINE_IN',
             'order_complete' => 'PROGRESS',
             'payment_status' => 'PENDING',
             'total_amount' => 100.00,
@@ -253,8 +255,137 @@ class CustomerQrAddonsWorkflowTest extends TestCase
 
         $addedItem = OrderItems::where('order_id', $mainOrder->id)->latest('id')->first();
         $this->assertNotNull($addedItem);
-        $this->assertEquals(240.00, floatval($addedItem->price));
+        $this->assertEquals(200.00, floatval($addedItem->price));
+        $this->assertEquals(240.00, floatval($addedItem->taxable_amount));
         $this->assertNotEmpty($addedItem->addons);
         $this->assertEquals('Extra Mozzarella', $addedItem->addons_list[0]['name']);
     }
+
+    public function test_customer_can_order_standalone_addons_separately()
+    {
+        $orderItemsPayload = [
+            [
+                'id' => 'addon_' . $this->addonDip->id,
+                'name' => 'Garlic Dip',
+                'price' => 25.00,
+                'qty' => 2,
+                'is_addon' => true,
+                'addons' => [
+                    [
+                        'id' => $this->addonDip->id,
+                        'name' => 'Garlic Dip',
+                        'price' => 25.00,
+                        'qty' => 2,
+                        'food_type' => 'Veg',
+                    ]
+                ]
+            ]
+        ];
+
+        $response = $this->postJson(route('temp.order.store'), [
+            'restaurant_id' => $this->restaurant->id,
+            'table_id' => $this->table->id,
+            'customer_name' => 'Standalone Addon Customer',
+            'customer_phone' => '9998887776',
+            'order_items' => $orderItemsPayload,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['status' => true]);
+
+        $tempOrder = TempOrder::where('table_id', $this->table->id)->latest('id')->first();
+        $this->assertNotNull($tempOrder);
+
+        $tempItem = TempOrderItem::where('temp_order_id', $tempOrder->id)->first();
+        $this->assertNotNull($tempItem);
+        $this->assertNull($tempItem->subcategory_id);
+        $this->assertEquals('Garlic Dip', $tempItem->subcategory->name);
+        $this->assertEquals(25.00, floatval($tempItem->price));
+        $this->assertEquals(2, $tempItem->quantity);
+        $this->assertEquals(50.00, floatval($tempItem->taxable_amount));
+
+        // Admin approves temporary order
+        $this->actingAs($this->adminUser);
+        $approveResponse = $this->get(route('admin.temporder.approve', $tempOrder->id));
+        $approveResponse->assertRedirect();
+
+        $mainOrder = OrderManage::where('table_id', $this->table->id)->latest('id')->first();
+        $this->assertNotNull($mainOrder);
+
+        $mainOrderItem = OrderItems::where('order_id', $mainOrder->id)->latest('id')->first();
+        $this->assertNotNull($mainOrderItem);
+        $this->assertNull($mainOrderItem->subcategory_id);
+        $this->assertEquals('Garlic Dip', $mainOrderItem->subcategory->name);
+        $this->assertEquals(2, $mainOrderItem->quantity);
+    }
+
+    public function test_order_success_page_renders_attached_and_standalone_addons()
+    {
+        $tempOrder = TempOrder::create([
+            'restaurant_id' => $this->restaurant->id,
+            'table_id' => $this->table->id,
+            'customer_name' => 'Addon Viewer',
+            'customer_phone' => '9876543210',
+            'order_status' => 'PENDING',
+            'total_amount' => 240.00,
+            'grand_total' => 240.00,
+        ]);
+
+        // Item 1: Dish with attached addon
+        TempOrderItem::create([
+            'restaurant_id' => $this->restaurant->id,
+            'temp_order_id' => $tempOrder->id,
+            'subcategory_id' => $this->dish->id,
+            'quantity' => 1,
+            'price' => 240.00,
+            'discounted_price' => 240.00,
+            'total_amount' => 240.00,
+            'order_status' => 'PENDING',
+            'addons' => [
+                [
+                    'id' => $this->addonCheese->id,
+                    'name' => 'Extra Mozzarella',
+                    'price' => 40.00,
+                    'qty' => 1,
+                    'food_type' => 'Veg',
+                ]
+            ],
+        ]);
+
+        // Item 2: Standalone addon
+        TempOrderItem::create([
+            'restaurant_id' => $this->restaurant->id,
+            'temp_order_id' => $tempOrder->id,
+            'subcategory_id' => null,
+            'quantity' => 2,
+            'price' => 25.00,
+            'discounted_price' => 25.00,
+            'total_amount' => 50.00,
+            'order_status' => 'PENDING',
+            'addons' => [
+                [
+                    'id' => $this->addonDip->id,
+                    'name' => 'Garlic Dip',
+                    'price' => 25.00,
+                    'qty' => 2,
+                    'food_type' => 'Veg',
+                ]
+            ],
+        ]);
+
+        session([
+            'customer_qr_allowed_orders' => [(int) $tempOrder->id],
+            'customer_qr_order_id' => $tempOrder->id,
+            'customer_qr_order_type' => 'temp',
+        ]);
+
+        $response = $this->get(route('order.success', $tempOrder->id));
+
+        $response->assertStatus(200);
+        $response->assertSee('Gourmet Cheese Pizza');
+        $response->assertSee('Extra Mozzarella');
+        $response->assertSee('Garlic Dip');
+        $response->assertSee('Add-on');
+    }
 }
+

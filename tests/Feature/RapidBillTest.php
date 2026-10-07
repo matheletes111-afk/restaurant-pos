@@ -330,7 +330,8 @@ class RapidBillTest extends TestCase
         $this->assertGreaterThanOrEqual(195, $order->grand_total);
 
         $orderItem = OrderItems::where('order_id', $order->id)->first();
-        $this->assertEquals(195, $orderItem->price);
+        $this->assertEquals(120, $orderItem->price);
+        $this->assertEquals(195, $orderItem->taxable_amount);
     }
 
     public function test_create_rapid_bill_with_multiple_quantity_addons()
@@ -384,10 +385,67 @@ class RapidBillTest extends TestCase
         $this->assertGreaterThanOrEqual(180, $order->grand_total);
 
         $orderItem = OrderItems::where('order_id', $order->id)->first();
-        $this->assertEquals(180, $orderItem->price);
+        $this->assertEquals(120, $orderItem->price);
+        $this->assertEquals(180, $orderItem->taxable_amount);
         $this->assertNotEmpty($orderItem->addons_list);
         $this->assertEquals('Extra Cheese Dip', $orderItem->addons_list[0]['name']);
         $this->assertEquals(2, $orderItem->addons_list[0]['qty']);
+    }
+
+    public function test_rapid_bill_dish_quantity_scales_only_dish_base_price()
+    {
+        $data = $this->setupRestaurantAndUser();
+
+        $addon = \App\Models\DishAddon::create([
+            'restaurant_id' => $data['restaurant']->id,
+            'name' => 'Garlic Butter',
+            'price' => 25.00,
+            'food_type' => 'VEG',
+            'status' => 'A'
+        ]);
+
+        // Dish base price = 200, qty = 2, addon = 25 (qty 1)
+        // Total should be (200 * 2) + 25 = 425 (NOT (200 + 25) * 2 = 450)
+        $data['dish1']->price = 200.00;
+        $data['dish1']->save();
+
+        $payload = [
+            'customer_name' => 'Scaling Test Customer',
+            'customer_phone' => '9877665544',
+            'order_type' => 'takeaway',
+            'cash_amount' => 425,
+            'upi_amount' => 0,
+            'print_bill' => 0,
+            'items' => [
+                [
+                    'dish_id' => $data['dish1']->id,
+                    'quantity' => 2,
+                    'price' => 200.00,
+                    'discount_percentage' => 0,
+                    'addons' => [
+                        [
+                            'id' => $addon->id,
+                            'name' => 'Garlic Butter',
+                            'price' => 25.00,
+                            'qty' => 1,
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        $response = $this->actingAs($data['user'])
+            ->postJson(route('rapid.bill.store'), $payload);
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+
+        $order = OrderManage::find($response->json('order_id'));
+        $this->assertNotNull($order);
+        $orderItem = OrderItems::where('order_id', $order->id)->first();
+        $this->assertEquals(200.00, floatval($orderItem->price));
+        $this->assertEquals(2, $orderItem->quantity);
+        $this->assertEquals(425.00, floatval($orderItem->taxable_amount));
     }
 
     public function test_order_invoice_page_renders_addons()
@@ -518,5 +576,36 @@ class RapidBillTest extends TestCase
             ->get(route('kitchen.kot.pdf', $orderItem->id));
 
         $kotPdfResponse->assertStatus(200);
+    }
+
+    public function test_rapid_bill_rejects_payment_exceeding_grand_total()
+    {
+        $data = $this->setupRestaurantAndUser();
+
+        $payload = [
+            'customer_name' => 'Overpayer',
+            'customer_phone' => '9876543210',
+            'order_type' => 'takeaway',
+            'cash_amount' => 500.00,
+            'upi_amount' => 500.00,
+            'items' => [
+                [
+                    'dish_id' => $data['dish1']->id,
+                    'quantity' => 1,
+                    'price' => 120,
+                    'discount_percentage' => 0,
+                    'addons' => []
+                ]
+            ]
+        ];
+
+        $response = $this->actingAs($data['user'])
+            ->postJson(route('rapid.bill.store'), $payload);
+
+        $response->assertStatus(422);
+        $response->assertJson([
+            'success' => false,
+        ]);
+        $this->assertStringContainsString('cannot exceed the Grand Total', $response->json('message'));
     }
 }

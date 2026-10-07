@@ -571,41 +571,44 @@ function showToast(message, isError = false) {
     }, 2800);
 }
 
-function calculateItemDetails(originalPrice, qty, discountPercent = 0) {
-    let discountedPricePerItem = originalPrice - (originalPrice * discountPercent / 100);
-    let taxableAmount = discountedPricePerItem * qty;
-    let gstAmount = 0;
-    let gstRate = 0;
-    if (isGstRegistered) {
-        gstRate = restaurantGstPercentage;
-        gstAmount = (taxableAmount * gstRate) / 100;
-    }
-    let totalAmount = taxableAmount + gstAmount;
-    
-    return {
-        discountedPricePerItem: discountedPricePerItem,
-        taxableAmount: taxableAmount,
-        gstAmount: gstAmount,
-        gstRate: gstRate,
-        totalAmount: totalAmount,
-        itemDiscountAmount: (originalPrice * qty) - taxableAmount
-    };
-}
-
-function getItemEffectiveUnitPrice(item) {
-    if (item.is_addon) {
-        return parseFloat(item.price) || 0;
-    }
+function calculateItemDetails(item) {
     let basePrice = parseFloat(item.price) || 0;
+    let qty = parseInt(item.qty) || 1;
+    let discountPercent = parseFloat(item.itemDiscount || 0) || 0;
+    let isStandaloneAddon = !!item.is_addon;
     let addonsCost = 0;
-    if (item.addons && Array.isArray(item.addons)) {
+    if (!isStandaloneAddon && item.addons && Array.isArray(item.addons)) {
         item.addons.forEach(a => {
             let p = parseFloat(a.price) || 0;
             let q = parseInt(a.qty || a.quantity) || 1;
             addonsCost += (p * q);
         });
     }
-    return basePrice + addonsCost;
+    
+    let discountedPricePerItem = basePrice - (basePrice * discountPercent / 100);
+    let taxableAmount = isStandaloneAddon ? (discountedPricePerItem * qty) : ((discountedPricePerItem * qty) + addonsCost);
+    let originalAmount = isStandaloneAddon ? (basePrice * qty) : ((basePrice * qty) + addonsCost);
+    let itemDiscountAmount = (basePrice * discountPercent / 100) * qty;
+
+    let gstRate = isGstRegistered ? restaurantGstPercentage : 0;
+    let gstAmount = (taxableAmount * gstRate) / 100;
+    let totalAmount = taxableAmount + gstAmount;
+    
+    return {
+        basePrice: basePrice,
+        discountedPricePerItem: discountedPricePerItem,
+        taxableAmount: taxableAmount,
+        originalAmount: originalAmount,
+        gstAmount: gstAmount,
+        gstRate: gstRate,
+        totalAmount: totalAmount,
+        itemDiscountAmount: itemDiscountAmount,
+        addonsCost: addonsCost
+    };
+}
+
+function getItemEffectiveUnitPrice(item) {
+    return parseFloat(item.price) || 0;
 }
 
 function updateSummary() {
@@ -616,11 +619,9 @@ function updateSummary() {
     let totalCount = 0;
     
     orderItems.forEach(item => {
-        let unitPrice = getItemEffectiveUnitPrice(item);
-        let originalAmount = unitPrice * item.qty;
-        let details = calculateItemDetails(unitPrice, item.qty, item.itemDiscount || 0);
+        let details = calculateItemDetails(item);
         
-        originalSubtotal += originalAmount;
+        originalSubtotal += details.originalAmount;
         totalTaxable += details.taxableAmount;
         totalGst += details.gstAmount;
         totalItemDiscount += details.itemDiscountAmount;
@@ -673,9 +674,11 @@ function syncPaymentSplit(triggerSource = 'none') {
         if (!userEditedSplit) {
             cashInput.val(finalTotal.toFixed(2));
             upiInput.val('0.00');
+        } else {
+            let cashVal = parseFloat(cashInput.val()) || 0;
+            let remaining = Math.max(0, finalTotal - cashVal);
+            upiInput.val(remaining.toFixed(2));
         }
-    } else if (triggerSource === 'user_input') {
-        userEditedSplit = true;
     }
 
     let cashVal = parseFloat(cashInput.val()) || 0;
@@ -737,8 +740,7 @@ function renderOrderTable() {
     
     orderItems.forEach((item, index) => {
         let isStandaloneAddon = !!item.is_addon;
-        let effectiveUnitPrice = getItemEffectiveUnitPrice(item);
-        let details = calculateItemDetails(effectiveUnitPrice, item.qty, item.itemDiscount || 0);
+        let details = calculateItemDetails(item);
         let hasAddons = !isStandaloneAddon && item.addons && Array.isArray(item.addons) && item.addons.length > 0;
         
         let addonsHtml = '';
@@ -804,8 +806,8 @@ function renderOrderTable() {
                     ${addonsHtml}
                 </td>
                 <td class="text-end">
-                    <div class="fw-bold text-dark">₹${effectiveUnitPrice.toFixed(2)}</div>
-                    ${(hasAddons && !isStandaloneAddon) ? `<div class="small text-muted" style="font-size: 0.72rem;">Base: ₹${parseFloat(item.price).toFixed(2)}</div>` : ''}
+                    <div class="fw-bold text-dark">₹${details.basePrice.toFixed(2)}</div>
+                    ${(hasAddons && !isStandaloneAddon) ? `<div class="small text-muted" style="font-size: 0.72rem;">+₹${details.addonsCost.toFixed(2)} Add-ons</div>` : ''}
                 </td>
                 <td class="text-center">
                     <input type="number" class="item-disc-input item-discount-input" 
@@ -1455,13 +1457,41 @@ $(document).ready(function() {
         syncPaymentSplit('button');
     });
 
-    // Independent manual edit on Cash and UPI fields without auto-changing the other field
-    $('#upi_payment_amount').on('input keyup change', function() {
-        syncPaymentSplit('user_input');
+    // Auto-calculate remaining amount when manually editing Cash or UPI
+    $('#cash_payment_amount').on('input keyup change', function() {
+        let finalTotal = parseFloat($('#final_total').text()) || 0;
+        let cashRaw = $(this).val();
+        let cashVal = parseFloat(cashRaw);
+        if (isNaN(cashVal) || cashVal < 0) {
+            cashVal = 0;
+            $(this).val('0.00');
+        }
+        if (cashVal > finalTotal) {
+            cashVal = finalTotal;
+            $(this).val(finalTotal.toFixed(2));
+        }
+        let remaining = Math.max(0, finalTotal - cashVal);
+        $('#upi_payment_amount').val(remaining.toFixed(2));
+        userEditedSplit = true;
+        syncPaymentSplit('cash_input');
     });
 
-    $('#cash_payment_amount').on('input keyup change', function() {
-        syncPaymentSplit('user_input');
+    $('#upi_payment_amount').on('input keyup change', function() {
+        let finalTotal = parseFloat($('#final_total').text()) || 0;
+        let upiRaw = $(this).val();
+        let upiVal = parseFloat(upiRaw);
+        if (isNaN(upiVal) || upiVal < 0) {
+            upiVal = 0;
+            $(this).val('0.00');
+        }
+        if (upiVal > finalTotal) {
+            upiVal = finalTotal;
+            $(this).val(finalTotal.toFixed(2));
+        }
+        let remaining = Math.max(0, finalTotal - upiVal);
+        $('#cash_payment_amount').val(remaining.toFixed(2));
+        userEditedSplit = true;
+        syncPaymentSplit('upi_input');
     });
     
     // Save Order
@@ -1472,6 +1502,7 @@ $(document).ready(function() {
         let orderDiscount = $('#order_discount').val() || 0;
         let order_complete = $('#order_complete').length ? $('#order_complete').val() : 'DONE';
         let remarks = $('#remarks').val() || null;
+        let finalTotal = parseFloat($('#final_total').text()) || 0;
 
         let cashAmount = 0;
         let upiAmount = 0;
@@ -1479,6 +1510,11 @@ $(document).ready(function() {
         if (order_complete === 'DONE') {
             cashAmount = parseFloat($('#cash_payment_amount').val()) || 0;
             upiAmount = parseFloat($('#upi_payment_amount').val()) || 0;
+
+            if ((cashAmount + upiAmount) > (finalTotal + 0.01)) {
+                showToast(`Total payment (₹${(cashAmount + upiAmount).toFixed(2)}) cannot exceed Grand Total (₹${finalTotal.toFixed(2)})`, true);
+                return;
+            }
         }
         
         if (orderItems.length === 0) {

@@ -173,12 +173,15 @@ class RapidBillController extends Controller
                 ];
             }
 
-            // Total unit price includes base price and any selected addons
-            $unitPriceWithAddons = $isAddonItem ? $origPrice : ($origPrice + $addonsCost);
-
-            // Step A: Item discounted unit price
-            $discountedUnitPrice = $unitPriceWithAddons - ($unitPriceWithAddons * $itemDiscountPercent / 100);
-            $taxableAmount = $discountedUnitPrice * $qty;
+            // Calculation: Dish base price scales with dish qty; addons cost is added separately
+            $discountedUnitPrice = $origPrice - ($origPrice * $itemDiscountPercent / 100);
+            if ($isAddonItem) {
+                $taxableAmount = $discountedUnitPrice * $qty;
+                $lineOriginal = $origPrice * $qty;
+            } else {
+                $taxableAmount = ($discountedUnitPrice * $qty) + $addonsCost;
+                $lineOriginal = ($origPrice * $qty) + $addonsCost;
+            }
 
             // Step B: GST Calculation
             $gstRate = $isGstRegistered ? $restaurantGstPercentage : 0;
@@ -202,7 +205,7 @@ class RapidBillController extends Controller
                 'addons_cost' => $addonsCost,
                 'base_price' => $origPrice,
                 'quantity' => $qty,
-                'original_price' => $unitPriceWithAddons,
+                'original_price' => $origPrice,
                 'discounted_price' => $discountedUnitPrice,
                 'item_discount_percentage' => $itemDiscountPercent,
                 'taxable_amount' => $taxableAmount,
@@ -215,7 +218,7 @@ class RapidBillController extends Controller
                 'is_addon_item' => $isAddonItem,
             ];
 
-            $originalSubtotal += ($unitPriceWithAddons * $qty);
+            $originalSubtotal += $lineOriginal;
             $totalTaxable += $taxableAmount;
             if ($isGstRegistered) {
                 $totalGst += $gstAmount;
@@ -241,6 +244,14 @@ class RapidBillController extends Controller
         if ($totalPaidInput <= 0) {
             $cashAmount = $finalTotal;
             $totalPaidInput = $finalTotal;
+        } elseif ($totalPaidInput > ($finalTotal + 0.01)) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Total payment amount (₹' . number_format($totalPaidInput, 2) . ') cannot exceed the Grand Total of ₹' . number_format($finalTotal, 2) . '.'
+                ], 422);
+            }
+            return redirect()->back()->with('error', 'Payment amount cannot exceed the Grand Total.');
         }
 
         $paymentStatus = 'PENDING';

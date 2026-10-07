@@ -243,11 +243,15 @@ public function store(Request $request)
             ];
         }
 
-        $unitPriceWithAddons = $isAddonItem ? $basePrice : ($basePrice + $addonsCost);
-
-        // Calculate discounted price
-        $discountedPrice = $unitPriceWithAddons - ($unitPriceWithAddons * $itemDiscount / 100);
-        $taxableAmount = $discountedPrice * $quantity;
+        // Calculate discounted price: dish base price scales with quantity; addons cost is added separately
+        $discountedPrice = $basePrice - ($basePrice * $itemDiscount / 100);
+        if ($isAddonItem) {
+            $taxableAmount = $discountedPrice * $quantity;
+            $lineOriginal = $basePrice * $quantity;
+        } else {
+            $taxableAmount = ($discountedPrice * $quantity) + $addonsCost;
+            $lineOriginal = ($basePrice * $quantity) + $addonsCost;
+        }
         
         // Calculate GST on discounted price
         $gstRate = $isGstRegistered ? $restaurantGstPercentage : 0;
@@ -259,17 +263,17 @@ public function store(Request $request)
         $sgstAmount = ($taxableAmount * $halfGstRate) / 100;
         $totalAmount = $taxableAmount + $gstAmount;
         
-        $originalSubtotal += $unitPriceWithAddons * $quantity;
+        $originalSubtotal += $lineOriginal;
         $totalTaxable += $taxableAmount;
         $totalGst += $gstAmount;
         $totalCgst += $cgstAmount;
         $totalSgst += $sgstAmount;
-        $totalItemDiscount += ($unitPriceWithAddons * $quantity) - $taxableAmount;
+        $totalItemDiscount += ($basePrice * $itemDiscount / 100) * $quantity;
         
         $calculatedItems[] = [
             'subcategory_id' => is_numeric($item['id'] ?? null) ? $item['id'] : null,
             'quantity' => $quantity,
-            'price' => $unitPriceWithAddons,
+            'price' => $basePrice,
             'addons' => $cleanAddons,
             'discounted_price' => $discountedPrice,
             'item_discount_percentage' => $itemDiscount,
@@ -427,11 +431,50 @@ public function store(Request $request)
             $customerName = $tempOrder->customer_name;
             $orderStatus = strtoupper($tempOrder->order_status ?? 'PENDING');
             $items = $tempOrder->items ?? collect();
-            $grandTotal = $tempOrder->grand_total ?? $tempOrder->total_amount;
-            $subtotal = $tempOrder->total_amount;
-            $discount = $tempOrder->discount;
-            $gstAmount = $tempOrder->gst_amount;
-            $taxableAmount = $tempOrder->taxable_amount;
+
+            $computedSubtotal = 0;
+            $computedTaxable = 0;
+            $computedGst = 0;
+            $computedDiscount = 0;
+
+            foreach ($items as $itm) {
+                $addons = $itm->addons_list ?? [];
+                $addonsCost = 0;
+                if (!empty($addons) && is_array($addons)) {
+                    foreach ($addons as $a) {
+                        $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                    }
+                }
+                $isAddonItem = empty($itm->subcategory_id);
+                $iPrice = floatval($itm->price);
+                $iQty = max(1, intval($itm->quantity ?? 1));
+                $iDisc = floatval($itm->item_discount_percentage ?? 0);
+                $iDiscPrice = floatval($itm->discounted_price ?? ($iPrice - ($iPrice * $iDisc / 100)));
+
+                $lineOrig = $isAddonItem ? ($iPrice * $iQty) : (($iPrice * $iQty) + $addonsCost);
+                $lineTax = $isAddonItem ? ($iDiscPrice * $iQty) : (($iDiscPrice * $iQty) + $addonsCost);
+                $gstRate = floatval($itm->gst_rate ?? 0);
+                $lineGst = ($lineTax * $gstRate) / 100;
+
+                $computedSubtotal += $lineOrig;
+                $computedTaxable += $lineTax;
+                $computedGst += $lineGst;
+                $computedDiscount += ($iPrice * $iDisc / 100) * $iQty;
+            }
+
+            if ($items->isEmpty()) {
+                $grandTotal = 0;
+                $subtotal = 0;
+                $taxableAmount = 0;
+                $gstAmount = 0;
+                $discount = 0;
+            } else {
+                $grandTotal = $computedTaxable + $computedGst;
+                $subtotal = $computedSubtotal;
+                $taxableAmount = $computedTaxable;
+                $gstAmount = $computedGst;
+                $discount = $computedDiscount;
+            }
             $isGstBill = ($tempOrder->is_gst_bill ?? 'NO') === 'YES';
 
             return view('order-success', compact(
@@ -913,11 +956,13 @@ public function store(Request $request)
                     ];
                 }
 
-                $unitPriceWithAddons = $isAddonItem ? $basePrice : ($basePrice + $addonsCost);
-
-                // Discounted price
-                $discountedPrice = $unitPriceWithAddons - ($unitPriceWithAddons * $itemDiscount / 100);
-                $taxableAmount = $discountedPrice * $quantity;
+                // Discounted price: dish base price scales with quantity; addons cost is added separately
+                $discountedPrice = $basePrice - ($basePrice * $itemDiscount / 100);
+                if ($isAddonItem) {
+                    $taxableAmount = $discountedPrice * $quantity;
+                } else {
+                    $taxableAmount = ($discountedPrice * $quantity) + $addonsCost;
+                }
 
                 // GST
                 $gstRate = $isGstRegistered ? $restaurantGstPercentage : 0;
@@ -931,7 +976,7 @@ public function store(Request $request)
                     'order_id' => $order->id,
                     'subcategory_id' => is_numeric($item['id'] ?? null) ? $item['id'] : null,
                     'quantity' => $quantity,
-                    'price' => $unitPriceWithAddons,
+                    'price' => $basePrice,
                     'addons' => $cleanAddons,
                     'discounted_price' => $discountedPrice,
                     'item_discount_percentage' => $itemDiscount,
@@ -1111,6 +1156,15 @@ public function store(Request $request)
             }
 
             $tempOrder->order_status = 'REJECTED';
+            $tempOrder->total_amount = 0;
+            $tempOrder->taxable_amount = 0;
+            $tempOrder->gst_amount = 0;
+            $tempOrder->cgst_amount = 0;
+            $tempOrder->sgst_amount = 0;
+            $tempOrder->igst_amount = 0;
+            $tempOrder->grand_total = 0;
+            $tempOrder->discount = 0;
+            $tempOrder->discount_percentage = 0;
             $tempOrder->save();
             $tempOrder->items()->delete();
 
@@ -1267,6 +1321,60 @@ public function store(Request $request)
             $dateStr = Carbon::now()->format('ymd');
             $orderNo = "{$prefix}-{$dateStr}-" . str_pad($todayCount, 3, '0', STR_PAD_LEFT);
 
+            $calculatedSubtotal = 0;
+            $calculatedTaxable = 0;
+            $calculatedGst = 0;
+            $calculatedCgst = 0;
+            $calculatedSgst = 0;
+            $calculatedDiscount = 0;
+
+            // Pre-calculate accurate totals from items
+            $processedItems = [];
+            foreach ($tempOrder->items as $item) {
+                $basePrice = floatval($item->price);
+                $quantity = max(1, intval($item->quantity ?? 1));
+                $itemDiscount = floatval($item->item_discount_percentage ?? 0);
+                $discountedPrice = $basePrice - ($basePrice * $itemDiscount / 100);
+
+                $addonsList = $item->addons_list ?? [];
+                $addonsCost = 0;
+                if (!empty($addonsList) && is_array($addonsList)) {
+                    foreach ($addonsList as $a) {
+                        $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                    }
+                }
+                $isAddon = empty($item->subcategory_id);
+                $lineOrig = $isAddon ? ($basePrice * $quantity) : (($basePrice * $quantity) + $addonsCost);
+                $lineTax = $isAddon ? ($discountedPrice * $quantity) : (($discountedPrice * $quantity) + $addonsCost);
+                $gstRate = floatval($item->gst_rate ?? 0);
+                $lineGst = ($lineTax * $gstRate) / 100;
+                $lineCgst = ($lineTax * ($gstRate / 2)) / 100;
+                $lineSgst = ($lineTax * ($gstRate / 2)) / 100;
+                $lineTotal = $lineTax + $lineGst;
+
+                $calculatedSubtotal += $lineOrig;
+                $calculatedTaxable += $lineTax;
+                $calculatedGst += $lineGst;
+                $calculatedCgst += $lineCgst;
+                $calculatedSgst += $lineSgst;
+                $calculatedDiscount += ($basePrice * $itemDiscount / 100) * $quantity;
+
+                $processedItems[] = [
+                    'item' => $item,
+                    'quantity' => $quantity,
+                    'price' => $basePrice,
+                    'discounted_price' => $discountedPrice,
+                    'item_discount_percentage' => $itemDiscount,
+                    'taxable_amount' => $lineTax,
+                    'gst_rate' => $gstRate,
+                    'gst_amount' => $lineGst,
+                    'cgst_amount' => $lineCgst,
+                    'sgst_amount' => $lineSgst,
+                    'igst_amount' => 0,
+                    'total_amount' => $lineTotal,
+                ];
+            }
+
             // Create main order using new + save
             $order = new OrderManage();
             $order->table_id       = $tempOrder->table_id;
@@ -1274,14 +1382,14 @@ public function store(Request $request)
             $order->customer_phone = $tempOrder->customer_phone;
             $order->order_id       = $orderNo;
             $order->order_type     = $tempOrder->order_type;
-            $order->total_amount   = $tempOrder->total_amount;
-            $order->taxable_amount = $tempOrder->taxable_amount;
-            $order->gst_amount     = $tempOrder->gst_amount;
-            $order->cgst_amount    = $tempOrder->cgst_amount;
-            $order->sgst_amount    = $tempOrder->sgst_amount;
-            $order->igst_amount    = $tempOrder->igst_amount;
-            $order->grand_total    = $tempOrder->grand_total;
-            $order->discount       = $tempOrder->discount;
+            $order->total_amount   = $calculatedSubtotal;
+            $order->taxable_amount = $calculatedTaxable;
+            $order->gst_amount     = $calculatedGst;
+            $order->cgst_amount    = $calculatedCgst;
+            $order->sgst_amount    = $calculatedSgst;
+            $order->igst_amount    = 0;
+            $order->grand_total    = $calculatedTaxable + $calculatedGst;
+            $order->discount       = $calculatedDiscount;
             $order->discount_percentage = $tempOrder->discount_percentage;
             $order->round_off      = $tempOrder->round_off;
             $order->is_gst_bill    = $tempOrder->is_gst_bill;
@@ -1299,21 +1407,23 @@ public function store(Request $request)
             $kotNo = OrderItems::generateNextKotNumber($restaurantId);
 
             // Move items
-            foreach ($tempOrder->items as $item) {
+            foreach ($processedItems as $p) {
+                $origItem = $p['item'];
                 $orderItem = new OrderItems();
                 $orderItem->order_id       = $order->id;
-                $orderItem->subcategory_id = $item->subcategory_id;
-                $orderItem->quantity       = $item->quantity;
-                $orderItem->price          = $item->price;
-                $orderItem->discounted_price = $item->discounted_price;
-                $orderItem->item_discount_percentage = $item->item_discount_percentage;
-                $orderItem->taxable_amount = $item->taxable_amount;
-                $orderItem->gst_rate       = $item->gst_rate;
-                $orderItem->gst_amount     = $item->gst_amount;
-                $orderItem->cgst_amount    = $item->cgst_amount;
-                $orderItem->sgst_amount    = $item->sgst_amount;
-                $orderItem->igst_amount    = $item->igst_amount;
-                $orderItem->total_amount   = $item->total_amount;
+                $orderItem->subcategory_id = $origItem->subcategory_id;
+                $orderItem->quantity       = $p['quantity'];
+                $orderItem->price          = $p['price'];
+                $orderItem->addons         = $origItem->addons;
+                $orderItem->discounted_price = $p['discounted_price'];
+                $orderItem->item_discount_percentage = $p['item_discount_percentage'];
+                $orderItem->taxable_amount = $p['taxable_amount'];
+                $orderItem->gst_rate       = $p['gst_rate'];
+                $orderItem->gst_amount     = $p['gst_amount'];
+                $orderItem->cgst_amount    = $p['cgst_amount'];
+                $orderItem->sgst_amount    = $p['sgst_amount'];
+                $orderItem->igst_amount    = $p['igst_amount'];
+                $orderItem->total_amount   = $p['total_amount'];
                 $orderItem->order_status   = 'PENDING';
                 $orderItem->restaurant_id  = $order->restaurant_id;
                 $orderItem->user_id        = auth()->id();

@@ -898,8 +898,14 @@
                             @if(!empty($itm->addons_list) && count($itm->addons_list) > 0)
                                 <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
                                     @foreach($itm->addons_list as $addon)
-                                        <span style="background: #fff3ed; color: #ff5e14; border: 1px solid #ffd8c7; border-radius: 6px; padding: 2px 6px; font-size: 0.72rem; font-weight: 600;">
-                                            + {{ $addon['name'] }} (₹{{ number_format($addon['price'], 2) }}{{ ($addon['qty'] ?? 1) > 1 ? ' x' . $addon['qty'] : '' }})
+                                        @php
+                                            $aQty = $addon['qty'] ?? $addon['quantity'] ?? 1;
+                                            $aPrice = floatval($addon['price'] ?? 0);
+                                        @endphp
+                                        <span style="background: #fff3ed; color: #ff5e14; border: 1px solid #ffd8c7; border-radius: 6px; padding: 2px 6px; font-size: 0.72rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span>+ {{ $addon['name'] }}</span>
+                                            <span style="color: #9a3412;">(₹{{ number_format($aPrice, 2) }})</span>
+                                            <span style="background: #ffedd5; color: #c2410c; font-weight: 800; font-size: 0.68rem; padding: 0 4px; border-radius: 3px; border: 1px solid #fed7aa;">x{{ $aQty }}</span>
                                         </span>
                                     @endforeach
                                 </div>

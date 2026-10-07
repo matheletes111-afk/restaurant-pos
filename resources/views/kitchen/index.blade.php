@@ -37,7 +37,12 @@
           <div class="kds-header-title-wrap">
             <span class="kds-header-eyebrow">Kitchen Display System (KDS)</span>
             <h1 class="kds-header-title">Live Kitchen Orders</h1>
-            <p class="kds-header-subtitle">Real-time KOT preparation, order routing &amp; ticket tracking</p>
+            <p class="kds-header-subtitle">
+              Showing KOTs from <strong>{{ date('d M Y', strtotime($from_date)) }}</strong> to <strong>{{ date('d M Y', strtotime($to_date)) }}</strong>
+              @if($from_date == date('Y-m-d', strtotime('-1 day')) && $to_date == date('Y-m-d'))
+                <span class="badge bg-light-primary text-primary ms-1" style="font-size: 0.7rem; font-weight: 700;">Last 2 Days</span>
+              @endif
+            </p>
           </div>
         </div>
 
@@ -72,21 +77,24 @@
       @include('includes.message')
 
       @php
-        $totalItems = count($OrderItems ?? []);
-        $pendingCount = $OrderItems->where('order_status', 'PENDING')->count();
-        $cookingCount = $OrderItems->where('order_status', 'COOKING')->count();
-        $doneCount = $OrderItems->where('order_status', 'DONE')->count();
+        $kotList = $kotGroups ?? collect([]);
+        $totalKotCount = $kotList->count();
+        $pendingKotCount = $kotList->where('status', 'PENDING')->count();
+        $cookingKotCount = $kotList->where('status', 'COOKING')->count();
+        $doneKotCount = $kotList->where('status', 'DONE')->count();
+        $totalDishesCount = count($OrderItems ?? []);
       @endphp
 
       <!-- ===================================================
-           2. QUICK METRICS STAT DECK
+           2. QUICK METRICS STAT DECK (KOT GROUPED)
            =================================================== -->
       <div class="kds-stats-grid">
-        <!-- All Orders -->
+        <!-- All KOT Orders -->
         <div class="kds-stat-card stat-all {{ $selected_status == 'all' ? 'active' : '' }}" data-filter="all">
           <div class="kds-stat-info">
-            <span class="kds-stat-label">Total KOT Items</span>
-            <span class="kds-stat-value" id="statAllCount">{{ $totalItems }}</span>
+            <span class="kds-stat-label">Total KOT Cards</span>
+            <span class="kds-stat-value" id="statAllCount">{{ $totalKotCount }}</span>
+            <small class="text-muted" style="font-size: 0.72rem; font-weight: 600; margin-top: 2px;">{{ $totalDishesCount }} dishes total</small>
           </div>
           <div class="kds-stat-badge-icon">
             <i class="fa-solid fa-utensils"></i>
@@ -97,7 +105,8 @@
         <div class="kds-stat-card stat-pending {{ $selected_status == 'PENDING' ? 'active' : '' }}" data-filter="PENDING">
           <div class="kds-stat-info">
             <span class="kds-stat-label">⏳ Pending Prep</span>
-            <span class="kds-stat-value" id="statPendingCount">{{ $pendingCount }}</span>
+            <span class="kds-stat-value" id="statPendingCount">{{ $pendingKotCount }}</span>
+            <small class="text-muted" style="font-size: 0.72rem; font-weight: 600; margin-top: 2px;">Awaiting cook</small>
           </div>
           <div class="kds-stat-badge-icon">
             <i class="fa-solid fa-clock"></i>
@@ -108,7 +117,8 @@
         <div class="kds-stat-card stat-cooking {{ $selected_status == 'COOKING' ? 'active' : '' }}" data-filter="COOKING">
           <div class="kds-stat-info">
             <span class="kds-stat-label">👨‍🍳 Cooking</span>
-            <span class="kds-stat-value" id="statCookingCount">{{ $cookingCount }}</span>
+            <span class="kds-stat-value" id="statCookingCount">{{ $cookingKotCount }}</span>
+            <small class="text-muted" style="font-size: 0.72rem; font-weight: 600; margin-top: 2px;">In preparation</small>
           </div>
           <div class="kds-stat-badge-icon">
             <i class="fa-solid fa-fire"></i>
@@ -119,7 +129,8 @@
         <div class="kds-stat-card stat-done {{ $selected_status == 'DONE' ? 'active' : '' }}" data-filter="DONE">
           <div class="kds-stat-info">
             <span class="kds-stat-label">✅ Ready / Done</span>
-            <span class="kds-stat-value" id="statDoneCount">{{ $doneCount }}</span>
+            <span class="kds-stat-value" id="statDoneCount">{{ $doneKotCount }}</span>
+            <small class="text-muted" style="font-size: 0.72rem; font-weight: 600; margin-top: 2px;">Prepared tickets</small>
           </div>
           <div class="kds-stat-badge-icon">
             <i class="fa-solid fa-circle-check"></i>
@@ -140,20 +151,20 @@
         <!-- Status Filter Tabs -->
         <div class="kds-filter-tabs">
           <button type="button" class="kds-tab-btn {{ $selected_status == 'all' ? 'active' : '' }}" data-filter="all">
-            <i class="fa-solid fa-border-all"></i> All ({{ $totalItems }})
+            <i class="fa-solid fa-border-all"></i> All ({{ $totalKotCount }})
           </button>
           <button type="button" class="kds-tab-btn {{ $selected_status == 'PENDING' ? 'active' : '' }}" data-filter="PENDING">
-            ⏳ Pending ({{ $pendingCount }})
+            ⏳ Pending ({{ $pendingKotCount }})
           </button>
           <button type="button" class="kds-tab-btn {{ $selected_status == 'COOKING' ? 'active' : '' }}" data-filter="COOKING">
-            👨‍🍳 Cooking ({{ $cookingCount }})
+            👨‍🍳 Cooking ({{ $cookingKotCount }})
           </button>
           <button type="button" class="kds-tab-btn {{ $selected_status == 'DONE' ? 'active' : '' }}" data-filter="DONE">
-            ✅ Done ({{ $doneCount }})
+            ✅ Done ({{ $doneKotCount }})
           </button>
           <button type="button" class="kds-tab-btn" id="toggleFilterPanelBtn" title="Toggle Date & Table Filter Panel">
             <i class="fa-solid fa-sliders"></i>
-            <span class="d-none d-sm-inline">Filters</span>
+            <span class="d-none d-sm-inline">Date &amp; Filter</span>
           </button>
         </div>
       </div>
@@ -161,17 +172,17 @@
       <!-- ===================================================
            4. DATE RANGE & TABLE FILTER PANEL (COLLAPSIBLE)
            =================================================== -->
-      <div class="kds-date-filter-panel" id="dateFilterPanel" style="{{ ($from_date != date('Y-m-d', strtotime('-3 days')) || $to_date != date('Y-m-d') || !empty($selected_table)) ? '' : 'display: none;' }}">
+      <div class="kds-date-filter-panel" id="dateFilterPanel" style="{{ ($from_date != date('Y-m-d', strtotime('-1 day')) || $to_date != date('Y-m-d') || !empty($selected_table)) ? '' : 'display: none;' }}">
         <form method="GET" action="{{ route('manage.kitchen-panel') }}" id="filterForm">
           <div class="kds-filter-grid">
             <div class="kds-form-group">
               <label class="kds-form-label"><i class="fa-solid fa-calendar-days text-primary"></i> From Date</label>
-              <input type="date" name="from_date" class="kds-form-control" value="{{ $from_date }}" max="{{ date('Y-m-d') }}">
+              <input type="date" name="from_date" id="formFromDate" class="kds-form-control" value="{{ $from_date }}" max="{{ date('Y-m-d') }}">
             </div>
             
             <div class="kds-form-group">
               <label class="kds-form-label"><i class="fa-solid fa-calendar-days text-primary"></i> To Date</label>
-              <input type="date" name="to_date" class="kds-form-control" value="{{ $to_date }}" max="{{ date('Y-m-d') }}">
+              <input type="date" name="to_date" id="formToDate" class="kds-form-control" value="{{ $to_date }}" max="{{ date('Y-m-d') }}">
             </div>
 
             <div class="kds-form-group">
@@ -199,31 +210,65 @@
                 <i class="fa-solid fa-magnifying-glass"></i> Apply
               </button>
               <a href="{{ route('manage.kitchen-panel') }}" class="btn-kds-action">
-                <i class="fa-solid fa-rotate-left"></i> Reset
+                <i class="fa-solid fa-rotate-left"></i> Reset (Last 2 Days)
               </a>
             </div>
+          </div>
+
+          <!-- Quick Date Presets -->
+          <div class="kds-quick-date-pills">
+            <span class="text-muted me-1" style="font-size: 0.74rem; font-weight: 700;">Quick Presets:</span>
+            <button type="button" class="kds-quick-date-btn {{ ($from_date == date('Y-m-d', strtotime('-1 day')) && $to_date == date('Y-m-d')) ? 'active' : '' }}" data-days="2">
+              Last 2 Days (Default)
+            </button>
+            <button type="button" class="kds-quick-date-btn {{ ($from_date == date('Y-m-d') && $to_date == date('Y-m-d')) ? 'active' : '' }}" data-days="1">
+              Today Only
+            </button>
+            <button type="button" class="kds-quick-date-btn {{ ($from_date == date('Y-m-d', strtotime('-6 days')) && $to_date == date('Y-m-d')) ? 'active' : '' }}" data-days="7">
+              Last 7 Days
+            </button>
+            <button type="button" class="kds-quick-date-btn {{ ($from_date == date('Y-m-01') && $to_date == date('Y-m-d')) ? 'active' : '' }}" data-days="month">
+              This Month
+            </button>
           </div>
         </form>
       </div>
 
       <!-- ===================================================
-           5. KDS ORDERS GRID
+           5. KDS ORDERS GRID (MERGED BY KOT NUMBER & ORDER)
            =================================================== -->
       <div class="kds-orders-grid" id="kdsOrdersGrid">
-        @forelse($OrderItems as $item)
+        @forelse($kotList as $kot)
         @php
-          $tableName = @$item->order->table->name ?? 'Take Away';
-          $dishName = @$item->subcategory->name ?? 'Dish Item';
-          $foodType = strtoupper(@$item->subcategory->food_type ?? 'VEG');
-          $orderNo = @$item->order->order_id ?? $item->order_id;
-          $kotNo = $item->kot_no ?? 'N/A';
-          $status = $item->order_status ?? 'PENDING';
-          $addons = $item->addons_list;
-          $addonSearch = collect($addons)->pluck('name')->join(' ');
-          $searchData = strtolower("{$dishName} {$orderNo} {$tableName} {$kotNo} {$item->note} {$addonSearch}");
+          $tableName = $kot->table_name;
+          $orderNo = $kot->order_no;
+          $kotNo = $kot->kot_no ?? 'N/A';
+          $status = $kot->status ?? 'PENDING';
+          
+          // Build search string combining all dishes, notes, and addons in this KOT
+          $allDishNames = [];
+          $allNotes = [];
+          $allAddons = [];
+          foreach($kot->items as $it) {
+            $allDishNames[] = @$it->subcategory->name ?? 'Dish Item';
+            if (!empty($it->note)) $allNotes[] = $it->note;
+            if (!empty($it->addons_list)) {
+              foreach($it->addons_list as $add) {
+                $allAddons[] = $add['name'] ?? '';
+              }
+            }
+          }
+          $searchData = strtolower($orderNo . ' ' . $kotNo . ' ' . $tableName . ' ' . implode(' ', $allDishNames) . ' ' . implode(' ', $allNotes) . ' ' . implode(' ', $allAddons));
         @endphp
         
-        <div class="kds-order-card {{ $status }}" data-status="{{ $status }}" data-search="{{ $searchData }}" id="card_{{ $item->id }}">
+        <div class="kds-order-card {{ $status }}" 
+             data-status="{{ $status }}" 
+             data-search="{{ $searchData }}" 
+             data-card-id="{{ $kot->card_id }}"
+             data-kot-no="{{ $kot->kot_no }}"
+             data-order-id="{{ $kot->order_id }}"
+             data-item-ids="{{ json_encode($kot->item_ids) }}"
+             id="card_{{ $kot->card_id }}">
           
           <!-- Card Header -->
           <div class="kds-card-header">
@@ -233,15 +278,21 @@
               </span>
 
               <div style="display: flex; align-items: center; gap: 8px;">
-                @if($item->kot_no)
+                @if($kot->kot_no)
                 <span class="kds-kot-badge">
-                  <i class="fa-solid fa-fire text-warning"></i> {{ $item->kot_no }}
+                  <i class="fa-solid fa-fire text-warning"></i> {{ $kot->kot_no }}
                 </span>
                 @endif
 
-                <!-- Print KOT Trigger Button -->
+                @if($kot->total_dishes > 1)
+                <span class="kds-items-count-pill" title="Multiple dishes in this KOT">
+                  <i class="fa-solid fa-layer-group"></i> {{ $kot->total_dishes }} Items
+                </span>
+                @endif
+
+                <!-- Print KOT Trigger Button (prints entire KOT lot) -->
                 <button type="button" class="btn-kds-print print-kot-trigger" 
-                        data-id="{{ $item->id }}"
+                        data-id="{{ $kot->primary_item_id }}"
                         title="Print KOT Ticket">
                   <i class="fa-solid fa-print"></i>
                 </button>
@@ -250,12 +301,12 @@
 
             <div class="kds-card-meta-row">
               <span class="kds-meta-item">
-                <i class="fa-regular fa-clock"></i> {{ $item->created_at ? $item->created_at->format('d M, h:i A') : 'Just now' }}
+                <i class="fa-regular fa-clock"></i> {{ $kot->created_at ? $kot->created_at->format('d M, h:i A') : 'Just now' }}
               </span>
 
               <span class="kds-table-pill">
-                @if(@$item->order->table)
-                  <i class="fa-solid fa-chair text-primary"></i> {{ $item->order->table->name }}
+                @if(!$kot->is_takeaway)
+                  <i class="fa-solid fa-chair text-primary"></i> {{ $tableName }}
                 @else
                   <i class="fa-solid fa-bag-shopping text-success"></i> Take Away
                 @endif
@@ -263,63 +314,79 @@
             </div>
           </div>
 
-          <!-- Card Body -->
+          <!-- Card Body: Contains All Dishes in this KOT -->
           <div class="kds-card-body">
-            <div class="kds-dish-title-row">
-              <div>
-                <h3 class="kds-dish-name">{{ $dishName }}</h3>
-                <span class="kds-food-type-tag {{ $foodType }}">
-                  <span class="kds-type-dot"></span>
-                  {{ $foodType }}
-                </span>
-              </div>
-
-              <div class="kds-qty-badge" title="Quantity to Prepare">
-                x{{ $item->quantity }}
-              </div>
-            </div>
-
-            @if(!empty($addons))
-            <div class="kds-addons-container">
-              <div class="kds-addons-header">
-                <i class="fa-solid fa-puzzle-piece"></i> Mapped Add-ons ({{ count($addons) }})
-              </div>
-              <div class="kds-addons-list">
-                @foreach($addons as $a)
-                @php
-                  $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
-                  $aName = $a['name'] ?? 'Add-on';
-                  $aFoodType = strtoupper($a['food_type'] ?? 'VEG');
-                @endphp
-                <div class="kds-addon-item-row">
-                  <div class="kds-addon-left">
-                    <span class="kds-addon-pill"><i class="fa-solid fa-plus me-1"></i>ADD-ON</span>
-                    <span class="kds-food-type-tag {{ $aFoodType }}" style="margin-bottom: 0; padding: 1px 6px; font-size: 0.6rem;">
+            <div class="kds-dishes-deck">
+              @foreach($kot->items as $item)
+              @php
+                $dishName = @$item->subcategory->name ?? 'Dish Item';
+                $foodType = strtoupper(@$item->subcategory->food_type ?? 'VEG');
+                $addons = $item->addons_list;
+              @endphp
+              <div class="kds-dish-block" id="item_{{ $item->id }}">
+                <div class="kds-dish-title-row">
+                  <div>
+                    <h3 class="kds-dish-name">{{ $dishName }}</h3>
+                    <span class="kds-food-type-tag {{ $foodType }}">
                       <span class="kds-type-dot"></span>
-                      {{ $aFoodType }}
+                      {{ $foodType }}
                     </span>
-                    <span class="kds-addon-title" title="{{ $aName }}">{{ $aName }}</span>
                   </div>
-                  <div class="kds-addon-qty-chip" title="Add-on Quantity">
-                    x{{ $aQty }}
+
+                  <div class="kds-qty-badge" title="Quantity to Prepare">
+                    x{{ $item->quantity }}
                   </div>
                 </div>
-                @endforeach
-              </div>
-            </div>
-            @endif
 
-            @if($item->note)
-            <div class="kds-order-note">
-              <i class="fa-solid fa-note-sticky"></i>
-              <span><strong>Note:</strong> {{ $item->note }}</span>
+                @if(!empty($addons))
+                <div class="kds-addons-container">
+                  <div class="kds-addons-header">
+                    <i class="fa-solid fa-puzzle-piece"></i> Mapped Add-ons ({{ count($addons) }})
+                  </div>
+                  <div class="kds-addons-list">
+                    @foreach($addons as $a)
+                    @php
+                      $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
+                      $aName = $a['name'] ?? 'Add-on';
+                      $aFoodType = strtoupper($a['food_type'] ?? 'VEG');
+                    @endphp
+                    <div class="kds-addon-item-row">
+                      <div class="kds-addon-left">
+                        <span class="kds-addon-pill"><i class="fa-solid fa-plus me-1"></i>ADD-ON</span>
+                        <span class="kds-food-type-tag {{ $aFoodType }}" style="margin-bottom: 0; padding: 1px 6px; font-size: 0.6rem;">
+                          <span class="kds-type-dot"></span>
+                          {{ $aFoodType }}
+                        </span>
+                        <span class="kds-addon-title" title="{{ $aName }}">{{ $aName }}</span>
+                      </div>
+                      <div class="kds-addon-qty-chip" title="Add-on Quantity">
+                        x{{ $aQty }}
+                      </div>
+                    </div>
+                    @endforeach
+                  </div>
+                </div>
+                @endif
+
+                @if($item->note)
+                <div class="kds-order-note">
+                  <i class="fa-solid fa-note-sticky"></i>
+                  <span><strong>Note:</strong> {{ $item->note }}</span>
+                </div>
+                @endif
+              </div>
+              @endforeach
             </div>
-            @endif
           </div>
 
-          <!-- Card Footer: Quick 1-Tap Status Switcher -->
+          <!-- Card Footer: Unified 1-Tap Status Switcher for entire KOT -->
           <div class="kds-card-footer">
-            <div class="kds-status-segmented" data-item-id="{{ $item->id }}">
+            <div class="kds-status-segmented" 
+                 data-card-id="{{ $kot->card_id }}"
+                 data-kot-no="{{ $kot->kot_no }}"
+                 data-order-id="{{ $kot->order_id }}"
+                 data-item-ids="{{ json_encode($kot->item_ids) }}"
+                 data-primary-id="{{ $kot->primary_item_id }}">
               <button type="button" class="kds-status-btn {{ $status == 'PENDING' ? 'active' : '' }}" data-status="PENDING">
                 ⏳ Pending
               </button>
@@ -342,7 +409,7 @@
           <h3 class="kds-empty-title">No Kitchen Orders Found</h3>
           <p class="kds-empty-desc">All current kitchen order tickets (KOT) have been prepared or no orders match the selected filters.</p>
           <a href="{{ route('manage.kitchen-panel') }}" class="btn-kds-action btn-kds-primary">
-            <i class="fa-solid fa-rotate-left"></i> Reset Filter Criteria
+            <i class="fa-solid fa-rotate-left"></i> Reset to Last 2 Days
           </a>
         </div>
         @endforelse
@@ -405,7 +472,6 @@ $(document).ready(function() {
       if (audio) {
         audio.currentTime = 0;
         audio.play().catch(e => {
-          // Web Audio Fallback synth beep if external audio fails
           synthBeep();
         });
       } else {
@@ -424,8 +490,8 @@ $(document).ready(function() {
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15); // A5
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15);
       gain.gain.setValueAtTime(0.3, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
       osc.start();
@@ -433,9 +499,36 @@ $(document).ready(function() {
     } catch(e) {}
   }
 
-  // 3. Toggle Date Filter Panel
+  // 3. Toggle Date Filter Panel & Quick Presets
   $('#toggleFilterPanelBtn').on('click', function() {
     $('#dateFilterPanel').slideToggle(200);
+  });
+
+  $('.kds-quick-date-btn').on('click', function() {
+    const days = $(this).data('days');
+    const today = new Date();
+    const formatDate = d => d.toISOString().split('T')[0];
+
+    let fromD = new Date();
+    let toD = new Date();
+
+    if (days === 1) {
+      // Today
+      fromD = today;
+    } else if (days === 2) {
+      // Last 2 days
+      fromD.setDate(today.getDate() - 1);
+    } else if (days === 7) {
+      // Last 7 days
+      fromD.setDate(today.getDate() - 6);
+    } else if (days === 'month') {
+      // 1st of this month
+      fromD = new Date(today.getFullYear(), today.getMonth(), 1);
+    }
+
+    $('#formFromDate').val(formatDate(fromD));
+    $('#formToDate').val(formatDate(toD));
+    $('#filterForm').submit();
   });
 
   // 4. Live Client-Side Search & Filter
@@ -497,7 +590,7 @@ $(document).ready(function() {
     }
   }
 
-  // 5. One-Tap Segmented Status Update (AJAX)
+  // 5. One-Tap Status Update (Batch updates entire KOT ticket)
   $(document).on('click', '.kds-status-btn', function(e) {
     e.preventDefault();
     if (statusChangeInProgress) return;
@@ -505,8 +598,13 @@ $(document).ready(function() {
     const btn = $(this);
     const targetStatus = btn.data('status');
     const segmentedWrap = btn.closest('.kds-status-segmented');
-    const itemId = segmentedWrap.data('item-id');
-    const card = $(`#card_${itemId}`);
+    const cardId = segmentedWrap.data('card-id');
+    const kotNo = segmentedWrap.data('kot-no');
+    const orderId = segmentedWrap.data('order-id');
+    const itemIds = segmentedWrap.data('item-ids');
+    const primaryId = segmentedWrap.data('primary-id');
+
+    const card = $(`#card_${cardId}`);
     const currentStatus = card.attr('data-status');
 
     if (targetStatus === currentStatus) return;
@@ -522,17 +620,30 @@ $(document).ready(function() {
     // Update Counts Dynamically
     updateMetricsCount(currentStatus, targetStatus);
 
+    const postPayload = {
+      _token: "{{ csrf_token() }}",
+      order_status: targetStatus
+    };
+
+    if (kotNo && kotNo !== 'N/A') {
+      postPayload.kot_no = kotNo;
+      postPayload.order_id = orderId;
+    }
+    if (itemIds && itemIds.length) {
+      postPayload.item_ids = itemIds;
+    }
+    if (primaryId) {
+      postPayload.id = primaryId;
+    }
+
     $.ajax({
       url: "{{ route('update.kitchen.status') }}",
       method: "POST",
-      data: {
-        _token: "{{ csrf_token() }}",
-        id: itemId,
-        order_status: targetStatus
-      },
+      data: postPayload,
       success: function(res) {
         if (res.success) {
-          showToast(`✓ Order #${itemId} marked as ${targetStatus}`, 'success');
+          const displayLabel = kotNo && kotNo !== 'N/A' ? kotNo : `#ORD-${orderId}`;
+          showToast(`✓ ${displayLabel} marked as ${targetStatus}`, 'success');
         } else {
           revertStatus();
           showToast('✗ Status update failed', 'error');

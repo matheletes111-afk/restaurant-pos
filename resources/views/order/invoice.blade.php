@@ -1142,11 +1142,40 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                @php
+                                    $invOriginalSubtotal = 0;
+                                    $invTaxableTotal = 0;
+                                    $invGstTotal = 0;
+                                    $invItemDiscountTotal = 0;
+                                @endphp
                                 @foreach($order->orderItems as $idx => $item)
                                 @php
-                                    $addons = $item->addons_list;
-                                    $basePrice = $item->subcategory->price ?? $item->price;
+                                    $addons = $item->addons_list ?? [];
                                     $hasAddons = !empty($addons);
+                                    $addonsCost = 0;
+                                    if ($hasAddons) {
+                                        foreach ($addons as $a) {
+                                            $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
+                                            $aPrice = floatval($a['price'] ?? 0);
+                                            $addonsCost += ($aPrice * $aQty);
+                                        }
+                                    }
+                                    $isAddonItem = empty($item->subcategory_id);
+                                    $itemPrice = (float)$item->price;
+                                    $itemQty = (int)$item->quantity;
+                                    $itemDiscount = (float)($item->item_discount_percentage ?? 0);
+                                    $discountedPrice = (float)($item->discounted_price ?? ($itemPrice - ($itemPrice * $itemDiscount / 100)));
+                                    
+                                    $lineOriginal = $isAddonItem ? ($itemPrice * $itemQty) : (($itemPrice * $itemQty) + $addonsCost);
+                                    $lineTaxable = $item->taxable_amount ?? ($isAddonItem ? ($discountedPrice * $itemQty) : (($discountedPrice * $itemQty) + $addonsCost));
+                                    $lineGst = $item->gst_amount ?? (($lineTaxable * ($item->gst_rate ?? 0)) / 100);
+                                    $lineTotal = $item->total_amount ?? ($lineTaxable + $lineGst);
+
+                                    $invOriginalSubtotal += $lineOriginal;
+                                    $invTaxableTotal += $lineTaxable;
+                                    $invGstTotal += $lineGst;
+                                    $invItemDiscountTotal += ($itemPrice * $itemDiscount / 100) * $itemQty;
+                                    $basePrice = $item->subcategory->price ?? $item->price;
                                 @endphp
                                 <tr>
                                     <td>{{ $idx + 1 }}</td>
@@ -1176,30 +1205,27 @@
                                                                 <div class="inv-addon-line">
                                                                     <span class="inv-addon-food-dot {{ $isNonVeg ? 'nonveg' : 'veg' }}"></span>
                                                                     <span class="inv-addon-name">{{ $a['name'] ?? 'Add-on' }}</span>
-                                                                    <span class="inv-addon-rate">({{ number_format($aPrice, 2) }})</span>
-                                                                    <span class="inv-addon-qty-badge">x{{ $aQty }}</span>
-                                                                    <span class="inv-addon-cost">+{{ number_format($aTotal, 2) }}</span>
+                                                                    <span class="inv-addon-rate">(₹{{ number_format($aPrice, 2) }})</span>
+                                                                    <span class="inv-addon-qty-badge" style="background: #ffedd5; color: #c2410c; font-weight: 800; font-size: 0.72rem; padding: 1px 6px; border-radius: 4px; border: 1px solid #fed7aa;">x{{ $aQty }}</span>
+                                                                    <span class="inv-addon-cost" style="font-weight: 800; color: #ea580c;">= +₹{{ number_format($aTotal, 2) }}</span>
                                                                 </div>
                                                             @endforeach
                                                         </div>
-                                                    </div>
-                                                    <div class="inv-base-price-note">
-                                                        Base: {{ number_format($basePrice, 2) }} • Unit: {{ number_format($item->price, 2) }}
                                                     </div>
                                                 @endif
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="text-end">{{ number_format($item->price, 2) }}</td>
+                                    <td class="text-end">₹{{ number_format($item->price, 2) }}</td>
                                     <td class="text-center">
                                         <span class="badge bg-light text-dark border px-2 py-1">{{ $item->quantity }}</span>
                                     </td>
                                     <td class="text-center text-muted small">
                                         {{ $item->item_discount_percentage > 0 ? $item->item_discount_percentage . '%' : '-' }}
                                     </td>
-                                    <td class="text-end">{{ number_format($item->taxable_amount ?? ($item->price * $item->quantity), 2) }}</td>
-                                    <td class="text-end text-muted">{{ number_format($item->gst_amount ?? 0, 2) }}</td>
-                                    <td class="text-end fw-bold text-dark">{{ number_format($item->total_amount ?? ($item->price * $item->quantity), 2) }}</td>
+                                    <td class="text-end">₹{{ number_format($lineTaxable, 2) }}</td>
+                                    <td class="text-end text-muted">₹{{ number_format($lineGst, 2) }}</td>
+                                    <td class="text-end fw-bold text-dark">₹{{ number_format($lineTotal, 2) }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -1207,37 +1233,56 @@
                     </div>
 
                     {{-- Calculation Breakdown Box --}}
+                    @php
+                        $displaySubtotal = ($order->total_amount > 0 && abs($order->total_amount - $invOriginalSubtotal) < 0.01) ? $order->total_amount : $invOriginalSubtotal;
+                        $displayTaxable = ($order->taxable_amount > 0 && abs($order->taxable_amount - $invTaxableTotal) < 0.01) ? $order->taxable_amount : $invTaxableTotal;
+                        $displayGst = ($order->gst_amount > 0 && abs($order->gst_amount - $invGstTotal) < 0.01) ? $order->gst_amount : $invGstTotal;
+                        $displayDiscount = $order->discount ?? (($displayTaxable + $displayGst) * ($order->discount_percentage ?? 0) / 100);
+                        $displayGrandTotal = $order->grand_total ?? ($displayTaxable + $displayGst - $displayDiscount);
+                    @endphp
                     <div class="inv-calc-container">
                         <div class="inv-calc-box">
                             <div class="inv-calc-row">
                                 <span class="text-muted">Item Subtotal:</span>
-                                <span class="fw-semibold">{{ number_format($order->total_amount, 2) }}</span>
+                                <span class="fw-semibold">₹{{ number_format($displaySubtotal, 2) }}</span>
                             </div>
 
-                            @if($order->discount > 0)
-                            <div class="inv-calc-row text-danger">
-                                <span>Order Discount ({{ $order->discount_percentage ?? 0 }}%):</span>
-                                <span class="fw-semibold">- {{ number_format($order->discount, 2) }}</span>
+                            @if($invItemDiscountTotal > 0)
+                            <div class="inv-calc-row text-success">
+                                <span>Item Discounts:</span>
+                                <span class="fw-semibold">- ₹{{ number_format($invItemDiscountTotal, 2) }}</span>
                             </div>
                             @endif
 
-                            @if($order->is_gst_bill == 'YES' && $order->gst_amount > 0)
+                            <div class="inv-calc-row">
+                                <span class="text-muted">Net Taxable:</span>
+                                <span class="fw-semibold">₹{{ number_format($displayTaxable, 2) }}</span>
+                            </div>
+
+                            @if($displayDiscount > 0 || ($order->discount_percentage ?? 0) > 0)
+                            <div class="inv-calc-row text-danger">
+                                <span>Order Discount ({{ $order->discount_percentage ?? 0 }}%):</span>
+                                <span class="fw-semibold">- ₹{{ number_format($displayDiscount, 2) }}</span>
+                            </div>
+                            @endif
+
+                            @if($order->is_gst_bill == 'YES' && $displayGst > 0)
                             <div class="inv-calc-row text-primary">
                                 <span>GST ({{ $order->restaurant_gst_percentage ?? 0 }}%):</span>
-                                <span class="fw-semibold">+ {{ number_format($order->gst_amount, 2) }}</span>
+                                <span class="fw-semibold">+ ₹{{ number_format($displayGst, 2) }}</span>
                             </div>
                             @endif
 
                             @if($order->round_off != 0)
                             <div class="inv-calc-row text-muted small">
                                 <span>Round Off:</span>
-                                <span>{{ $order->round_off > 0 ? '+' : '' }}{{ number_format($order->round_off, 2) }}</span>
+                                <span>{{ $order->round_off > 0 ? '+' : '' }}₹{{ number_format($order->round_off, 2) }}</span>
                             </div>
                             @endif
 
                             <div class="inv-calc-row grand-total">
                                 <span>Grand Total:</span>
-                                <span class="text-primary">{{ number_format($order->grand_total, 2) }}</span>
+                                <span class="text-primary">₹{{ number_format($displayGrandTotal, 2) }}</span>
                             </div>
                         </div>
                     </div>

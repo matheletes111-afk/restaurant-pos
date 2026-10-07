@@ -456,10 +456,39 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @php
+                            $pubOriginalSubtotal = 0;
+                            $pubTaxableTotal = 0;
+                            $pubGstTotal = 0;
+                            $pubItemDiscountTotal = 0;
+                        @endphp
                         @foreach($order->orderItems as $item)
                         @php
-                            $addons = $item->addons_list;
+                            $addons = $item->addons_list ?? [];
                             $hasAddons = !empty($addons);
+                            $addonsCost = 0;
+                            if ($hasAddons) {
+                                foreach ($addons as $a) {
+                                    $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
+                                    $aPrice = floatval($a['price'] ?? 0);
+                                    $addonsCost += ($aPrice * $aQty);
+                                }
+                            }
+                            $isAddonItem = empty($item->subcategory_id);
+                            $itemPrice = (float)$item->price;
+                            $itemQty = (int)$item->quantity;
+                            $itemDiscount = (float)($item->item_discount_percentage ?? 0);
+                            $discountedPrice = (float)($item->discounted_price ?? ($itemPrice - ($itemPrice * $itemDiscount / 100)));
+                            
+                            $lineOriginal = $isAddonItem ? ($itemPrice * $itemQty) : (($itemPrice * $itemQty) + $addonsCost);
+                            $lineTaxable = $item->taxable_amount ?? ($isAddonItem ? ($discountedPrice * $itemQty) : (($discountedPrice * $itemQty) + $addonsCost));
+                            $lineGst = $item->gst_amount ?? (($lineTaxable * ($item->gst_rate ?? 0)) / 100);
+                            $lineTotal = $item->total_amount ?? ($lineTaxable + $lineGst);
+
+                            $pubOriginalSubtotal += $lineOriginal;
+                            $pubTaxableTotal += $lineTaxable;
+                            $pubGstTotal += $lineGst;
+                            $pubItemDiscountTotal += ($itemPrice * $itemDiscount / 100) * $itemQty;
                         @endphp
                         <tr>
                             <td>
@@ -482,10 +511,11 @@
                                                         $aPrice = floatval($a['price'] ?? 0);
                                                         $aTotal = $aPrice * $aQty;
                                                     @endphp
-                                                    <div class="pub-addon-line">
-                                                        <span>+ {{ $a['name'] ?? 'Add-on' }}</span>
-                                                        <span class="pub-addon-badge">x{{ $aQty }}</span>
-                                                        <span class="text-muted small">({{ number_format($aTotal, 2) }})</span>
+                                                    <div class="pub-addon-line" style="display: flex; align-items: center; gap: 4px; margin-top: 2px;">
+                                                        <span style="font-weight: 600;">+ {{ $a['name'] ?? 'Add-on' }}</span>
+                                                        <span class="text-muted small">(₹{{ number_format($aPrice, 2) }})</span>
+                                                        <span class="pub-addon-badge" style="background: #ffedd5; color: #c2410c; font-size: 0.72rem; font-weight: 800; padding: 1px 5px; border-radius: 4px; border: 1px solid #fed7aa;">x{{ $aQty }}</span>
+                                                        <span style="font-weight: 700; color: #ea580c; font-size: 0.76rem;">= +₹{{ number_format($aTotal, 2) }}</span>
                                                     </div>
                                                 @endforeach
                                             </div>
@@ -494,8 +524,8 @@
                                 </div>
                             </td>
                             <td class="text-center font-monospace fw-bold">{{ $item->quantity }}</td>
-                            <td class="text-end text-muted font-monospace">{{ number_format($item->price, 2) }}</td>
-                            <td class="text-end fw-bold text-dark font-monospace">{{ number_format($item->total_amount ?? ($item->price * $item->quantity), 2) }}</td>
+                            <td class="text-end text-muted font-monospace">₹{{ number_format($item->price, 2) }}</td>
+                            <td class="text-end fw-bold text-dark font-monospace">₹{{ number_format($lineTotal, 2) }}</td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -504,33 +534,43 @@
             @endif
 
             <!-- Calculation Box -->
+            @php
+                $pubDisplaySubtotal = ($order->total_amount > 0 && abs($order->total_amount - $pubOriginalSubtotal) < 0.01) ? $order->total_amount : $pubOriginalSubtotal;
+                $pubDisplayTaxable = ($order->taxable_amount > 0 && abs($order->taxable_amount - $pubTaxableTotal) < 0.01) ? $order->taxable_amount : $pubTaxableTotal;
+                $pubDisplayGst = ($order->gst_amount > 0 && abs($order->gst_amount - $pubGstTotal) < 0.01) ? $order->gst_amount : $pubGstTotal;
+                $pubDisplayDiscount = $order->discount ?? (($pubDisplayTaxable + $pubDisplayGst) * ($order->discount_percentage ?? 0) / 100);
+                $pubDisplayGrandTotal = $order->grand_total ?? ($pubDisplayTaxable + $pubDisplayGst - $pubDisplayDiscount);
+            @endphp
             <div class="pub-calc-box">
                 <div class="pub-calc-row">
                     <span class="text-muted">Item Subtotal:</span>
-                    <span class="fw-semibold">{{ number_format($order->total_amount, 2) }}</span>
+                    <span class="fw-semibold">₹{{ number_format($pubDisplaySubtotal, 2) }}</span>
                 </div>
 
-                @if($order->is_gst_bill == 'YES' && ($order->cgst_amount > 0 || $order->sgst_amount > 0))
-                    <div class="pub-calc-row">
-                        <span class="text-muted">CGST:</span>
-                        <span>{{ number_format($order->cgst_amount, 2) }}</span>
-                    </div>
-                    <div class="pub-calc-row">
-                        <span class="text-muted">SGST:</span>
-                        <span>{{ number_format($order->sgst_amount, 2) }}</span>
+                @if($pubItemDiscountTotal > 0)
+                    <div class="pub-calc-row text-success">
+                        <span>Item Discounts:</span>
+                        <span>- ₹{{ number_format($pubItemDiscountTotal, 2) }}</span>
                     </div>
                 @endif
 
-                @if($order->discount_amount > 0)
-                    <div class="pub-calc-row text-success">
-                        <span>Discount:</span>
-                        <span>- {{ number_format($order->discount_amount, 2) }}</span>
+                @if($order->is_gst_bill == 'YES' && $pubDisplayGst > 0)
+                    <div class="pub-calc-row">
+                        <span class="text-muted">GST ({{ $order->restaurant_gst_percentage ?? 0 }}%):</span>
+                        <span>+ ₹{{ number_format($pubDisplayGst, 2) }}</span>
+                    </div>
+                @endif
+
+                @if($pubDisplayDiscount > 0 || ($order->discount_percentage ?? 0) > 0)
+                    <div class="pub-calc-row text-danger">
+                        <span>Order Discount ({{ $order->discount_percentage ?? 0 }}%):</span>
+                        <span>- ₹{{ number_format($pubDisplayDiscount, 2) }}</span>
                     </div>
                 @endif
 
                 <div class="pub-calc-row grand">
                     <span>Grand Total:</span>
-                    <span class="text-primary font-monospace">{{ number_format($order->grand_total, 2) }}</span>
+                    <span class="text-primary font-monospace">₹{{ number_format($pubDisplayGrandTotal, 2) }}</span>
                 </div>
             </div>
 

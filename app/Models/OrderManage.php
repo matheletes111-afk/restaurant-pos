@@ -93,7 +93,18 @@ class OrderManage extends Model
         $totalIgst = 0;
 
         foreach ($items as $item) {
-            $originalSubtotal += $item->price * $item->quantity;
+            $addonsCost = 0;
+            if (!empty($item->addons_list) && is_array($item->addons_list)) {
+                foreach ($item->addons_list as $a) {
+                    $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                }
+            }
+            $isAddon = empty($item->subcategory_id);
+            if ($isAddon) {
+                $originalSubtotal += $item->price * $item->quantity;
+            } else {
+                $originalSubtotal += ($item->price * $item->quantity) + $addonsCost;
+            }
             $totalTaxable += $item->taxable_amount;
             $totalGst += $item->gst_amount;
             $totalCgst += $item->cgst_amount;

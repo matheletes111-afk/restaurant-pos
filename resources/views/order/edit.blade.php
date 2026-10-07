@@ -308,11 +308,18 @@
                   @forelse($order->orderItems as $item)
                     @php
                       $itemDiscount = $item->item_discount_percentage ?? 0;
-                      $discountedPrice = $item->price - ($item->price * $itemDiscount / 100);
-                      $taxableAmount = $discountedPrice * $item->quantity;
-                      $gstAmount = ($taxableAmount * ($item->gst_rate ?? 0)) / 100;
-                      $itemTotal = $taxableAmount + $gstAmount;
+                      $discountedPrice = $item->discounted_price ?? ($item->price - ($item->price * $itemDiscount / 100));
                       $addonsList = $item->addons_list ?? [];
+                      $addonsCost = 0;
+                      if (!empty($addonsList) && is_array($addonsList)) {
+                          foreach ($addonsList as $a) {
+                              $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                          }
+                      }
+                      $isAddon = empty($item->subcategory_id);
+                      $taxableAmount = $item->taxable_amount ?? ($isAddon ? ($discountedPrice * $item->quantity) : (($discountedPrice * $item->quantity) + $addonsCost));
+                      $gstAmount = $item->gst_amount ?? (($taxableAmount * ($item->gst_rate ?? 0)) / 100);
+                      $itemTotal = $item->total_amount ?? ($taxableAmount + $gstAmount);
                     @endphp
                     <tr data-item-id="{{ $item->id }}">
                       <td>
@@ -707,43 +714,44 @@ function showToast(message, isError = false) {
     }, 2800);
 }
 
-function calculateItemDetails(originalPrice, qty, discountPercent = 0) {
-    let discountedPricePerItem = originalPrice - (originalPrice * discountPercent / 100);
-    let taxableAmount = discountedPricePerItem * qty;
-    let gstAmount = 0;
-    let gstRate = 0;
-    
-    if (isGstRegistered) {
-        gstRate = restaurantGstPercentage;
-        gstAmount = (taxableAmount * gstRate) / 100;
-    }
-    
-    let totalAmount = taxableAmount + gstAmount;
-    
-    return {
-        discountedPricePerItem: discountedPricePerItem,
-        taxableAmount: taxableAmount,
-        gstAmount: gstAmount,
-        gstRate: gstRate,
-        totalAmount: totalAmount,
-        itemDiscountAmount: (originalPrice * qty) - taxableAmount
-    };
-}
-
-function getItemEffectiveUnitPrice(item) {
-    if (item.is_addon) {
-        return parseFloat(item.price) || 0;
-    }
+function calculateItemDetails(item) {
     let basePrice = parseFloat(item.price) || 0;
+    let qty = parseInt(item.qty) || 1;
+    let discountPercent = parseFloat(item.itemDiscount || 0) || 0;
+    let isStandaloneAddon = !!item.is_addon;
     let addonsCost = 0;
-    if (item.addons && Array.isArray(item.addons)) {
+    if (!isStandaloneAddon && item.addons && Array.isArray(item.addons)) {
         item.addons.forEach(a => {
             let p = parseFloat(a.price) || 0;
             let q = parseInt(a.qty || a.quantity) || 1;
             addonsCost += (p * q);
         });
     }
-    return basePrice + addonsCost;
+    
+    let discountedPricePerItem = basePrice - (basePrice * discountPercent / 100);
+    let taxableAmount = isStandaloneAddon ? (discountedPricePerItem * qty) : ((discountedPricePerItem * qty) + addonsCost);
+    let originalAmount = isStandaloneAddon ? (basePrice * qty) : ((basePrice * qty) + addonsCost);
+    let itemDiscountAmount = (basePrice * discountPercent / 100) * qty;
+
+    let gstRate = isGstRegistered ? restaurantGstPercentage : 0;
+    let gstAmount = (taxableAmount * gstRate) / 100;
+    let totalAmount = taxableAmount + gstAmount;
+    
+    return {
+        basePrice: basePrice,
+        discountedPricePerItem: discountedPricePerItem,
+        taxableAmount: taxableAmount,
+        originalAmount: originalAmount,
+        gstAmount: gstAmount,
+        gstRate: gstRate,
+        totalAmount: totalAmount,
+        itemDiscountAmount: itemDiscountAmount,
+        addonsCost: addonsCost
+    };
+}
+
+function getItemEffectiveUnitPrice(item) {
+    return parseFloat(item.price) || 0;
 }
 
 function updateSummary() {
@@ -754,9 +762,8 @@ function updateSummary() {
     let newCount = 0;
     
     newOrderItems.forEach(item => {
-        let unitPrice = getItemEffectiveUnitPrice(item);
-        let details = calculateItemDetails(unitPrice, item.qty, item.itemDiscount || 0);
-        newOriginalSubtotal += unitPrice * item.qty;
+        let details = calculateItemDetails(item);
+        newOriginalSubtotal += details.originalAmount;
         newTaxable += details.taxableAmount;
         newGst += details.gstAmount;
         newItemDiscount += details.itemDiscountAmount;
@@ -886,8 +893,7 @@ function updateNewItemsTable() {
     
     newOrderItems.forEach((item, index) => {
         let isStandaloneAddon = !!item.is_addon;
-        let effectiveUnitPrice = getItemEffectiveUnitPrice(item);
-        let details = calculateItemDetails(effectiveUnitPrice, item.qty, item.itemDiscount || 0);
+        let details = calculateItemDetails(item);
         let hasAddons = !isStandaloneAddon && item.addons && Array.isArray(item.addons) && item.addons.length > 0;
         
         let addonsHtml = '';
@@ -953,8 +959,8 @@ function updateNewItemsTable() {
                     ${addonsHtml}
                 </td>
                 <td class="text-end">
-                    <div class="fw-bold text-dark">₹${effectiveUnitPrice.toFixed(2)}</div>
-                    ${(hasAddons && !isStandaloneAddon) ? `<div class="small text-muted" style="font-size: 0.72rem;">Base: ₹${parseFloat(item.price).toFixed(2)}</div>` : ''}
+                    <div class="fw-bold text-dark">₹${details.basePrice.toFixed(2)}</div>
+                    ${(hasAddons && !isStandaloneAddon) ? `<div class="small text-muted" style="font-size: 0.72rem;">+₹${details.addonsCost.toFixed(2)} Add-ons</div>` : ''}
                 </td>
                 <td class="text-center">
                     <input type="number" class="item-disc-input item-discount-input" 
@@ -1636,9 +1642,43 @@ $(document).ready(function() {
         syncPaymentSplit('quick_split');
     });
 
-    // Live interactive edit on Cash and UPI fields without auto-overwriting
-    $('#upi_payment_amount, #cash_payment_amount').on('input keyup change', function() {
-        syncPaymentSplit('user_input');
+    // Auto-calculate remaining amount when manually editing Cash or UPI
+    $('#cash_payment_amount').on('input keyup change', function() {
+        let finalTotal = parseFloat($('#final_total').text()) || 0;
+        let netDue = Math.max(0, finalTotal - alreadyPaidHistory);
+        let cashRaw = $(this).val();
+        let cashVal = parseFloat(cashRaw);
+        if (isNaN(cashVal) || cashVal < 0) {
+            cashVal = 0;
+            $(this).val('0.00');
+        }
+        if (cashVal > netDue) {
+            cashVal = netDue;
+            $(this).val(netDue.toFixed(2));
+        }
+        let remaining = Math.max(0, netDue - cashVal);
+        $('#upi_payment_amount').val(remaining.toFixed(2));
+        userEditedSplit = true;
+        syncPaymentSplit('cash_input');
+    });
+
+    $('#upi_payment_amount').on('input keyup change', function() {
+        let finalTotal = parseFloat($('#final_total').text()) || 0;
+        let netDue = Math.max(0, finalTotal - alreadyPaidHistory);
+        let upiRaw = $(this).val();
+        let upiVal = parseFloat(upiRaw);
+        if (isNaN(upiVal) || upiVal < 0) {
+            upiVal = 0;
+            $(this).val('0.00');
+        }
+        if (upiVal > netDue) {
+            upiVal = netDue;
+            $(this).val(netDue.toFixed(2));
+        }
+        let remaining = Math.max(0, netDue - upiVal);
+        $('#cash_payment_amount').val(remaining.toFixed(2));
+        userEditedSplit = true;
+        syncPaymentSplit('upi_input');
     });
     
     // Save Order Changes
@@ -1646,6 +1686,8 @@ $(document).ready(function() {
         let customer_phone = $('#customer_phone').val().trim();
         let order_complete = $('#order_complete').val();
         let remarks = $('#remarks').val();
+        let finalTotal = parseFloat($('#final_total').text()) || 0;
+        let netDue = Math.max(0, finalTotal - alreadyPaidHistory);
         
         if (customer_phone && !/^[0-9]{10}$/.test(customer_phone)) {
             showToast('Please enter a valid 10-digit phone number', true);
@@ -1659,6 +1701,11 @@ $(document).ready(function() {
         if (order_complete === 'DONE') {
             cashAmount = parseFloat($('#cash_payment_amount').val()) || 0;
             upiAmount = parseFloat($('#upi_payment_amount').val()) || 0;
+
+            if ((cashAmount + upiAmount) > (netDue + 0.01)) {
+                showToast(`Payment amount (₹${(cashAmount + upiAmount).toFixed(2)}) cannot exceed balance due (₹${netDue.toFixed(2)})`, true);
+                return;
+            }
         }
         
         let data = {

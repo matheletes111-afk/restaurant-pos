@@ -174,12 +174,24 @@
               <tbody>
                 @foreach($order->items as $key => $i)
                 @php
-                  $itemDiscount = $i->item_discount_percentage ?? 0;
-                  $discountedPrice = $i->discounted_price ?? ($i->price - ($i->price * $itemDiscount / 100));
-                  $taxableAmount = $i->taxable_amount ?? ($discountedPrice * $i->quantity);
-                  $gstAmount = $i->gst_amount ?? (($taxableAmount * ($i->gst_rate ?? 0)) / 100);
-                  $itemTotal = $taxableAmount + $gstAmount;
+                  $itemQty = max(1, intval($i->quantity ?? 1));
+                  $basePrice = floatval($i->price ?? 0);
+                  $itemDiscount = floatval($i->item_discount_percentage ?? 0);
+                  $discountedPrice = floatval($i->discounted_price ?? ($basePrice - ($basePrice * $itemDiscount / 100)));
+                  $addonsList = $i->addons_list ?? [];
+                  $addonsCost = 0;
+                  if (!empty($addonsList) && is_array($addonsList)) {
+                      foreach ($addonsList as $a) {
+                          $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                      }
+                  }
+                  $isAddon = empty($i->subcategory_id);
+                  $lineTaxable = $isAddon ? ($discountedPrice * $itemQty) : (($discountedPrice * $itemQty) + $addonsCost);
+                  $gstRate = floatval($i->gst_rate ?? 0);
+                  $lineGst = ($lineTaxable * $gstRate) / 100;
+                  $itemTotal = $lineTaxable + $lineGst;
                   $foodType = strtoupper($i->menuItem->food_type ?? 'VEG');
+                  $itemDiscountAmount = ($basePrice * $itemDiscount / 100) * $itemQty;
                 @endphp
                 <tr>
                   <td><span class="text-muted" style="font-size: 0.8rem;">{{ $key + 1 }}</span></td>
@@ -189,8 +201,14 @@
                       @if(!empty($i->addons_list) && count($i->addons_list) > 0)
                         <div class="mt-1 d-flex flex-wrap gap-1">
                           @foreach($i->addons_list as $addon)
-                            <span class="badge" style="background: #fff3ed; color: #ff5e14; border: 1px solid #ffd8c7; font-size: 0.7rem; font-weight: 600; padding: 2px 6px;">
-                              + {{ $addon['name'] }} (₹{{ number_format($addon['price'], 2) }}{{ ($addon['qty'] ?? 1) > 1 ? ' x' . $addon['qty'] : '' }})
+                            @php
+                              $aQty = $addon['qty'] ?? $addon['quantity'] ?? 1;
+                              $aPrice = floatval($addon['price'] ?? 0);
+                            @endphp
+                            <span class="badge" style="background: #fff3ed; color: #ff5e14; border: 1px solid #ffd8c7; font-size: 0.72rem; font-weight: 600; padding: 2px 7px; display: inline-flex; align-items: center; gap: 4px;">
+                              <span>+ {{ $addon['name'] }}</span>
+                              <span style="color: #9a3412;">(₹{{ number_format($aPrice, 2) }})</span>
+                              <span class="badge" style="background: #ffedd5; color: #c2410c; font-weight: 800; font-size: 0.7rem; padding: 1px 5px; border-radius: 4px; border: 1px solid #fed7aa;">x{{ $aQty }}</span>
                             </span>
                           @endforeach
                         </div>
@@ -207,35 +225,35 @@
                   </td>
                   <td class="text-center">
                     <span class="pos-items-count-pill" style="font-size: 0.85rem; font-weight: 800;">
-                      x{{ $i->quantity }}
+                      x{{ $itemQty }}
                     </span>
                   </td>
                   <td>
                     @if($itemDiscount > 0)
-                      <del class="text-muted" style="font-size: 0.78rem;">₹{{ number_format($i->price, 2) }}</del><br>
+                      <del class="text-muted" style="font-size: 0.78rem;">₹{{ number_format($basePrice, 2) }}</del><br>
                       <strong class="text-success">₹{{ number_format($discountedPrice, 2) }}</strong>
                     @else
-                      <strong>₹{{ number_format($i->price, 2) }}</strong>
+                      <strong>₹{{ number_format($basePrice, 2) }}</strong>
                     @endif
                   </td>
                   <td>
                     @if($itemDiscount > 0)
-                      <span class="text-danger font-weight-bold">- ₹{{ number_format(($i->price * $i->quantity) - $taxableAmount, 2) }}</span>
+                      <span class="text-danger font-weight-bold">- ₹{{ number_format($itemDiscountAmount, 2) }}</span>
                     @else
                       <span class="text-muted">-</span>
                     @endif
                   </td>
-                  <td>₹{{ number_format($taxableAmount, 2) }}</td>
+                  <td>₹{{ number_format($lineTaxable, 2) }}</td>
                   <td>
                     @if($isGstBill)
-                      ₹{{ number_format($gstAmount, 2) }} <small class="text-muted">({{ $i->gst_rate ?? 0 }}%)</small>
+                      ₹{{ number_format($lineGst, 2) }} <small class="text-muted">({{ $gstRate }}%)</small>
                     @else
                       <span class="text-muted">-</span>
                     @endif
                   </td>
                   <td>
                     <strong class="text-primary font-weight-bold" style="font-family: 'Outfit', sans-serif; font-size: 0.95rem;">
-                      ₹{{ number_format($itemTotal, 2) }}
+                      ₹{{ number_format($isGstBill ? $itemTotal : $lineTaxable, 2) }}
                     </strong>
                   </td>
                   <td class="text-end">
@@ -263,21 +281,46 @@
             </h3>
 
             @php
+              $computedSubtotal = 0;
+              $computedTaxable = 0;
+              $computedGst = 0;
               $totalItemDiscount = 0;
+
               foreach($order->items as $item) {
-                $itemDiscount = $item->item_discount_percentage ?? 0;
-                $discountedPrice = $item->discounted_price ?? ($item->price - ($item->price * $itemDiscount / 100));
-                $taxableAmount = $item->taxable_amount ?? ($discountedPrice * $item->quantity);
-                $totalItemDiscount += ($item->price * $item->quantity) - $taxableAmount;
+                $qty = max(1, intval($item->quantity ?? 1));
+                $bPrice = floatval($item->price ?? 0);
+                $iDisc = floatval($item->item_discount_percentage ?? 0);
+                $dPrice = floatval($item->discounted_price ?? ($bPrice - ($bPrice * $iDisc / 100)));
+                $aList = $item->addons_list ?? [];
+                $aCost = 0;
+                if (!empty($aList) && is_array($aList)) {
+                    foreach ($aList as $a) {
+                        $aCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                    }
+                }
+                $isAdd = empty($item->subcategory_id);
+                $lTax = $isAdd ? ($dPrice * $qty) : (($dPrice * $qty) + $aCost);
+                $lOrig = $isAdd ? ($bPrice * $qty) : (($bPrice * $qty) + $aCost);
+                $gRate = floatval($item->gst_rate ?? 0);
+                $lGst = ($lTax * $gRate) / 100;
+
+                $computedSubtotal += $lOrig;
+                $computedTaxable += $lTax;
+                $computedGst += $lGst;
+                $totalItemDiscount += ($bPrice * $iDisc / 100) * $qty;
               }
-              $grandTotal = $order->grand_total ?? 0;
+
+              $displaySubtotal = $computedSubtotal;
+              $displayTaxable = $computedTaxable;
+              $displayGst = $computedGst;
+              $grandTotal = $displayTaxable + $displayGst;
               $finalAmount = round($grandTotal);
               $roundOff = $finalAmount - $grandTotal;
             @endphp
 
             <div class="pos-summary-row">
               <span>Original Subtotal</span>
-              <span>₹{{ number_format($order->total_amount ?? 0, 2) }}</span>
+              <span>₹{{ number_format($displaySubtotal, 2) }}</span>
             </div>
 
             @if($totalItemDiscount > 0)
@@ -289,13 +332,13 @@
 
             <div class="pos-summary-row bold-total">
               <span>Taxable Subtotal</span>
-              <span>₹{{ number_format($order->taxable_amount ?? ($order->total_amount - $totalItemDiscount), 2) }}</span>
+              <span>₹{{ number_format($displayTaxable, 2) }}</span>
             </div>
 
             @if($isGstBill)
             <div class="pos-summary-row">
               <span>GST ({{ $order->restaurant_gst_percentage ?? 0 }}%)</span>
-              <span>₹{{ number_format($order->gst_amount ?? 0, 2) }}</span>
+              <span>₹{{ number_format($displayGst, 2) }}</span>
             </div>
             @endif
 

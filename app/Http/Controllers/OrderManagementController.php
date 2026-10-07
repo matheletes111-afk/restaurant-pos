@@ -105,21 +105,29 @@ class OrderManagementController extends Controller
         foreach ($order->orderItems as $item) {
             // Get item discount percentage (from database if exists, otherwise 0)
             $itemDiscount = $item->item_discount_percentage ?? 0;
-            $discountedPrice = $item->price - ($item->price * $itemDiscount / 100);
-            $taxableAmount = $discountedPrice * $item->quantity;
+            $discountedPrice = $item->discounted_price ?? ($item->price - ($item->price * $itemDiscount / 100));
+            $addonsCost = 0;
+            if (!empty($item->addons_list) && is_array($item->addons_list)) {
+                foreach ($item->addons_list as $a) {
+                    $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                }
+            }
+            $isAddonItem = empty($item->subcategory_id);
+            $taxableAmount = $item->taxable_amount ?? ($isAddonItem ? ($discountedPrice * $item->quantity) : (($discountedPrice * $item->quantity) + $addonsCost));
             
             // Use restaurant GST percentage if GST registered, otherwise 0
-            $gstRate = $is_gst_registered ? $restaurant_gst_percentage : 0;
-            $gstAmount = ($taxableAmount * $gstRate) / 100;
+            $gstRate = $is_gst_registered ? ($item->gst_rate ?? $restaurant_gst_percentage) : 0;
+            $gstAmount = $item->gst_amount ?? (($taxableAmount * $gstRate) / 100);
             
-            $originalSubtotal += $item->price * $item->quantity;
+            $lineOriginal = $isAddonItem ? ($item->price * $item->quantity) : (($item->price * $item->quantity) + $addonsCost);
+            $originalSubtotal += $lineOriginal;
             $totalTaxable += $taxableAmount;
             if ($is_gst_registered) {
                 $totalGst += $gstAmount;
                 // Split GST (50-50 for CGST/SGST)
                 $halfGstRate = $gstRate / 2;
-                $totalCgst += ($taxableAmount * $halfGstRate) / 100;
-                $totalSgst += ($taxableAmount * $halfGstRate) / 100;
+                $totalCgst += $item->cgst_amount ?? (($taxableAmount * $halfGstRate) / 100);
+                $totalSgst += $item->sgst_amount ?? (($taxableAmount * $halfGstRate) / 100);
             }
         }
 
@@ -182,13 +190,13 @@ class OrderManagementController extends Controller
      * Formula: Apply discount first, then calculate GST on discounted price
      * Uses restaurant GST percentage if GST registered, otherwise 0
      */
-    private function calculateItemGST($originalPrice, $quantity, $itemDiscountPercent = 0, $restaurantGstPercentage = 0, $isGstRegistered = false)
+    private function calculateItemGST($originalPrice, $quantity, $itemDiscountPercent = 0, $restaurantGstPercentage = 0, $isGstRegistered = false, $addonsCost = 0, $isAddonItem = false)
     {
         // Step 1: Apply item discount to get discounted price per item
         $discountedPrice = $originalPrice - ($originalPrice * $itemDiscountPercent / 100);
         
-        // Step 2: Calculate taxable amount (discounted price × quantity)
-        $taxableAmount = $discountedPrice * $quantity;
+        // Step 2: Calculate taxable amount (dish discounted price × quantity + addons cost)
+        $taxableAmount = $isAddonItem ? ($discountedPrice * $quantity) : (($discountedPrice * $quantity) + $addonsCost);
         
         // Step 3: Calculate GST on taxable amount (use restaurant GST if registered)
         $gstRate = $isGstRegistered ? $restaurantGstPercentage : 0;
@@ -215,6 +223,7 @@ class OrderManagementController extends Controller
             'sgst_amount' => $sgstAmount,
             'igst_amount' => $igstAmount,
             'total_amount' => $totalAmount,
+            'addons_cost' => $addonsCost,
         ];
     }
 
@@ -232,7 +241,8 @@ class OrderManagementController extends Controller
         
         foreach ($items as $item) {
             $quantity = isset($item['quantity']) ? $item['quantity'] : (isset($item['qty']) ? $item['qty'] : 0);
-            $originalSubtotal += $item['original_price'] * $quantity;
+            $addonsCost = floatval($item['addons_cost'] ?? 0);
+            $originalSubtotal += ($item['original_price'] * $quantity) + $addonsCost;
             $totalTaxable += $item['taxable_amount'];
             if ($isGstRegistered) {
                 $totalGst += $item['gst_amount'];
@@ -337,14 +347,14 @@ class OrderManagementController extends Controller
                 ];
             }
 
-            $unitPriceWithAddons = $isAddonItem ? $basePrice : ($basePrice + $addonsCost);
-
             $itemCalc = $this->calculateItemGST(
-                $unitPriceWithAddons,
+                $basePrice,
                 intval($item['qty']),
                 $itemDiscount,
                 $restaurantGstPercentage,
-                $isGstRegistered
+                $isGstRegistered,
+                $addonsCost,
+                $isAddonItem
             );
             $itemCalc['addons'] = $cleanAddons;
             $itemCalc['base_price'] = $basePrice;
@@ -408,6 +418,14 @@ class OrderManagementController extends Controller
             }
 
             $grandTotal = $totals['final_total'];
+
+            if ($totalPaying > ($grandTotal + 0.01)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Total payment amount (₹' . number_format($totalPaying, 2) . ') cannot exceed the Grand Total of ₹' . number_format($grandTotal, 2) . '.'
+                ], 422);
+            }
+
             if ($totalPaying >= $grandTotal && $grandTotal > 0) {
                 $order->payment_status = 'PAID';
                 $order->amount_paid = $grandTotal;
@@ -622,14 +640,14 @@ class OrderManagementController extends Controller
                         ];
                     }
 
-                    $unitPriceWithAddons = $isAddonItem ? $basePrice : ($basePrice + $addonsCost);
-
                     $calc = $this->calculateItemGST(
-                        $unitPriceWithAddons,
+                        $basePrice,
                         intval($item['qty']),
                         $itemDiscount,
                         $restaurantGstPercentage,
-                        $isGstRegistered
+                        $isGstRegistered,
+                        $addonsCost,
+                        $isAddonItem
                     );
 
                     $isNumericSubcat = is_numeric($item['id'] ?? null) && intval($item['id']) > 0 && empty($isAddonItem);
@@ -673,7 +691,18 @@ class OrderManagementController extends Controller
             $totalIgst = 0;
             
             foreach ($items as $item) {
-                $originalSubtotal += $item->price * $item->quantity;
+                $addonsCost = 0;
+                if (!empty($item->addons_list) && is_array($item->addons_list)) {
+                    foreach ($item->addons_list as $a) {
+                        $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                    }
+                }
+                $isAddon = empty($item->subcategory_id);
+                if ($isAddon) {
+                    $originalSubtotal += $item->price * $item->quantity;
+                } else {
+                    $originalSubtotal += ($item->price * $item->quantity) + $addonsCost;
+                }
                 $totalTaxable += $item->taxable_amount;
                 $totalGst += $item->gst_amount;
                 $totalCgst += $item->cgst_amount;
@@ -703,6 +732,17 @@ class OrderManagementController extends Controller
             // Process new Cash & UPI payments if provided
             $cashAmount = floatval($request->cash_amount ?? 0);
             $upiAmount = floatval($request->upi_amount ?? 0);
+            $newPayment = $cashAmount + $upiAmount;
+
+            $existingPaid = (float)OrderToPayment::where('order_id', $order->id)->sum('amount');
+            $remainingDue = max(0, $finalTotal - $existingPaid);
+
+            if ($newPayment > ($remainingDue + 0.01)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment amount (₹' . number_format($newPayment, 2) . ') cannot exceed the remaining balance due of ₹' . number_format($remainingDue, 2) . '.'
+                ], 422);
+            }
 
             if ($cashAmount > 0) {
                 $cashPayment = OrderToPayment::create([
@@ -872,22 +912,31 @@ public function publicDownloadInvoice($order_id)
         $originalPrice = (float)$item->price;
         $quantity = (int)$item->quantity;
         
+        $addons = $item->addons_list ?? [];
+        $addonsCost = 0;
+        if (!empty($addons) && is_array($addons)) {
+            foreach ($addons as $a) {
+                $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+            }
+        }
+        $isAddonItem = empty($item->subcategory_id);
         $discountedPrice = $originalPrice - ($originalPrice * $itemDiscount / 100);
-        $taxableAmount = $discountedPrice * $quantity;
+        $taxableAmount = $item->taxable_amount ?? ($isAddonItem ? ($discountedPrice * $quantity) : (($discountedPrice * $quantity) + $addonsCost));
+        $lineOriginal = $isAddonItem ? ($originalPrice * $quantity) : (($originalPrice * $quantity) + $addonsCost);
         
         $gstRate = (float)($item->gst_rate ?? 0);
-        $gstAmount = ($taxableAmount * $gstRate) / 100;
+        $gstAmount = $item->gst_amount ?? (($taxableAmount * $gstRate) / 100);
         
         $halfGstRate = $gstRate / 2;
         $cgstAmount = ($taxableAmount * $halfGstRate) / 100;
         $sgstAmount = ($taxableAmount * $halfGstRate) / 100;
         
-        $originalSubtotal += $originalPrice * $quantity;
+        $originalSubtotal += $lineOriginal;
         $totalTaxable += $taxableAmount;
         $totalGst += $gstAmount;
         $totalCgst += $cgstAmount;
         $totalSgst += $sgstAmount;
-        $totalItemDiscount += ($originalPrice * $quantity) - $taxableAmount;
+        $totalItemDiscount += ($originalPrice * $itemDiscount / 100) * $quantity;
     }
     
     $orderDiscountPercent = (float)($order->discount_percentage ?? 0);
@@ -1119,30 +1168,35 @@ public function deletePayment($payment_id)
         $totalItemDiscount = 0;
         
         foreach ($order->orderItems as $item) {
-            // Get item discount percentage
-            $itemDiscount = $item->item_discount_percentage ?? 0;
-            $originalPrice = $item->price;
-            $quantity = $item->quantity;
+            $itemDiscount = (float)($item->item_discount_percentage ?? 0);
+            $originalPrice = (float)$item->price;
+            $quantity = (int)$item->quantity;
             
-            // Calculate discounted price
+            $addons = $item->addons_list ?? [];
+            $addonsCost = 0;
+            if (!empty($addons) && is_array($addons)) {
+                foreach ($addons as $a) {
+                    $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                }
+            }
+            $isAddonItem = empty($item->subcategory_id);
             $discountedPrice = $originalPrice - ($originalPrice * $itemDiscount / 100);
-            $taxableAmount = $discountedPrice * $quantity;
+            $taxableAmount = $isAddonItem ? ($discountedPrice * $quantity) : (($discountedPrice * $quantity) + $addonsCost);
+            $lineOriginal = $isAddonItem ? ($originalPrice * $quantity) : (($originalPrice * $quantity) + $addonsCost);
             
-            // Calculate GST on discounted price
-            $gstRate = $item->gst_rate ?? 0;
+            $gstRate = (float)($item->gst_rate ?? 0);
             $gstAmount = ($taxableAmount * $gstRate) / 100;
             
-            // Split GST (assuming 50-50 for CGST/SGST)
             $halfGstRate = $gstRate / 2;
             $cgstAmount = ($taxableAmount * $halfGstRate) / 100;
             $sgstAmount = ($taxableAmount * $halfGstRate) / 100;
             
-            $originalSubtotal += $originalPrice * $quantity;
+            $originalSubtotal += $lineOriginal;
             $totalTaxable += $taxableAmount;
             $totalGst += $gstAmount;
             $totalCgst += $cgstAmount;
             $totalSgst += $sgstAmount;
-            $totalItemDiscount += ($originalPrice * $quantity) - $taxableAmount;
+            $totalItemDiscount += ($originalPrice * $itemDiscount / 100) * $quantity;
         }
         
         // Calculate order discount
@@ -1267,19 +1321,30 @@ public function deletePayment($payment_id)
      */
     public function kitchen(Request $request)
     {
-        $data['tables'] = TableManage::where('restaurant_id', auth()->user()->restaurant_id)
+        $restaurantId = auth()->user()->restaurant_id;
+        $data['tables'] = TableManage::where('restaurant_id', $restaurantId)
             ->where('status', 'A')
             ->get();
 
         $query = OrderItems::with(['order', 'subcategory.addons', 'subcategory.category', 'order.table'])
-            ->where('restaurant_id', auth()->user()->restaurant_id);
+            ->where('restaurant_id', $restaurantId);
 
+        // Always default to last 2 days (yesterday 00:00:00 to today 23:59:59) if from_date / to_date not provided
         if ($request->filled('from_date') && $request->filled('to_date')) {
             $fromDate = Carbon::parse($request->from_date)->startOfDay();
             $toDate = Carbon::parse($request->to_date)->endOfDay();
             $query->whereBetween('created_at', [$fromDate, $toDate]);
+        } elseif ($request->filled('from_date')) {
+            $fromDate = Carbon::parse($request->from_date)->startOfDay();
+            $query->where('created_at', '>=', $fromDate);
+        } elseif ($request->filled('to_date')) {
+            $toDate = Carbon::parse($request->to_date)->endOfDay();
+            $query->where('created_at', '<=', $toDate);
         } else {
-            $query->where('created_at', '>=', Carbon::now()->subDays(3)->startOfDay());
+            // Default: last 2 days
+            $fromDate = Carbon::now()->subDays(1)->startOfDay();
+            $toDate = Carbon::now()->endOfDay();
+            $query->whereBetween('created_at', [$fromDate, $toDate]);
         }
 
         if ($request->filled('status') && $request->status != 'all') {
@@ -1292,8 +1357,47 @@ public function deletePayment($payment_id)
             });
         }
 
-        $data['OrderItems'] = $query->orderBy('created_at', 'desc')->get();
-        $data['from_date'] = $request->from_date ?? Carbon::now()->subDays(3)->format('Y-m-d');
+        $orderItems = $query->orderBy('created_at', 'desc')->get();
+
+        // Group into KOT tickets where same KOT number and same Order ID share a single card
+        $kotGroups = $orderItems->groupBy(function($item) {
+            $kotKey = !empty($item->kot_no) ? $item->kot_no : ('ITEM_' . $item->id);
+            return ($item->order_id ?? 0) . '_' . $kotKey;
+        })->map(function($items) {
+            $first = $items->first();
+            
+            // Overall status for the KOT card
+            $statuses = $items->pluck('order_status')->unique()->toArray();
+            if (count($statuses) === 1) {
+                $overallStatus = $statuses[0];
+            } elseif (in_array('PENDING', $statuses)) {
+                $overallStatus = 'PENDING';
+            } elseif (in_array('COOKING', $statuses)) {
+                $overallStatus = 'COOKING';
+            } else {
+                $overallStatus = 'DONE';
+            }
+
+            return (object) [
+                'card_id' => 'kot_' . ($first->kot_no ? preg_replace('/[^a-zA-Z0-9_-]/', '_', $first->kot_no) : $first->id) . '_' . ($first->order_id ?? 0),
+                'order_id' => $first->order_id,
+                'order_no' => @$first->order->order_id ?? $first->order_id,
+                'kot_no' => $first->kot_no,
+                'table_name' => @$first->order->table->name ?? 'Take Away',
+                'is_takeaway' => empty(@$first->order->table),
+                'created_at' => $first->created_at,
+                'status' => $overallStatus,
+                'items' => $items,
+                'item_ids' => $items->pluck('id')->toArray(),
+                'primary_item_id' => $first->id,
+                'total_quantity' => $items->sum('quantity'),
+                'total_dishes' => $items->count(),
+            ];
+        });
+
+        $data['OrderItems'] = $orderItems;
+        $data['kotGroups'] = $kotGroups;
+        $data['from_date'] = $request->from_date ?? Carbon::now()->subDays(1)->format('Y-m-d');
         $data['to_date'] = $request->to_date ?? Carbon::now()->format('Y-m-d');
         $data['selected_status'] = $request->status ?? 'all';
         $data['selected_table'] = $request->table_id ?? '';
@@ -1302,20 +1406,67 @@ public function deletePayment($payment_id)
     }
 
     /**
-     * Update kitchen item status
+     * Update kitchen item status (supports single item, KOT lot by kot_no + order_id, or array of item_ids)
      */
     public function updateKitchenStatus(Request $request)
     {
-        $item = OrderItems::find($request->id);
-        if ($item) {
-            $item->order_status = $request->order_status;
-            $item->is_new = 0;
-            $item->save();
+        $restaurantId = auth()->user()->restaurant_id;
 
-            return response()->json(['success' => true, 'message' => 'Status updated successfully.']);
+        // 1. By KOT Number + Order ID (updates all dishes in that KOT at once)
+        if ($request->filled('kot_no') && $request->filled('order_id')) {
+            OrderItems::where('restaurant_id', $restaurantId)
+                ->where('order_id', $request->order_id)
+                ->where('kot_no', $request->kot_no)
+                ->update([
+                    'order_status' => $request->order_status,
+                    'is_new' => 0
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'All dishes in KOT ' . $request->kot_no . ' updated to ' . $request->order_status . '.'
+            ]);
         }
 
-        return response()->json(['success' => false, 'message' => 'Item not found.']);
+        // 2. By Item IDs Array
+        if ($request->filled('item_ids') && is_array($request->item_ids)) {
+            OrderItems::where('restaurant_id', $restaurantId)
+                ->whereIn('id', $request->item_ids)
+                ->update([
+                    'order_status' => $request->order_status,
+                    'is_new' => 0
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Kitchen order status updated to ' . $request->order_status . '.'
+            ]);
+        }
+
+        // 3. By Single Item ID
+        if ($request->filled('id')) {
+            $item = OrderItems::where('restaurant_id', $restaurantId)->find($request->id);
+            if ($item) {
+                if (!empty($item->kot_no)) {
+                    // Update all items sharing this KOT number & order_id
+                    OrderItems::where('restaurant_id', $restaurantId)
+                        ->where('order_id', $item->order_id)
+                        ->where('kot_no', $item->kot_no)
+                        ->update([
+                            'order_status' => $request->order_status,
+                            'is_new' => 0
+                        ]);
+                } else {
+                    $item->order_status = $request->order_status;
+                    $item->is_new = 0;
+                    $item->save();
+                }
+
+                return response()->json(['success' => true, 'message' => 'Status updated successfully.']);
+            }
+        }
+
+        return response()->json(['success' => false, 'message' => 'Item or KOT not found.']);
     }
 
     /**

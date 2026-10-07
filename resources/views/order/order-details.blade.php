@@ -719,16 +719,26 @@
                                     $originalPrice = $item->price;
                                     $discountedPrice = $item->discounted_price ?? ($originalPrice - ($originalPrice * $itemDiscount / 100));
                                     $quantity = $item->quantity;
-                                    $taxableAmount = $item->taxable_amount ?? ($discountedPrice * $quantity);
+                                    $addons = $item->addons_list ?? [];
+                                    $hasAddons = !empty($addons);
+                                    $addonsCost = 0;
+                                    if ($hasAddons) {
+                                        foreach ($addons as $a) {
+                                            $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                                        }
+                                    }
+                                    $isAddonItem = empty($item->subcategory_id);
+                                    $lineOriginal = $isAddonItem ? ($originalPrice * $quantity) : (($originalPrice * $quantity) + $addonsCost);
+                                    $taxableAmount = $item->taxable_amount ?? ($isAddonItem ? ($discountedPrice * $quantity) : (($discountedPrice * $quantity) + $addonsCost));
                                     
                                     // Use stored GST amount or calculate
                                     $itemGst = $item->gst_amount ?? 0;
                                     $gstRate = $item->gst_rate ?? 0;
-                                    $itemTotal = $taxableAmount + $itemGst;
+                                    $itemTotal = $item->total_amount ?? ($taxableAmount + $itemGst);
                                     
-                                    $subtotal += $originalPrice * $quantity;
+                                    $subtotal += $lineOriginal;
                                     $gstTotal += $itemGst;
-                                    $discountTotal += ($originalPrice * $quantity) - $taxableAmount;
+                                    $discountTotal += ($originalPrice * $itemDiscount / 100) * $quantity;
                                 @endphp
                                 @php
                                     $addons = $item->addons_list ?? [];

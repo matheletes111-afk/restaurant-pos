@@ -127,15 +127,24 @@
         position: fixed !important;
         top: 0 !important;
         bottom: 0 !important;
+        z-index: 1040 !important;
         left: -280px !important;
         width: 280px !important;
         max-width: 85vw !important;
         transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         box-shadow: none !important;
+        background: #0f172a !important;
       }
       .pc-sidebar.mob-sidebar-active {
         left: 0 !important;
         box-shadow: 10px 0 40px rgba(0, 0, 0, 0.5) !important;
+      }
+      .pc-sidebar .navbar-wrapper {
+        position: relative !important;
+        z-index: 1045 !important;
+        background: #0f172a !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
       }
       .pc-menu-overlay {
         position: fixed !important;
@@ -145,10 +154,10 @@
         right: 0 !important;
         width: 100vw !important;
         height: 100vh !important;
-        background: rgba(15, 23, 42, 0.6) !important;
-        backdrop-filter: blur(4px) !important;
-        -webkit-backdrop-filter: blur(4px) !important;
-        z-index: 1020 !important;
+        background: rgba(15, 23, 42, 0.55) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        z-index: 1035 !important;
       }
     }
 
@@ -1771,7 +1780,7 @@
           <div class="category-scroll-tabs" id="categoryScrollTabs">
             <button type="button" class="cat-tab-btn active" data-category="all">
               <i class="fa-solid fa-border-all"></i> All Items
-              <span class="cat-tab-badge">{{ $categories->sum(function($c) { return $c->subcategories->count(); }) }}</span>
+              <span class="cat-tab-badge">{{ $categories->sum(function($c) { return $c->subcategories->count(); }) + (isset($restaurant_addons) ? $restaurant_addons->count() : 0) }}</span>
             </button>
             @foreach($categories as $cat)
               <button type="button" class="cat-tab-btn" data-category="{{ $cat->id }}">
@@ -1796,7 +1805,7 @@
                 $dishPrice = floatval($dish->price ?? 0);
                 $dishFoodType = strtolower($dish->food_type ?? 'veg');
                 $dishDiscount = floatval($dish->discount ?? 0);
-                $dishAddons = $dish->addons ?? collect([]);
+                $dishAddons = ($dish->addons && $dish->addons->count() > 0) ? $dish->addons : (isset($restaurant_addons) && $restaurant_addons->count() > 0 ? $restaurant_addons : collect([]));
               @endphp
               <div class="dish-card" 
                    data-id="{{ $dish->id }}"
@@ -1859,9 +1868,12 @@
                 <div>
                   <div class="dish-top-meta">
                     <span class="food-symbol {{ $isNonVeg ? 'nonveg' : 'veg' }}"></span>
-                    <span class="badge bg-warning-subtle text-warning border px-2 py-1" style="font-size: 0.65rem; font-weight: 800; border-radius: 6px;">
-                      <i class="fa-solid fa-puzzle-piece"></i> ADD-ON
-                    </span>
+                    <div class="d-flex align-items-center gap-1">
+                      <span class="badge bg-warning-subtle text-warning border px-2 py-1" style="font-size: 0.65rem; font-weight: 800; border-radius: 6px;">
+                        <i class="fa-solid fa-puzzle-piece"></i> ADD-ON
+                      </span>
+                      <span class="dish-cart-badge" id="dishBadge-addon-{{ $addon->id }}">0</span>
+                    </div>
                   </div>
                   <h3 class="dish-title" title="{{ $addon->name }}">{{ $addon->name }}</h3>
                 </div>
@@ -2319,7 +2331,7 @@ $(document).ready(function() {
       let addonName = $(this).data('name');
       let addonPrice = parseFloat($(this).data('price')) || 0;
       let foodType = $(this).data('food-type') || 'veg';
-      let cartKey = 'addon_' + addonId;
+      let cartKey = 'addon-' + addonId;
 
       if (cart[cartKey]) {
         cart[cartKey].qty += 1;
@@ -2404,9 +2416,8 @@ $(document).ready(function() {
       });
     }
 
-    let totalAddonsCost = cart[dishId].addons.reduce((sum, a) => sum + ((parseFloat(a.price) || 0) * (a.qty || 1)), 0);
     let base = cart[dishId].base_price !== undefined ? cart[dishId].base_price : cart[dishId].price;
-    cart[dishId].price = base + totalAddonsCost;
+    cart[dishId].price = base;
 
     $('#rapidMapAddonModal').fadeOut(150);
     renderCart();
@@ -2483,9 +2494,52 @@ $(document).ready(function() {
     }
   });
 
-  // Payment amount change
-  $('#inputCashAmount, #inputUpiAmount').on('input', function() {
+  // Payment amount change: Auto-calculate remaining amount on the other input with max cap
+  $('#inputCashAmount').on('input change', function() {
+    let grandTotal = getComputedGrandTotal();
+    let valStr = $(this).val();
+    if (valStr === '') {
+      $('#inputUpiAmount').val(grandTotal > 0 ? grandTotal : 0);
+    } else {
+      let cashVal = parseFloat(valStr) || 0;
+      if (cashVal < 0) {
+        cashVal = 0;
+        $(this).val(0);
+      }
+      if (cashVal > grandTotal) {
+        cashVal = grandTotal;
+        $(this).val(grandTotal);
+      }
+      let remainingUpi = Math.max(0, grandTotal - cashVal);
+      $('#inputUpiAmount').val(grandTotal > 0 ? Math.round(remainingUpi) : 0);
+    }
     updatePaymentIndicator();
+  });
+
+  $('#inputUpiAmount').on('input change', function() {
+    let grandTotal = getComputedGrandTotal();
+    let valStr = $(this).val();
+    if (valStr === '') {
+      $('#inputCashAmount').val(grandTotal > 0 ? grandTotal : 0);
+    } else {
+      let upiVal = parseFloat(valStr) || 0;
+      if (upiVal < 0) {
+        upiVal = 0;
+        $(this).val(0);
+      }
+      if (upiVal > grandTotal) {
+        upiVal = grandTotal;
+        $(this).val(grandTotal);
+      }
+      let remainingCash = Math.max(0, grandTotal - upiVal);
+      $('#inputCashAmount').val(grandTotal > 0 ? Math.round(remainingCash) : 0);
+    }
+    updatePaymentIndicator();
+  });
+
+  // Auto-select entire amount on focus for quick cashier replacement
+  $('#inputCashAmount, #inputUpiAmount').on('focus', function() {
+    $(this).select();
   });
 
   // Quick Payment Chips
@@ -2763,7 +2817,7 @@ $(document).ready(function() {
 
     let base = cart[currentEditingDishId].base_price !== undefined ? cart[currentEditingDishId].base_price : cart[currentEditingDishId].price;
     cart[currentEditingDishId].addons = selectedAddons;
-    cart[currentEditingDishId].price = base + totalAddonsCost;
+    cart[currentEditingDishId].price = base;
 
     $('#rapidAddonModal').fadeOut(150);
     renderCart();
@@ -2785,14 +2839,8 @@ $(document).ready(function() {
       if (addon) {
         addon.qty = (addon.qty || addon.quantity || 1) + 1;
         addon.quantity = addon.qty;
-
-        let totalAddonsCost = cart[dishId].addons.reduce(function(sum, a) {
-          return sum + ((parseFloat(a.price) || 0) * (a.qty || 1));
-        }, 0);
-
         let base = cart[dishId].base_price !== undefined ? cart[dishId].base_price : cart[dishId].price;
-        cart[dishId].price = base + totalAddonsCost;
-
+        cart[dishId].price = base;
         renderCart();
       }
     }
@@ -2816,14 +2864,8 @@ $(document).ready(function() {
             return String(a.id) !== String(addonId);
           });
         }
-
-        let totalAddonsCost = cart[dishId].addons.reduce(function(sum, a) {
-          return sum + ((parseFloat(a.price) || 0) * (a.qty || 1));
-        }, 0);
-
         let base = cart[dishId].base_price !== undefined ? cart[dishId].base_price : cart[dishId].price;
-        cart[dishId].price = base + totalAddonsCost;
-
+        cart[dishId].price = base;
         renderCart();
       }
     }
@@ -2839,14 +2881,8 @@ $(document).ready(function() {
       cart[dishId].addons = cart[dishId].addons.filter(function(a) {
         return String(a.id) !== String(addonId);
       });
-
-      let totalAddonsCost = cart[dishId].addons.reduce(function(sum, a) {
-        return sum + ((parseFloat(a.price) || 0) * (a.qty || 1));
-      }, 0);
-
       let base = cart[dishId].base_price !== undefined ? cart[dishId].base_price : cart[dishId].price;
-      cart[dishId].price = base + totalAddonsCost;
-
+      cart[dishId].price = base;
       renderCart();
     }
   });
@@ -2901,10 +2937,26 @@ $(document).ready(function() {
         card.find('.dish-cart-badge').text(item.qty).show();
       }
 
-      let lineOriginal = item.price * item.qty;
+      let basePrice = item.base_price !== undefined ? parseFloat(item.base_price) : parseFloat(item.price);
       let discPercent = parseFloat(item.discount_percent) || 0;
-      let discAmt = (lineOriginal * discPercent) / 100;
-      let lineNet = lineOriginal - discAmt;
+      let addonsCost = (item.addons || []).reduce(function(sum, a) {
+        return sum + ((parseFloat(a.price) || 0) * (a.qty || a.quantity || 1));
+      }, 0);
+
+      let lineOriginal = 0;
+      let discAmt = 0;
+      let lineNet = 0;
+
+      if (item.is_addon) {
+        lineOriginal = basePrice * item.qty;
+        discAmt = (lineOriginal * discPercent) / 100;
+        lineNet = lineOriginal - discAmt;
+      } else {
+        let dishOriginal = basePrice * item.qty;
+        discAmt = (dishOriginal * discPercent) / 100;
+        lineOriginal = dishOriginal + addonsCost;
+        lineNet = (dishOriginal - discAmt) + addonsCost;
+      }
 
       let hasAvailableAddons = item.available_addons && item.available_addons.length > 0;
       let totalAddonsQtyCount = (item.addons || []).reduce(function(sum, a) { return sum + (a.qty || 1); }, 0);
@@ -2968,7 +3020,6 @@ $(document).ready(function() {
         `;
       }
 
-      let basePrice = item.base_price !== undefined ? item.base_price : item.price;
       let foodTypeDot = (item.food_type === 'non-veg' || item.food_type === 'nonveg') ? 'nonveg' : 'veg';
 
       let itemHeaderHtml = '';
@@ -2991,7 +3042,7 @@ $(document).ready(function() {
             ${customizeBtnHtml}
           </div>
           <div class="cart-item-price-meta">
-            Base: ₹${basePrice.toFixed(2)}${item.price > basePrice ? ` • <span class="text-primary fw-bold">Unit: ₹${item.price.toFixed(2)}</span>` : ''}
+            Rate: ₹${basePrice.toFixed(2)} / portion${addonsCost > 0 ? ` • <span class="text-warning-dark fw-bold">+₹${addonsCost.toFixed(2)} Add-ons</span>` : ''}
           </div>
         `;
       }
@@ -3040,10 +3091,22 @@ $(document).ready(function() {
     let items = Object.values(cart);
     let netTaxable = 0;
     items.forEach(function(i) {
-      let orig = i.price * i.qty;
+      let base = i.base_price !== undefined ? parseFloat(i.base_price) : parseFloat(i.price);
+      let q = parseFloat(i.qty) || 1;
       let discPercent = parseFloat(i.discount_percent) || 0;
-      let discAmt = (orig * discPercent) / 100;
-      netTaxable += (orig - discAmt);
+      let aCost = (i.addons || []).reduce(function(sum, a) {
+        return sum + ((parseFloat(a.price) || 0) * (a.qty || a.quantity || 1));
+      }, 0);
+
+      if (i.is_addon) {
+        let orig = base * q;
+        let discAmt = (orig * discPercent) / 100;
+        netTaxable += (orig - discAmt);
+      } else {
+        let dishOrig = base * q;
+        let discAmt = (dishOrig * discPercent) / 100;
+        netTaxable += (dishOrig - discAmt) + aCost;
+      }
     });
 
     let gstAmount = 0;
@@ -3062,12 +3125,27 @@ $(document).ready(function() {
     let netTaxable = 0;
 
     items.forEach(function(i) {
-      let orig = i.price * i.qty;
+      let base = i.base_price !== undefined ? parseFloat(i.base_price) : parseFloat(i.price);
+      let q = parseFloat(i.qty) || 1;
       let discPercent = parseFloat(i.discount_percent) || 0;
-      let discAmt = (orig * discPercent) / 100;
-      grossSubtotal += orig;
-      totalDiscountAmount += discAmt;
-      netTaxable += (orig - discAmt);
+      let aCost = (i.addons || []).reduce(function(sum, a) {
+        return sum + ((parseFloat(a.price) || 0) * (a.qty || a.quantity || 1));
+      }, 0);
+
+      if (i.is_addon) {
+        let orig = base * q;
+        let discAmt = (orig * discPercent) / 100;
+        grossSubtotal += orig;
+        totalDiscountAmount += discAmt;
+        netTaxable += (orig - discAmt);
+      } else {
+        let dishOrig = base * q;
+        let discAmt = (dishOrig * discPercent) / 100;
+        let orig = dishOrig + aCost;
+        grossSubtotal += orig;
+        totalDiscountAmount += discAmt;
+        netTaxable += (dishOrig - discAmt) + aCost;
+      }
     });
 
     let gstAmount = 0;
@@ -3095,6 +3173,10 @@ $(document).ready(function() {
     $('#lblRoundOff').text((roundOff >= 0 ? '+' : '') + '₹' + roundOff.toFixed(2));
     $('#lblGrandTotal').text('₹' + grandTotal.toFixed(2));
 
+    // Update max attribute on payment input fields
+    $('#inputCashAmount').attr('max', grandTotal > 0 ? grandTotal : 0);
+    $('#inputUpiAmount').attr('max', grandTotal > 0 ? grandTotal : 0);
+
     // Automatically update cash/payment amounts when grand total changes (e.g. from discount or quantity change)
     let cash = parseFloat($('#inputCashAmount').val()) || 0;
     let upi = parseFloat($('#inputUpiAmount').val()) || 0;
@@ -3107,7 +3189,7 @@ $(document).ready(function() {
       $('#inputCashAmount').val(grandTotal);
     } else if (cash > 0 && upi > 0) {
       // Split payment mode: keep UPI as set, auto-adjust cash to remaining balance
-      let remainingCash = Math.max(0, grandTotal - upi);
+      let remainingCash = Math.max(0, grandTotal - Math.min(grandTotal, upi));
       $('#inputCashAmount').val(remainingCash);
     } else if (cash <= 0 && upi > 0) {
       // Full UPI mode: auto-adjust UPI to match new discounted total
@@ -3155,7 +3237,7 @@ $(document).ready(function() {
       diffLbl.text('₹' + Math.abs(diff).toFixed(2));
     } else {
       badge.addClass('excess');
-      text.html('<i class="fa-solid fa-hand-holding-dollar"></i> Change to Return:');
+      text.html('<i class="fa-solid fa-circle-exclamation text-danger"></i> Over Payment:');
       diffLbl.text('₹' + diff.toFixed(2));
     }
   }
@@ -3190,6 +3272,11 @@ $(document).ready(function() {
 
     if (cash <= 0 && upi <= 0) {
       alert('Please specify either Cash or UPI payment amount.');
+      return;
+    }
+
+    if ((cash + upi) > grandTotal) {
+      alert('Total payment (₹' + (cash + upi).toFixed(2) + ') cannot exceed the Grand Total (₹' + grandTotal.toFixed(2) + ').');
       return;
     }
 

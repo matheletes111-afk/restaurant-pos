@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Models\User;
 use App\Models\RestaurantMaster;
 use App\Models\Plan;
@@ -12,6 +12,7 @@ use App\Models\Payment;
 
 class RazorpayWebhookTest extends TestCase
 {
+    use DatabaseTransactions;
     public function test_webhook_endpoints_are_publicly_accessible_without_auth_or_csrf()
     {
         $response1 = $this->get('/razorpay/webhook');
