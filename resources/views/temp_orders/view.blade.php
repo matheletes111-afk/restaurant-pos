@@ -310,10 +310,11 @@
                 $totalItemDiscount += ($bPrice * $iDisc / 100) * $qty;
               }
 
-              $displaySubtotal = $computedSubtotal;
-              $displayTaxable = $computedTaxable;
-              $displayGst = $computedGst;
-              $grandTotal = $displayTaxable + $displayGst;
+              $displaySubtotal = floatval($order->total_amount ?: $computedSubtotal);
+              $totalItemDiscount = floatval($order->discount ?: $totalItemDiscount);
+              $displayTaxable = floatval($order->taxable_amount ?: $computedTaxable);
+              $displayGst = floatval($order->gst_amount ?: $computedGst);
+              $grandTotal = floatval($order->grand_total ?: ($displayTaxable + $displayGst));
               $finalAmount = round($grandTotal);
               $roundOff = $finalAmount - $grandTotal;
             @endphp

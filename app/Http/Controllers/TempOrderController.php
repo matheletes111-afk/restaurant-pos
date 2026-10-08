@@ -574,11 +574,45 @@ public function store(Request $request)
             return !empty($item->kot_no) ? ('KOT #' . $item->kot_no) : 'KOT #1';
         });
 
-        $grandTotal = $mainOrder->grand_total ?? $mainOrder->total_amount;
-        $subtotal = $mainOrder->total_amount;
-        $discount = $mainOrder->discount;
-        $gstAmount = $mainOrder->gst_amount;
-        $taxableAmount = $mainOrder->taxable_amount;
+        // Compute live mathematically sound values
+        $computedOriginalSubtotal = 0;
+        $computedTaxable = 0;
+        $computedGst = 0;
+        $computedItemDiscount = 0;
+
+        foreach ($orderItems as $item) {
+            $basePrice = floatval($item->price);
+            $qty = max(1, intval($item->quantity ?? 1));
+            $itemDiscPercent = floatval($item->item_discount_percentage ?? 0);
+            $discPrice = floatval($item->discounted_price ?: ($basePrice - ($basePrice * $itemDiscPercent / 100)));
+
+            $addonsCost = 0;
+            if (!empty($item->addons_list) && is_array($item->addons_list)) {
+                foreach ($item->addons_list as $a) {
+                    $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                }
+            }
+            $isAddon = empty($item->subcategory_id);
+            $lineOrig = $isAddon ? ($basePrice * $qty) : (($basePrice * $qty) + $addonsCost);
+            $lineTax = $isAddon ? ($discPrice * $qty) : (($discPrice * $qty) + $addonsCost);
+            $gstRate = floatval($item->gst_rate ?? 0);
+            $lineGst = ($lineTax * $gstRate) / 100;
+
+            $computedOriginalSubtotal += $lineOrig;
+            $computedTaxable += $lineTax;
+            $computedGst += $lineGst;
+            $computedItemDiscount += ($basePrice * $itemDiscPercent / 100) * $qty;
+        }
+
+        $orderDiscPercent = floatval($mainOrder->discount_percentage ?? 0);
+        $orderDiscAmt = ($computedTaxable * $orderDiscPercent) / 100;
+        $totalDiscount = $computedItemDiscount + $orderDiscAmt;
+
+        $subtotal = $computedOriginalSubtotal;
+        $taxableAmount = $computedTaxable;
+        $gstAmount = $computedGst;
+        $discount = $totalDiscount;
+        $grandTotal = $mainOrder->grand_total ?: round(($taxableAmount - $orderDiscAmt) + $gstAmount);
         $isGstBill = ($mainOrder->is_gst_bill ?? 'NO') === 'YES';
 
         // Keep session updated with active order
