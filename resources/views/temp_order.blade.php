@@ -2221,6 +2221,11 @@
         <label class="input-label-clean">Mobile Number <span class="text-danger">*</span></label>
         <div class="input-icon-group">
           <input type="tel" id="phone" class="form-input-premium" placeholder="e.g. 9876543210" autocomplete="tel"
+            maxlength="10"
+            inputmode="numeric"
+            pattern="[0-9]{10}"
+            onkeydown="if(['e','E','+','-','.'].includes(event.key)) event.preventDefault();"
+            oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
             value="{{ $activeOrder->customer_phone ?? (session('customer_phone') ?? '') }}" @if(isset($activeOrder) && $activeOrder) readonly style="background: #f1f5f9; cursor: not-allowed;" @endif>
           <i class="fas fa-phone-alt"></i>
         </div>
@@ -3048,22 +3053,49 @@ $(document).on('click', '#btnSkipAddons', function() {
 });
 
 function addDishToCartWithAddons(dishData, addonsList, unitPrice) {
-    let existing = cart.find(i => String(i.id) === String(dishData.id) && (!i.addons || i.addons.length === 0));
-    let basePrice = dishData.base_price || dishData.price;
-    if (existing && addonsList.length === 0) {
-        existing.qty++;
+    let basePrice = dishData.base_price !== undefined ? parseFloat(dishData.base_price) : parseFloat(dishData.price || 0);
+    addonsList = Array.isArray(addonsList) ? addonsList : [];
+
+    if (addonsList.length === 0) {
+        let existing = cart.find(i => String(i.id) === String(dishData.id) && (!i.addons || i.addons.length === 0));
+        if (existing) {
+            existing.qty++;
+        } else {
+            cart.push({
+                id: dishData.id,
+                name: dishData.name,
+                price: basePrice,
+                base_price: basePrice,
+                qty: 1,
+                discount: dishData.discount || 0,
+                addons: [],
+                food_type: dishData.food_type || 'Veg',
+                available_addons: dishData.available_addons || dishData.addons || []
+            });
+        }
     } else {
-        cart.push({
-            id: dishData.id,
-            name: dishData.name,
-            price: basePrice,
-            base_price: basePrice,
-            qty: 1,
-            discount: dishData.discount || 0,
-            addons: addonsList,
-            food_type: dishData.food_type,
-            available_addons: dishData.available_addons || dishData.addons || []
+        let addonFingerprint = JSON.stringify(addonsList.map(a => ({ id: a.id, qty: a.qty || 1 })).sort((a,b) => a.id - b.id));
+        let existing = cart.find(i => {
+            if (String(i.id) !== String(dishData.id)) return false;
+            let iFp = JSON.stringify((i.addons || []).map(a => ({ id: a.id, qty: a.qty || 1 })).sort((a,b) => a.id - b.id));
+            return iFp === addonFingerprint;
         });
+
+        if (existing) {
+            existing.qty++;
+        } else {
+            cart.push({
+                id: dishData.id,
+                name: dishData.name,
+                price: basePrice,
+                base_price: basePrice,
+                qty: 1,
+                discount: dishData.discount || 0,
+                addons: addonsList,
+                food_type: dishData.food_type || 'Veg',
+                available_addons: dishData.available_addons || dishData.addons || []
+            });
+        }
     }
     refreshTable();
 }
@@ -3385,23 +3417,6 @@ $(document).on('click', '.addItemBtn', function(e) {
     let discount     = parseFloat($(this).data('discount')) || 0;
     let name         = $(this).data('name');
     let foodType     = $(this).data('food-type') || 'Veg';
-
-    let dishData = {
-        id: itemId,
-        name: name,
-        price: basePrice,
-        discounted_price: discPrice,
-        base_price: basePrice,
-        discount: discount,
-        food_type: foodType,
-        available_addons: addons,
-        addons: addons
-    };
-
-    if (addons && addons.length > 0) {
-        openAddonModalForDish(dishData);
-        return;
-    }
 
     let existing = cart.find(i => String(i.id) === String(itemId) && (!i.addons || i.addons.length === 0));
     if (existing) {
@@ -3752,7 +3767,14 @@ $(document).on('click', '#placeOrderBtn', function() {
     }
 
     if (!phone) {
-        alert('Please enter your mobile phone number.');
+        alert('Please enter your 10-digit mobile phone number.');
+        $('html, body').animate({ scrollTop: $('.guest-info-card').offset().top - 80 }, 400);
+        $('#phone').focus();
+        return;
+    }
+
+    if (!/^[0-9]{10}$/.test(phone)) {
+        alert('Mobile phone number must be exactly 10 digits.');
         $('html, body').animate({ scrollTop: $('.guest-info-card').offset().top - 80 }, 400);
         $('#phone').focus();
         return;

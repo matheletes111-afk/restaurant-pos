@@ -179,8 +179,10 @@ public function store(Request $request)
 {
     $request->validate([
         'customer_name' => 'required|string',
-        'customer_phone' => 'required|string',
+        'customer_phone' => ['required', 'string', 'regex:/^[0-9]{10}$/'],
         'order_items' => 'required|array|min:1',
+    ], [
+        'customer_phone.regex' => 'Mobile number must be exactly 10 digits.',
     ]);
 
     // Get restaurant GST info
