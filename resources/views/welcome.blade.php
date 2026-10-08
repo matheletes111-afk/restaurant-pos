@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bill&Bite - Complete Restaurant Management System</title>
+    <meta name="description" content="Bill&amp;Bite is a complete restaurant management system with QR table ordering, POS, kitchen display, inventory, staff management, and GST billing.">
+    <link rel="canonical" href="https://billnbite.com/">
     <link rel="shortcut icon" href="{{ asset('fav_web.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

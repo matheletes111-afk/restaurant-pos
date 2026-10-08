@@ -4,6 +4,7 @@
   <title>BILL & BITE | Forget Password</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+  <meta name="description" content="Reset your Bill&amp;Bite account password to regain access to your restaurant management dashboard.">
   @include('includes.style')
   <style>
     body {
@@ -160,7 +161,7 @@
       <img src="{{ asset('logo.png') }}" class="img-fluid logo-img" alt="Restaurant Logo">
     </div>
     
-    <div class="auth-title">Forget Password</div>
+    <h1 class="auth-title">Forget Password</h1>
     <div class="auth-subtitle">Enter your email and we'll send a password reset OTP</div>
     
     @include('includes.message')

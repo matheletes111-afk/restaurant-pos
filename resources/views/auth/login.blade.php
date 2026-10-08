@@ -4,6 +4,7 @@
   <title>Restaurant - Login</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+  <meta name="description" content="Sign in to Bill&amp;Bite to manage your restaurant's orders, billing, inventory, and staff from one dashboard.">
   @include('includes.style')
   <style>
     body {
@@ -203,7 +204,7 @@
       <img src="{{ asset('logo.png') }}" class="img-fluid logo-img" alt="Restaurant Logo">
     </div>
     
-    <div class="auth-title">Welcome Back</div>
+    <h1 class="auth-title">Welcome Back</h1>
     <div class="auth-subtitle">Sign in to manage your restaurant operations</div>
     
     @if(session('error'))
