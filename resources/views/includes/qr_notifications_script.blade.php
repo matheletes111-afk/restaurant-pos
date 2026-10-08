@@ -3,8 +3,6 @@
     'use strict';
 
     // Store state
-    let lastKnownMaxId = 0;
-    let isInitialLoad = true;
     let cachedNotifications = [];
     const fetchUrl = "{{ route('restaurant.qr.notifications') }}";
     const markReadBaseUrl = "{{ url('/restaurant/qr-notifications/mark-read') }}";
@@ -21,104 +19,6 @@
             "'": '&#039;'
         };
         return String(text).replace(/[&<>"']/g, m => map[m]);
-    }
-
-    // Initialize initial max ID from existing DOM items if any
-    const existingItems = document.querySelectorAll('.qr-notif-item');
-    existingItems.forEach(item => {
-        const id = parseInt(item.getAttribute('data-order-id'), 10);
-        if (!isNaN(id) && id > lastKnownMaxId) {
-            lastKnownMaxId = id;
-        }
-    });
-
-    // Gentle 2-tone melodic notification chime using browser Web Audio API
-    function playQrOrderChime() {
-        try {
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            if (!AudioCtx) return;
-            const ctx = new AudioCtx();
-            const now = ctx.currentTime;
-
-            // Tone 1: 587.33Hz (D5)
-            const osc1 = ctx.createOscillator();
-            const gain1 = ctx.createGain();
-            osc1.type = 'sine';
-            osc1.frequency.setValueAtTime(587.33, now);
-            gain1.gain.setValueAtTime(0.12, now);
-            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-            osc1.connect(gain1);
-            gain1.connect(ctx.destination);
-            osc1.start(now);
-            osc1.stop(now + 0.35);
-
-            // Tone 2: 880.00Hz (A5)
-            const osc2 = ctx.createOscillator();
-            const gain2 = ctx.createGain();
-            osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(880.00, now + 0.12);
-            gain2.gain.setValueAtTime(0.18, now + 0.12);
-            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
-            osc2.connect(gain2);
-            gain2.connect(ctx.destination);
-            osc2.start(now + 0.12);
-            osc2.stop(now + 0.55);
-        } catch (e) {
-            // Audio context policy
-        }
-    }
-
-    // Display floating toast in the top right corner
-    function showQrOrderToast(order) {
-        playQrOrderChime();
-        const container = document.getElementById('qrOrderToastContainer');
-        if (!container) return;
-
-        const toast = document.createElement('div');
-        toast.className = 'qr-toast-card mb-3 p-3';
-        toast.id = 'qr-toast-' + order.id;
-        toast.innerHTML = `
-            <div class="d-flex align-items-start justify-content-between mb-2">
-                <div class="d-flex align-items-center gap-2">
-                    <div style="width: 30px; height: 30px; background: #fff2ea; color: #ff6a00; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
-                        <i class="fas fa-bell"></i>
-                    </div>
-                    <div>
-                        <strong class="text-dark d-block" style="font-size: 0.88rem; line-height: 1.2;">New QR Order Placed!</strong>
-                        <small class="text-muted" style="font-size: 0.72rem;">Table QR Ordering</small>
-                    </div>
-                </div>
-                <button type="button" class="btn-close btn-close-sm" style="font-size: 0.65rem;" onclick="this.closest('.qr-toast-card').remove()"></button>
-            </div>
-            <div class="bg-light rounded p-2 mb-2" style="font-size: 0.8rem; border: 1px solid #f1f5f9;">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="fw-bold text-dark"><i class="fas fa-chair me-1 text-muted"></i>${escapeHtml(order.table_name)}</span>
-                    <span class="fw-bold text-primary font-monospace">${escapeHtml(order.order_no)}</span>
-                </div>
-                <div class="text-truncate text-muted">${escapeHtml(order.customer_name)} &bull; <strong class="text-success">₹${escapeHtml(order.grand_total)}</strong></div>
-                ${order.items_summary ? `<div class="text-truncate text-secondary mt-1" style="font-size: 0.74rem;">${escapeHtml(order.items_summary)}</div>` : ''}
-            </div>
-            <div class="d-flex gap-2">
-                <a href="${order.view_url}" class="btn btn-sm btn-primary rounded-pill flex-grow-1 fw-semibold py-1" style="font-size: 0.78rem;">
-                    View Order
-                </a>
-                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill py-1" style="font-size: 0.78rem;" onclick="this.closest('.qr-toast-card').remove()">
-                    Dismiss
-                </button>
-            </div>
-        `;
-
-        container.appendChild(toast);
-
-        // Auto remove toast after 9 seconds
-        setTimeout(() => {
-            if (toast && toast.parentNode) {
-                toast.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateX(100%)';
-                setTimeout(() => toast.remove(), 400);
-            }
-        }, 9000);
     }
 
     // Update Badge
@@ -147,7 +47,7 @@
                         <i class="fas fa-bell-slash fa-2x"></i>
                     </div>
                     <p class="text-muted mb-0 fw-semibold" style="font-size: 0.85rem;">No pending QR orders</p>
-                    <small class="text-muted" style="font-size: 0.75rem;">New customer QR orders will appear here automatically</small>
+                    <small class="text-muted" style="font-size: 0.75rem;">New customer QR orders will appear here</small>
                 </div>
             `;
             return;
@@ -203,7 +103,7 @@
         container.innerHTML = html;
     }
 
-    // Fetch Notifications from Server
+    // Fetch Notifications from Server (Runs on page load and manual click)
     async function fetchQrNotifications() {
         try {
             const response = await fetch(fetchUrl, {
@@ -219,26 +119,9 @@
             if (!data.success) return;
 
             updateBadge(data.unread_count);
-
-            // Check if any brand new orders arrived
-            if (!isInitialLoad && data.notifications && data.notifications.length > 0) {
-                const newOrders = data.notifications.filter(o => o.id > lastKnownMaxId);
-                newOrders.forEach(ord => {
-                    showQrOrderToast(ord);
-                });
-            }
-
-            // Update lastKnownMaxId
-            if (data.latest_id && data.latest_id > lastKnownMaxId) {
-                lastKnownMaxId = data.latest_id;
-            }
-
-            // Re-render list
             renderNotifications(data.notifications);
-
-            isInitialLoad = false;
         } catch (e) {
-            // Silently fail on network disruption
+            // Silently ignore network disruption
         }
     }
 
@@ -246,7 +129,6 @@
     function handleMarkSingleRead(orderId) {
         if (!orderId) return;
 
-        // Try POST first, fallback to GET
         fetch(`${markReadBaseUrl}/${orderId}`, {
             method: 'POST',
             headers: {
@@ -287,10 +169,11 @@
         });
     }
 
-    // Initial fetch on page load
-    fetchQrNotifications();
-
-    // Poll every 15 seconds for new QR orders
-    setInterval(fetchQrNotifications, 15000);
+    // Initial fetch once on page load/reload only (No 15-second background polling)
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fetchQrNotifications);
+    } else {
+        fetchQrNotifications();
+    }
 })();
 </script>
