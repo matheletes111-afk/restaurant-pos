@@ -75,29 +75,6 @@ class TempOrderController extends Controller
             }
         }
 
-        // For real customers visiting an occupied table: load active dining order so they can see ordered items & prices
-        if (!$savedOrderId && !app()->environment('testing') && $table_details && $table_details->table_status === 'OCCUPIED' && $table_details->order_id) {
-            $checkOrder = OrderManage::find($table_details->order_id);
-            if ($checkOrder && $checkOrder->restaurant_id == $restaurant_id) {
-                $isCompleted = (
-                    $checkOrder->order_complete === 'DONE' ||
-                    $checkOrder->payment_status === 'PAID' ||
-                    in_array(strtoupper($checkOrder->order_status ?? ''), ['COMPLETED', 'CANCELLED', 'REJECTED'])
-                );
-                if (!$isCompleted) {
-                    $savedOrderId = $checkOrder->id;
-                    session([
-                        'customer_qr_order_id' => $checkOrder->id,
-                        'customer_qr_order_type' => 'main',
-                        $sessionKey => ['id' => $checkOrder->id, 'type' => 'main'],
-                        'customer_qr_allowed_orders' => array_unique(array_merge(session('customer_qr_allowed_orders', []), [$checkOrder->id])),
-                        'customer_name' => $checkOrder->customer_name,
-                        'customer_phone' => $checkOrder->customer_phone,
-                    ]);
-                }
-            }
-        }
-
         $activeOrder = null;
         $pendingTempOrder = null;
 
@@ -844,6 +821,7 @@ public function store(Request $request)
         $keys = [
             'customer_qr_order_id',
             'customer_qr_order_type',
+            'customer_qr_allowed_orders',
             'customer_name',
             'customer_phone',
         ];
@@ -851,7 +829,18 @@ public function store(Request $request)
             $keys[] = "customer_qr_order_{$restaurantId}_{$tableId}";
         }
 
-        session()->forget($keys);
+        foreach (session()->all() as $k => $v) {
+            if (str_starts_with($k, 'customer_qr_order')) {
+                $keys[] = $k;
+            }
+        }
+
+        $allKeys = array_unique($keys);
+        session()->forget($allKeys);
+
+        foreach ($allKeys as $key) {
+            Cookie::queue(Cookie::forget($key));
+        }
     }
 
     /**
