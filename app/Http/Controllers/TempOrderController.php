@@ -1373,29 +1373,41 @@ public function store(Request $request)
                 $basePrice = floatval($item->price);
                 $quantity = max(1, intval($item->quantity ?? 1));
                 $itemDiscount = floatval($item->item_discount_percentage ?? 0);
-                $discountedPrice = $basePrice - ($basePrice * $itemDiscount / 100);
-
-                $addonsList = $item->addons_list ?? [];
-                $addonsCost = 0;
-                if (!empty($addonsList) && is_array($addonsList)) {
-                    foreach ($addonsList as $a) {
-                        $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
-                    }
-                }
-                $isAddon = empty($item->subcategory_id);
-                $lineOrig = $isAddon ? ($basePrice * $quantity) : (($basePrice * $quantity) + $addonsCost);
-                $lineTax = $isAddon ? ($discountedPrice * $quantity) : (($discountedPrice * $quantity) + $addonsCost);
+                $discountedPrice = floatval($item->discounted_price ?: ($basePrice - ($basePrice * $itemDiscount / 100)));
                 $gstRate = floatval($item->gst_rate ?? 0);
-                $lineGst = ($lineTax * $gstRate) / 100;
-                $lineCgst = ($lineTax * ($gstRate / 2)) / 100;
-                $lineSgst = ($lineTax * ($gstRate / 2)) / 100;
-                $lineTotal = $lineTax + $lineGst;
 
-                $calculatedSubtotal += $lineOrig;
-                $calculatedTaxable += $lineTax;
-                $calculatedGst += $lineGst;
-                $calculatedCgst += $lineCgst;
-                $calculatedSgst += $lineSgst;
+                // Read stored item amounts
+                $taxableAmount = floatval($item->taxable_amount);
+                $totalAmount = floatval($item->total_amount);
+                $gstAmount = floatval($item->gst_amount);
+                $cgstAmount = floatval($item->cgst_amount);
+                $sgstAmount = floatval($item->sgst_amount);
+
+                if ($totalAmount <= 0) {
+                    $addonsList = $item->addons_list ?? [];
+                    $addonsCost = 0;
+                    $isAddon = empty($item->subcategory_id);
+                    if (!$isAddon && !empty($addonsList) && is_array($addonsList)) {
+                        foreach ($addonsList as $a) {
+                            $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                        }
+                    }
+                    $lineOrig = $isAddon ? ($basePrice * $quantity) : (($basePrice * $quantity) + $addonsCost);
+                    $taxableAmount = $isAddon ? ($discountedPrice * $quantity) : (($discountedPrice * $quantity) + $addonsCost);
+                    $gstAmount = ($taxableAmount * $gstRate) / 100;
+                    $cgstAmount = ($taxableAmount * ($gstRate / 2)) / 100;
+                    $sgstAmount = ($taxableAmount * ($gstRate / 2)) / 100;
+                    $totalAmount = $taxableAmount + $gstAmount;
+                    $lineOrigSubtotal = $lineOrig;
+                } else {
+                    $lineOrigSubtotal = $taxableAmount + (($basePrice * $itemDiscount / 100) * $quantity);
+                }
+
+                $calculatedSubtotal += $lineOrigSubtotal;
+                $calculatedTaxable += $taxableAmount;
+                $calculatedGst += $gstAmount;
+                $calculatedCgst += $cgstAmount;
+                $calculatedSgst += $sgstAmount;
                 $calculatedDiscount += ($basePrice * $itemDiscount / 100) * $quantity;
 
                 $processedItems[] = [
@@ -1404,15 +1416,21 @@ public function store(Request $request)
                     'price' => $basePrice,
                     'discounted_price' => $discountedPrice,
                     'item_discount_percentage' => $itemDiscount,
-                    'taxable_amount' => $lineTax,
+                    'taxable_amount' => $taxableAmount,
                     'gst_rate' => $gstRate,
-                    'gst_amount' => $lineGst,
-                    'cgst_amount' => $lineCgst,
-                    'sgst_amount' => $lineSgst,
+                    'gst_amount' => $gstAmount,
+                    'cgst_amount' => $cgstAmount,
+                    'sgst_amount' => $sgstAmount,
                     'igst_amount' => 0,
-                    'total_amount' => $lineTotal,
+                    'total_amount' => $totalAmount,
                 ];
             }
+
+            $orderGrandTotal = floatval($tempOrder->grand_total ?: ($calculatedTaxable + $calculatedGst));
+            $orderTotalAmount = floatval($tempOrder->total_amount ?: $calculatedSubtotal);
+            $orderTaxableAmount = floatval($tempOrder->taxable_amount ?: $calculatedTaxable);
+            $orderGstAmount = floatval($tempOrder->gst_amount ?: $calculatedGst);
+            $orderDiscount = floatval($tempOrder->discount ?: $calculatedDiscount);
 
             // Create main order using new + save
             $order = new OrderManage();
@@ -1421,14 +1439,14 @@ public function store(Request $request)
             $order->customer_phone = $tempOrder->customer_phone;
             $order->order_id       = $orderNo;
             $order->order_type     = $tempOrder->order_type;
-            $order->total_amount   = $calculatedSubtotal;
-            $order->taxable_amount = $calculatedTaxable;
-            $order->gst_amount     = $calculatedGst;
+            $order->total_amount   = $orderTotalAmount;
+            $order->taxable_amount = $orderTaxableAmount;
+            $order->gst_amount     = $orderGstAmount;
             $order->cgst_amount    = $calculatedCgst;
             $order->sgst_amount    = $calculatedSgst;
             $order->igst_amount    = 0;
-            $order->grand_total    = $calculatedTaxable + $calculatedGst;
-            $order->discount       = $calculatedDiscount;
+            $order->grand_total    = $orderGrandTotal;
+            $order->discount       = $orderDiscount;
             $order->discount_percentage = $tempOrder->discount_percentage;
             $order->round_off      = $tempOrder->round_off;
             $order->is_gst_bill    = $tempOrder->is_gst_bill;
