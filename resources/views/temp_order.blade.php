@@ -2412,7 +2412,9 @@
                   $discountedPrice = $hasDiscount ? ($item->price - ($item->price * $item->discount_percentage / 100)) : $item->price;
                   $alreadyOrderedQty = $activeOrderedDishCounts[$item->id] ?? 0;
                   
-                  $mappedAddons = ($item->addons && $item->addons->count() > 0) ? $item->addons->where('status', '!=', 'D')->where('status', '!=', 'I')->map(function($a) {
+                  $mappedAddons = ($item->addons && $item->addons->count() > 0) ? $item->addons->where('status', '!=', 'D')->where('status', '!=', 'I')->filter(function($a) use ($item) {
+                      return strtolower(trim($a->name)) !== strtolower(trim($item->name));
+                  })->map(function($a) {
                       return [
                           'id' => $a->id,
                           'name' => $a->name,
@@ -2421,7 +2423,9 @@
                       ];
                   })->values() : collect([]);
                   
-                  $availableDishAddons = $mappedAddons->isNotEmpty() ? $mappedAddons : (isset($restaurant_addons) && $restaurant_addons->count() > 0 ? $restaurant_addons->where('status', '!=', 'D')->where('status', '!=', 'I')->map(function($a) {
+                  $availableDishAddons = $mappedAddons->isNotEmpty() ? $mappedAddons : (isset($restaurant_addons) && $restaurant_addons->count() > 0 ? $restaurant_addons->where('status', '!=', 'D')->where('status', '!=', 'I')->filter(function($a) use ($item) {
+                      return strtolower(trim($a->name)) !== strtolower(trim($item->name));
+                  })->map(function($a) {
                       return [
                           'id' => $a->id,
                           'name' => $a->name,
@@ -2888,14 +2892,14 @@ function openAddonModalForDish(dishData) {
     currentCustomisingDish = dishData;
     currentSelectedAddons = {};
 
-    let availableAddons = dishData.available_addons || dishData.addons || [];
+    let availableAddons = dishData.available_addons || [];
     if (typeof availableAddons === 'string') {
         try { availableAddons = JSON.parse(availableAddons); } catch(e) { availableAddons = []; }
     }
     if ((!availableAddons || availableAddons.length === 0) && window.POS_RESTAURANT_ADDONS && window.POS_RESTAURANT_ADDONS.length > 0) {
         availableAddons = window.POS_RESTAURANT_ADDONS;
     }
-    availableAddons = (availableAddons || []).filter(a => a && a.status !== 'D' && a.status !== 'I');
+    availableAddons = (availableAddons || []).filter(a => a && a.status !== 'D' && a.status !== 'I' && (!dishData.name || a.name.toLowerCase().trim() !== dishData.name.toLowerCase().trim()));
 
     $('#custAddonDishTitle').text(dishData.name);
     let basePrice = dishData.discounted_price !== undefined ? parseFloat(dishData.discounted_price) : (dishData.price !== undefined ? parseFloat(dishData.price) : 0);
@@ -2952,7 +2956,7 @@ function openAddonModalForCartItem(cartIndex) {
     if ((!availableAddons || availableAddons.length === 0) && window.POS_RESTAURANT_ADDONS && window.POS_RESTAURANT_ADDONS.length > 0) {
         availableAddons = window.POS_RESTAURANT_ADDONS;
     }
-    availableAddons = availableAddons.filter(a => a && a.status !== 'D' && a.status !== 'I');
+    availableAddons = availableAddons.filter(a => a && a.status !== 'D' && a.status !== 'I' && (!item.name || a.name.toLowerCase().trim() !== item.name.toLowerCase().trim()));
 
     currentCustomisingDish = item;
     currentSelectedAddons = {};
@@ -3551,7 +3555,7 @@ $(document).on('click', '.openAddonCustomiseBtn', function(e) {
         discount: discount,
         food_type: foodType,
         available_addons: addons,
-        addons: addons
+        addons: []
     };
 
     openAddonModalForDish(dishData);

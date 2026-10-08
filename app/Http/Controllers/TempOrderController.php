@@ -236,12 +236,19 @@ public function store(Request $request)
         $isAddonItem = !empty($item['is_addon']) || str_starts_with(strval($item['id'] ?? ''), 'addon_') || !is_numeric($item['id'] ?? null);
 
         if (is_array($selectedAddons) && !empty($selectedAddons)) {
+            $dishName = trim($item['name'] ?? '');
             foreach ($selectedAddons as $addon) {
                 $aPrice = floatval($addon['price'] ?? 0);
                 $aQty = max(1, intval($addon['qty'] ?? $addon['quantity'] ?? 1));
                 $aName = trim($addon['name'] ?? '');
                 $aId = $addon['id'] ?? null;
                 $addonLineTotal = $aPrice * $aQty;
+
+                // Safety check: Skip duplicate self-addon where addon name & price match the parent main dish
+                if (!$isAddonItem && !empty($dishName) && strtolower($aName) === strtolower($dishName) && $aPrice == $basePrice) {
+                    continue;
+                }
+
                 $addonsCost += $addonLineTotal;
                 if ($aName) {
                     $cleanAddons[] = [
@@ -996,12 +1003,19 @@ public function store(Request $request)
                 $isAddonItem = !empty($item['is_addon']) || str_starts_with(strval($item['id'] ?? ''), 'addon_') || !is_numeric($item['id'] ?? null);
 
                 if (is_array($selectedAddons) && !empty($selectedAddons)) {
+                    $dishName = trim($item['name'] ?? ($subcat->name ?? ''));
                     foreach ($selectedAddons as $addon) {
                         $aPrice = floatval($addon['price'] ?? 0);
                         $aQty = max(1, intval($addon['qty'] ?? $addon['quantity'] ?? 1));
                         $aName = trim($addon['name'] ?? '');
                         $aId = $addon['id'] ?? null;
                         $addonLineTotal = $aPrice * $aQty;
+
+                        // Safety check: Skip duplicate self-addon where addon name & price match the parent main dish
+                        if (!$isAddonItem && !empty($dishName) && strtolower($aName) === strtolower($dishName) && $aPrice == $basePrice) {
+                            continue;
+                        }
+
                         $addonsCost += $addonLineTotal;
                         if ($aName) {
                             $cleanAddons[] = [
@@ -1079,15 +1093,15 @@ public function store(Request $request)
                 $tableName = $order->table->name ?? ($order->table_id ? ('Table ' . $order->table_id) : 'Table');
                 $customerName = $order->customer_name ?: 'Customer';
                 $itemCount = count($request->order_items);
-                $notifTitle = "New Order on {$tableName}";
-                $notifBody = "{$customerName} placed a new order for {$tableName} ({$itemCount} items, KOT #{$kotNo})";
+                $notifTitle = "New Items Added - {$tableName}";
+                $notifBody = "{$customerName} added new item in {$tableName}";
 
                 // 1. Notify kitchen staff
                 $webNotificationService->notifyKitchenStaffWeb(
                     $order->restaurant_id,
                     "New Items Added - {$tableName}",
-                    "New KOT #{$kotNo} ({$itemCount} items) added for {$tableName}",
-                    ['order_id' => (string) $order->id, 'kot_no' => (string) $kotNo, 'type' => 'new_kot']
+                    "{$customerName} added new item in {$tableName}",
+                    ['order_id' => (string) $order->id, 'kot_no' => (string) $kotNo, 'type' => 'new_kot', 'click_url' => url('order-edit/' . $order->id)]
                 );
 
                 // 2. Notify restaurant staff & admin
@@ -1095,7 +1109,7 @@ public function store(Request $request)
                     $order->restaurant_id,
                     $notifTitle,
                     $notifBody,
-                    ['order_id' => (string) $order->id, 'kot_no' => (string) $kotNo, 'table_id' => (string) $order->table_id, 'type' => 'new_order_items']
+                    ['order_id' => (string) $order->id, 'kot_no' => (string) $kotNo, 'table_id' => (string) $order->table_id, 'type' => 'new_order_items', 'click_url' => url('order-edit/' . $order->id)]
                 );
             } catch (\Throwable $e) {
                 Log::error('Staff/Kitchen notification error on adding items: ' . $e->getMessage());

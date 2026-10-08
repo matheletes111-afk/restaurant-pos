@@ -175,28 +175,42 @@
                 <span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5 rounded" style="font-size: 0.68rem; font-weight: 700;">APPROVED</span>
               @endif
             </div>
-            <span class="fw-bold text-primary font-monospace" style="font-size: 0.78rem;">
-              {{ $ord->order_no }}
-            </span>
+            @if($isAdditional)
+              <span class="text-primary fw-bold" style="font-size: 0.75rem;">
+                View <i class="fas fa-arrow-right ms-0.5"></i>
+              </span>
+            @else
+              <span class="fw-bold text-primary font-monospace" style="font-size: 0.78rem;">
+                {{ $ord->order_no }}
+              </span>
+            @endif
           </div>
 
-          <div class="d-flex align-items-center justify-content-between">
-            <div class="text-truncate me-2" style="max-width: 230px;">
+          @if($isAdditional)
+            <div class="d-flex align-items-center justify-content-between py-1">
               <div class="fw-semibold text-dark text-truncate" style="font-size: 0.83rem;">
-                {{ $ord->customer_name }} @if(!empty($ord->customer_phone))<span class="text-muted fw-normal">({{ $ord->customer_phone }})</span>@endif
+                <i class="fas fa-plus-circle text-primary me-1"></i>{{ $ord->customer_name }} added new item in {{ $ord->table_name }}
               </div>
-              @if(!empty($ord->items_summary))
-                <div class="text-muted text-truncate" style="font-size: 0.75rem;">
-                  {{ $ord->items_summary }}
+            </div>
+          @else
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="text-truncate me-2" style="max-width: 230px;">
+                <div class="fw-semibold text-dark text-truncate" style="font-size: 0.83rem;">
+                  {{ $ord->customer_name }} @if(!empty($ord->customer_phone))<span class="text-muted fw-normal">({{ $ord->customer_phone }})</span>@endif
                 </div>
-              @endif
+                @if(!empty($ord->items_summary))
+                  <div class="text-muted text-truncate" style="font-size: 0.75rem;">
+                    {{ $ord->items_summary }}
+                  </div>
+                @endif
+              </div>
+              <div class="text-end flex-shrink-0">
+                <span class="fw-bold text-success" style="font-size: 0.88rem;">
+                  ₹{{ number_format((float)$ord->grand_total, 2) }}
+                </span>
+              </div>
             </div>
-            <div class="text-end flex-shrink-0">
-              <span class="fw-bold text-success" style="font-size: 0.88rem;">
-                ₹{{ number_format((float)$ord->grand_total, 2) }}
-              </span>
-            </div>
-          </div>
+          @endif
 
           <div class="d-flex align-items-center justify-content-between mt-1 text-muted" style="font-size: 0.7rem;">
             <span><i class="far fa-clock me-1"></i>{{ $ord->created_at ? $ord->created_at->diffForHumans() : '' }}</span>

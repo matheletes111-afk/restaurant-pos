@@ -82,50 +82,6 @@ class OrderItems extends Model
             }
         }
 
-        // Smart fallback: if item unit price exceeds dish base price and dish has mapped addons
-        $basePrice = floatval($this->subcategory->price ?? 0);
-        $itemPrice = floatval($this->price ?? 0);
-        $diff = round($itemPrice - $basePrice, 2);
-
-        if ($diff > 0 && $this->subcategory && $this->subcategory->addons && $this->subcategory->addons->count() > 0) {
-            $mapped = $this->subcategory->addons;
-            
-            // Direct single addon check
-            foreach ($mapped as $a) {
-                $aPrice = floatval($a->price ?? 0);
-                if ($aPrice > 0 && round($aPrice, 2) == $diff) {
-                    return [[
-                        'id' => $a->id,
-                        'name' => $a->name,
-                        'price' => $aPrice,
-                        'qty' => 1,
-                        'quantity' => 1,
-                        'total' => $diff,
-                        'food_type' => $a->food_type ?? 'VEG'
-                    ]];
-                }
-            }
-
-            // Multiplier check (e.g. 2 x 30 = 60)
-            foreach ($mapped as $a) {
-                $aPrice = floatval($a->price ?? 0);
-                if ($aPrice > 0 && fmod($diff, $aPrice) == 0) {
-                    $multiplier = intval(round($diff / $aPrice));
-                    if ($multiplier >= 1 && $multiplier <= 20) {
-                        return [[
-                            'id' => $a->id,
-                            'name' => $a->name,
-                            'price' => $aPrice,
-                            'qty' => $multiplier,
-                            'quantity' => $multiplier,
-                            'total' => $diff,
-                            'food_type' => $a->food_type ?? 'VEG'
-                        ]];
-                    }
-                }
-            }
-        }
-
         return [];
     }
 
