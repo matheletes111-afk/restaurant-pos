@@ -1015,10 +1015,11 @@
       background: rgba(15, 23, 42, 0.7);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      z-index: 2000;
+      z-index: 10000;
       display: flex;
       align-items: flex-end;
       justify-content: center;
+      touch-action: pan-y;
     }
 
     @media (min-width: 768px) {
@@ -1210,7 +1211,7 @@
     .customer-addon-modal-footer {
       background: #f8fafc;
       border-top: 1px solid var(--border);
-      padding: 14px 20px 20px 20px;
+      padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px)) 20px;
     }
 
     .cust-addon-total-preview {
@@ -2390,6 +2391,11 @@
                           <button type="button" class="btn-add-tray addItemBtn initial-dish-actions" data-id="{{ $item->id }}" data-name="{{ $item->name }}" data-price="{{ $item->price }}" data-discounted-price="{{ $discountedPrice }}" data-discount="{{ $item->discount_percentage ?? 0 }}" data-food-type="{{ $isVeg ? 'Veg' : 'Non-Veg' }}" data-addons='@json($availableDishAddons)'>
                             <i class="fas fa-plus"></i> Add
                           </button>
+                          @if($hasAddons)
+                            <span class="dish-customise-badge openAddonCustomiseBtn" data-id="{{ $item->id }}" data-name="{{ $item->name }}" data-price="{{ $item->price }}" data-discounted-price="{{ $discountedPrice }}" data-discount="{{ $item->discount_percentage ?? 0 }}" data-food-type="{{ $isVeg ? 'Veg' : 'Non-Veg' }}" data-addons='@json($availableDishAddons)'>
+                              <i class="fas fa-sliders-h"></i> Customisable
+                            </span>
+                          @endif
                           <div class="card-active-counter" data-card-id="{{ $item->id }}">
                             <button type="button" class="card-counter-btn decreaseCardQty" data-id="{{ $item->id }}">−</button>
                             <span class="card-counter-val">1</span>
@@ -2781,6 +2787,66 @@ function calculateItemDetails(item) {
     };
 }
 
+function openAddonModalForDish(dishData) {
+    currentEditingCartIndex = null;
+    currentCustomisingDish = dishData;
+    currentSelectedAddons = {};
+
+    let availableAddons = dishData.available_addons || dishData.addons || [];
+    if (typeof availableAddons === 'string') {
+        try { availableAddons = JSON.parse(availableAddons); } catch(e) { availableAddons = []; }
+    }
+    if ((!availableAddons || availableAddons.length === 0) && window.POS_RESTAURANT_ADDONS && window.POS_RESTAURANT_ADDONS.length > 0) {
+        availableAddons = window.POS_RESTAURANT_ADDONS;
+    }
+    availableAddons = (availableAddons || []).filter(a => a && a.status !== 'D' && a.status !== 'I');
+
+    $('#custAddonDishTitle').text(dishData.name);
+    let basePrice = dishData.discounted_price !== undefined ? parseFloat(dishData.discounted_price) : (dishData.price !== undefined ? parseFloat(dishData.price) : 0);
+    $('#custAddonBasePrice').text('Base Price: ₹' + basePrice.toFixed(2));
+
+    let isVeg = (dishData.food_type || 'veg').toLowerCase().includes('veg') && !(dishData.food_type || '').toLowerCase().includes('non');
+    $('#custAddonDishSymbol').attr('class', 'fssai-box ' + (isVeg ? 'fssai-veg' : 'fssai-nonveg'));
+
+    let listHtml = '';
+    if (availableAddons.length === 0) {
+        listHtml = '<div class="text-center py-4 text-muted" style="font-size: 0.85rem;">No add-ons available for this item.</div>';
+    } else {
+        availableAddons.forEach(a => {
+            let aVeg = (a.food_type || 'veg').toLowerCase().includes('veg') && !(a.food_type || '').toLowerCase().includes('non');
+            let aPrice = parseFloat(a.price) || 0;
+            let isSelected = currentSelectedAddons.hasOwnProperty(a.id);
+            let selectedQty = isSelected ? currentSelectedAddons[a.id].qty : 1;
+
+            listHtml += `
+                <div class="cust-addon-row ${isSelected ? 'selected' : ''}" data-addon-id="${a.id}" data-addon-name="${escapeHtml(a.name)}" data-addon-price="${aPrice}" data-food-type="${a.food_type || 'Veg'}">
+                    <div class="cust-addon-info">
+                        <div class="fssai-box ${aVeg ? 'fssai-veg' : 'fssai-nonveg'}" style="width: 14px; height: 14px; padding: 2px;">
+                            <div class="fssai-symbol" style="width: 6px; height: 6px;"></div>
+                        </div>
+                        <div>
+                            <div class="cust-addon-name">${escapeHtml(a.name)}</div>
+                            <div class="cust-addon-price">+ ₹${aPrice.toFixed(2)}</div>
+                        </div>
+                    </div>
+                    <div class="cust-addon-stepper" style="${isSelected ? 'display:inline-flex;' : 'display:none;'}" id="addonStepper_${a.id}">
+                        <button type="button" class="cust-addon-step-btn btn-addon-minus" data-id="${a.id}">−</button>
+                        <span class="cust-addon-step-val" id="addonVal_${a.id}">${selectedQty}</span>
+                        <button type="button" class="cust-addon-step-btn btn-addon-plus" data-id="${a.id}">+</button>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary btn-addon-add" id="addonAddBtn_${a.id}" style="${isSelected ? 'display:none;' : ''} border-radius: 9999px; font-weight: 700; font-size: 0.78rem; padding: 4px 12px;">
+                        + Add
+                    </button>
+                </div>
+            `;
+        });
+    }
+
+    $('#custAddonsList').html(listHtml);
+    updateCustAddonModalSummary();
+    $('#customerAddonModal').css('display', 'flex').hide().fadeIn(180);
+}
+
 function openAddonModalForCartItem(cartIndex) {
     currentEditingCartIndex = cartIndex;
     let item = cart[cartIndex];
@@ -2849,7 +2915,7 @@ function openAddonModalForCartItem(cartIndex) {
 
     $('#custAddonsList').html(listHtml);
     updateCustAddonModalSummary();
-    $('#customerAddonModal').fadeIn(180);
+    $('#customerAddonModal').css('display', 'flex').hide().fadeIn(180);
 }
 
 function updateCustAddonModalSummary() {
@@ -3006,6 +3072,7 @@ function syncCardCounters() {
     // Reset all card counters to default state
     $('.card-active-counter').hide();
     $('.btn-add-tray').show();
+    $('.dish-customise-badge').show();
 
     let dishTotals = {};
     cart.forEach(item => {
@@ -3018,6 +3085,7 @@ function syncCardCounters() {
         if ($counter.length) {
             let $wrap = $counter.closest('.card-stepper-wrap');
             $wrap.find('.btn-add-tray').hide();
+            $wrap.find('.dish-customise-badge').hide();
             $counter.find('.card-counter-val').text(dishTotals[key]);
             $counter.css('display', 'inline-flex');
         }
@@ -3318,7 +3386,24 @@ $(document).on('click', '.addItemBtn', function(e) {
     let name         = $(this).data('name');
     let foodType     = $(this).data('food-type') || 'Veg';
 
-    let existing = cart.find(i => String(i.id) === String(itemId));
+    let dishData = {
+        id: itemId,
+        name: name,
+        price: basePrice,
+        discounted_price: discPrice,
+        base_price: basePrice,
+        discount: discount,
+        food_type: foodType,
+        available_addons: addons,
+        addons: addons
+    };
+
+    if (addons && addons.length > 0) {
+        openAddonModalForDish(dishData);
+        return;
+    }
+
+    let existing = cart.find(i => String(i.id) === String(itemId) && (!i.addons || i.addons.length === 0));
     if (existing) {
         existing.qty++;
     } else {
@@ -3336,6 +3421,33 @@ $(document).on('click', '.addItemBtn', function(e) {
     }
     refreshTable();
     showTempToast('Added ' + name + ' to tray!', true);
+});
+
+/* Open Addon Customization Modal from Dish Card */
+$(document).on('click', '.openAddonCustomiseBtn', function(e) {
+    e.preventDefault();
+    let itemId       = $(this).data('id');
+    let rawAddons    = $(this).data('addons');
+    let addons       = (typeof rawAddons === 'string') ? JSON.parse(rawAddons || '[]') : (rawAddons || []);
+    let basePrice    = parseFloat($(this).data('price'));
+    let discPrice    = parseFloat($(this).data('discounted-price')) || basePrice;
+    let discount     = parseFloat($(this).data('discount')) || 0;
+    let name         = $(this).data('name');
+    let foodType     = $(this).data('food-type') || 'Veg';
+
+    let dishData = {
+        id: itemId,
+        name: name,
+        price: basePrice,
+        discounted_price: discPrice,
+        base_price: basePrice,
+        discount: discount,
+        food_type: foodType,
+        available_addons: addons,
+        addons: addons
+    };
+
+    openAddonModalForDish(dishData);
 });
 
 /* Card counter buttons */
