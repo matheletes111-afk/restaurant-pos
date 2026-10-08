@@ -1515,21 +1515,6 @@
       justify-content: space-between;
     }
 
-    .receipt-paper {
-      background: #fdfdfd;
-      border: 1px solid #e2e8f0;
-      padding: 14px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.78rem;
-      line-height: 1.4;
-      color: #1e293b;
-      max-height: 360px;
-      overflow-y: auto;
-    }
-
-    .receipt-center { text-align: center; }
-    .receipt-divider { border-top: 1px dashed #94a3b8; margin: 6px 0; }
-
     /* ===================================================
        RESPONSIVE BREAKPOINTS
        =================================================== */
@@ -2099,34 +2084,6 @@
   </div>
 </div>
 
-<!-- Print Preview & Receipt Modal -->
-<div class="modal-backdrop-custom" id="rapidReceiptModal">
-  <div class="modal-box-custom">
-    <div class="modal-header-custom">
-      <div class="d-flex align-items-center gap-2">
-        <i class="fa-solid fa-receipt text-warning"></i>
-        <h5 class="m-0 text-white fw-bold">Bill Generated Successfully</h5>
-      </div>
-      <button type="button" class="btn-close btn-close-white" id="btnCloseModal"></button>
-    </div>
-    
-    <div class="p-3">
-      <div class="receipt-paper" id="receiptPaperBody">
-        <!-- Rendered dynamically -->
-      </div>
-      
-      <div class="d-flex gap-2 mt-3">
-        <button type="button" class="btn btn-dark flex-grow-1 fw-bold" id="btnDirectPrint">
-          <i class="fa-solid fa-print me-1"></i> Print Bill
-        </button>
-        <button type="button" class="btn btn-outline-secondary flex-grow-1 fw-bold" id="btnNextBill">
-          <i class="fa-solid fa-plus me-1"></i> Next Bill
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Mobile Floating Cart Bar (Appears when cart has items on mobile) -->
 <div class="mobile-floating-cart-bar" id="mobileFloatingCartBar">
   <div class="d-flex align-items-center justify-content-between">
@@ -2143,6 +2100,7 @@
       View Bill & Pay <i class="fa-solid fa-arrow-right ms-1 text-primary"></i>
     </button>
   </div>
+</div>
 <!-- Map Addon To Dish Modal -->
 <div class="modal-backdrop-custom" id="rapidMapAddonModal" style="display: none; z-index: 100000;">
   <div class="modal-box-custom" style="max-width: 440px; border-radius: 18px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
@@ -2193,7 +2151,6 @@ $(document).ready(function() {
   let orderType = 'takeaway';
   let activeCategoryId = 'all';
   let activeFoodType = 'all';
-  let lastOrderInvoiceUrl = null;
   let currentMobileTab = 'menu';
 
   // Mobile POS Tab Switcher
@@ -3254,7 +3211,6 @@ $(document).ready(function() {
     }
     if (e.key === 'Escape') {
       $('#rapidAddonModal').fadeOut(150);
-      $('#rapidReceiptModal').fadeOut(150);
     }
   });
 
@@ -3319,30 +3275,14 @@ $(document).ready(function() {
       dataType: "json",
       success: function(res) {
         if (res.success) {
-          lastOrderInvoiceUrl = res.invoice_url;
-          
-          if ($('#chkPrintBill').is(':checked')) {
-            // If print bill is checked, open modal preview with print option and option to open invoice
-            renderReceiptPreview(res.receipt);
-            $('#rapidReceiptModal').fadeIn(200);
-
-            // Auto-trigger print preview
-            setTimeout(function() {
-              window.open(res.invoice_url + '?autoprint=1&return=rapid_bill', '_blank');
-            }, 300);
+          if (res.invoice_url) {
+            window.location.href = res.invoice_url;
           } else {
-            alert('Order #' + res.order_id + ' generated successfully!');
+            window.location.href = "{{ route('order.management.dashboard') }}";
           }
-
-          // Reset cart & form for rapid next order
-          cart = {};
-          $('#custName').val('');
-          $('#custPhone').val('');
-          $('#inputCashAmount').val(0);
-          $('#inputUpiAmount').val(0);
-          renderCart();
         } else {
           alert('Error: ' + (res.message || 'Failed to create rapid bill'));
+          btn.prop('disabled', false).html('<i class="fa-solid fa-bolt"></i> Place & Generate Bill');
         }
       },
       error: function(xhr) {
@@ -3351,73 +3291,10 @@ $(document).ready(function() {
           msg = xhr.responseJSON.message;
         }
         alert(msg);
-      },
-      complete: function() {
         btn.prop('disabled', false).html('<i class="fa-solid fa-bolt"></i> Place & Generate Bill');
       }
     });
   });
-
-  function renderReceiptPreview(r) {
-    if (!r) return;
-    let itemsHtml = '';
-    r.items.forEach(function(it) {
-      let addonsLine = '';
-      if (it.addons && it.addons.length > 0) {
-        addonsLine = `<div style="font-size:0.72rem; color:#64748b; padding-left:6px;">${it.addons.map(function(a) { 
-          let qtyStr = (a.qty && a.qty > 1) ? ` x${a.qty}` : '';
-          return '+ ' + a.name + qtyStr + ' (₹' + (parseFloat(a.price) * (a.qty || 1)).toFixed(2) + ')'; 
-        }).join(', ')}</div>`;
-      }
-
-      itemsHtml += `
-        <div style="margin-bottom: 4px;">
-          <div style="display:flex; justify-content:space-between;">
-            <span>${it.dish_name || it.name} x${it.qty}</span>
-            <span>₹${parseFloat(it.total).toFixed(2)}</span>
-          </div>
-          ${addonsLine}
-        </div>
-      `;
-    });
-
-    let paymentsHtml = '';
-    r.payments.forEach(function(p) {
-      paymentsHtml += `
-        <div style="display:flex; justify-content:space-between;">
-          <span>${p.method}:</span>
-          <span>₹${parseFloat(p.amount).toFixed(2)}</span>
-        </div>
-      `;
-    });
-
-    let html = `
-      <div class="receipt-center">
-        <h4 style="margin:0 0 2px 0; font-weight:800;">${r.restaurant_name}</h4>
-        <div style="font-size:0.75rem;">${r.address || ''}</div>
-        ${r.gstin ? `<div style="font-size:0.75rem;">GSTIN: ${r.gstin}</div>` : ''}
-        <div class="receipt-divider"></div>
-        <div style="font-size:0.75rem; display:flex; justify-content:space-between;">
-          <span>Bill #: <strong>${r.order_id}</strong></span>
-          <span>KOT #: <strong>${r.kot_no || '1'}</strong></span>
-        </div>
-        <div style="font-size:0.75rem; text-align:left;">Customer: ${r.customer}</div>
-        <div class="receipt-divider"></div>
-      </div>
-      <div>${itemsHtml}</div>
-      <div class="receipt-divider"></div>
-      <div style="display:flex; justify-content:space-between; font-weight:700;">
-        <span>Grand Total:</span>
-        <span>₹${parseFloat(r.grand_total).toFixed(2)}</span>
-      </div>
-      <div class="receipt-divider"></div>
-      <div>${paymentsHtml}</div>
-      <div class="receipt-center" style="margin-top:10px; font-size:0.75rem;">
-        Thank you! Visit again.
-      </div>
-    `;
-    $('#receiptPaperBody').html(html);
-  }
 
   // Rapid Sidebar Toggle Handler (delegates to standard pcoded sidebar handlers)
   $(document).on('click', '#rapidSidebarToggle', function(e) {
@@ -3450,16 +3327,6 @@ $(document).ready(function() {
     if (window.innerWidth <= 1024 && !$(this).parent().hasClass('pc-hasmenu')) {
       $('.pc-sidebar').removeClass('mob-sidebar-active');
       $('.pc-menu-overlay').remove();
-    }
-  });
-
-  $('#btnCloseModal, #btnNextBill').on('click', function() {
-    $('#rapidReceiptModal').fadeOut(150);
-  });
-
-  $('#btnDirectPrint').on('click', function() {
-    if (lastOrderInvoiceUrl) {
-      window.open(lastOrderInvoiceUrl + '?autoprint=1&return=rapid_bill', '_blank');
     }
   });
 

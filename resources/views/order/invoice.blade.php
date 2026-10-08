@@ -1639,6 +1639,15 @@ function generateWhatsappMessage() {
     @if($order->orderItems && count($order->orderItems) > 0)
         @foreach($order->orderItems as $item)
             msg += `• {{ $item->quantity }}x {{ addslashes($item->subcategory->name ?? 'Item') }} - {{ number_format($item->total_amount ?? ($item->price * $item->quantity), 2) }}\n`;
+            @if(!empty($item->addons_list))
+                @foreach($item->addons_list as $a)
+                    @php
+                        $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
+                        $aPrice = floatval($a['price'] ?? 0);
+                    @endphp
+                    msg += `  └ + {{ addslashes($a['name'] ?? 'Add-on') }} x{{ $aQty }} (₹{{ number_format($aPrice * $aQty, 2) }})\n`;
+                @endforeach
+            @endif
         @endforeach
     @endif
     

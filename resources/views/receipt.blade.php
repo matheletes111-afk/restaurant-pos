@@ -288,8 +288,8 @@
                                     $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
                                     $aPrice = floatval($a['price'] ?? 0);
                                 @endphp
-                                <div style="font-size: 8px; color: #444; padding-left: 4px;">
-                                    + {{ $a['name'] ?? 'Addon' }} {{ $aQty > 1 ? 'x'.$aQty : '' }} ({{ number_format($aPrice * $aQty, 2) }})
+                                <div style="font-size: 8px; color: #333; padding-left: 4px; font-weight: 600;">
+                                    + {{ $a['name'] ?? 'Addon' }} x{{ $aQty }} ({{ number_format($aPrice * $aQty, 2) }})
                                 </div>
                             @endforeach
                         @endif
@@ -424,7 +424,7 @@
         @endif -->
         
         <!-- Remarks -->
-        @if($order->remarks)
+        @if($order->remarks && trim($order->remarks) !== '' && $order->remarks !== 'Rapid Bill Checkout')
         <div class="info-row">
             <span class="info-label">Remarks:</span>
             <span>{{ $order->remarks }}</span>

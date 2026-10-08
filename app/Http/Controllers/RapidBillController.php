@@ -307,7 +307,7 @@ class RapidBillController extends Controller
             $order->payment_method = $paymentMethodLabel;
             $order->order_complete = ($paymentStatus === 'PAID') ? 'DONE' : 'PENDING';
             $order->order_status = 'PENDING';
-            $order->remarks = $request->remarks ?: 'Rapid Bill Checkout';
+            $order->remarks = $request->remarks ?: null;
             $order->save();
 
             // Save Order Items
@@ -346,7 +346,7 @@ class RapidBillController extends Controller
                     'amount' => $cashAmount,
                     'payment_method' => 'CASH',
                     'transaction_no' => null,
-                    'remarks' => 'Rapid Bill Cash Payment',
+                    'remarks' => $request->cash_remarks ?: null,
                     'payment_date' => Carbon::now(),
                     'created_by' => $user->id,
                 ]);
@@ -363,7 +363,7 @@ class RapidBillController extends Controller
                     'amount' => $upiAmount,
                     'payment_method' => 'UPI',
                     'transaction_no' => $request->upi_ref ?: null,
-                    'remarks' => 'Rapid Bill UPI Payment' . ($request->upi_ref ? " (Ref: {$request->upi_ref})" : ''),
+                    'remarks' => $request->upi_ref ? "Ref: {$request->upi_ref}" : null,
                     'payment_date' => Carbon::now(),
                     'created_by' => $user->id,
                 ]);

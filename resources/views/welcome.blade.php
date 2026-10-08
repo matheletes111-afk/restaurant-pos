@@ -1053,11 +1053,67 @@
                         <img src="{{ asset('logo.png') }}" alt="Bill&Bite Logo" style="height: 40px; width: auto;">
                     </a>
                     <p>Bill & Bite is a complete restaurant management system designed to simplify your operations and help your business grow.</p>
+                    <style>
+                        .footer-brand .social-links {
+                            display: flex;
+                            align-items: center;
+                            gap: 12px;
+                            margin-top: 18px;
+                        }
+                        .footer-brand .social-btn {
+                            width: 40px;
+                            height: 40px;
+                            border-radius: 12px;
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: #ffffff !important;
+                            font-size: 1.3rem;
+                            text-decoration: none;
+                            transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+                            position: relative;
+                            overflow: hidden;
+                        }
+                        .footer-brand .social-btn::after {
+                            content: '';
+                            position: absolute;
+                            inset: 0;
+                            background: linear-gradient(rgba(255,255,255,0.22), transparent);
+                            opacity: 0;
+                            transition: opacity 0.25s ease;
+                        }
+                        .footer-brand .social-btn:hover::after {
+                            opacity: 1;
+                        }
+                        .footer-brand .social-btn-facebook {
+                            background: linear-gradient(135deg, #1877f2 0%, #0d65d9 100%) !important;
+                            box-shadow: 0 4px 14px rgba(24, 119, 242, 0.35);
+                        }
+                        .footer-brand .social-btn-facebook:hover {
+                            transform: translateY(-3px) scale(1.08);
+                            box-shadow: 0 8px 22px rgba(24, 119, 242, 0.55);
+                        }
+                        .footer-brand .social-btn-instagram {
+                            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%) !important;
+                            box-shadow: 0 4px 14px rgba(220, 39, 67, 0.35);
+                        }
+                        .footer-brand .social-btn-instagram:hover {
+                            transform: translateY(-3px) scale(1.08);
+                            box-shadow: 0 8px 22px rgba(220, 39, 67, 0.55);
+                        }
+                        .footer-brand .social-btn-linkedin {
+                            background: linear-gradient(135deg, #0a66c2 0%, #004182 100%) !important;
+                            box-shadow: 0 4px 14px rgba(10, 102, 194, 0.35);
+                        }
+                        .footer-brand .social-btn-linkedin:hover {
+                            transform: translateY(-3px) scale(1.08);
+                            box-shadow: 0 8px 22px rgba(10, 102, 194, 0.55);
+                        }
+                    </style>
                     <div class="social-links">
-                        <a href="#"><i class="ph-fill ph-facebook-logo"></i></a>
-                        <a href="#"><i class="ph-fill ph-instagram-logo"></i></a>
-                        <a href="#"><i class="ph-fill ph-linkedin-logo"></i></a>
-                        <a href="#"><i class="ph-fill ph-youtube-logo"></i></a>
+                        <a href="https://www.facebook.com/profile.php?id=61592626503884" class="social-btn social-btn-facebook" target="_blank" rel="noopener noreferrer" title="Facebook" aria-label="Facebook"><i class="ph-fill ph-facebook-logo"></i></a>
+                        <a href="https://www.instagram.com/billnbite_official?stkn=MzI0Z2pkenN0YWJ1&utm_source=qr" class="social-btn social-btn-instagram" target="_blank" rel="noopener noreferrer" title="Instagram" aria-label="Instagram"><i class="ph-fill ph-instagram-logo"></i></a>
+                        <a href="https://www.linkedin.com/company/bill-bite/home/?viewAsMember=true" class="social-btn social-btn-linkedin" target="_blank" rel="noopener noreferrer" title="LinkedIn" aria-label="LinkedIn"><i class="ph-fill ph-linkedin-logo"></i></a>
                     </div>
                 </div>
                 <div class="footer-links">
