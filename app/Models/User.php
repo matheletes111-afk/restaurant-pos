@@ -67,6 +67,11 @@ class User extends Authenticatable implements JWTSubject
             return false;
         }
 
+        // Automatic inheritance: Users with order_master permission automatically get rapid_bill access
+        if ($menuKey === 'rapid_bill' && (in_array('order_master', $perms) || in_array('order_master.' . $action, $perms) || in_array('order_master.view', $perms))) {
+            return true;
+        }
+
         // Support legacy permission where full module key is stored (meaning full access)
         if (in_array($menuKey, $perms)) {
             return true;

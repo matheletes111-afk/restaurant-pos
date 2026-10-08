@@ -1109,11 +1109,20 @@
                             transform: translateY(-3px) scale(1.08);
                             box-shadow: 0 8px 22px rgba(10, 102, 194, 0.55);
                         }
+                        .footer-brand .social-btn-youtube {
+                            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%) !important;
+                            box-shadow: 0 4px 14px rgba(255, 0, 0, 0.35);
+                        }
+                        .footer-brand .social-btn-youtube:hover {
+                            transform: translateY(-3px) scale(1.08);
+                            box-shadow: 0 8px 22px rgba(255, 0, 0, 0.55);
+                        }
                     </style>
                     <div class="social-links">
                         <a href="https://www.facebook.com/profile.php?id=61592626503884" class="social-btn social-btn-facebook" target="_blank" rel="noopener noreferrer" title="Facebook" aria-label="Facebook"><i class="ph-fill ph-facebook-logo"></i></a>
                         <a href="https://www.instagram.com/billnbite_official?stkn=MzI0Z2pkenN0YWJ1&utm_source=qr" class="social-btn social-btn-instagram" target="_blank" rel="noopener noreferrer" title="Instagram" aria-label="Instagram"><i class="ph-fill ph-instagram-logo"></i></a>
                         <a href="https://www.linkedin.com/company/bill-bite/home/?viewAsMember=true" class="social-btn social-btn-linkedin" target="_blank" rel="noopener noreferrer" title="LinkedIn" aria-label="LinkedIn"><i class="ph-fill ph-linkedin-logo"></i></a>
+                        <a href="https://www.youtube.com/@BillnBite_Official" class="social-btn social-btn-youtube" target="_blank" rel="noopener noreferrer" title="YouTube" aria-label="YouTube"><i class="ph-fill ph-youtube-logo"></i></a>
                     </div>
                 </div>
                 <div class="footer-links">

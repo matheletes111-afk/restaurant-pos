@@ -84,4 +84,22 @@ class StaffPermissionTest extends TestCase
         $this->assertTrue($addonStaff->hasPermission('dish_addon_master', 'edit'));
         $this->assertFalse($addonStaff->hasPermission('dish_addon_master', 'delete'));
     }
+
+    public function test_order_master_permission_grants_rapid_bill_access()
+    {
+        $staff = new User();
+        $staff->role = 'RES';
+        $staff->role_type = 'Staff';
+        $staff->permissions = ['order_master'];
+
+        $this->assertTrue($staff->hasPermission('order_master'));
+        $this->assertTrue($staff->hasPermission('rapid_bill'));
+
+        $staffGranular = new User();
+        $staffGranular->role = 'RES';
+        $staffGranular->role_type = 'Staff';
+        $staffGranular->permissions = ['order_master.view'];
+
+        $this->assertTrue($staffGranular->hasPermission('rapid_bill'));
+    }
 }

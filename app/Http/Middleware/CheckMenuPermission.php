@@ -171,7 +171,10 @@ class CheckMenuPermission
                         $action = 'view';
                     }
 
-                    if (!$user->hasPermission($permission, $action) && !($permission === 'dish_addon_master' && $user->hasPermission('menu_master', $action))) {
+                    if (!$user->hasPermission($permission, $action) 
+                        && !($permission === 'dish_addon_master' && $user->hasPermission('menu_master', $action))
+                        && !($permission === 'rapid_bill' && $user->hasPermission('order_master', $action))
+                    ) {
                         abort(403, 'Unauthorized access to this menu/module.');
                     }
                     return $next($request);
