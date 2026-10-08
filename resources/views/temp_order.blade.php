@@ -1547,6 +1547,7 @@
     }
 
     /* Active Dining Order & Live Kitchen Panel */
+    /* Active Dining Order & Live Kitchen Panel */
     .active-order-panel {
       background: #ffffff;
       border-radius: var(--radius-md);
@@ -1572,6 +1573,7 @@
       display: flex;
       align-items: center;
       gap: 14px;
+      min-width: 0;
     }
 
     .active-pulse-ring {
@@ -1584,6 +1586,7 @@
       align-items: center;
       justify-content: center;
       position: relative;
+      flex-shrink: 0;
     }
 
     .pulse-core {
@@ -1613,12 +1616,14 @@
       font-weight: 800;
       color: var(--text-main);
       margin: 0;
+      word-break: break-word;
     }
 
     .active-badge-status-wrap {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
     .badge-active-live {
@@ -1632,6 +1637,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      white-space: nowrap;
     }
 
     .btn-toggle-active-items {
@@ -1647,6 +1653,7 @@
       align-items: center;
       gap: 6px;
       transition: all 0.2s;
+      white-space: nowrap;
     }
 
     .btn-toggle-active-items:hover {
@@ -1708,6 +1715,11 @@
       min-width: 0;
     }
 
+    .active-dish-details-col {
+      min-width: 0;
+      flex: 1;
+    }
+
     .active-dish-qty-chip {
       background: rgba(255, 94, 20, 0.1);
       color: var(--primary);
@@ -1722,10 +1734,10 @@
     .active-dish-title-text {
       font-weight: 700;
       color: var(--text-main);
-      font-size: 0.98rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: 0.96rem;
+      line-height: 1.35;
+      display: block;
+      word-break: break-word;
     }
 
     .active-dish-status-price-wrap {
@@ -1735,13 +1747,21 @@
       flex-shrink: 0;
     }
 
+    .active-dish-price-action-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
     .active-dish-exact-price {
-      font-size: 1.08rem;
+      font-size: 1.05rem;
       font-weight: 800;
       color: var(--text-main);
-      min-width: 70px;
+      min-width: 60px;
       text-align: right;
       letter-spacing: -0.01em;
+      white-space: nowrap;
     }
 
     .active-dish-row:hover .active-dish-exact-price {
@@ -1815,6 +1835,7 @@
       padding: 3px 10px;
       border-radius: 9999px;
       border: 1px solid rgba(255, 94, 20, 0.2);
+      white-space: nowrap;
     }
 
     .active-section-heading {
@@ -1879,39 +1900,6 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
-    @media (max-width: 576px) {
-      .active-dish-row {
-        padding: 10px 12px;
-        gap: 8px;
-      }
-      .active-dish-main-info {
-        gap: 8px;
-      }
-      .active-dish-title-text {
-        font-size: 0.9rem;
-      }
-      .active-dish-qty-chip {
-        font-size: 0.76rem;
-        padding: 3px 7px;
-      }
-      .active-dish-status-price-wrap {
-        gap: 8px;
-      }
-      .active-dish-exact-price {
-        font-size: 0.98rem;
-        min-width: auto;
-      }
-      .dish-status-pill {
-        padding: 3px 8px;
-        font-size: 0.7rem;
-      }
-      .btn-cancel-active-dish {
-        width: 28px;
-        height: 28px;
-        font-size: 0.72rem;
-      }
-    }
-
     .active-order-footer-note {
       display: flex;
       justify-content: space-between;
@@ -1930,6 +1918,107 @@
       color: var(--primary);
       font-weight: 700;
       font-size: 0.86rem;
+    }
+
+    /* Mobile Responsive Optimizations */
+    @media (max-width: 640px) {
+      .active-order-header-bar {
+        padding: 14px 16px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .active-title-group {
+        width: 100%;
+        gap: 10px;
+      }
+      .active-table-order-title {
+        font-size: 1.05rem;
+      }
+      .active-badge-status-wrap {
+        width: 100%;
+        gap: 6px;
+      }
+      .btn-refresh-status, .btn-view-details-pill, .badge-active-live, .btn-toggle-active-items {
+        font-size: 0.76rem;
+        padding: 5px 10px;
+      }
+      .active-items-collapsible {
+        padding: 14px 14px;
+      }
+      .active-items-info-strip {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+      }
+      .active-section-heading {
+        font-size: 0.84rem;
+        line-height: 1.35;
+      }
+      .active-dish-row {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 12px 14px;
+        gap: 8px;
+      }
+      .active-dish-main-info {
+        align-items: flex-start;
+        gap: 10px;
+        width: 100%;
+      }
+      .active-dish-qty-chip {
+        margin-top: 2px;
+        font-size: 0.78rem;
+        padding: 3px 8px;
+      }
+      .active-dish-title-text {
+        font-size: 0.92rem;
+        white-space: normal;
+      }
+      .active-dish-status-price-wrap {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px dashed #f1f5f9;
+        padding-top: 8px;
+        margin-top: 2px;
+        gap: 8px;
+      }
+      .dish-status-pill {
+        padding: 3px 9px;
+        font-size: 0.7rem;
+      }
+      .active-dish-price-action-group {
+        gap: 8px;
+      }
+      .active-dish-exact-price {
+        font-size: 1rem;
+        min-width: auto;
+        color: var(--primary);
+      }
+      .btn-cancel-active-dish {
+        width: 28px;
+        height: 28px;
+        font-size: 0.72rem;
+      }
+      .active-order-footer-note {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 12px 14px;
+        font-size: 0.82rem;
+      }
+      .active-order-footer-note > div {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .previously-ordered-tray-wrap .tray-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
     }
 
     /* Toast for temp order */
@@ -2123,7 +2212,7 @@
             <div class="active-dish-row" id="activeCard_{{ $actItem->id }}" data-item-id="{{ $actItem->id }}">
               <div class="active-dish-main-info">
                 <span class="active-dish-qty-chip">{{ $actItem->quantity }}x</span>
-                <div>
+                <div class="active-dish-details-col">
                   <span class="active-dish-title-text">
                     {{ $actName }}
                     @if($isStandaloneAddon)
@@ -2159,16 +2248,18 @@
                   @endif
                 </span>
 
-                <span class="active-dish-exact-price" id="activeItemPrice_{{ $actItem->id }}">
-                  ₹{{ number_format($actTotal, 2) }}
-                </span>
+                <div class="active-dish-price-action-group">
+                  <span class="active-dish-exact-price" id="activeItemPrice_{{ $actItem->id }}">
+                    ₹{{ number_format($actTotal, 2) }}
+                  </span>
 
-                <div class="active-dish-action-slot" id="activeItemActions_{{ $actItem->id }}">
-                  @if($actStatus === 'PENDING')
-                    <button type="button" class="btn-cancel-active-dish" onclick="cancelActiveOrderItem({{ $actItem->id }})" title="Cancel pending dish">
-                      <i class="fas fa-trash-alt"></i>
-                    </button>
-                  @endif
+                  <div class="active-dish-action-slot" id="activeItemActions_{{ $actItem->id }}">
+                    @if($actStatus === 'PENDING')
+                      <button type="button" class="btn-cancel-active-dish" onclick="cancelActiveOrderItem({{ $actItem->id }})" title="Cancel pending dish">
+                        <i class="fas fa-trash-alt"></i>
+                      </button>
+                    @endif
+                  </div>
                 </div>
               </div>
             </div>
