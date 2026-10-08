@@ -233,7 +233,10 @@ public function store(Request $request)
         $selectedAddons = $item['addons'] ?? [];
         $addonsCost = 0;
         $cleanAddons = [];
-        $isAddonItem = !empty($item['is_addon']) || str_starts_with(strval($item['id'] ?? ''), 'addon_') || !is_numeric($item['id'] ?? null);
+        $rawId = $item['id'] ?? null;
+        $isStandaloneAddon = !empty($item['is_addon']) || str_starts_with(strval($rawId), 'addon_');
+        $subcatId = (!$isStandaloneAddon && is_numeric($rawId)) ? intval($rawId) : null;
+        $isAddonItem = empty($subcatId);
 
         if (is_array($selectedAddons) && !empty($selectedAddons)) {
             $dishName = trim($item['name'] ?? '');
@@ -266,7 +269,7 @@ public function store(Request $request)
 
         if ($isAddonItem && empty($cleanAddons)) {
             $cleanAddons[] = [
-                'id' => is_numeric($item['id'] ?? null) ? $item['id'] : null,
+                'id' => is_numeric($rawId) ? intval($rawId) : null,
                 'name' => trim($item['name'] ?? 'Add-on'),
                 'price' => $basePrice,
                 'qty' => 1,
@@ -304,7 +307,7 @@ public function store(Request $request)
         $totalItemDiscount += ($basePrice * $itemDiscount / 100) * $quantity;
         
         $calculatedItems[] = [
-            'subcategory_id' => is_numeric($item['id'] ?? null) ? $item['id'] : null,
+            'subcategory_id' => $subcatId,
             'quantity' => $quantity,
             'price' => $basePrice,
             'addons' => $cleanAddons,
@@ -992,7 +995,11 @@ public function store(Request $request)
             $kotNo = OrderItems::generateNextKotNumber($order->restaurant_id);
 
             foreach ($request->order_items as $item) {
-                $subcat = is_numeric($item['id'] ?? null) ? SubCategory::find($item['id']) : null;
+                $rawId = $item['id'] ?? null;
+                $isStandaloneAddon = !empty($item['is_addon']) || str_starts_with(strval($rawId), 'addon_');
+                $subcatId = (!$isStandaloneAddon && is_numeric($rawId)) ? intval($rawId) : null;
+                $isAddonItem = empty($subcatId);
+                $subcat = $subcatId ? SubCategory::find($subcatId) : null;
                 $basePrice = floatval($item['price'] ?? ($subcat->price ?? 0));
                 $quantity = max(1, intval($item['qty'] ?? 1));
                 $itemDiscount = isset($item['item_discount']) ? floatval($item['item_discount']) : floatval($subcat->discount_percentage ?? 0);
@@ -1000,7 +1007,6 @@ public function store(Request $request)
                 $selectedAddons = $item['addons'] ?? [];
                 $addonsCost = 0;
                 $cleanAddons = [];
-                $isAddonItem = !empty($item['is_addon']) || str_starts_with(strval($item['id'] ?? ''), 'addon_') || !is_numeric($item['id'] ?? null);
 
                 if (is_array($selectedAddons) && !empty($selectedAddons)) {
                     $dishName = trim($item['name'] ?? ($subcat->name ?? ''));
@@ -1033,7 +1039,7 @@ public function store(Request $request)
 
                 if ($isAddonItem && empty($cleanAddons)) {
                     $cleanAddons[] = [
-                        'id' => is_numeric($item['id'] ?? null) ? $item['id'] : null,
+                        'id' => is_numeric($rawId) ? intval($rawId) : null,
                         'name' => trim($item['name'] ?? 'Add-on'),
                         'price' => $basePrice,
                         'qty' => 1,
@@ -1061,7 +1067,7 @@ public function store(Request $request)
 
                 OrderItems::create([
                     'order_id' => $order->id,
-                    'subcategory_id' => is_numeric($item['id'] ?? null) ? $item['id'] : null,
+                    'subcategory_id' => $subcatId,
                     'quantity' => $quantity,
                     'price' => $basePrice,
                     'addons' => $cleanAddons,

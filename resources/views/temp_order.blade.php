@@ -2423,17 +2423,7 @@
                       ];
                   })->values() : collect([]);
                   
-                  $availableDishAddons = $mappedAddons->isNotEmpty() ? $mappedAddons : (isset($restaurant_addons) && $restaurant_addons->count() > 0 ? $restaurant_addons->where('status', '!=', 'D')->where('status', '!=', 'I')->filter(function($a) use ($item) {
-                      return strtolower(trim($a->name)) !== strtolower(trim($item->name));
-                  })->map(function($a) {
-                      return [
-                          'id' => $a->id,
-                          'name' => $a->name,
-                          'price' => floatval($a->price),
-                          'food_type' => $a->food_type ?? 'Veg',
-                      ];
-                  })->values() : collect([]));
-                  
+                  $availableDishAddons = $mappedAddons;
                   $hasAddons = $availableDishAddons->count() > 0;
                 @endphp
                 <div class="food-card-wrapper" data-id="{{ $item->id }}" data-category-id="{{ $cat->id }}" data-name="{{ strtolower($item->name) }}" data-desc="{{ strtolower($item->description ?? '') }}" data-type="{{ $isVeg ? 'veg' : 'non-veg' }}">
@@ -2896,9 +2886,6 @@ function openAddonModalForDish(dishData) {
     if (typeof availableAddons === 'string') {
         try { availableAddons = JSON.parse(availableAddons); } catch(e) { availableAddons = []; }
     }
-    if ((!availableAddons || availableAddons.length === 0) && window.POS_RESTAURANT_ADDONS && window.POS_RESTAURANT_ADDONS.length > 0) {
-        availableAddons = window.POS_RESTAURANT_ADDONS;
-    }
     availableAddons = (availableAddons || []).filter(a => a && a.status !== 'D' && a.status !== 'I' && (!dishData.name || a.name.toLowerCase().trim() !== dishData.name.toLowerCase().trim()));
 
     $('#custAddonDishTitle').text(dishData.name);
@@ -2953,10 +2940,10 @@ function openAddonModalForCartItem(cartIndex) {
     if (!item) return;
 
     let availableAddons = item.available_addons || [];
-    if ((!availableAddons || availableAddons.length === 0) && window.POS_RESTAURANT_ADDONS && window.POS_RESTAURANT_ADDONS.length > 0) {
-        availableAddons = window.POS_RESTAURANT_ADDONS;
+    if (typeof availableAddons === 'string') {
+        try { availableAddons = JSON.parse(availableAddons); } catch(e) { availableAddons = []; }
     }
-    availableAddons = availableAddons.filter(a => a && a.status !== 'D' && a.status !== 'I' && (!item.name || a.name.toLowerCase().trim() !== item.name.toLowerCase().trim()));
+    availableAddons = (availableAddons || []).filter(a => a && a.status !== 'D' && a.status !== 'I' && (!item.name || a.name.toLowerCase().trim() !== item.name.toLowerCase().trim()));
 
     currentCustomisingDish = item;
     currentSelectedAddons = {};
@@ -3284,9 +3271,10 @@ function refreshTable() {
         let addonsHtml = '';
         if (!isAddon) {
             let available = item.available_addons || [];
-            if ((!available || available.length === 0) && window.POS_RESTAURANT_ADDONS && window.POS_RESTAURANT_ADDONS.length > 0) {
-                available = window.POS_RESTAURANT_ADDONS;
+            if (typeof available === 'string') {
+                try { available = JSON.parse(available); } catch(e) { available = []; }
             }
+            available = (available || []).filter(a => a && a.status !== 'D' && a.status !== 'I' && (!item.name || a.name.toLowerCase().trim() !== item.name.toLowerCase().trim()));
 
             let hasAvailable = (available && available.length > 0);
             let hasAttached = (item.addons && item.addons.length > 0);

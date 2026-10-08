@@ -387,5 +387,51 @@ class CustomerQrAddonsWorkflowTest extends TestCase
         $response->assertSee('Garlic Dip');
         $response->assertSee('Add-on');
     }
+
+    public function test_dish_ordered_without_addons_does_not_attach_or_show_addons()
+    {
+        $payload = [
+            'customer_name' => 'Rahul Sharma',
+            'customer_phone' => '9876543210',
+            'restaurant_id' => $this->restaurant->id,
+            'table_id' => $this->table->id,
+            'order_items' => [
+                [
+                    'id' => $this->dish->id,
+                    'name' => 'Gourmet Cheese Pizza',
+                    'price' => 200.00,
+                    'qty' => 1,
+                    'item_discount' => 0,
+                    'addons' => []
+                ]
+            ]
+        ];
+
+        $postResponse = $this->post(route('temp.order.store'), $payload);
+        $postResponse->assertStatus(200);
+        $postResponse->assertJson(['status' => true]);
+
+        $createdTempOrder = TempOrder::where('customer_phone', '9876543210')->latest('id')->first();
+        $this->assertNotNull($createdTempOrder);
+
+        $item = $createdTempOrder->items->first();
+        $this->assertEquals($this->dish->id, $item->subcategory_id);
+        $this->assertEmpty($item->addons_list);
+        $this->assertEquals(200.00, floatval($item->price));
+        $this->assertEquals(200.00, floatval($item->taxable_amount));
+        $this->assertEquals(210.00, floatval($item->total_amount));
+
+        // View order success page
+        session([
+            'customer_qr_allowed_orders' => [(int) $createdTempOrder->id],
+            'customer_qr_order_id' => $createdTempOrder->id,
+            'customer_qr_order_type' => 'temp',
+        ]);
+        $successResponse = $this->get(route('order.success', $createdTempOrder->id));
+        $successResponse->assertStatus(200);
+        $successResponse->assertSee('Gourmet Cheese Pizza');
+        $successResponse->assertDontSee('+ Gourmet Cheese Pizza');
+        $successResponse->assertDontSee('+ Extra Mozzarella');
+    }
 }
 
