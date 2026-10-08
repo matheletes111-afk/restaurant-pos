@@ -724,6 +724,8 @@ class OrderManagementController extends Controller
             $order->cgst_amount = $totalCgst;
             $order->sgst_amount = $totalSgst;
             $order->igst_amount = $totalIgst;
+            $order->grand_total = $finalTotal;
+            $order->round_off = $roundOff;
             
             // Store discount - IMPORTANT FIX
             $order->discount = $discountAmount; // Discount amount in rupees
@@ -1310,7 +1312,14 @@ public function deletePayment($payment_id)
     {
         $item = OrderItems::find($id);
         if ($item) {
+            $orderId = $item->order_id;
             $item->delete();
+            if ($orderId) {
+                $order = OrderManage::find($orderId);
+                if ($order) {
+                    $order->recalculateTotals();
+                }
+            }
             return response()->json(['success' => true]);
         }
         return response()->json(['success' => false, 'message' => 'Item not found']);

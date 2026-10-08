@@ -622,7 +622,18 @@ public function store(Request $request)
         $taxableAmount = $computedTaxable;
         $gstAmount = $computedGst;
         $discount = $totalDiscount;
-        $grandTotal = $mainOrder->grand_total ?: round(($taxableAmount - $orderDiscAmt) + $gstAmount);
+        $grandTotal = round(($taxableAmount - $orderDiscAmt) + $gstAmount);
+
+        if (abs(floatval($mainOrder->grand_total) - $grandTotal) > 0.01) {
+            $mainOrder->update([
+                'total_amount' => $subtotal,
+                'taxable_amount' => $taxableAmount,
+                'gst_amount' => $gstAmount,
+                'discount' => $discount,
+                'grand_total' => $grandTotal,
+                'round_off' => $grandTotal - (($taxableAmount - $orderDiscAmt) + $gstAmount),
+            ]);
+        }
         $isGstBill = ($mainOrder->is_gst_bill ?? 'NO') === 'YES';
 
         // Keep session updated with active order
