@@ -513,17 +513,7 @@
             <!-- Checkout / Order Status -->
             <div class="mt-4">
               @if(empty($order->table_id) || (isset($order->order_type) && strtoupper($order->order_type) === 'TAKEAWAY'))
-                <label class="pos-form-label d-flex align-items-center justify-content-between">
-                  <span><i class="fa-solid fa-bag-shopping me-1 text-primary"></i> Order Type &amp; Status</span>
-                  <span class="badge bg-success text-white font-weight-bold">
-                    <i class="fa-solid fa-bolt me-1"></i> Express Takeaway
-                  </span>
-                </label>
                 <input type="hidden" id="order_complete" value="DONE">
-                <div class="p-2 rounded bg-light border text-muted small mb-2 d-flex align-items-center justify-content-between">
-                  <span><i class="fa-solid fa-lock text-success me-1"></i> Takeaway Status:</span>
-                  <strong class="text-dark">Done &amp; Direct Checkout</strong>
-                </div>
               @else
                 <label class="pos-form-label d-flex align-items-center justify-content-between">
                   <span><i class="fa-solid fa-list-check me-1 text-primary"></i> Order Status &amp; Action</span>

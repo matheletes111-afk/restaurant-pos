@@ -387,17 +387,6 @@
             <!-- Order Status & Action Mode -->
             @if(!isset($table) || !$table)
               <input type="hidden" id="order_complete" value="DONE">
-              <div class="mt-4 p-3 rounded" style="background: #f8fafc; border: 1.5px solid #e2e8f0;">
-                <div class="d-flex align-items-center justify-content-between">
-                  <span class="small font-weight-bold text-dark">
-                    <i class="fa-solid fa-bag-shopping text-warning me-1"></i> Order Type &amp; Status:
-                  </span>
-                  <span class="badge bg-success text-white px-2.5 py-1.5" style="font-size: 0.8rem;">
-                    <i class="fa-solid fa-circle-check me-1"></i> Express Takeaway (Direct Checkout)
-                  </span>
-                </div>
-                <div class="small text-muted mt-1">Takeaway orders proceed directly to checkout &amp; settlement.</div>
-              </div>
             @else
               <div class="mt-4">
                 <label class="pos-form-label d-flex align-items-center justify-content-between">
