@@ -193,7 +193,7 @@
                                 <span class="item-name">{{ $kotItem->subcategory->name ?? 'Unknown' }}</span>
                                 <br>
                                 <small style="font-size: 8px;">Category: {{ $kotItem->subcategory->category->name ?? 'N/A' }} ({{ $kotItem->subcategory->food_type ?? '' }})</small>
-                                @if(!empty($addons))
+                                @if(!empty($addons) && !empty($kotItem->subcategory_id))
                                     @foreach($addons as $a)
                                         @php
                                             $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
@@ -216,7 +216,7 @@
                             <span class="item-name">{{ $item->subcategory->name }}</span>
                             <br>
                             <small style="font-size: 8px;">Category: {{ $item->subcategory->category->name ?? 'N/A' }} ({{ $item->subcategory->food_type }})</small>
-                            @if(!empty($addons))
+                            @if(!empty($addons) && !empty($item->subcategory_id))
                                 @foreach($addons as $a)
                                     @php
                                         $aQty = $a['qty'] ?? $a['quantity'] ?? 1;

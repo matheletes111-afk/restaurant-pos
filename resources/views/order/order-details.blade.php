@@ -720,14 +720,14 @@
                                     $discountedPrice = $item->discounted_price ?? ($originalPrice - ($originalPrice * $itemDiscount / 100));
                                     $quantity = $item->quantity;
                                     $addons = $item->addons_list ?? [];
-                                    $hasAddons = !empty($addons);
+                                    $isAddonItem = empty($item->subcategory_id);
+                                    $hasAddons = !$isAddonItem && !empty($addons) && count($addons) > 0;
                                     $addonsCost = 0;
                                     if ($hasAddons) {
                                         foreach ($addons as $a) {
                                             $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
                                         }
                                     }
-                                    $isAddonItem = empty($item->subcategory_id);
                                     $lineOriginal = $isAddonItem ? ($originalPrice * $quantity) : (($originalPrice * $quantity) + $addonsCost);
                                     $taxableAmount = $item->taxable_amount ?? ($isAddonItem ? ($discountedPrice * $quantity) : (($discountedPrice * $quantity) + $addonsCost));
                                     
@@ -739,16 +739,17 @@
                                     $subtotal += $lineOriginal;
                                     $gstTotal += $itemGst;
                                     $discountTotal += ($originalPrice * $itemDiscount / 100) * $quantity;
-                                @endphp
-                                @php
-                                    $addons = $item->addons_list ?? [];
-                                    $hasAddons = !empty($addons);
                                     $basePrice = $item->subcategory->price ?? $originalPrice;
                                 @endphp
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
                                     <td>
-                                        <div class="item-name">{{ $item->subcategory->name ?? 'Custom Item' }}</div>
+                                        <div class="item-name">
+                                            {{ $item->subcategory->name ?? 'Custom Item' }}
+                                            @if($isAddonItem)
+                                                <span class="badge bg-warning text-dark ms-1" style="font-size: 0.68rem; font-weight: 700;">Add-on</span>
+                                            @endif
+                                        </div>
                                         @if(!empty($item->subcategory->category->name))
                                             <div class="item-category">{{ $item->subcategory->category->name }}</div>
                                         @endif

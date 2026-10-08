@@ -175,11 +175,7 @@
                 <span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5 rounded" style="font-size: 0.68rem; font-weight: 700;">APPROVED</span>
               @endif
             </div>
-            @if($isAdditional)
-              <span class="text-primary fw-bold" style="font-size: 0.75rem;">
-                View <i class="fas fa-arrow-right ms-0.5"></i>
-              </span>
-            @else
+            @if(!$isAdditional)
               <span class="fw-bold text-primary font-monospace" style="font-size: 0.78rem;">
                 {{ $ord->order_no }}
               </span>

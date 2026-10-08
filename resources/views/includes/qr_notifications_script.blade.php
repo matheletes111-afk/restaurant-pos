@@ -91,7 +91,7 @@
                 ${!isAdditional && ord.items_summary ? `<div class="text-muted text-truncate mt-1" style="font-size: 0.74rem;">${escapeHtml(ord.items_summary)}</div>` : ''}
                 <div class="d-flex align-items-center justify-content-between mt-2 pt-1 border-top" style="font-size: 0.74rem;">
                     ${!isAdditional && ord.grand_total ? `<span class="fw-bold text-success">₹${escapeHtml(ord.grand_total)}</span>` : '<span class="text-muted"><i class="far fa-clock me-1"></i>Just now</span>'}
-                    <span class="text-primary fw-bold">View Order <i class="fas fa-arrow-right ms-1"></i></span>
+                    ${!isAdditional ? `<span class="text-primary fw-bold">View Order <i class="fas fa-arrow-right ms-1"></i></span>` : ''}
                 </div>
             </div>
         `;
@@ -171,9 +171,6 @@
                                 </span>
                                 ${statusBadge}
                             </div>
-                            <span class="text-primary fw-bold" style="font-size: 0.75rem;">
-                                View <i class="fas fa-arrow-right ms-0.5"></i>
-                            </span>
                         </div>
 
                         <div class="d-flex align-items-center justify-content-between py-1">

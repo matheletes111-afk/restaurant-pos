@@ -1151,7 +1151,8 @@
                                 @foreach($order->orderItems as $idx => $item)
                                 @php
                                     $addons = $item->addons_list ?? [];
-                                    $hasAddons = !empty($addons);
+                                    $isAddonItem = empty($item->subcategory_id);
+                                    $hasAddons = !$isAddonItem && !empty($addons) && count($addons) > 0;
                                     $addonsCost = 0;
                                     if ($hasAddons) {
                                         foreach ($addons as $a) {
@@ -1160,7 +1161,6 @@
                                             $addonsCost += ($aPrice * $aQty);
                                         }
                                     }
-                                    $isAddonItem = empty($item->subcategory_id);
                                     $itemPrice = (float)$item->price;
                                     $itemQty = (int)$item->quantity;
                                     $itemDiscount = (float)($item->item_discount_percentage ?? 0);
@@ -1188,12 +1188,15 @@
                                             @endif
                                             <div>
                                                 <strong class="text-dark">{{ $item->subcategory->name ?? 'Custom Item' }}</strong>
+                                                @if($isAddonItem)
+                                                    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.68rem; font-weight: 700;">Add-on</span>
+                                                @endif
 
                                                 @if($hasAddons)
                                                     <div class="inv-item-addons-box">
                                                         <div class="inv-addons-header">
                                                             <i class="fa-solid fa-puzzle-piece"></i> Mapped Add-ons ({{ count($addons) }})
-                                                        </div>
+                                                        </div>v>
                                                         <div class="inv-addons-list">
                                                             @foreach($addons as $a)
                                                                 @php
@@ -1639,7 +1642,7 @@ function generateWhatsappMessage() {
     @if($order->orderItems && count($order->orderItems) > 0)
         @foreach($order->orderItems as $item)
             msg += `• {{ $item->quantity }}x {{ addslashes($item->subcategory->name ?? 'Item') }} - {{ number_format($item->total_amount ?? ($item->price * $item->quantity), 2) }}\n`;
-            @if(!empty($item->addons_list))
+            @if(!empty($item->addons_list) && !empty($item->subcategory_id))
                 @foreach($item->addons_list as $a)
                     @php
                         $aQty = $a['qty'] ?? $a['quantity'] ?? 1;

@@ -1790,7 +1790,7 @@
                 $dishPrice = floatval($dish->price ?? 0);
                 $dishFoodType = strtolower($dish->food_type ?? 'veg');
                 $dishDiscount = floatval($dish->discount ?? 0);
-                $dishAddons = ($dish->addons && $dish->addons->count() > 0) ? $dish->addons : (isset($restaurant_addons) && $restaurant_addons->count() > 0 ? $restaurant_addons : collect([]));
+                $dishAddons = ($dish->addons && $dish->addons->count() > 0) ? $dish->addons->where('status', '!=', 'D')->where('status', '!=', 'I')->values() : collect([]);
               @endphp
               <div class="dish-card" 
                    data-id="{{ $dish->id }}"
@@ -2330,10 +2330,6 @@ $(document).ready(function() {
       try { availableAddons = JSON.parse(rawAddons); } catch (err) { availableAddons = []; }
     } else if (Array.isArray(rawAddons)) {
       availableAddons = rawAddons;
-    }
-
-    if ((!availableAddons || availableAddons.length === 0) && window.POS_RESTAURANT_ADDONS && window.POS_RESTAURANT_ADDONS.length > 0) {
-      availableAddons = window.POS_RESTAURANT_ADDONS;
     }
 
     if (cart[dishId]) {

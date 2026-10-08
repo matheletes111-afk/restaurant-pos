@@ -252,7 +252,7 @@
           foreach($kot->items as $it) {
             $allDishNames[] = @$it->subcategory->name ?? 'Dish Item';
             if (!empty($it->note)) $allNotes[] = $it->note;
-            if (!empty($it->addons_list)) {
+            if (!empty($it->addons_list) && !empty($it->subcategory_id)) {
               foreach($it->addons_list as $add) {
                 $allAddons[] = $add['name'] ?? '';
               }
@@ -338,7 +338,7 @@
                   </div>
                 </div>
 
-                @if(!empty($addons))
+                @if(!empty($addons) && !empty($item->subcategory_id))
                 <div class="kds-addons-container">
                   <div class="kds-addons-header">
                     <i class="fa-solid fa-puzzle-piece"></i> Mapped Add-ons ({{ count($addons) }})

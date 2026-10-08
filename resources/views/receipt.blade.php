@@ -282,7 +282,7 @@
                         @php
                             $addons = $item->addons_list;
                         @endphp
-                        @if(!empty($addons))
+                        @if(!empty($addons) && !$isAddonItem)
                             @foreach($addons as $a)
                                 @php
                                     $aQty = $a['qty'] ?? $a['quantity'] ?? 1;

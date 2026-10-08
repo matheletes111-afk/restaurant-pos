@@ -143,7 +143,7 @@
                       $finalPrice = $discount > 0 ? ($item->price - ($item->price * $discount / 100)) : $item->price;
                       
                       $mappedAddons = ($item->addons) ? $item->addons->where('status', '!=', 'D')->where('status', '!=', 'I')->values() : collect([]);
-                      $availableDishAddons = $mappedAddons->isNotEmpty() ? $mappedAddons : ($restaurant_addons ?? collect([]));
+                      $availableDishAddons = $mappedAddons;
                       $addonsCount = $availableDishAddons->count();
                     @endphp
                     <div class="food-menu-card food-card" 
@@ -775,6 +775,7 @@ function renderOrderTable() {
             `;
         }
         
+        let hasAvailableAddons = !isStandaloneAddon && Array.isArray(item.available_addons) && item.available_addons.length > 0;
         let itemTitleHtml = isStandaloneAddon
             ? `<div class="d-flex align-items-center gap-2">
                  <span class="addon-dot ${String(item.food_type || '').toLowerCase() === 'non-veg' ? 'nonveg' : 'veg'}"></span>
@@ -783,9 +784,10 @@ function renderOrderTable() {
                </div>`
             : `<div class="d-flex align-items-center justify-content-between">
                  <strong class="text-dark" style="font-size: 0.95rem;">${escapeHtml(item.name)}</strong>
+                 ${hasAvailableAddons ? `
                  <button type="button" class="btn-cart-customize-item cart-customize-btn" data-index="${index}" title="Edit add-ons">
                      <i class="fa-solid fa-sliders"></i> ${hasAddons ? 'Edit Add-ons' : '+ Add-ons'}
-                 </button>
+                 </button>` : ''}
                </div>`;
 
         let row = `
@@ -905,11 +907,6 @@ function openAddonModal(dishData) {
         availableAddons = Object.values(rawAddons);
     }
 
-    // Fallback to global restaurant addons if dish-specific list is empty
-    if ((!availableAddons || availableAddons.length === 0) && window.POS_RESTAURANT_ADDONS && window.POS_RESTAURANT_ADDONS.length > 0) {
-        availableAddons = window.POS_RESTAURANT_ADDONS;
-    }
-
     // Filter only active addons (status !== 'D' and status !== 'I')
     if (Array.isArray(availableAddons)) {
         availableAddons = availableAddons.filter(a => a && a.status !== 'D' && a.status !== 'I');
@@ -918,7 +915,7 @@ function openAddonModal(dishData) {
     }
 
     if (availableAddons.length === 0) {
-        showToast('No active add-ons found. Please create or activate add-ons in Add-on Master.', true);
+        showToast('No active add-ons mapped to this dish.', true);
         return;
     }
 
@@ -1092,6 +1089,14 @@ $(document).ready(function() {
         let itemPrice = parseFloat($(this).data('price'));
         let itemDiscount = parseFloat($(this).data('discount')) || 0;
         
+        let rawAddons = $(this).attr('data-addons') || $(this).data('addons');
+        let availableAddons = [];
+        if (typeof rawAddons === 'string') {
+            try { availableAddons = JSON.parse(rawAddons); } catch(e) { availableAddons = []; }
+        } else if (Array.isArray(rawAddons)) {
+            availableAddons = rawAddons;
+        }
+
         // Check for an existing item without addons
         let existingItem = orderItems.find(i => i.id == itemId && (!i.addons || i.addons.length === 0));
         
@@ -1105,6 +1110,7 @@ $(document).ready(function() {
                 price: itemPrice,
                 qty: 1,
                 itemDiscount: itemDiscount,
+                available_addons: availableAddons,
                 addons: []
             });
             showToast(`${itemName} added to order`);
@@ -1134,7 +1140,7 @@ $(document).ready(function() {
         if (!item) return;
         
         let dishCardBtn = $(`.open-addon-modal-btn[data-id="${item.id}"]`);
-        let rawAddons = dishCardBtn.length ? (dishCardBtn.attr('data-addons') || dishCardBtn.data('addons')) : window.POS_RESTAURANT_ADDONS;
+        let rawAddons = item.available_addons || (dishCardBtn.length ? (dishCardBtn.attr('data-addons') || dishCardBtn.data('addons')) : []);
         
         openAddonModal({
             id: item.id,

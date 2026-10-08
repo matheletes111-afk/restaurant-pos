@@ -179,13 +179,14 @@
                   $itemDiscount = floatval($i->item_discount_percentage ?? 0);
                   $discountedPrice = floatval($i->discounted_price ?: ($basePrice - ($basePrice * $itemDiscount / 100)));
                   $addonsList = $i->addons_list ?? [];
+                  $isAddon = empty($i->subcategory_id);
+                  $hasAddons = !$isAddon && !empty($addonsList) && count($addonsList) > 0;
                   $addonsCost = 0;
-                  if (!empty($addonsList) && is_array($addonsList)) {
+                  if ($hasAddons) {
                       foreach ($addonsList as $a) {
                           $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
                       }
                   }
-                  $isAddon = empty($i->subcategory_id);
                   $lineTaxable = floatval($i->taxable_amount > 0 ? $i->taxable_amount : ($isAddon ? ($discountedPrice * $itemQty) : (($discountedPrice * $itemQty) + $addonsCost)));
                   $gstRate = floatval($i->gst_rate ?? 0);
                   $lineGst = floatval($i->gst_amount > 0 ? $i->gst_amount : (($lineTaxable * $gstRate) / 100));
@@ -198,7 +199,10 @@
                   <td>
                     <div>
                       <strong style="color: #0f172a; font-size: 0.92rem;">{{ $i->menuItem->name ?? 'Dish Item' }}</strong>
-                      @if(!empty($i->addons_list) && count($i->addons_list) > 0)
+                      @if($isAddon)
+                        <span class="badge bg-warning text-dark ms-1" style="font-size: 0.68rem; font-weight: 700;">Add-on</span>
+                      @endif
+                      @if($hasAddons)
                         <div class="mt-1 d-flex flex-wrap gap-1">
                           @foreach($i->addons_list as $addon)
                             @php

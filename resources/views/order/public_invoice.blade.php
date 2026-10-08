@@ -465,7 +465,8 @@
                         @foreach($order->orderItems as $item)
                         @php
                             $addons = $item->addons_list ?? [];
-                            $hasAddons = !empty($addons);
+                            $isAddonItem = empty($item->subcategory_id);
+                            $hasAddons = !$isAddonItem && !empty($addons) && count($addons) > 0;
                             $addonsCost = 0;
                             if ($hasAddons) {
                                 foreach ($addons as $a) {
@@ -474,7 +475,6 @@
                                     $addonsCost += ($aPrice * $aQty);
                                 }
                             }
-                            $isAddonItem = empty($item->subcategory_id);
                             $itemPrice = (float)$item->price;
                             $itemQty = (int)$item->quantity;
                             $itemDiscount = (float)($item->item_discount_percentage ?? 0);
@@ -500,6 +500,9 @@
                                     @endif
                                     <div>
                                         <strong class="text-dark">{{ $item->subcategory->name ?? 'Dish Item' }}</strong>
+                                        @if($isAddonItem)
+                                            <span class="badge bg-warning text-dark ms-1" style="font-size: 0.68rem; font-weight: 700;">Add-on</span>
+                                        @endif
                                         @if($item->item_discount_percentage > 0)
                                             <span class="badge bg-success-subtle text-success ms-1 small">{{ $item->item_discount_percentage }}% off</span>
                                         @endif
