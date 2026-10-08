@@ -1188,9 +1188,6 @@
                                             @endif
                                             <div>
                                                 <strong class="text-dark">{{ $item->subcategory->name ?? 'Custom Item' }}</strong>
-                                                @if($isAddonItem)
-                                                    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.68rem; font-weight: 700;">Add-on</span>
-                                                @endif
 
                                                 @if($hasAddons)
                                                     <div class="inv-item-addons-box">

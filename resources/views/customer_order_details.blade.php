@@ -895,9 +895,6 @@
                             <div class="dish-title-row">
                                 <span class="dish-qty-chip">{{ $itm->quantity }}x</span>
                                 <span class="dish-name-text">{{ $itmName }}</span>
-                                @if($isStandaloneAddon)
-                                    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.68rem; font-weight: 700;">Add-on</span>
-                                @endif
                             </div>
                             @if(!empty($itm->addons_list) && count($itm->addons_list) > 0 && !$isStandaloneAddon)
                                 <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">

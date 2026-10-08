@@ -199,9 +199,6 @@
                   <td>
                     <div>
                       <strong style="color: #0f172a; font-size: 0.92rem;">{{ $i->menuItem->name ?? 'Dish Item' }}</strong>
-                      @if($isAddon)
-                        <span class="badge bg-warning text-dark ms-1" style="font-size: 0.68rem; font-weight: 700;">Add-on</span>
-                      @endif
                       @if($hasAddons)
                         <div class="mt-1 d-flex flex-wrap gap-1">
                           @foreach($i->addons_list as $addon)

@@ -2215,9 +2215,6 @@
                 <div class="active-dish-details-col">
                   <span class="active-dish-title-text">
                     {{ $actName }}
-                    @if($isStandaloneAddon)
-                      <span class="badge bg-warning text-dark ms-1" style="font-size: 0.68rem; font-weight: 700;">Add-on</span>
-                    @endif
                   </span>
                   @if(!empty($actItem->addons_list) && !$isStandaloneAddon)
                     <div class="tray-addon-chips-wrap" style="margin-top: 2px;">
@@ -2626,9 +2623,6 @@
                   <td>
                     <span class="tray-item-title">
                       {{ $pName }}
-                      @if($isPrevStandaloneAddon)
-                        <span class="badge bg-warning text-dark ms-1" style="font-size: 0.68rem; font-weight: 700;">Add-on</span>
-                      @endif
                     </span>
                     @if(!empty($actItm->addons_list) && !$isPrevStandaloneAddon)
                       <div class="tray-addon-chips-wrap" style="margin-top: 2px;">
@@ -3334,7 +3328,6 @@ function refreshTable() {
             <tr>
                 <td>
                     <span class="tray-item-title">${escapeHtml(item.name)}</span>
-                    ${isAddon ? '<span class="badge bg-warning text-dark ms-1" style="font-size:0.72rem;font-weight:700;"><i class="fas fa-puzzle-piece me-1"></i>Add-on</span>' : ''}
                     ${addonsHtml}
                 </td>
                 <td style="text-align:center;">

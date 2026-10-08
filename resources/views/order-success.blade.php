@@ -892,11 +892,6 @@
                                 <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 4px;">
                                     <span class="item-qty-badge">{{ $qty }}x</span>
                                     <strong style="color: var(--text-main); font-size: 0.94rem;">{{ $itemName }}</strong>
-                                    @if($isStandaloneAddon)
-                                        <span style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 4px; padding: 1px 6px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;">
-                                             Add-on
-                                        </span>
-                                    @endif
                                     @if(!empty($kotNo))
                                         <span class="kot-badge" id="kotBadge_{{ $itm->id }}"><i class="fas fa-receipt"></i> {{ $kotNo }}</span>
                                     @endif

@@ -385,7 +385,6 @@ class CustomerQrAddonsWorkflowTest extends TestCase
         $response->assertSee('Gourmet Cheese Pizza');
         $response->assertSee('Extra Mozzarella');
         $response->assertSee('Garlic Dip');
-        $response->assertSee('Add-on');
     }
 
     public function test_dish_ordered_without_addons_does_not_attach_or_show_addons()

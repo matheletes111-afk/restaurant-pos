@@ -934,7 +934,6 @@ function updateNewItemsTable() {
             ? `<div class="d-flex align-items-center gap-2">
                  <span class="addon-dot ${String(item.food_type || '').toLowerCase() === 'non-veg' ? 'nonveg' : 'veg'}"></span>
                  <strong class="text-dark" style="font-size: 0.95rem;">${escapeHtml(item.name)}</strong>
-                 <span class="badge bg-warning text-dark border ms-1" style="font-size: 0.68rem; font-weight: 800;">Add-on</span>
                </div>`
             : `<div class="d-flex align-items-center justify-content-between">
                  <strong class="text-dark" style="font-size: 0.95rem;">${escapeHtml(item.name)}</strong>

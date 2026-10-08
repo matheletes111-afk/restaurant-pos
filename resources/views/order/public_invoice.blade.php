@@ -500,9 +500,6 @@
                                     @endif
                                     <div>
                                         <strong class="text-dark">{{ $item->subcategory->name ?? 'Dish Item' }}</strong>
-                                        @if($isAddonItem)
-                                            <span class="badge bg-warning text-dark ms-1" style="font-size: 0.68rem; font-weight: 700;">Add-on</span>
-                                        @endif
                                         @if($item->item_discount_percentage > 0)
                                             <span class="badge bg-success-subtle text-success ms-1 small">{{ $item->item_discount_percentage }}% off</span>
                                         @endif
