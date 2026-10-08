@@ -1,7 +1,7 @@
 User-agent: *
 Disallow: /dashboard
 Disallow: /crm
-Disallow: /inventory
+Disallow: /inventory/
 Disallow: /kitchen
 Disallow: /kitchen-panel
 Disallow: /manage-menu-category
