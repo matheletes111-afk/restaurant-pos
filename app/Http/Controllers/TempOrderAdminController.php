@@ -103,6 +103,16 @@ public function deleteItem($id)
             $lineCgst = ($lineTax * ($gstRate / 2)) / 100;
             $lineSgst = ($lineTax * ($gstRate / 2)) / 100;
 
+            $lineTotal = $lineTax + $lineGst;
+
+            $remItem->taxable_amount = $lineTax;
+            $remItem->gst_amount = $lineGst;
+            $remItem->cgst_amount = $lineCgst;
+            $remItem->sgst_amount = $lineSgst;
+            $remItem->total_amount = $lineTotal;
+            $remItem->discounted_price = $discPrice;
+            $remItem->save();
+
             $subtotal += $lineOrig;
             $taxable += $lineTax;
             $gst += $lineGst;

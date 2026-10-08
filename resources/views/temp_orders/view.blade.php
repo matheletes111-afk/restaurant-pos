@@ -177,7 +177,7 @@
                   $itemQty = max(1, intval($i->quantity ?? 1));
                   $basePrice = floatval($i->price ?? 0);
                   $itemDiscount = floatval($i->item_discount_percentage ?? 0);
-                  $discountedPrice = floatval($i->discounted_price ?? ($basePrice - ($basePrice * $itemDiscount / 100)));
+                  $discountedPrice = floatval($i->discounted_price ?: ($basePrice - ($basePrice * $itemDiscount / 100)));
                   $addonsList = $i->addons_list ?? [];
                   $addonsCost = 0;
                   if (!empty($addonsList) && is_array($addonsList)) {
@@ -186,10 +186,10 @@
                       }
                   }
                   $isAddon = empty($i->subcategory_id);
-                  $lineTaxable = $isAddon ? ($discountedPrice * $itemQty) : (($discountedPrice * $itemQty) + $addonsCost);
+                  $lineTaxable = floatval($i->taxable_amount > 0 ? $i->taxable_amount : ($isAddon ? ($discountedPrice * $itemQty) : (($discountedPrice * $itemQty) + $addonsCost)));
                   $gstRate = floatval($i->gst_rate ?? 0);
-                  $lineGst = ($lineTaxable * $gstRate) / 100;
-                  $itemTotal = $lineTaxable + $lineGst;
+                  $lineGst = floatval($i->gst_amount > 0 ? $i->gst_amount : (($lineTaxable * $gstRate) / 100));
+                  $itemTotal = floatval($i->total_amount > 0 ? $i->total_amount : ($lineTaxable + $lineGst));
                   $foodType = strtoupper($i->menuItem->food_type ?? 'VEG');
                   $itemDiscountAmount = ($basePrice * $itemDiscount / 100) * $itemQty;
                 @endphp
@@ -253,7 +253,7 @@
                   </td>
                   <td>
                     <strong class="text-primary font-weight-bold" style="font-family: 'Outfit', sans-serif; font-size: 0.95rem;">
-                      ₹{{ number_format($isGstBill ? $itemTotal : $lineTaxable, 2) }}
+                      ₹{{ number_format($itemTotal, 2) }}
                     </strong>
                   </td>
                   <td class="text-end">
@@ -284,13 +284,13 @@
               $computedSubtotal = 0;
               $computedTaxable = 0;
               $computedGst = 0;
-              $totalItemDiscount = 0;
+              $computedItemDiscount = 0;
 
               foreach($order->items as $item) {
                 $qty = max(1, intval($item->quantity ?? 1));
                 $bPrice = floatval($item->price ?? 0);
                 $iDisc = floatval($item->item_discount_percentage ?? 0);
-                $dPrice = floatval($item->discounted_price ?? ($bPrice - ($bPrice * $iDisc / 100)));
+                $dPrice = floatval($item->discounted_price ?: ($bPrice - ($bPrice * $iDisc / 100)));
                 $aList = $item->addons_list ?? [];
                 $aCost = 0;
                 if (!empty($aList) && is_array($aList)) {
@@ -299,35 +299,39 @@
                     }
                 }
                 $isAdd = empty($item->subcategory_id);
-                $lTax = $isAdd ? ($dPrice * $qty) : (($dPrice * $qty) + $aCost);
+                $lTax = floatval($item->taxable_amount > 0 ? $item->taxable_amount : ($isAdd ? ($dPrice * $qty) : (($dPrice * $qty) + $aCost)));
                 $lOrig = $isAdd ? ($bPrice * $qty) : (($bPrice * $qty) + $aCost);
                 $gRate = floatval($item->gst_rate ?? 0);
-                $lGst = ($lTax * $gRate) / 100;
+                $lGst = floatval($item->gst_amount > 0 ? $item->gst_amount : (($lTax * $gRate) / 100));
 
                 $computedSubtotal += $lOrig;
                 $computedTaxable += $lTax;
                 $computedGst += $lGst;
-                $totalItemDiscount += ($bPrice * $iDisc / 100) * $qty;
+                $computedItemDiscount += ($bPrice * $iDisc / 100) * $qty;
               }
 
-              $displaySubtotal = floatval($order->total_amount ?: $computedSubtotal);
-              $totalItemDiscount = floatval($order->discount ?: $totalItemDiscount);
-              $displayTaxable = floatval($order->taxable_amount ?: $computedTaxable);
-              $displayGst = floatval($order->gst_amount ?: $computedGst);
-              $grandTotal = floatval($order->grand_total ?: ($displayTaxable + $displayGst));
+              $displaySubtotal = floatval($order->total_amount > 0 ? $order->total_amount : $computedSubtotal);
+              $displayItemDiscount = floatval($computedItemDiscount > 0 ? $computedItemDiscount : $order->discount);
+              $displayTaxable = floatval($order->taxable_amount > 0 ? $order->taxable_amount : $computedTaxable);
+              $displayGst = floatval($order->gst_amount > 0 ? $order->gst_amount : $computedGst);
+              
+              $orderDiscPercent = floatval($order->discount_percentage ?? 0);
+              $orderDiscAmt = $orderDiscPercent > 0 ? (($displayTaxable * $orderDiscPercent) / 100) : 0;
+              
+              $grandTotal = floatval($order->grand_total > 0 ? $order->grand_total : ($displayTaxable - $orderDiscAmt + $displayGst));
               $finalAmount = round($grandTotal);
               $roundOff = $finalAmount - $grandTotal;
             @endphp
 
             <div class="pos-summary-row">
-              <span>Original Subtotal</span>
+              <span>Subtotal</span>
               <span>₹{{ number_format($displaySubtotal, 2) }}</span>
             </div>
 
-            @if($totalItemDiscount > 0)
+            @if($displayItemDiscount > 0)
             <div class="pos-summary-row text-success">
               <span>Item Level Discounts</span>
-              <span>- ₹{{ number_format($totalItemDiscount, 2) }}</span>
+              <span>- ₹{{ number_format($displayItemDiscount, 2) }}</span>
             </div>
             @endif
 
@@ -343,17 +347,17 @@
             </div>
             @endif
 
-            @if(($order->discount_percentage ?? 0) > 0 || ($order->discount ?? 0) > 0)
+            @if($orderDiscAmt > 0)
             <div class="pos-summary-row text-success">
-              <span>Order Discount ({{ $order->discount_percentage ?? 0 }}%)</span>
-              <span>- ₹{{ number_format($order->discount ?? 0, 2) }}</span>
+              <span>Order Discount ({{ $orderDiscPercent }}%)</span>
+              <span>- ₹{{ number_format($orderDiscAmt, 2) }}</span>
             </div>
             @endif
 
-            @if(abs($roundOff) > 0)
+            @if(abs($roundOff) > 0.001)
             <div class="pos-summary-row">
               <span>Round Off</span>
-              <span>₹{{ number_format($roundOff, 2) }}</span>
+              <span>{{ $roundOff >= 0 ? '+' : '−' }} ₹{{ number_format(abs($roundOff), 2) }}</span>
             </div>
             @endif
 
