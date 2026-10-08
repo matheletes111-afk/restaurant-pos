@@ -155,6 +155,77 @@ class WebNotificationService
     }
 
     /**
+     * Send web notification to all restaurant staff (Managers, Admins, Waiters, Cashiers, Owner)
+     */
+    public function notifyRestaurantStaffWeb($restaurantId, $title, $body, $data = [])
+    {
+        try {
+            $staffUserIds = User::where('restaurant_id', $restaurantId)
+                ->where('status', 'A')
+                ->whereIn('role_type', ['Restaurant Owner', 'Admin', 'Manager', 'Staff', 'Waiter', 'Cashier', 'Captain'])
+                ->pluck('id')
+                ->toArray();
+
+            $owner = \App\Models\RestaurantMaster::find($restaurantId);
+            if ($owner && $owner->user_id && !in_array($owner->user_id, $staffUserIds)) {
+                $staffUserIds[] = $owner->user_id;
+            }
+
+            if (empty($staffUserIds)) {
+                Log::info("No restaurant staff found for restaurant ID: " . $restaurantId);
+                return false;
+            }
+
+            $tokens = FcmToken::whereIn('user_id', $staffUserIds)
+                ->where('device_type', 'web')
+                ->pluck('token')
+                ->toArray();
+
+            if (empty($tokens)) {
+                Log::info("No web FCM tokens found for restaurant staff");
+                return false;
+            }
+
+            $vapidKey = env('FIREBASE_VAPID_KEY');
+            $icon = env('WEB_NOTIFICATION_ICON', '/images/logo.png');
+
+            $notificationData = array_merge($data, [
+                'type' => 'new_order_items',
+                'restaurant_id' => (string) $restaurantId,
+                'click_action' => 'OPEN_ORDER_DETAILS',
+                'icon' => $icon,
+                'timestamp' => now()->toISOString()
+            ]);
+
+            $webPushConfig = WebPushConfig::new()
+                ->withVapidKey($vapidKey)
+                ->withNotification(
+                    WebPushNotification::create($title, $body)
+                        ->withIcon($icon)
+                        ->withBadge('/images/badge.png')
+                );
+
+            $notification = Notification::create($title, $body);
+            
+            $message = CloudMessage::new()
+                ->withNotification($notification)
+                ->withData($notificationData)
+                ->withWebPushConfig($webPushConfig);
+
+            $sendReport = $this->messaging->sendMulticast($message, $tokens);
+            
+            Log::info('Web notification sent to ' . count($staffUserIds) . ' restaurant staff: ' . 
+                     $sendReport->successes()->count() . ' successful');
+            
+            return $sendReport->successes()->count() > 0;
+            
+        } catch (\Exception $e) {
+            Log::error('Restaurant Staff Web Notification Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Send notification to all devices (web + mobile)
      */
     public function notifyKitchenStaffAll($restaurantId, $title, $body, $data = [])

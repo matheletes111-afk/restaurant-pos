@@ -280,6 +280,7 @@ public function approveOrder($id)
             $orderItem->igst_amount = $p['igst_amount'];
             $orderItem->total_amount = $p['total_amount'];
             $orderItem->order_status = 'PENDING';
+            $orderItem->is_new = 0;
             $orderItem->restaurant_id = $order->restaurant_id;
             $orderItem->user_id = auth()->id();
             $orderItem->kot_no = $kotNo;

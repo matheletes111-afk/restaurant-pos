@@ -11,6 +11,8 @@ use App\Models\TempOrder;
 use App\Models\User;
 use App\Models\Plan;
 use App\Models\Subscription;
+use App\Models\OrderManage;
+use App\Models\OrderItems;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Mail;
@@ -385,5 +387,56 @@ class QrOrderNotificationTest extends TestCase
         $this->assertContains($pendingOrder->id, $returnedIds);
         $this->assertNotContains($approvedOrder->id, $returnedIds);
         $this->assertNotContains($rejectedOrder->id, $returnedIds);
+    }
+
+    public function test_qr_notifications_includes_additional_items_on_active_orders()
+    {
+        $mainOrder = OrderManage::create([
+            'restaurant_id' => $this->restaurant->id,
+            'table_id' => $this->table->id,
+            'customer_name' => 'Rahul Sharma',
+            'order_type' => 'DINE_IN',
+            'order_id' => 'ORD-TEST-001',
+            'total_amount' => 500.00,
+            'grand_total' => 500.00,
+            'order_status' => 'PENDING',
+            'payment_status' => 'PENDING',
+            'order_complete' => 'NO',
+        ]);
+
+        OrderItems::create([
+            'order_id' => $mainOrder->id,
+            'subcategory_id' => $this->subcategory->id,
+            'quantity' => 2,
+            'price' => 50.00,
+            'total_amount' => 100.00,
+            'taxable_amount' => 100.00,
+            'is_new' => 1,
+            'kot_no' => 'KOT-261008-002',
+            'order_status' => 'PENDING',
+            'restaurant_id' => $this->restaurant->id,
+            'user_id' => $this->ownerUser->id,
+        ]);
+
+        $this->actingAs($this->ownerUser);
+
+        $response = $this->get(route('restaurant.qr.notifications'));
+        $response->assertStatus(200);
+        $data = $response->json();
+
+        $returnedIds = collect($data['notifications'])->pluck('id')->toArray();
+        $this->assertContains('main_' . $mainOrder->id, $returnedIds);
+
+        $notif = collect($data['notifications'])->firstWhere('id', 'main_' . $mainOrder->id);
+        $this->assertNotNull($notif);
+        $this->assertEquals('additional_items', $notif['notif_type']);
+        $this->assertStringContainsString('Rahul Sharma', $notif['notification_title']);
+        $this->assertStringContainsStringIgnoringCase('Table', $notif['table_name']);
+
+        // Test marking as read
+        $readResp = $this->post(route('restaurant.qr.notifications.mark-read', 'main_' . $mainOrder->id));
+        $readResp->assertStatus(200);
+
+        $this->assertEquals(0, OrderItems::where('order_id', $mainOrder->id)->where('is_new', 1)->count());
     }
 }

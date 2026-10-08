@@ -4,6 +4,8 @@
 
     // Store state
     let cachedNotifications = [];
+    let knownNotifIds = new Set();
+    let isFirstFetch = true;
     const fetchUrl = "{{ route('restaurant.qr.notifications') }}";
     const markReadBaseUrl = "{{ url('/restaurant/qr-notifications/mark-read') }}";
     const csrfToken = "{{ csrf_token() }}";
@@ -19,6 +21,90 @@
             "'": '&#039;'
         };
         return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Audio chime using Web Audio API
+    function playNotificationChime() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = ctx.currentTime;
+
+            // Note 1 (E5)
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(659.25, now);
+            gain1.gain.setValueAtTime(0.2, now);
+            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.3);
+
+            // Note 2 (A5)
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(880, now + 0.12);
+            gain2.gain.setValueAtTime(0.25, now + 0.12);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.start(now + 0.12);
+            osc2.stop(now + 0.5);
+        } catch (e) {
+            // Audio context blocked or unsupported
+        }
+    }
+
+    // Show floating toast alert for newly arrived order
+    function showOrderToast(ord) {
+        const container = document.getElementById('qrOrderToastContainer');
+        if (!container) return;
+
+        const isAdditional = (ord.notif_type === 'additional_items');
+        const titleText = isAdditional ? 'New Items Added' : 'New QR Order Placed';
+        const msgText = `${escapeHtml(ord.customer_name || 'Customer')} placed ${isAdditional ? 'new items' : 'a new order'} for ${escapeHtml(ord.table_name || 'Table')}`;
+        const toastId = 'toast_' + ord.id + '_' + Date.now();
+
+        const toastHtml = `
+            <div id="${toastId}" class="qr-toast-card p-3 mb-2" role="alert" style="pointer-events: auto; cursor: pointer;" onclick="window.location.href='${ord.view_url}'">
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 106, 0, 0.12); display: flex; align-items: center; justify-content: center; color: #ff6a00;">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.88rem;">${titleText}</h6>
+                            <span class="badge bg-dark-subtle text-dark border px-2 py-0.5 rounded-pill" style="font-size: 0.68rem; font-weight: 700;">
+                                <i class="fas fa-chair me-1"></i>${escapeHtml(ord.table_name)}
+                            </span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" style="font-size: 0.65rem;" onclick="event.stopPropagation(); document.getElementById('${toastId}').remove();"></button>
+                </div>
+                <div class="mt-2 text-dark fw-semibold" style="font-size: 0.82rem;">
+                    ${msgText}
+                </div>
+                ${ord.items_summary ? `<div class="text-muted text-truncate mt-1" style="font-size: 0.74rem;">${escapeHtml(ord.items_summary)}</div>` : ''}
+                <div class="d-flex align-items-center justify-content-between mt-2 pt-1 border-top" style="font-size: 0.74rem;">
+                    <span class="fw-bold text-success">₹${escapeHtml(ord.grand_total)}</span>
+                    <span class="text-primary fw-bold">View Order <i class="fas fa-arrow-right ms-1"></i></span>
+                </div>
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', toastHtml);
+
+        // Auto remove toast after 7 seconds
+        setTimeout(() => {
+            const el = document.getElementById(toastId);
+            if (el) {
+                el.style.opacity = '0';
+                el.style.transition = 'opacity 0.4s ease';
+                setTimeout(() => el.remove(), 400);
+            }
+        }, 7000);
     }
 
     // Update Badge
@@ -46,8 +132,8 @@
                     <div class="mb-2 text-muted opacity-50">
                         <i class="fas fa-bell-slash fa-2x"></i>
                     </div>
-                    <p class="text-muted mb-0 fw-semibold" style="font-size: 0.85rem;">No pending QR orders</p>
-                    <small class="text-muted" style="font-size: 0.75rem;">New customer QR orders will appear here</small>
+                    <p class="text-muted mb-0 fw-semibold" style="font-size: 0.85rem;">No new QR orders</p>
+                    <small class="text-muted" style="font-size: 0.75rem;">New customer QR orders and table additions will appear here</small>
                 </div>
             `;
             return;
@@ -56,7 +142,16 @@
         let html = '';
         notifications.forEach(ord => {
             const isUnread = !ord.is_read;
-            let statusBadge = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-1.5 py-0.5 rounded" style="font-size: 0.68rem; font-weight: 700;">PENDING</span>';
+            const isAdditional = (ord.notif_type === 'additional_items');
+            let statusBadge = '';
+
+            if (isAdditional) {
+                statusBadge = '<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-1.5 py-0.5 rounded" style="font-size: 0.68rem; font-weight: 700;">NEW ITEMS</span>';
+            } else if (ord.order_status === 'PENDING') {
+                statusBadge = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-1.5 py-0.5 rounded" style="font-size: 0.68rem; font-weight: 700;">PENDING</span>';
+            } else if (ord.order_status === 'APPROVED') {
+                statusBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5 rounded" style="font-size: 0.68rem; font-weight: 700;">APPROVED</span>';
+            }
 
             html += `
                 <a
@@ -79,7 +174,7 @@
                     </div>
 
                     <div class="d-flex align-items-center justify-content-between">
-                        <div class="text-truncate me-2" style="max-width: 220px;">
+                        <div class="text-truncate me-2" style="max-width: 230px;">
                             <div class="fw-semibold text-dark text-truncate" style="font-size: 0.83rem;">
                                 ${escapeHtml(ord.customer_name)} ${ord.customer_phone ? `<span class="text-muted fw-normal">(${escapeHtml(ord.customer_phone)})</span>` : ''}
                             </div>
@@ -103,7 +198,7 @@
         container.innerHTML = html;
     }
 
-    // Fetch Notifications from Server (Runs on page load and manual click)
+    // Fetch Notifications from Server
     async function fetchQrNotifications() {
         try {
             const response = await fetch(fetchUrl, {
@@ -118,8 +213,24 @@
             const data = await response.json();
             if (!data.success) return;
 
+            const newItemsList = data.notifications || [];
+
+            // Detect freshly arrived unread orders
+            if (!isFirstFetch) {
+                newItemsList.forEach(ord => {
+                    if (!ord.is_read && !knownNotifIds.has(ord.id)) {
+                        playNotificationChime();
+                        showOrderToast(ord);
+                    }
+                });
+            }
+
+            // Update known IDs
+            knownNotifIds = new Set(newItemsList.map(n => n.id));
+            isFirstFetch = false;
+
             updateBadge(data.unread_count);
-            renderNotifications(data.notifications);
+            renderNotifications(newItemsList);
         } catch (e) {
             // Silently ignore network disruption
         }
@@ -169,11 +280,14 @@
         });
     }
 
-    // Initial fetch once on page load/reload only (No 15-second background polling)
+    // Initial fetch once on page load
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', fetchQrNotifications);
     } else {
         fetchQrNotifications();
     }
+
+    // Periodic polling every 15 seconds for live real-time notifications
+    setInterval(fetchQrNotifications, 15000);
 })();
 </script>

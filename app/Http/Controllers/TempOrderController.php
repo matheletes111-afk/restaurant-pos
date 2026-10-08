@@ -1073,19 +1073,32 @@ public function store(Request $request)
 
             DB::commit();
 
-            // Notify kitchen staff of new items
+            // Notify kitchen staff and restaurant staff of new items
             try {
                 $webNotificationService = app(\App\Services\WebNotificationService::class);
-                $tableName = $order->table->name ?? ('Table ' . ($order->table_id ?? ''));
+                $tableName = $order->table->name ?? ($order->table_id ? ('Table ' . $order->table_id) : 'Table');
+                $customerName = $order->customer_name ?: 'Customer';
                 $itemCount = count($request->order_items);
+                $notifTitle = "New Order on {$tableName}";
+                $notifBody = "{$customerName} placed a new order for {$tableName} ({$itemCount} items, KOT #{$kotNo})";
+
+                // 1. Notify kitchen staff
                 $webNotificationService->notifyKitchenStaffWeb(
                     $order->restaurant_id,
                     "New Items Added - {$tableName}",
                     "New KOT #{$kotNo} ({$itemCount} items) added for {$tableName}",
-                    ['order_id' => $order->id, 'kot_no' => $kotNo]
+                    ['order_id' => (string) $order->id, 'kot_no' => (string) $kotNo, 'type' => 'new_kot']
+                );
+
+                // 2. Notify restaurant staff & admin
+                $webNotificationService->notifyRestaurantStaffWeb(
+                    $order->restaurant_id,
+                    $notifTitle,
+                    $notifBody,
+                    ['order_id' => (string) $order->id, 'kot_no' => (string) $kotNo, 'table_id' => (string) $order->table_id, 'type' => 'new_order_items']
                 );
             } catch (\Throwable $e) {
-                Log::error('Kitchen notification error on adding items: ' . $e->getMessage());
+                Log::error('Staff/Kitchen notification error on adding items: ' . $e->getMessage());
             }
 
             // Update customer's session & cookie to active main order
