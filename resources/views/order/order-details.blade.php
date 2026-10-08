@@ -988,8 +988,8 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label>Amount <span class="text-danger">*</span></label>
-                        <input type="number" name="amount" id="paymentAmount" class="form-control" step="0.01" 
-                               max="{{ $balance }}" required placeholder="Enter amount">
+                        <input type="number" name="amount" id="paymentAmount" class="form-control" step="any" min="0" 
+                               max="{{ $balance }}" required placeholder="Enter amount" inputmode="decimal" onkeydown="if(['e','E','+','-'].includes(event.key)) event.preventDefault();">
                         <small class="text-muted">Balance Due: ₹{{ number_format($balance, 2) }}</small>
                     </div>
                     <div class="form-group">

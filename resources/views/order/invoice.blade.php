@@ -1661,7 +1661,6 @@ function generateWhatsappMessage() {
     }
     msg += `--------------------------------\n`;
     msg += `📄 *Download Bill PDF:*\n${downloadUrl}\n\n`;
-    msg += `🌐 *View Online Bill:*\n${viewUrl}\n\n`;
     msg += `🙏 Thank you for dining with us! Have a wonderful day.`;
     
     return msg;

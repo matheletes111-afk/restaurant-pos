@@ -1895,7 +1895,7 @@
         <div class="customer-meta-box">
           <div class="customer-input-grid">
             <input type="text" id="custName" class="c-input" placeholder="Customer Name (Optional)">
-            <input type="text" id="custPhone" class="c-input" placeholder="Phone No. (Optional)" maxlength="15">
+            <input type="tel" id="custPhone" class="c-input" placeholder="Phone No. (Optional)" maxlength="15" inputmode="numeric" onkeydown="if(['e','E','+','-','.'].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
           </div>
 
           <div class="dining-type-selector">
@@ -1979,7 +1979,7 @@
               </div>
               <div class="p-input-wrap">
                 <span>₹</span>
-                <input type="number" id="inputCashAmount" class="p-input" min="0" step="1" value="0">
+                <input type="number" id="inputCashAmount" class="p-input" min="0" step="any" value="0" inputmode="decimal" onkeydown="if(['e','E','+','-'].includes(event.key)) event.preventDefault();">
               </div>
             </div>
 
@@ -1990,7 +1990,7 @@
               </div>
               <div class="p-input-wrap">
                 <span>₹</span>
-                <input type="number" id="inputUpiAmount" class="p-input" min="0" step="1" value="0">
+                <input type="number" id="inputUpiAmount" class="p-input" min="0" step="any" value="0" inputmode="decimal" onkeydown="if(['e','E','+','-'].includes(event.key)) event.preventDefault();">
               </div>
             </div>
           </div>
@@ -3020,7 +3020,7 @@ $(document).ready(function() {
 
               <div class="item-disc-wrap" title="Discount % for this item">
                 <span class="item-disc-label">Disc</span>
-                <input type="number" class="item-disc-input" data-id="${item.id}" min="0" max="100" step="1" value="${discPercent}" placeholder="0">
+                <input type="number" class="item-disc-input" data-id="${item.id}" min="0" max="100" step="any" value="${discPercent}" placeholder="0" inputmode="decimal" onkeydown="if(['e','E','+','-'].includes(event.key)) event.preventDefault();">
                 <span class="item-disc-unit">%</span>
               </div>
 

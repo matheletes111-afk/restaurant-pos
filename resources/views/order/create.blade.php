@@ -85,7 +85,7 @@
               </div>
               <div class="col-md-6">
                 <label class="pos-form-label">Customer Mobile <span class="text-muted fw-normal">(Optional)</span></label>
-                <input type="tel" class="pos-form-control" id="customer_phone" placeholder="e.g. 9876543210">
+                <input type="tel" class="pos-form-control" id="customer_phone" placeholder="e.g. 9876543210" inputmode="numeric" onkeydown="if(['e','E','+','-','.'].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
               </div>
               <input type="hidden" id="table_id" value="{{ isset($table) && $table ? $table->id : '' }}">
             </div>
@@ -441,7 +441,7 @@
                   </label>
                   <div class="pos-pay-input-wrap">
                     <span class="pay-currency-prefix">₹</span>
-                    <input type="number" step="any" min="0" class="pos-pay-input cash-focus" id="cash_payment_amount" placeholder="0.00" value="0.00">
+                    <input type="number" step="any" min="0" class="pos-pay-input cash-focus" id="cash_payment_amount" placeholder="0.00" value="0.00" inputmode="decimal" onkeydown="if(['e','E','+','-'].includes(event.key)) event.preventDefault();">
                   </div>
                 </div>
 
@@ -451,7 +451,7 @@
                   </label>
                   <div class="pos-pay-input-wrap">
                     <span class="pay-currency-prefix">₹</span>
-                    <input type="number" step="any" min="0" class="pos-pay-input upi-focus" id="upi_payment_amount" placeholder="0.00" value="0.00">
+                    <input type="number" step="any" min="0" class="pos-pay-input upi-focus" id="upi_payment_amount" placeholder="0.00" value="0.00" inputmode="decimal" onkeydown="if(['e','E','+','-'].includes(event.key)) event.preventDefault();">
                   </div>
                 </div>
               </div>
@@ -812,14 +812,14 @@ function renderOrderTable() {
                 <td class="text-center">
                     <input type="number" class="item-disc-input item-discount-input" 
                            data-index="${index}" value="${item.itemDiscount || 0}" 
-                           min="0" max="100" step="1">
+                           min="0" max="100" step="any" inputmode="decimal" onkeydown="if(['e','E','+','-'].includes(event.key)) event.preventDefault();">
                     <span class="small text-muted">%</span>
                 </td>
                 <td class="text-center">
                     <div class="qty-stepper">
                         <button type="button" class="qty-step-btn decrease-qty" data-index="${index}">-</button>
                         <input type="number" class="qty-step-input qty-input" 
-                               data-index="${index}" value="${item.qty}" min="1">
+                               data-index="${index}" value="${item.qty}" min="1" step="1" inputmode="numeric" onkeydown="if(['e','E','+','-','.'].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                         <button type="button" class="qty-step-btn increase-qty" data-index="${index}">+</button>
                     </div>
                 </td>

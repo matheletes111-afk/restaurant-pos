@@ -132,17 +132,27 @@
         margin-bottom: 4px;
     }
     .metric-value {
-        font-size: 1.85rem;
+        font-size: 1.45rem;
         font-weight: 850;
         color: #0f172a;
-        line-height: 1.15;
+        line-height: 1.2;
         letter-spacing: -0.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        display: block;
     }
     .metric-value-sm {
-        font-size: 1.35rem;
+        font-size: 1.2rem;
         font-weight: 800;
         color: #0f172a;
         line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        display: block;
     }
     .metric-footer {
         margin-top: 14px;

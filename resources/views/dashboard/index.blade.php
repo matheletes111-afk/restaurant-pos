@@ -169,7 +169,7 @@
     .dash-stat-card {
         background: #ffffff;
         border-radius: 18px;
-        padding: 22px 24px;
+        padding: 16px 16px;
         border: 1px solid var(--dash-border-light);
         box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
         transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -203,23 +203,28 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
     }
     .dash-stat-label {
-        font-size: 0.74rem;
+        font-size: 0.72rem;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.04em;
         color: var(--dash-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-right: 4px;
     }
     .dash-stat-icon-wrap {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.25rem;
+        font-size: 1.1rem;
+        flex-shrink: 0;
     }
     .stat-rev-today .dash-stat-icon-wrap { background: rgba(255, 94, 20, 0.1); color: var(--dash-primary); }
     .stat-ord-today .dash-stat-icon-wrap { background: #ecfdf5; color: #10b981; }
@@ -230,19 +235,42 @@
 
     .dash-stat-val {
         font-family: 'Outfit', sans-serif;
-        font-size: 1.85rem;
+        font-size: 1.25rem;
         font-weight: 800;
         color: var(--dash-dark);
-        line-height: 1.15;
-        letter-spacing: -0.02em;
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        display: block;
+    }
+    @media (max-width: 1400px) {
+        .dash-stat-val {
+            font-size: 1.15rem;
+        }
+    }
+    @media (max-width: 1200px) {
+        .dash-stat-val {
+            font-size: 1.3rem;
+        }
+    }
+    @media (max-width: 576px) {
+        .dash-stat-val {
+            font-size: 1.1rem;
+        }
     }
     .dash-stat-footer {
-        margin-top: 10px;
-        font-size: 0.78rem;
+        margin-top: 8px;
+        font-size: 0.74rem;
         color: var(--dash-muted);
         display: flex;
         align-items: center;
         gap: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     /* 3. Modern Content Cards */
@@ -508,7 +536,7 @@
                         </div>
                     </div>
                     <div>
-                        <div class="dash-stat-val text-primary">₹{{ number_format($totalRevenueToday, 2) }}</div>
+                        <div class="dash-stat-val text-primary" title="₹{{ number_format($totalRevenueToday, 2) }}">₹{{ number_format($totalRevenueToday, 2) }}</div>
                         <div class="dash-stat-footer">
                             <i class="fa-solid fa-chart-line text-success"></i>
                             <span>Avg Order: ₹{{ number_format($avgOrderValue, 0) }}</span>
@@ -527,7 +555,7 @@
                         </div>
                     </div>
                     <div>
-                        <div class="dash-stat-val text-success">{{ number_format($totalOrdersToday) }}</div>
+                        <div class="dash-stat-val text-success" title="{{ number_format($totalOrdersToday) }} Orders">{{ number_format($totalOrdersToday) }}</div>
                         <div class="dash-stat-footer">
                             <i class="fa-solid fa-clock text-warning"></i>
                             <span>{{ $pendingOrders }} Pending / In-Kitchen</span>
@@ -546,7 +574,7 @@
                         </div>
                     </div>
                     <div>
-                        <div class="dash-stat-val" style="color: #6366f1;">₹{{ number_format($totalRevenueMonth, 2) }}</div>
+                        <div class="dash-stat-val" style="color: #6366f1;" title="₹{{ number_format($totalRevenueMonth, 2) }}">₹{{ number_format($totalRevenueMonth, 2) }}</div>
                         <div class="dash-stat-footer">
                             <i class="fa-solid fa-file-invoice text-muted"></i>
                             <span>{{ number_format($totalOrdersMonth) }} paid orders</span>
@@ -565,7 +593,7 @@
                         </div>
                     </div>
                     <div>
-                        <div class="dash-stat-val" style="color: #0284c7;">{{ $occupiedTables }} / {{ $totalTables }}</div>
+                        <div class="dash-stat-val" style="color: #0284c7;" title="{{ $occupiedTables }} of {{ $totalTables }} Occupied">{{ $occupiedTables }} / {{ $totalTables }}</div>
                         <div class="dash-stat-footer">
                             <i class="fa-solid fa-circle-dot text-info"></i>
                             <span>{{ $totalTables > 0 ? round(($occupiedTables / $totalTables) * 100) : 0 }}% tables occupied</span>
@@ -584,7 +612,7 @@
                         </div>
                     </div>
                     <div>
-                        <div class="dash-stat-val" style="color: #8b5cf6;">{{ number_format($totalDishes) }}</div>
+                        <div class="dash-stat-val" style="color: #8b5cf6;" title="{{ number_format($totalDishes) }} Active Dishes">{{ number_format($totalDishes) }}</div>
                         <div class="dash-stat-footer">
                             <span class="badge bg-success bg-opacity-10 text-success p-1 rounded font-monospace">{{ $totalVeg }} Veg</span>
                             <span class="badge bg-danger bg-opacity-10 text-danger p-1 rounded font-monospace">{{ $totalNonVeg }} Non-Veg</span>
@@ -603,7 +631,7 @@
                         </div>
                     </div>
                     <div>
-                        <div class="dash-stat-val" style="color: #d97706;">{{ number_format($totalStaff) }}</div>
+                        <div class="dash-stat-val" style="color: #d97706;" title="{{ number_format($totalStaff) }} Team Members">{{ number_format($totalStaff) }}</div>
                         <div class="dash-stat-footer">
                             <i class="fa-solid fa-shield-halved text-success"></i>
                             <span>Authorized Team</span>
