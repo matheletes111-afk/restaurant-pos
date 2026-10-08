@@ -557,8 +557,8 @@
                     <div>
                         <div class="dash-stat-val text-success" title="{{ number_format($totalOrdersToday) }} Orders">{{ number_format($totalOrdersToday) }}</div>
                         <div class="dash-stat-footer">
-                            <i class="fa-solid fa-clock text-warning"></i>
-                            <span>{{ $pendingOrders }} Pending / In-Kitchen</span>
+                            <i class="fa-solid fa-circle-check text-success"></i>
+                            <span>Total Bills Generated</span>
                         </div>
                     </div>
                 </div>
