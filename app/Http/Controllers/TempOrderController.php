@@ -53,19 +53,28 @@ class TempOrderController extends Controller
         $sessionKey = "customer_qr_order_{$restaurant_id}_{$table_id}";
         $savedOrderData = session($sessionKey) ?? session('customer_qr_order');
         $savedOrderId = null;
+        $savedOrderType = null;
 
         if (is_array($savedOrderData)) {
             $savedOrderId = $savedOrderData['id'] ?? null;
+            $savedOrderType = $savedOrderData['type'] ?? null;
         } elseif (!empty($savedOrderData)) {
             $savedOrderId = $savedOrderData;
         }
 
         if (!$savedOrderId) {
             $savedOrderId = session('customer_qr_order_id');
+            $savedOrderType = session('customer_qr_order_type');
         }
 
         if (!$savedOrderId) {
-            $savedOrderId = request()->cookie($sessionKey) ?? request()->cookie('customer_qr_order_id');
+            $cookieData = request()->cookie($sessionKey) ?? request()->cookie('customer_qr_order_id');
+            if (is_array($cookieData)) {
+                $savedOrderId = $cookieData['id'] ?? null;
+                $savedOrderType = $cookieData['type'] ?? null;
+            } elseif (!empty($cookieData)) {
+                $savedOrderId = $cookieData;
+            }
         }
 
         if (!$savedOrderId && request()->has('order_id')) {
@@ -79,73 +88,111 @@ class TempOrderController extends Controller
         $pendingTempOrder = null;
 
         if ($savedOrderId) {
-            // First check if it's an OrderManage record (by primary key ID or string order_id)
-            $mainOrder = OrderManage::with(['orderItems.subcategory', 'table'])
-                ->where('restaurant_id', $restaurant_id)
-                ->where(function($q) use ($savedOrderId) {
-                    if (is_numeric($savedOrderId)) {
-                        $q->where('id', $savedOrderId);
-                    } else {
-                        $q->where('order_id', $savedOrderId)->orWhere('id', $savedOrderId);
-                    }
-                })
-                ->first();
+            $isCompleteStatus = function($order) {
+                if (!$order) return true;
+                $completeFlag = strtoupper(trim((string)($order->order_complete ?? '')));
+                $payStatus = strtoupper(trim((string)($order->payment_status ?? '')));
+                $ordStatus = strtoupper(trim((string)($order->order_status ?? '')));
+
+                return (
+                    $completeFlag === 'DONE' ||
+                    $completeFlag === '1' ||
+                    $completeFlag === 'YES' ||
+                    $payStatus === 'PAID' ||
+                    in_array($ordStatus, ['COMPLETED', 'CANCELLED', 'REJECTED', 'DELIVERED', 'CLOSED', 'SERVED', 'DONE'])
+                );
+            };
+
+            $mainOrder = null;
+            $tempOrder = null;
+
+            if ($savedOrderType === 'main') {
+                $mainOrder = OrderManage::with(['orderItems.subcategory', 'table'])
+                    ->where('restaurant_id', $restaurant_id)
+                    ->where('table_id', $table_id)
+                    ->where(function($q) use ($savedOrderId) {
+                        if (is_numeric($savedOrderId)) {
+                            $q->where('id', $savedOrderId);
+                        } else {
+                            $q->where('order_id', $savedOrderId)->orWhere('id', $savedOrderId);
+                        }
+                    })
+                    ->first();
+            } elseif ($savedOrderType === 'temp') {
+                $tempOrder = TempOrder::with(['items.menuItem', 'table_details'])
+                    ->where('restaurant_id', $restaurant_id)
+                    ->where('table_id', $table_id)
+                    ->find($savedOrderId);
+            } else {
+                // If type is not explicitly specified, check TempOrder first for this table
+                $tempOrder = TempOrder::with(['items.menuItem', 'table_details'])
+                    ->where('restaurant_id', $restaurant_id)
+                    ->where('table_id', $table_id)
+                    ->find($savedOrderId);
+
+                if (!$tempOrder) {
+                    $mainOrder = OrderManage::with(['orderItems.subcategory', 'table'])
+                        ->where('restaurant_id', $restaurant_id)
+                        ->where('table_id', $table_id)
+                        ->where(function($q) use ($savedOrderId) {
+                            if (is_numeric($savedOrderId)) {
+                                $q->where('id', $savedOrderId);
+                            } else {
+                                $q->where('order_id', $savedOrderId)->orWhere('id', $savedOrderId);
+                            }
+                        })
+                        ->first();
+                }
+            }
 
             if ($mainOrder) {
-                // If restaurant completed or cancelled the order, remove it from session so customer can freshly order
-                $isCompleted = (
-                    $mainOrder->order_complete === 'DONE' ||
-                    $mainOrder->payment_status === 'PAID' ||
-                    in_array(strtoupper($mainOrder->order_status ?? ''), ['COMPLETED', 'CANCELLED', 'REJECTED'])
-                );
-
-                if ($isCompleted) {
+                if ($isCompleteStatus($mainOrder)) {
                     $this->clearCustomerOrderSession($restaurant_id, $table_id);
                     $activeOrder = null;
                 } else {
                     $activeOrder = $mainOrder;
                 }
-            } else {
-                // Check if it's a TempOrder record
-                $tempOrder = TempOrder::with(['items.menuItem', 'table_details'])
-                    ->where('restaurant_id', $restaurant_id)
-                    ->find($savedOrderId);
-
-                if ($tempOrder) {
-                    if (strtoupper($tempOrder->order_status ?? '') === 'APPROVED' && $tempOrder->order_id) {
-                        $linkedOrder = OrderManage::with(['orderItems.subcategory', 'table'])
-                            ->where('restaurant_id', $restaurant_id)
-                            ->find($tempOrder->order_id);
-
-                        if ($linkedOrder) {
-                            $isCompleted = (
-                                $linkedOrder->order_complete === 'DONE' ||
-                                $linkedOrder->payment_status === 'PAID' ||
-                                in_array(strtoupper($linkedOrder->order_status ?? ''), ['COMPLETED', 'CANCELLED', 'REJECTED'])
-                            );
-
-                            if ($isCompleted) {
-                                $this->clearCustomerOrderSession($restaurant_id, $table_id);
-                                $activeOrder = null;
+            } elseif ($tempOrder) {
+                $tempStatus = strtoupper(trim((string)($tempOrder->order_status ?? '')));
+                if ($tempStatus === 'APPROVED' && $tempOrder->order_id) {
+                    $linkedOrder = OrderManage::with(['orderItems.subcategory', 'table'])
+                        ->where('restaurant_id', $restaurant_id)
+                        ->where('table_id', $table_id)
+                        ->where(function($q) use ($tempOrder) {
+                            if (is_numeric($tempOrder->order_id)) {
+                                $q->where('id', $tempOrder->order_id)->orWhere('order_id', $tempOrder->order_id);
                             } else {
-                                $activeOrder = $linkedOrder;
-                                // Update session to point to the active main order
-                                session([
-                                    'customer_qr_order_id' => $linkedOrder->id,
-                                    'customer_qr_order_type' => 'main',
-                                    $sessionKey => ['id' => $linkedOrder->id, 'type' => 'main'],
-                                ]);
+                                $q->where('order_id', $tempOrder->order_id)->orWhere('id', $tempOrder->order_id);
                             }
+                        })
+                        ->first();
+
+                    if ($linkedOrder) {
+                        if ($isCompleteStatus($linkedOrder)) {
+                            $this->clearCustomerOrderSession($restaurant_id, $table_id);
+                            $activeOrder = null;
+                        } else {
+                            $activeOrder = $linkedOrder;
+                            session([
+                                'customer_qr_order_id' => $linkedOrder->id,
+                                'customer_qr_order_type' => 'main',
+                                $sessionKey => ['id' => $linkedOrder->id, 'type' => 'main'],
+                            ]);
                         }
-                    } elseif (in_array(strtoupper($tempOrder->order_status ?? ''), ['CANCELLED', 'REJECTED'])) {
+                    } else {
                         $this->clearCustomerOrderSession($restaurant_id, $table_id);
-                        $pendingTempOrder = null;
-                    } elseif (strtoupper($tempOrder->order_status ?? '') === 'PENDING') {
-                        $pendingTempOrder = $tempOrder;
+                        $activeOrder = null;
                     }
+                } elseif (in_array($tempStatus, ['CANCELLED', 'REJECTED', 'COMPLETED', 'DONE'])) {
+                    $this->clearCustomerOrderSession($restaurant_id, $table_id);
+                    $pendingTempOrder = null;
+                } elseif ($tempStatus === 'PENDING') {
+                    $pendingTempOrder = $tempOrder;
                 } else {
                     $this->clearCustomerOrderSession($restaurant_id, $table_id);
                 }
+            } else {
+                $this->clearCustomerOrderSession($restaurant_id, $table_id);
             }
         }
 
@@ -411,43 +458,44 @@ public function store(Request $request)
             $orderStatus = strtoupper($tempOrder->order_status ?? 'PENDING');
             $items = $tempOrder->items ?? collect();
 
-            $computedSubtotal = 0;
-            $computedTaxable = 0;
-            $computedGst = 0;
-            $computedDiscount = 0;
+            $subtotal = floatval($tempOrder->total_amount ?? 0);
+            $taxableAmount = floatval($tempOrder->taxable_amount ?? 0);
+            $gstAmount = floatval($tempOrder->gst_amount ?? 0);
+            $discount = floatval($tempOrder->discount ?? 0);
+            $grandTotal = floatval($tempOrder->grand_total ?? ($taxableAmount + $gstAmount));
 
-            foreach ($items as $itm) {
-                $addons = $itm->addons_list ?? [];
-                $addonsCost = 0;
-                if (!empty($addons) && is_array($addons)) {
-                    foreach ($addons as $a) {
-                        $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+            // Fallback calculation only if tempOrder stored totals were 0 or missing
+            if ($grandTotal <= 0 && $items->isNotEmpty()) {
+                $computedSubtotal = 0;
+                $computedTaxable = 0;
+                $computedGst = 0;
+                $computedDiscount = 0;
+
+                foreach ($items as $itm) {
+                    $addons = $itm->addons_list ?? [];
+                    $addonsCost = 0;
+                    if (!empty($addons) && is_array($addons)) {
+                        foreach ($addons as $a) {
+                            $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                        }
                     }
+                    $isAddonItem = empty($itm->subcategory_id);
+                    $iPrice = floatval($itm->price);
+                    $iQty = max(1, intval($itm->quantity ?? 1));
+                    $iDisc = floatval($itm->item_discount_percentage ?? 0);
+                    $iDiscPrice = floatval($itm->discounted_price ?? ($iPrice - ($iPrice * $iDisc / 100)));
+
+                    $lineOrig = $isAddonItem ? ($iPrice * $iQty) : (($iPrice * $iQty) + $addonsCost);
+                    $lineTax = $isAddonItem ? ($iDiscPrice * $iQty) : (($iDiscPrice * $iQty) + $addonsCost);
+                    $gstRate = floatval($itm->gst_rate ?? 0);
+                    $lineGst = ($lineTax * $gstRate) / 100;
+
+                    $computedSubtotal += $lineOrig;
+                    $computedTaxable += $lineTax;
+                    $computedGst += $lineGst;
+                    $computedDiscount += ($iPrice * $iDisc / 100) * $iQty;
                 }
-                $isAddonItem = empty($itm->subcategory_id);
-                $iPrice = floatval($itm->price);
-                $iQty = max(1, intval($itm->quantity ?? 1));
-                $iDisc = floatval($itm->item_discount_percentage ?? 0);
-                $iDiscPrice = floatval($itm->discounted_price ?? ($iPrice - ($iPrice * $iDisc / 100)));
 
-                $lineOrig = $isAddonItem ? ($iPrice * $iQty) : (($iPrice * $iQty) + $addonsCost);
-                $lineTax = $isAddonItem ? ($iDiscPrice * $iQty) : (($iDiscPrice * $iQty) + $addonsCost);
-                $gstRate = floatval($itm->gst_rate ?? 0);
-                $lineGst = ($lineTax * $gstRate) / 100;
-
-                $computedSubtotal += $lineOrig;
-                $computedTaxable += $lineTax;
-                $computedGst += $lineGst;
-                $computedDiscount += ($iPrice * $iDisc / 100) * $iQty;
-            }
-
-            if ($items->isEmpty()) {
-                $grandTotal = 0;
-                $subtotal = 0;
-                $taxableAmount = 0;
-                $gstAmount = 0;
-                $discount = 0;
-            } else {
                 $grandTotal = $computedTaxable + $computedGst;
                 $subtotal = $computedSubtotal;
                 $taxableAmount = $computedTaxable;

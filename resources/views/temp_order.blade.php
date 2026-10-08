@@ -3500,6 +3500,7 @@ $(document).on('click', '.addStandaloneAddonBtn, .increaseStandaloneAddonQty', f
 /* Add to cart from dish card */
 $(document).on('click', '.addItemBtn', function(e) {
     e.preventDefault();
+    e.stopPropagation();
     let itemId       = $(this).data('id');
     let rawAddons    = $(this).data('addons');
     let addons       = (typeof rawAddons === 'string') ? JSON.parse(rawAddons || '[]') : (rawAddons || []);

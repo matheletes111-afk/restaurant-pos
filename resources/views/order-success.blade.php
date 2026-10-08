@@ -883,7 +883,7 @@
                             $itemTaxable = $isStandaloneAddon ? ($discPrice * $qty) : (($discPrice * $qty) + $addonsCost);
                             $itemGstRate = floatval($itm->gst_rate ?? 0);
                             $itemGst = ($itemTaxable * $itemGstRate) / 100;
-                            $total = $isGstBill ? ($itemTaxable + $itemGst) : ($isStandaloneAddon ? ($basePrice * $qty) : (($basePrice * $qty) + $addonsCost));
+                            $total = floatval($itm->total_amount ?: ($isGstBill ? ($itemTaxable + $itemGst) : ($isStandaloneAddon ? ($basePrice * $qty) : (($basePrice * $qty) + $addonsCost))));
                             $itemStatus = strtoupper($itm->order_status ?? 'PENDING');
                             $kotNo = $itm->kot_no ?? null;
                         @endphp
