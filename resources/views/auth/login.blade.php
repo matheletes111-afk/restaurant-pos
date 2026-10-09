@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    @include('includes.gtm_head')
     <title>Restaurant POS Login • Bill&Bite</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Sign in to Bill&amp;Bite to manage your restaurant's orders, billing, inventory, and staff from one dashboard.">
     <link rel="shortcut icon" href="{{ asset('fav_web.png') }}">
 
     <!-- Google Fonts -->
@@ -899,6 +901,7 @@
     </style>
 </head>
 <body>
+@include('includes.gtm_body')
 
 <!-- High-Tech Loading Spinner Overlay -->
 <div id="loading-overlay">

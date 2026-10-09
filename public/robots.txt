@@ -1,0 +1,27 @@
+User-agent: *
+Disallow: /dashboard
+Disallow: /crm
+Disallow: /inventory/
+Disallow: /kitchen
+Disallow: /kitchen-panel
+Disallow: /manage-menu-category
+Disallow: /manage-restaurant
+Disallow: /manage-role
+Disallow: /manage-staff
+Disallow: /manage-units
+Disallow: /order-management-dashboard
+Disallow: /order-report
+Disallow: /products
+Disallow: /purchases
+Disallow: /report-order-analysis
+Disallow: /report-order-management
+Disallow: /report-top-analysis
+Disallow: /restaurant
+Disallow: /stock-outs
+Disallow: /subscriptions
+Disallow: /suppliers
+Disallow: /table-manage
+Disallow: /users
+Disallow: /item-gst-summary
+
+Sitemap: https://billnbite.com/sitemap.xml

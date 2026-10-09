@@ -1,0 +1,10 @@
+# Bill&Bite
+
+> Bill&Bite is a complete restaurant management system (SaaS) offering QR-code table ordering, point-of-sale, kitchen display, inventory and supplier management, staff management, GST billing, and subscription-based plans for restaurants.
+
+## Pages
+
+- [Home](https://billnbite.com/): Product overview, features, and pricing plans.
+- [Register your restaurant](https://billnbite.com/register-restaurant): Sign up a new restaurant on the platform.
+- [Terms and Conditions](https://billnbite.com/terms-and-conditions): Terms of service.
+- [Privacy Policy](https://billnbite.com/privacy-policy): How user and restaurant data is handled.
