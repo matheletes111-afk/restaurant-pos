@@ -70,7 +70,7 @@
         const toastId = 'toast_' + ord.id + '_' + Date.now();
 
         const toastHtml = `
-            <div id="${toastId}" class="qr-toast-card p-3 mb-2" role="alert" style="pointer-events: auto; cursor: pointer;" onclick="window.location.href='${ord.view_url}'">
+            <div id="${toastId}" class="qr-toast-card p-3 mb-2" role="alert" style="pointer-events: auto; ${isAdditional ? 'cursor: default;' : 'cursor: pointer;'}" ${isAdditional ? '' : `onclick="window.location.href='${ord.view_url}'"`}>
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="d-flex align-items-center gap-2">
                         <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 106, 0, 0.12); display: flex; align-items: center; justify-content: center; color: #ff6a00;">
@@ -158,10 +158,10 @@
             if (isAdditional) {
                 html += `
                     <a
-                        href="${ord.view_url}"
+                        href="javascript:void(0);"
                         class="list-group-item list-group-item-action px-3 py-2.5 border-bottom qr-notif-item ${isUnread ? 'qr-item-unread' : ''}"
                         data-order-id="${ord.id}"
-                        style="text-decoration: none; transition: background 0.2s; cursor: pointer;"
+                        style="text-decoration: none; transition: background 0.2s; cursor: default;"
                     >
                         <div class="d-flex align-items-center justify-content-between mb-1">
                             <div class="d-flex align-items-center gap-1.5">
@@ -286,10 +286,12 @@
             body: JSON.stringify({ _token: csrfToken })
         }).then(res => {
             if (!res.ok) {
-                fetch(`${markReadBaseUrl}/${orderId}`);
+                fetch(`${markReadBaseUrl}/${orderId}`).then(() => fetchQrNotifications()).catch(() => {});
+            } else {
+                fetchQrNotifications();
             }
         }).catch(() => {
-            fetch(`${markReadBaseUrl}/${orderId}`).catch(() => {});
+            fetch(`${markReadBaseUrl}/${orderId}`).then(() => fetchQrNotifications()).catch(() => {});
         });
     }
 
@@ -302,6 +304,9 @@
         if (item) {
             const orderId = item.getAttribute('data-order-id');
             if (orderId) {
+                item.classList.remove('qr-item-unread');
+                const dot = item.querySelector('.qr-unread-dot');
+                if (dot) dot.remove();
                 handleMarkSingleRead(orderId);
             }
         }

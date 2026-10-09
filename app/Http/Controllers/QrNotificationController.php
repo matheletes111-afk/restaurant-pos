@@ -133,7 +133,7 @@ class QrNotificationController extends Controller
                 'created_at_time' => $latestItem && $latestItem->created_at ? $latestItem->created_at->format('h:i A') : ($mainOrder->updated_at ? $mainOrder->updated_at->format('h:i A') : ''),
                 'created_at_date' => $latestItem && $latestItem->created_at ? $latestItem->created_at->format('M d') : ($mainOrder->updated_at ? $mainOrder->updated_at->format('M d') : ''),
                 'timestamp' => $latestItem && $latestItem->created_at ? $latestItem->created_at->timestamp : ($mainOrder->updated_at ? $mainOrder->updated_at->timestamp : 0),
-                'view_url' => url('order-edit/' . $mainOrder->id),
+                'view_url' => 'javascript:void(0);',
             ]);
         }
 

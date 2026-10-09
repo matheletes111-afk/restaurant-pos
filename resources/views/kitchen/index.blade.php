@@ -701,22 +701,7 @@ $(document).ready(function() {
     location.reload();
   });
 
-  // 7. Auto-Sync Polling (checks every 15 seconds)
-  setInterval(function() {
-    $.ajax({
-      url: "{{ route('kitchen.orders.refresh') }}",
-      method: "GET",
-      success: function(res) {
-        if (res.new_orders && res.count > 0) {
-          playChime();
-          showToast(`🔔 ${res.count} new kitchen order(s) received! Refreshing...`, 'info');
-          setTimeout(() => location.reload(), 1500);
-        }
-      }
-    });
-  }, 15000);
-
-  // 8. Direct KOT Ticket Thermal Printing
+  // 7. Direct KOT Ticket Thermal Printing
   $(document).on('click', '.print-kot-trigger', function(e) {
     e.preventDefault();
     const btn = $(this);

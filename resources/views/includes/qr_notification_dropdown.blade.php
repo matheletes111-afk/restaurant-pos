@@ -88,7 +88,7 @@
               'grand_total' => (float)$mainOrd->grand_total,
               'order_status' => 'NEW ITEMS',
               'is_read' => false,
-              'view_url' => url('order-edit/' . $mainOrd->id),
+              'view_url' => 'javascript:void(0);',
               'created_at' => $latestItem && $latestItem->created_at ? $latestItem->created_at : $mainOrd->updated_at,
           ]);
       }
@@ -154,10 +154,10 @@
           $isAdditional = ($ord->notif_type ?? '') === 'additional_items';
         @endphp
         <a
-          href="{{ $ord->view_url }}"
+          href="{{ $isAdditional ? 'javascript:void(0);' : $ord->view_url }}"
           class="list-group-item list-group-item-action px-3 py-2.5 border-bottom qr-notif-item {{ $isUnread ? 'qr-item-unread' : '' }}"
           data-order-id="{{ $ord->id }}"
-          style="text-decoration: none; transition: background 0.2s;"
+          style="text-decoration: none; transition: background 0.2s; {{ $isAdditional ? 'cursor: default;' : '' }}"
         >
           <div class="d-flex align-items-center justify-content-between mb-1">
             <div class="d-flex align-items-center gap-1.5">

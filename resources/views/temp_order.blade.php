@@ -2624,21 +2624,6 @@
                     <span class="tray-item-title">
                       {{ $pName }}
                     </span>
-                    @if(!empty($actItm->addons_list) && !$isPrevStandaloneAddon)
-                      <div class="tray-addon-chips-wrap" style="margin-top: 2px;">
-                        @foreach($actItm->addons_list as $ad)
-                          @php
-                            $adQty = $ad['qty'] ?? $ad['quantity'] ?? 1;
-                            $adPrice = floatval($ad['price'] ?? 0);
-                          @endphp
-                          <span class="tray-addon-chip" style="font-size: 0.68rem; padding: 1px 6px; display: inline-flex; align-items: center; gap: 3px;">
-                            <span>+ {{ $ad['name'] ?? '' }}</span>
-                            <span style="color: #9a3412;">(₹{{ number_format($adPrice, 2) }})</span>
-                            <span style="background: #ffedd5; color: #c2410c; font-weight: 800; font-size: 0.65rem; padding: 0 4px; border-radius: 3px; border: 1px solid #fed7aa;">x{{ $adQty }}</span>
-                          </span>
-                        @endforeach
-                      </div>
-                    @endif
                     @if(!empty($actItm->kot_no))
                       <span class="kot-badge" style="font-size: 0.7rem; padding: 2px 7px;"><i class="fas fa-receipt"></i> {{ $actItm->kot_no }}</span>
                     @endif
@@ -3261,68 +3246,7 @@ function refreshTable() {
         totalDiscount   += details.discountAmount;
 
         let isAddon = item.is_addon || String(item.id).startsWith('addon_');
-
         let addonsHtml = '';
-        if (!isAddon) {
-            let available = item.available_addons || [];
-            if (typeof available === 'string') {
-                try { available = JSON.parse(available); } catch(e) { available = []; }
-            }
-            available = (available || []).filter(a => a && a.status !== 'D' && a.status !== 'I' && (!item.name || a.name.toLowerCase().trim() !== item.name.toLowerCase().trim()));
-
-            let hasAvailable = (available && available.length > 0);
-            let hasAttached = (item.addons && item.addons.length > 0);
-
-            if (hasAttached) {
-                let addonRows = item.addons.map(a => {
-                    let aPrice = parseFloat(a.price) || 0;
-                    let aQty = a.qty || 1;
-                    let aTotal = aPrice * aQty;
-                    let aVeg = (a.food_type || 'veg').toLowerCase().includes('veg') && !(a.food_type || '').toLowerCase().includes('non');
-
-                    return `
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 3px 0; border-bottom: 1px dashed rgba(254, 215, 170, 0.6); font-size: 0.74rem;">
-                            <div style="display: flex; align-items: center; gap: 4px; min-width: 0;">
-                                <span class="fssai-box ${aVeg ? 'fssai-veg' : 'fssai-nonveg'}" style="width: 10px; height: 10px; display: inline-flex; border-width: 1px; flex-shrink: 0;"><span class="fssai-symbol" style="width: 4px; height: 4px;"></span></span>
-                                <span style="font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(a.name)}</span>
-                                <span style="color: var(--text-muted); font-weight: 600; font-size: 0.7rem;">(+₹${aPrice.toFixed(2)})</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
-                                <div style="display: inline-flex; align-items: center; background: #ffffff; border: 1px solid #fed7aa; border-radius: 4px; padding: 1px 3px; gap: 3px;">
-                                    <button type="button" class="btn-addon-chip-dec" data-cart-index="${i}" data-addon-id="${a.id}" title="Decrease add-on quantity" style="border:none; background:transparent; font-weight:800; color:#ea580c; font-size:0.8rem; cursor:pointer; line-height:1; padding:0 2px;">−</button>
-                                    <span style="font-weight: 800; font-size: 0.74rem; color: var(--text-main); min-width: 12px; text-align: center;">${aQty}</span>
-                                    <button type="button" class="btn-addon-chip-inc" data-cart-index="${i}" data-addon-id="${a.id}" title="Increase add-on quantity" style="border:none; background:transparent; font-weight:800; color:#ea580c; font-size:0.8rem; cursor:pointer; line-height:1; padding:0 2px;">+</button>
-                                </div>
-                                <span style="font-weight: 800; color: #ea580c; min-width: 48px; text-align: right;">₹${aTotal.toFixed(2)}</span>
-                                <button type="button" class="btn-remove-tray-addon" data-cart-index="${i}" data-addon-id="${a.id}" title="Remove add-on" style="background:transparent; border:none; color:#94a3b8; font-size:0.95rem; line-height:1; cursor:pointer; padding:0 2px;">&times;</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-                addonsHtml = `
-                    <div style="background: #fffaf7; border: 1px solid #fed7aa; border-radius: 8px; padding: 6px 10px; margin-top: 6px; max-width: 380px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                            <span style="font-size: 0.7rem; font-weight: 800; color: #ea580c; text-transform: uppercase; letter-spacing: 0.04em;">
-                                <i class="fas fa-puzzle-piece me-1"></i> Add-ons
-                            </span>
-                            <button type="button" class="btn-tray-addon-manage openTrayAddonBtn" data-cart-index="${i}" style="font-size: 0.68rem; padding: 1px 7px;">
-                                <i class="fas fa-plus"></i> Add more
-                            </button>
-                        </div>
-                        ${addonRows}
-                    </div>
-                `;
-            } else if (hasAvailable) {
-                addonsHtml = `
-                    <div class="mt-1">
-                        <button type="button" class="btn-tray-addon-manage openTrayAddonBtn" data-cart-index="${i}" title="Customize dish with add-ons">
-                            <i class="fas fa-plus"></i> Add-on
-                        </button>
-                    </div>
-                `;
-            }
-        }
 
         let row = `
             <tr>

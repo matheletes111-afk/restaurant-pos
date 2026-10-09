@@ -588,10 +588,55 @@ class OrderManagementController extends Controller
             
             $order->save();
 
-            // Get restaurant GST info for new items
+            // Get restaurant GST info for new/updated items
             $restaurant = RestaurantMaster::find(auth()->user()->restaurant_id);
             $restaurantGstPercentage = $restaurant->gst_percentage ?? 0;
             $isGstRegistered = !empty($restaurant->gstin);
+
+            // Update discounts on existing order items if provided
+            if ($request->has('existing_items') && is_array($request->existing_items)) {
+                foreach ($request->existing_items as $exItem) {
+                    $exId = $exItem['id'] ?? null;
+                    if (!$exId) continue;
+                    $itemModel = OrderItems::where('id', $exId)
+                        ->where('order_id', $id)
+                        ->first();
+                    if ($itemModel) {
+                        $newDiscount = max(0, min(100, floatval($exItem['item_discount'] ?? 0)));
+                        $basePrice = floatval($itemModel->price);
+                        $qty = max(1, intval($itemModel->quantity));
+                        $isAddonItem = empty($itemModel->subcategory_id);
+                        
+                        $addonsCost = 0;
+                        if (!empty($itemModel->addons_list) && is_array($itemModel->addons_list)) {
+                            foreach ($itemModel->addons_list as $a) {
+                                $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                            }
+                        }
+
+                        $calc = $this->calculateItemGST(
+                            $basePrice,
+                            $qty,
+                            $newDiscount,
+                            $restaurantGstPercentage,
+                            $isGstRegistered,
+                            $addonsCost,
+                            $isAddonItem
+                        );
+
+                        $itemModel->item_discount_percentage = $calc['item_discount_percentage'];
+                        $itemModel->discounted_price = $calc['discounted_price'];
+                        $itemModel->taxable_amount = $calc['taxable_amount'];
+                        $itemModel->gst_rate = $calc['gst_rate'];
+                        $itemModel->gst_amount = $calc['gst_amount'];
+                        $itemModel->cgst_amount = $calc['cgst_amount'];
+                        $itemModel->sgst_amount = $calc['sgst_amount'];
+                        $itemModel->igst_amount = $calc['igst_amount'];
+                        $itemModel->total_amount = $calc['total_amount'];
+                        $itemModel->save();
+                    }
+                }
+            }
 
             // Handle new item additions with discount
             if ($request->has('order_items') && is_array($request->order_items) && count($request->order_items) > 0) {

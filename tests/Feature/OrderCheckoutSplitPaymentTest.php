@@ -405,4 +405,76 @@ class OrderCheckoutSplitPaymentTest extends TestCase
         ]);
         $this->assertStringContainsString('cannot exceed the remaining balance due', $response->json('message'));
     }
+
+    public function test_edit_order_updates_existing_items_discounts_and_recalculates_totals()
+    {
+        list($restaurant, $user, $dish1, $dish2, $table) = $this->setupRestaurantAndUser();
+
+        $order = OrderManage::create([
+            'order_id' => 'ORD-DISC-001',
+            'customer_name' => 'Discount Test Guest',
+            'order_type' => 'DINE_IN',
+            'table_id' => $table->id,
+            'total_amount' => 200.00,
+            'taxable_amount' => 200.00,
+            'gst_amount' => 10.00,
+            'grand_total' => 210.00,
+            'round_off' => 0.00,
+            'discount' => 0.00,
+            'discount_percentage' => 0,
+            'is_gst_bill' => 'YES',
+            'restaurant_gst_percentage' => 5,
+            'amount_paid' => 0.00,
+            'payment_status' => 'PENDING',
+            'order_complete' => 'PENDING',
+            'order_status' => 'PENDING',
+            'restaurant_id' => $restaurant->id,
+            'user_id' => $user->id,
+        ]);
+
+        $item = OrderItems::create([
+            'order_id' => $order->id,
+            'subcategory_id' => $dish1->id,
+            'quantity' => 2,
+            'price' => 200.00,
+            'discounted_price' => 200.00,
+            'item_discount_percentage' => 0,
+            'taxable_amount' => 400.00,
+            'gst_rate' => 5,
+            'gst_amount' => 20.00,
+            'total_amount' => 420.00,
+            'restaurant_id' => $restaurant->id,
+            'user_id' => $user->id,
+            'order_status' => 'PENDING',
+            'is_new' => 0,
+            'kot_no' => 'KOT-261005-001'
+        ]);
+
+        // Put 10% discount on the existing item
+        $updatePayload = [
+            'order_complete' => 'PENDING',
+            'existing_items' => [
+                [
+                    'id' => $item->id,
+                    'item_discount' => 10,
+                ]
+            ]
+        ];
+
+        $response = $this->actingAs($user)->postJson(route('order.update', $order->id), $updatePayload);
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+
+        $item->refresh();
+        $this->assertEquals(10, $item->item_discount_percentage);
+        $this->assertEquals(180.00, $item->discounted_price);
+        $this->assertEquals(360.00, $item->taxable_amount);
+        $this->assertEquals(18.00, $item->gst_amount);
+        $this->assertEquals(378.00, $item->total_amount);
+
+        $order->refresh();
+        $this->assertEquals(360.00, $order->taxable_amount);
+        $this->assertEquals(18.00, $order->gst_amount);
+        $this->assertEquals(378.00, $order->grand_total);
+    }
 }

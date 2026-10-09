@@ -321,7 +321,12 @@
                       $gstAmount = $item->gst_amount ?? (($taxableAmount * ($item->gst_rate ?? 0)) / 100);
                       $itemTotal = $item->total_amount ?? ($taxableAmount + $gstAmount);
                     @endphp
-                    <tr data-item-id="{{ $item->id }}">
+                    <tr data-item-id="{{ $item->id }}"
+                        data-base-price="{{ $item->price }}"
+                        data-qty="{{ $item->quantity }}"
+                        data-addons-cost="{{ $addonsCost }}"
+                        data-gst-rate="{{ $item->gst_rate ?? ($is_gst_registered ? $restaurant_gst_percentage : 0) }}"
+                        data-is-addon="{{ $isAddon ? '1' : '0' }}">
                       <td>
                         <strong class="text-dark">{{ $item->subcategory->name ?? 'Dish Item' }}</strong>
                         @if(!empty($item->kot_no))
@@ -367,15 +372,20 @@
                         @endif
                       </td>
                       <td class="text-end">₹{{ number_format($item->price, 2) }}</td>
-                      <td class="text-center">{{ $itemDiscount }}%</td>
+                      <td class="text-center">
+                        <input type="number" class="item-disc-input existing-item-discount-input" 
+                               data-id="{{ $item->id }}" value="{{ $itemDiscount }}" 
+                               min="0" max="100" step="any" inputmode="decimal" onkeydown="if(['e','E','+','-'].includes(event.key)) event.preventDefault();">
+                        <span class="small text-muted">%</span>
+                      </td>
                       <td class="text-center fw-bold">{{ $item->quantity }}</td>
-                      <td class="text-end">₹{{ number_format($discountedPrice, 2) }}</td>
-                      <td class="text-end">₹{{ number_format($taxableAmount, 2) }}</td>
+                      <td class="text-end existing-disc-price">₹{{ number_format($discountedPrice, 2) }}</td>
+                      <td class="text-end existing-taxable">₹{{ number_format($taxableAmount, 2) }}</td>
                       @if(isset($restaurant_gstin) && $restaurant_gstin)
                         <td class="text-center">{{ $item->gst_rate ?? 0 }}%</td>
-                        <td class="text-end">₹{{ number_format($gstAmount, 2) }}</td>
+                        <td class="text-end existing-gst-amt">₹{{ number_format($gstAmount, 2) }}</td>
                       @endif
-                      <td class="text-end fw-bold text-dark">₹{{ number_format($itemTotal, 2) }}</td>
+                      <td class="text-end fw-bold text-dark existing-total">₹{{ number_format($itemTotal, 2) }}</td>
                       @if($order->order_status == 'PENDING')
                         <td class="text-center">
                           <button type="button" class="btn-remove-row delete-existing" data-id="{{ $item->id }}" title="Delete item from bill">
@@ -744,6 +754,37 @@ function getItemEffectiveUnitPrice(item) {
     return parseFloat(item.price) || 0;
 }
 
+function getExistingTotals() {
+    let subtotal = 0;
+    let taxable = 0;
+    let gst = 0;
+    let itemDiscountTotal = 0;
+    
+    $('#existingItems tr[data-item-id]').each(function() {
+        let row = $(this);
+        let basePrice = parseFloat(row.attr('data-base-price')) || 0;
+        let qty = parseInt(row.attr('data-qty')) || 1;
+        let addonsCost = parseFloat(row.attr('data-addons-cost')) || 0;
+        let gstRate = isGstRegistered ? (parseFloat(row.attr('data-gst-rate')) || 0) : 0;
+        let isAddon = row.attr('data-is-addon') === '1';
+        let discInput = row.find('.existing-item-discount-input');
+        let discPercent = parseFloat(discInput.val()) || 0;
+        
+        let discPrice = basePrice - (basePrice * discPercent / 100);
+        let lineTaxable = isAddon ? (discPrice * qty) : ((discPrice * qty) + addonsCost);
+        let lineOriginal = isAddon ? (basePrice * qty) : ((basePrice * qty) + addonsCost);
+        let lineGst = isGstRegistered ? ((lineTaxable * gstRate) / 100) : 0;
+        let lineItemDisc = (basePrice * discPercent / 100) * qty;
+        
+        subtotal += lineOriginal;
+        taxable += lineTaxable;
+        gst += lineGst;
+        itemDiscountTotal += lineItemDisc;
+    });
+    
+    return { subtotal, taxable, gst, itemDiscountTotal };
+}
+
 function updateSummary() {
     let newOriginalSubtotal = 0;
     let newTaxable = 0;
@@ -760,10 +801,12 @@ function updateSummary() {
         newCount += item.qty;
     });
     
-    let totalOriginalSubtotal = existingSubtotal + newOriginalSubtotal;
-    let totalTaxable = existingTaxable + newTaxable;
-    let totalGst = existingGst + newGst;
-    let totalItemDiscount = newItemDiscount;
+    let existing = getExistingTotals();
+    
+    let totalOriginalSubtotal = existing.subtotal + newOriginalSubtotal;
+    let totalTaxable = existing.taxable + newTaxable;
+    let totalGst = existing.gst + newGst;
+    let totalItemDiscount = existing.itemDiscountTotal + newItemDiscount;
     
     let orderDiscountPercent = parseFloat($('#order_discount').val()) || 0;
     let totalBeforeOrderDiscount = totalTaxable + totalGst;
@@ -1637,6 +1680,33 @@ $(document).ready(function() {
         syncPaymentSplit('quick_split');
     });
 
+    // Existing item discount input change
+    $(document).on('input change', '.existing-item-discount-input', function() {
+        let input = $(this);
+        let row = input.closest('tr');
+        let basePrice = parseFloat(row.attr('data-base-price')) || 0;
+        let qty = parseInt(row.attr('data-qty')) || 1;
+        let addonsCost = parseFloat(row.attr('data-addons-cost')) || 0;
+        let gstRate = isGstRegistered ? (parseFloat(row.attr('data-gst-rate')) || 0) : 0;
+        let isAddon = row.attr('data-is-addon') === '1';
+        
+        let discPercent = parseFloat(input.val()) || 0;
+        if (discPercent < 0) { discPercent = 0; input.val(0); }
+        if (discPercent > 100) { discPercent = 100; input.val(100); }
+        
+        let discPrice = basePrice - (basePrice * discPercent / 100);
+        let lineTaxable = isAddon ? (discPrice * qty) : ((discPrice * qty) + addonsCost);
+        let lineGst = isGstRegistered ? ((lineTaxable * gstRate) / 100) : 0;
+        let lineTotal = lineTaxable + lineGst;
+        
+        row.find('.existing-disc-price').text('₹' + discPrice.toFixed(2));
+        row.find('.existing-taxable').text('₹' + lineTaxable.toFixed(2));
+        row.find('.existing-gst-amt').text('₹' + lineGst.toFixed(2));
+        row.find('.existing-total').text('₹' + lineTotal.toFixed(2));
+        
+        updateSummary();
+    });
+
     // Auto-calculate remaining amount when manually editing Cash or UPI
     $('#cash_payment_amount').on('input keyup change', function() {
         let finalTotal = parseFloat($('#final_total').text()) || 0;
@@ -1716,6 +1786,21 @@ $(document).ready(function() {
         
         if ($('#order_discount').length) {
             data.discount = $('#order_discount').val() || 0;
+        }
+
+        // Collect existing items discounts
+        let existingItemsData = [];
+        $('#existingItems tr[data-item-id]').each(function() {
+            let row = $(this);
+            let itemId = row.attr('data-item-id');
+            let discVal = parseFloat(row.find('.existing-item-discount-input').val()) || 0;
+            existingItemsData.push({
+                id: itemId,
+                item_discount: discVal
+            });
+        });
+        if (existingItemsData.length > 0) {
+            data.existing_items = existingItemsData;
         }
         
         if (newOrderItems.length > 0) {
