@@ -5,6 +5,8 @@
 ## Pages
 
 - [Home](https://billnbite.com/): Product overview, features, and pricing plans.
+- [About Us](https://billnbite.com/about-us): Who built Bill&Bite, why, and the team behind it.
+- [Blog](https://billnbite.com/blog): Guides and comparisons for restaurant owners choosing POS software.
 - [Register your restaurant](https://billnbite.com/register-restaurant): Sign up a new restaurant on the platform.
 - [Terms and Conditions](https://billnbite.com/terms-and-conditions): Terms of service.
 - [Privacy Policy](https://billnbite.com/privacy-policy): How user and restaurant data is handled.

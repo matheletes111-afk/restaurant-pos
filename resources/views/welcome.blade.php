@@ -30,6 +30,7 @@
                 <a href="#how-it-works">How It Works</a>
                 <a href="#platform-benefits">Benefits</a>
                 <a href="#faq">FAQ</a>
+                <a href="{{ route('blog.index') }}">Blog</a>
             </div>
             <div class="nav-actions">
                 <a href="javascript:void(0)" class="btn-login open-enquiry-btn">Book A Demo</a>
@@ -1143,6 +1144,8 @@
                 <div class="footer-links">
                     <h4>Company</h4>
                     <ul>
+                        <li><a href="{{ route('about.us') }}">About Us</a></li>
+                        <li><a href="{{ route('blog.index') }}">Blog</a></li>
                         <li><a href="{{ route('privacy.policy') }}">Privacy Policy</a></li>
                         <li><a href="{{ route('terms.conditions') }}">Terms & Conditions</a></li>
                         <li><a href="{{ route('login') }}">Restaurant Login</a></li>

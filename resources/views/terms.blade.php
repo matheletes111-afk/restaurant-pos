@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terms and Conditions - Bill&Bite</title>
     <meta name="description" content="Read the Terms and Conditions for using Bill&amp;Bite, the complete restaurant management and point-of-sale platform.">
+    <link rel="canonical" href="https://billnbite.com/terms-and-conditions">
     <link rel="shortcut icon" href="{{ asset('fav_web.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -415,6 +416,12 @@
     <footer class="footer" style="background:white !important; border-top: 1px solid #eaeaea;">
         <div class="container">
             <div class="footer-bottom" style="text-align: center; padding: 30px 0; color: var(--text-light); font-size: 0.9rem;">
+                <p style="margin-bottom: 10px;">
+                    <a href="{{ route('about.us') }}" style="color: var(--text-light); margin: 0 10px;">About Us</a>
+                    <a href="{{ route('blog.index') }}" style="color: var(--text-light); margin: 0 10px;">Blog</a>
+                    <a href="{{ route('privacy.policy') }}" style="color: var(--text-light); margin: 0 10px;">Privacy Policy</a>
+                    <a href="{{ route('terms.conditions') }}" style="color: var(--text-light); margin: 0 10px;">Terms &amp; Conditions</a>
+                </p>
                 <p>© 2026 Bill & Bite. All rights reserved.</p>
             </div>
         </div>

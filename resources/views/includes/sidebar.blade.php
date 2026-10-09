@@ -275,6 +275,15 @@
         </li>
         @endif
 
+        @if($saUser->id == 1 || in_array('blog_posts', $saPerms))
+        <li class="pc-item">
+          <a href="{{route('admin.blog.index')}}" class="pc-link @if(Request::is('*admin/blog*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-newspaper"></i></span>
+            <span class="pc-mtext">Blog Posts</span>
+          </a>
+        </li>
+        @endif
+
         @if($saUser->id == 1 || in_array('customer_support', $saPerms))
         <li class="pc-item">
           <a href="{{ route('admin.support.tickets') }}" class="pc-link @if(Request::is('*admin-support*')) active_class @endif">
