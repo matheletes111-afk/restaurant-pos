@@ -44,6 +44,12 @@ Route::get('/', [App\Http\Controllers\FrontendController::class, 'index'])->name
 Route::post('/book-demo', [App\Http\Controllers\FrontendController::class, 'bookDemo'])->name('book.demo');
 Route::get('/terms-and-conditions', [App\Http\Controllers\FrontendController::class, 'terms'])->name('terms.conditions');
 Route::get('/privacy-policy', [App\Http\Controllers\FrontendController::class, 'privacy'])->name('privacy.policy');
+Route::get('/about-us', [App\Http\Controllers\FrontendController::class, 'about'])->name('about.us');
+Route::get('/sitemap.xml', [App\Http\Controllers\FrontendController::class, 'sitemap'])->name('sitemap');
+
+// Blog
+Route::get('/blog', [App\Http\Controllers\BlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/{post}', [App\Http\Controllers\BlogController::class, 'show'])->name('blog.show');
 // Registration routes
 Route::get('/register-restaurant', [App\Http\Controllers\FrontendController::class, 'create'])->name('restaurant.register.form');
 Route::post('/register-restaurant', [App\Http\Controllers\FrontendController::class, 'store'])->name('restaurant.register');
@@ -150,6 +156,15 @@ Route::prefix('admin')->group(function () {
     Route::post('marketing/send-test', [App\Http\Controllers\Admin\AdminMarketingController::class, 'sendTest'])->name('admin.marketing.send-test');
     Route::post('marketing/{id}/retry', [App\Http\Controllers\Admin\AdminMarketingController::class, 'retryFailed'])->name('admin.marketing.retry')->where('id', '[0-9]+');
     Route::delete('marketing/{id}', [App\Http\Controllers\Admin\AdminMarketingController::class, 'destroy'])->name('admin.marketing.destroy')->where('id', '[0-9]+');
+
+    // Admin Blog Posts
+    Route::get('blog', [App\Http\Controllers\Admin\AdminBlogController::class, 'index'])->name('admin.blog.index');
+    Route::get('blog/create', [App\Http\Controllers\Admin\AdminBlogController::class, 'create'])->name('admin.blog.create');
+    Route::post('blog/store', [App\Http\Controllers\Admin\AdminBlogController::class, 'store'])->name('admin.blog.store');
+    Route::get('blog/{post}/edit', [App\Http\Controllers\Admin\AdminBlogController::class, 'edit'])->name('admin.blog.edit');
+    Route::put('blog/{post}', [App\Http\Controllers\Admin\AdminBlogController::class, 'update'])->name('admin.blog.update');
+    Route::post('blog/{post}/toggle-publish', [App\Http\Controllers\Admin\AdminBlogController::class, 'togglePublish'])->name('admin.blog.toggle-publish');
+    Route::delete('blog/{post}', [App\Http\Controllers\Admin\AdminBlogController::class, 'destroy'])->name('admin.blog.destroy');
 
 Route::get('manage-restaurant', [RestaurantController::class, 'index'])->name('manage.restaurant');
 Route::post('manage-restaurant/insert', [RestaurantController::class, 'store'])->name('manage.restaurant.insert');

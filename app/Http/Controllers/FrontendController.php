@@ -47,6 +47,28 @@ class FrontendController extends Controller
         return view('privacy');
     }
 
+    public function about()
+    {
+        return view('about');
+    }
+
+    public function sitemap()
+    {
+        $staticPages = [
+            ['loc' => url('/'), 'changefreq' => 'weekly', 'priority' => '1.0'],
+            ['loc' => url('/about-us'), 'changefreq' => 'monthly', 'priority' => '0.6'],
+            ['loc' => url('/blog'), 'changefreq' => 'weekly', 'priority' => '0.7'],
+            ['loc' => url('/terms-and-conditions'), 'changefreq' => 'yearly', 'priority' => '0.3'],
+            ['loc' => url('/privacy-policy'), 'changefreq' => 'yearly', 'priority' => '0.3'],
+        ];
+
+        $posts = \App\Models\BlogPost::published()->orderByDesc('published_at')->get();
+
+        $xml = response()->view('sitemap', compact('staticPages', 'posts'))->header('Content-Type', 'text/xml');
+
+        return $xml;
+    }
+
     public function create()
     {
         if (Auth::check()) {
