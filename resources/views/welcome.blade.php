@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    @include('includes.gtm_head')
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bill&Bite - Complete Restaurant Management System</title>
@@ -15,6 +16,7 @@
     <link rel="stylesheet" href="{{asset('frontend/style.css')}}">
 </head>
 <body>
+@include('includes.gtm_body')
 
     <!-- Navbar -->
     <nav class="navbar">

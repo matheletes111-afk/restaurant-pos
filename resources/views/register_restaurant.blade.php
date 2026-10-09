@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    @include('includes.gtm_head')
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Register Your Restaurant | RestoPOS</title>
@@ -441,6 +442,7 @@
     </style>
 </head>
 <body>
+@include('includes.gtm_body')
 
 <div class="register-blob blob-1"></div>
 <div class="register-blob blob-2"></div>

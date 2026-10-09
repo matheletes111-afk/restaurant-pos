@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    @include('includes.gtm_head')
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Privacy Policy - Bill&Bite</title>
@@ -233,6 +234,7 @@
     </style>
 </head>
 <body>
+@include('includes.gtm_body')
 
     <!-- Navbar -->
     <nav class="navbar">
