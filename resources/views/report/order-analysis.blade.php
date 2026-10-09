@@ -1,565 +1,517 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <title>Admin - Order Analysis Report</title>
-  @include('includes.style')
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    .stat-card {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      border-left: 5px solid;
-      transition: transform 0.3s ease;
-    }
-    .stat-card:hover {
-      transform: translateY(-5px);
-    }
-    .stat-icon {
-      font-size: 2.5rem;
-      opacity: 0.8;
-      margin-bottom: 15px;
-    }
-    .stat-value {
-      font-size: 1.8rem;
-      font-weight: 700;
-      margin-bottom: 5px;
-    }
-    .stat-label {
-      color: #64748b;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .counter-card {
-      text-align: center;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 15px;
-    }
-    .counter-value {
-      font-size: 1.8rem;
-      font-weight: 700;
-    }
-    .counter-label {
-      font-size: 0.85rem;
-      color: #64748b;
-    }
-    .chart-container {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 25px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-    .chart-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 20px;
-      color: #1e293b;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .badge-custom {
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-weight: 500;
-    }
-    .date-range-box {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 25px;
-    }
-    .table-counters td {
-      vertical-align: middle;
-    }
-    .progress-thin {
-      height: 6px;
-      border-radius: 3px;
-    }
-  </style>
-</head>
+@extends('layouts.app')
 
-<body data-pc-theme="light">
-  <div class="loader-bg">
-    <div class="loader-track">
-      <div class="loader-fill"></div>
-    </div>
-  </div>
+@section('title')
+<title>Order Analysis Dashboard - Admin</title>
+@endsection
 
-  @include('includes.sidebar')
+@section('style')
+@include('includes.style')
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{{ asset('admin_template/css/report-analytics.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  .table-counters td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--rpt-border-light);
+    vertical-align: middle;
+  }
+  .table-counters tr:last-child td {
+    border-bottom: none;
+  }
+</style>
+@endsection
 
-  <div class="pc-container">
-    <div class="pc-content">
+@section('body')
+@include('includes.sidebar')
 
-      <!-- Breadcrumb -->
-      <div class="page-header">
-        <div class="page-block">
-          <div class="row align-items-center">
-            <div class="col-md-12">
-              <div class="page-header-title">
-                <h5 class="m-b-10">Order Analysis Report</h5>
-              </div>
-              <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="#">Home</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('order.report') }}">Reports</a></li>
-                <li class="breadcrumb-item" aria-current="page">Order Analysis</li>
-              </ul>
+<div class="pc-container">
+<div class="pc-content">
+
+    <div class="rpt-page-wrap">
+        {{-- Flash / Error Messages --}}
+        @include('includes.message')
+
+        {{-- 1. Header Deck --}}
+        <div class="rpt-header-deck">
+            <div class="rpt-header-left">
+                <div class="rpt-header-icon icon-analysis">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="rpt-header-title-meta">
+                    <span class="rpt-header-eyebrow">Business Intelligence & Trends</span>
+                    <h1 class="rpt-header-title">Order Analysis Dashboard</h1>
+                    <p class="rpt-header-sub">Operational insights into sales channels, payment modes, food preferences, and hourly traffic</p>
+                </div>
             </div>
-          </div>
-        </div>
-      </div>
-      <!-- Breadcrumb end -->
-
-      <div class="row">
-        <div class="col-sm-12">
-          <div class="card">
-            <div class="card-header">
-              <h5>Order Analysis Dashboard</h5>
-              <div class="float-end">
-                <button id="printReport" class="btn btn-outline-primary btn-sm">
-                  <i class="bi bi-printer"></i> Print
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" id="btnPrintReport" class="btn-rpt-secondary">
+                    <i class="fas fa-print text-primary"></i> Print Analytics
                 </button>
-              </div>
+            </div>
+        </div>
+
+        {{-- 2. Filter Form --}}
+        <div class="rpt-filter-card">
+            <form method="GET" action="{{ route('order.report.analysis') }}" class="row g-3 align-items-end">
+                <div class="col-md-4 col-sm-6">
+                    <label class="rpt-filter-label">From Date</label>
+                    <input type="date" name="from_date" value="{{ request('from_date') ?? \Carbon\Carbon::now()->subDays(7)->format('Y-m-d') }}" class="rpt-filter-control">
+                </div>
+                <div class="col-md-4 col-sm-6">
+                    <label class="rpt-filter-label">To Date</label>
+                    <input type="date" name="to_date" value="{{ request('to_date') ?? \Carbon\Carbon::now()->format('Y-m-d') }}" class="rpt-filter-control">
+                </div>
+                <div class="col-md-4 col-sm-12 d-flex gap-2">
+                    <button type="submit" class="btn-rpt-primary flex-fill">
+                        <i class="fas fa-filter"></i> Run Analysis
+                    </button>
+                    <a href="{{ route('order.report.analysis') }}" class="btn-rpt-secondary" title="Reset Filters">
+                        <i class="fas fa-redo"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        {{-- 3. Summary Stats Grid --}}
+        <div class="rpt-stats-grid">
+            <div class="rpt-stat-card stat-primary">
+                <div class="rpt-stat-info">
+                    <span class="rpt-stat-label">Total Realized Revenue</span>
+                    <span class="rpt-stat-val">₹{{ number_format($totalAmount, 2) }}</span>
+                </div>
+                <div class="rpt-stat-icon">
+                    <i class="fas fa-indian-rupee-sign"></i>
+                </div>
             </div>
 
-            <div class="card-body">
-              <!-- Date Filter Form -->
-              <div class="date-range-box">
-                <form method="GET" action="{{ route('order.report.analysis') }}" class="row g-3 align-items-end">
-                  <div class="col-md-3">
-                    <label class="form-label text-white">From Date</label>
-                    <input type="date" name="from_date" value="{{ request('from_date') ?? \Carbon\Carbon::now()->subDays(7)->format('Y-m-d') }}" class="form-control">
-                  </div>
-                  <div class="col-md-3">
-                    <label class="form-label text-white">To Date</label>
-                    <input type="date" name="to_date" value="{{ request('to_date') ?? \Carbon\Carbon::now()->format('Y-m-d') }}" class="form-control">
-                  </div>
-                  <div class="col-md-3">
-                    <button type="submit" class="btn btn-light w-100">
-                      <i class="bi bi-funnel"></i> Filter
-                    </button>
-                  </div>
-                  <div class="col-md-3">
-                    <a href="{{ route('order.report.analysis') }}" class="btn btn-outline-light w-100">
-                      <i class="bi bi-arrow-clockwise"></i> Reset
-                    </a>
-                  </div>
-                </form>
-              </div>
+            <div class="rpt-stat-card stat-success">
+                <div class="rpt-stat-info">
+                    <span class="rpt-stat-label">Total Completed Orders</span>
+                    <span class="rpt-stat-val">{{ $totalOrders }}</span>
+                </div>
+                <div class="rpt-stat-icon">
+                    <i class="fas fa-bag-shopping"></i>
+                </div>
+            </div>
 
-              <!-- Summary Stats -->
-              <div class="row mb-4">
-                <div class="col-md-3">
-                  <div class="stat-card" style="border-left-color: #3b82f6;">
-                    <div class="stat-icon text-primary">
-                      <i class="bi bi-cash-coin"></i>
-                    </div>
-                    <div class="stat-value text-primary">₹{{ number_format($totalAmount, 2) }}</div>
-                    <div class="stat-label">Total Revenue</div>
-                  </div>
+            <div class="rpt-stat-card stat-warning">
+                <div class="rpt-stat-info">
+                    <span class="rpt-stat-label">Average Order Value</span>
+                    <span class="rpt-stat-val">₹{{ number_format($avgOrderValue, 2) }}</span>
                 </div>
-                <div class="col-md-3">
-                  <div class="stat-card" style="border-left-color: #10b981;">
-                    <div class="stat-icon text-success">
-                      <i class="bi bi-cart-check"></i>
-                    </div>
-                    <div class="stat-value text-success">{{ $totalOrders }}</div>
-                    <div class="stat-label">Total Orders</div>
-                  </div>
+                <div class="rpt-stat-icon">
+                    <i class="fas fa-scale-balanced"></i>
                 </div>
-                <div class="col-md-3">
-                  <div class="stat-card" style="border-left-color: #f59e0b;">
-                    <div class="stat-icon text-warning">
-                      <i class="bi bi-graph-up"></i>
-                    </div>
-                    <div class="stat-value text-warning">₹{{ number_format($avgOrderValue, 2) }}</div>
-                    <div class="stat-label">Avg. Order Value</div>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="stat-card" style="border-left-color: #8b5cf6;">
-                    <div class="stat-icon text-purple">
-                      <i class="bi bi-trophy"></i>
-                    </div>
-                    <div class="stat-value text-purple">
-                      @if($peakDay)
-                        {{ \Carbon\Carbon::parse($peakDay->order_date)->format('d M') }}
-                      @else
-                        N/A
-                      @endif
-                    </div>
-                    <div class="stat-label">Peak Order Day</div>
-                  </div>
-                </div>
-              </div>
+            </div>
 
-              <!-- Two Column Layout -->
-              <div class="row">
-                <!-- Left Column -->
-                <div class="col-lg-8">
-                  <!-- Order Type Distribution -->
-                  <div class="chart-container">
-                    <h6 class="chart-title">
-                      <i class="bi bi-shop text-primary"></i> Order Type Distribution
-                    </h6>
-                    <div class="row">
-                      @php
+            <div class="rpt-stat-card stat-purple">
+                <div class="rpt-stat-info">
+                    <span class="rpt-stat-label">Peak Order Date</span>
+                    <span class="rpt-stat-val" style="font-size: 1.35rem;">
+                        @if($peakDay)
+                            {{ \Carbon\Carbon::parse($peakDay->order_date)->format('d M Y') }}
+                        @else
+                            N/A
+                        @endif
+                    </span>
+                </div>
+                <div class="rpt-stat-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+            </div>
+        </div>
+
+        {{-- 4. Main Two Column Analytics Grid --}}
+        <div class="row">
+            {{-- Left Column: Channels, Payment Status, Daily Trend --}}
+            <div class="col-lg-8 mb-4">
+                {{-- Order Type Channel Distribution --}}
+                <div class="rpt-chart-box">
+                    <div class="rpt-chart-title">
+                        <div class="title-left">
+                            <i class="fas fa-store text-primary"></i>
+                            <span>Order Channel Distribution</span>
+                        </div>
+                    </div>
+                    @php
                         $dineIn = $orderTypeCounts['DINE_IN'] ?? (object)['count' => 0, 'total_amount' => 0];
                         $takeaway = $orderTypeCounts['TAKEAWAY'] ?? (object)['count' => 0, 'total_amount' => 0];
                         $totalTypeOrders = $dineIn->count + $takeaway->count;
-                      @endphp
-                      
-                      <div class="col-md-6 mb-3">
-                        <div class="counter-card" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white;">
-                          <div class="counter-value">{{ $dineIn->count }}</div>
-                          <div class="counter-label text-white">DINE-IN ORDERS</div>
-                          <div class="mt-2">₹{{ number_format($dineIn->total_amount ?? 0, 2) }}</div>
+                        $dineInPct = $totalTypeOrders > 0 ? ($dineIn->count / $totalTypeOrders) * 100 : 0;
+                        $takeawayPct = $totalTypeOrders > 0 ? ($takeaway->count / $totalTypeOrders) * 100 : 0;
+                    @endphp
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="rpt-counter-card" style="background: var(--rpt-info-bg); border: 1px solid var(--rpt-info-border);">
+                                <span class="rpt-counter-lbl" style="color: var(--rpt-info-text);"><i class="fas fa-utensils me-1"></i> Dine-In Orders</span>
+                                <span class="rpt-counter-val text-primary mt-1">{{ $dineIn->count }} <small class="fs-6 text-muted fw-bold">({{ number_format($dineInPct, 1) }}%)</small></span>
+                                <span class="rpt-counter-sub text-dark">₹{{ number_format($dineIn->total_amount ?? 0, 2) }}</span>
+                            </div>
                         </div>
-                      </div>
-                      <div class="col-md-6 mb-3">
-                        <div class="counter-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
-                          <div class="counter-value">{{ $takeaway->count }}</div>
-                          <div class="counter-label text-white">TAKEAWAY ORDERS</div>
-                          <div class="mt-2">₹{{ number_format($takeaway->total_amount ?? 0, 2) }}</div>
+                        <div class="col-md-6">
+                            <div class="rpt-counter-card" style="background: var(--rpt-success-bg); border: 1px solid var(--rpt-success-border);">
+                                <span class="rpt-counter-lbl" style="color: var(--rpt-success-text);"><i class="fas fa-box me-1"></i> Takeaway Orders</span>
+                                <span class="rpt-counter-val text-success mt-1">{{ $takeaway->count }} <small class="fs-6 text-muted fw-bold">({{ number_format($takeawayPct, 1) }}%)</small></span>
+                                <span class="rpt-counter-sub text-dark">₹{{ number_format($takeaway->total_amount ?? 0, 2) }}</span>
+                            </div>
                         </div>
-                      </div>
-                      
-                      @if($totalTypeOrders > 0)
-                      <div class="col-12">
-                        <div class="mt-3">
-                          <div class="d-flex justify-content-between mb-1">
-                            <small>Dine-In: {{ number_format(($dineIn->count / $totalTypeOrders) * 100, 1) }}%</small>
-                            <small>Takeaway: {{ number_format(($takeaway->count / $totalTypeOrders) * 100, 1) }}%</small>
-                          </div>
-                          <div class="progress" style="height: 10px;">
-                            <div class="progress-bar bg-primary" style="width: {{ ($dineIn->count / $totalTypeOrders) * 100 }}%"></div>
-                            <div class="progress-bar bg-success" style="width: {{ ($takeaway->count / $totalTypeOrders) * 100 }}%"></div>
-                          </div>
-                        </div>
-                      </div>
-                      @endif
                     </div>
-                  </div>
-
-                  <!-- Payment Status -->
-                  <div class="chart-container">
-                    <h6 class="chart-title">
-                      <i class="bi bi-wallet2 text-success"></i> Payment Status
-                    </h6>
-                    <div class="row">
-                      @php
-                        $paid = $paymentStatusCounts['PAID'] ?? (object)['count' => 0, 'total_amount' => 0];
-                        $misc = $paymentStatusCounts['MISCORDER'] ?? (object)['count' => 0, 'total_amount' => 0];
-                      @endphp
-                      
-                      <div class="col-md-6 mb-3">
-                        <div class="counter-card" style="background: rgba(16, 185, 129, 0.1); border: 2px solid #10b981;">
-                          <div class="counter-value text-success">{{ $paid->count }}</div>
-                          <div class="counter-label">PAID ORDERS</div>
-                          <div class="mt-2 text-success">₹{{ number_format($paid->total_amount ?? 0, 2) }}</div>
+                    @if($totalTypeOrders > 0)
+                    <div class="rpt-progress-bar-wrap">
+                        <div class="d-flex justify-content-between mb-1 small fw-bold text-muted">
+                            <span><i class="fas fa-circle text-primary me-1" style="font-size: 8px;"></i> Dine-In ({{ number_format($dineInPct, 1) }}%)</span>
+                            <span>Takeaway ({{ number_format($takeawayPct, 1) }}%) <i class="fas fa-circle text-success ms-1" style="font-size: 8px;"></i></span>
                         </div>
-                      </div>
-                      <div class="col-md-6 mb-3">
-                        <div class="counter-card" style="background: rgba(239, 68, 68, 0.1); border: 2px solid #ef4444;">
-                          <div class="counter-value text-danger">{{ $misc->count }}</div>
-                          <div class="counter-label">MISC ORDERS</div>
-                          <div class="mt-2 text-danger">₹{{ number_format($misc->total_amount ?? 0, 2) }}</div>
+                        <div class="rpt-progress-bar-track">
+                            <div class="rpt-progress-bar-fill bg-primary" style="width: {{ $dineInPct }}%;"></div>
+                            <div class="rpt-progress-bar-fill bg-success" style="width: {{ $takeawayPct }}%;"></div>
                         </div>
-                      </div>
                     </div>
-                  </div>
-
-                  <!-- Daily Order Trend Chart -->
-                  @if($dailyTrend->count() > 0)
-                  <div class="chart-container">
-                    <h6 class="chart-title">
-                      <i class="bi bi-calendar-week text-warning"></i> Daily Order Trend
-                    </h6>
-                    <div style="height: 300px;">
-                      <canvas id="dailyTrendChart"></canvas>
-                    </div>
-                  </div>
-                  @endif
+                    @endif
                 </div>
 
-                <!-- Right Column -->
-                <div class="col-lg-4">
-                  <!-- Payment Methods -->
-                  <div class="chart-container">
-                    <h6 class="chart-title">
-                      <i class="bi bi-credit-card text-info"></i> Payment Methods
-                      <small class="text-muted">(Found: {{ count($paymentMethods) }})</small>
-                    </h6>
-                    
-                    @if(count($paymentMethods) > 0)
-                      <table class="table table-sm table-counters">
-                        @foreach($paymentMethods as $method)
-                          @php
-                            $methodData = $paymentMethodCounts[$method] ?? (object)['count' => 0, 'total_amount' => 0];
-                          @endphp
-                          <tr>
-                            <td>
-                              @php
-                                $methodLower = strtolower($method ?? '');
-                              @endphp
-                              
-                              @if(str_contains($methodLower, 'cash'))
-                                <i class="bi bi-cash text-success"></i>
-                              @elseif(str_contains($methodLower, 'upi'))
-                                <i class="bi bi-phone text-primary"></i>
-                              @elseif(str_contains($methodLower, 'card'))
-                                <i class="bi bi-credit-card text-info"></i>
-                              @else
-                                <i class="bi bi-wallet text-secondary"></i>
-                              @endif
-                              
-                              <strong>{{ $method ?? 'Unknown' }}</strong>
-                            </td>
-                            <td class="text-end">
-                              <span class="badge bg-primary">{{ $methodData->count }}</span>
-                            </td>
-                            <td class="text-end">
-                              <small class="text-muted">₹{{ number_format($methodData->total_amount ?? 0, 2) }}</small>
-                            </td>
-                          </tr>
-                        @endforeach
-                      </table>
-                    @else
-                      <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> No payment method data found for the selected period.
-                      </div>
-                    @endif
-                  </div>
+                {{-- Payment Status Audit --}}
+                <div class="rpt-chart-box">
+                    <div class="rpt-chart-title">
+                        <div class="title-left">
+                            <i class="fas fa-wallet text-success"></i>
+                            <span>Payment Status Realization</span>
+                        </div>
+                    </div>
+                    @php
+                        $paid = $paymentStatusCounts['PAID'] ?? (object)['count' => 0, 'total_amount' => 0];
+                        $misc = $paymentStatusCounts['MISCORDER'] ?? (object)['count' => 0, 'total_amount' => 0];
+                    @endphp
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="rpt-counter-card" style="background: #f0fdf4; border: 1px solid #bbf7d0;">
+                                <span class="rpt-counter-lbl text-success"><i class="fas fa-check-circle me-1"></i> Settled (PAID)</span>
+                                <span class="rpt-counter-val text-success mt-1">{{ $paid->count }}</span>
+                                <span class="rpt-counter-sub text-dark">₹{{ number_format($paid->total_amount ?? 0, 2) }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="rpt-counter-card" style="background: #fef2f2; border: 1px solid #fecaca;">
+                                <span class="rpt-counter-lbl text-danger"><i class="fas fa-exclamation-triangle me-1"></i> Miscellaneous (MISCORDER)</span>
+                                <span class="rpt-counter-val text-danger mt-1">{{ $misc->count }}</span>
+                                <span class="rpt-counter-sub text-dark">₹{{ number_format($misc->total_amount ?? 0, 2) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                  <!-- Veg/Non-Veg Orders -->
-                  <div class="chart-container">
-                    <h6 class="chart-title">
-                      <i class="bi bi-egg-fried text-success"></i> Food Type Analysis
-                    </h6>
-                    <div class="row text-center">
-                      @php
-                        // Handle different possible food type values
+                {{-- Daily Order & Revenue Curve --}}
+                @if($dailyTrend->count() > 0)
+                <div class="rpt-chart-box">
+                    <div class="rpt-chart-title">
+                        <div class="title-left">
+                            <i class="fas fa-chart-area text-warning"></i>
+                            <span>Daily Order & Revenue Trajectory</span>
+                        </div>
+                    </div>
+                    <div style="height: 320px; position: relative;">
+                        <canvas id="dailyTrendChart"></canvas>
+                    </div>
+                </div>
+                @endif
+            </div>
+
+            {{-- Right Column: Payment Gateways, Food Types, Peak Day, Rush Hours --}}
+            <div class="col-lg-4 mb-4">
+                {{-- Payment Methods List --}}
+                <div class="rpt-chart-box">
+                    <div class="rpt-chart-title">
+                        <div class="title-left">
+                            <i class="fas fa-credit-card text-info"></i>
+                            <span>Payment Gateways & Modes</span>
+                        </div>
+                    </div>
+                    @if(count($paymentMethods) > 0)
+                        <div class="table-responsive">
+                            <table class="table table-sm table-counters w-100">
+                                <tbody>
+                                @foreach($paymentMethods as $method)
+                                    @php
+                                        $methodData = $paymentMethodCounts[$method] ?? (object)['count' => 0, 'total_amount' => 0];
+                                        $methodLower = strtolower($method ?? '');
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                @if(str_contains($methodLower, 'cash'))
+                                                    <span class="badge bg-success-subtle text-success p-2 rounded-circle"><i class="fas fa-money-bill-wave"></i></span>
+                                                @elseif(str_contains($methodLower, 'upi') || str_contains($methodLower, 'qr'))
+                                                    <span class="badge bg-primary-subtle text-primary p-2 rounded-circle"><i class="fas fa-qrcode"></i></span>
+                                                @elseif(str_contains($methodLower, 'card'))
+                                                    <span class="badge bg-info-subtle text-info p-2 rounded-circle"><i class="fas fa-credit-card"></i></span>
+                                                @else
+                                                    <span class="badge bg-secondary-subtle text-secondary p-2 rounded-circle"><i class="fas fa-wallet"></i></span>
+                                                @endif
+                                                <strong class="text-dark">{{ $method ?? 'Unknown' }}</strong>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-dark border px-2 py-1">{{ $methodData->count }}</span>
+                                        </td>
+                                        <td class="text-end fw-bold text-dark">
+                                            ₹{{ number_format($methodData->total_amount ?? 0, 2) }}
+                                        </td>
+                                    </tr>
+                                @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="text-center py-3 text-muted">
+                            <i class="fas fa-credit-card fa-2x mb-2 opacity-50"></i>
+                            <p class="small mb-0">No payment methods recorded in this range.</p>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Food Type (Veg / Non-Veg) --}}
+                <div class="rpt-chart-box">
+                    <div class="rpt-chart-title">
+                        <div class="title-left">
+                            <i class="fas fa-seedling text-success"></i>
+                            <span>Food Type Preference</span>
+                        </div>
+                    </div>
+                    @php
                         $vegCount = 0;
                         $nonVegCount = 0;
                         $vegItemCount = 0;
                         $nonVegItemCount = 0;
                         
                         foreach($vegNonVegCounts as $type => $data) {
-                          $typeLower = strtolower($type);
-                          if(str_contains($typeLower, 'veg') && !str_contains($typeLower, 'non')) {
-                            $vegCount = $data->order_count ?? 0;
-                            $vegItemCount = $data->item_count ?? 0;
-                          } elseif(str_contains($typeLower, 'non') || str_contains($typeLower, 'non-veg')) {
-                            $nonVegCount = $data->order_count ?? 0;
-                            $nonVegItemCount = $data->item_count ?? 0;
-                          }
+                            $typeLower = strtolower($type);
+                            if(str_contains($typeLower, 'veg') && !str_contains($typeLower, 'non')) {
+                                $vegCount = $data->order_count ?? 0;
+                                $vegItemCount = $data->item_count ?? 0;
+                            } elseif(str_contains($typeLower, 'non') || str_contains($typeLower, 'non-veg')) {
+                                $nonVegCount = $data->order_count ?? 0;
+                                $nonVegItemCount = $data->item_count ?? 0;
+                            }
                         }
                         
                         $totalVegNonVeg = $vegCount + $nonVegCount;
-                      @endphp
-                      
-                      <div class="col-6">
-                        <div class="p-3" style="background: rgba(16, 185, 129, 0.1); border-radius: 10px;">
-                          <div class="text-success" style="font-size: 1.5rem; font-weight: 600;">{{ $vegCount }}</div>
-                          <div class="text-muted">Veg Orders</div>
-                          <small class="text-muted">{{ $vegItemCount }} items</small>
+                        $vegPct = $totalVegNonVeg > 0 ? ($vegCount / $totalVegNonVeg) * 100 : 0;
+                        $nonVegPct = $totalVegNonVeg > 0 ? ($nonVegCount / $totalVegNonVeg) * 100 : 0;
+                    @endphp
+                    <div class="row g-2 text-center">
+                        <div class="col-6">
+                            <div class="p-3 rounded-3" style="background: var(--rpt-success-bg); border: 1px solid var(--rpt-success-border);">
+                                <span class="food-type-icon veg mb-1"><i class="fas fa-circle"></i></span>
+                                <div class="rpt-counter-val text-success">{{ $vegCount }}</div>
+                                <div class="rpt-counter-lbl" style="color: var(--rpt-success-text);">Veg Orders</div>
+                                <small class="text-muted fw-semibold">{{ $vegItemCount }} items</small>
+                            </div>
                         </div>
-                      </div>
-                      <div class="col-6">
-                        <div class="p-3" style="background: rgba(239, 68, 68, 0.1); border-radius: 10px;">
-                          <div class="text-danger" style="font-size: 1.5rem; font-weight: 600;">{{ $nonVegCount }}</div>
-                          <div class="text-muted">Non-Veg Orders</div>
-                          <small class="text-muted">{{ $nonVegItemCount }} items</small>
+                        <div class="col-6">
+                            <div class="p-3 rounded-3" style="background: #fef2f2; border: 1px solid #fecaca;">
+                                <span class="food-type-icon non-veg mb-1"><i class="fas fa-circle"></i></span>
+                                <div class="rpt-counter-val text-danger">{{ $nonVegCount }}</div>
+                                <div class="rpt-counter-lbl" style="color: #b91c1c;">Non-Veg Orders</div>
+                                <small class="text-muted fw-semibold">{{ $nonVegItemCount }} items</small>
+                            </div>
                         </div>
-                      </div>
-                      
-                      @if($totalVegNonVeg > 0)
-                      <div class="col-12 mt-3">
-                        <div class="d-flex justify-content-between mb-1">
-                          <small>Veg: {{ number_format(($vegCount / $totalVegNonVeg) * 100, 1) }}%</small>
-                          <small>Non-Veg: {{ number_format(($nonVegCount / $totalVegNonVeg) * 100, 1) }}%</small>
-                        </div>
-                        <div class="progress progress-thin">
-                          <div class="progress-bar bg-success" style="width: {{ ($vegCount / $totalVegNonVeg) * 100 }}%"></div>
-                          <div class="progress-bar bg-danger" style="width: {{ ($nonVegCount / $totalVegNonVeg) * 100 }}%"></div>
-                        </div>
-                      </div>
-                      @else
-                      <div class="col-12">
-                        <div class="alert alert-warning">
-                          <i class="bi bi-exclamation-triangle"></i> No food type data available
-                        </div>
-                      </div>
-                      @endif
                     </div>
-                  </div>
-
-                  <!-- Peak Day Details -->
-                  @if($peakDay)
-                  <div class="chart-container">
-                    <h6 class="chart-title">
-                      <i class="bi bi-star-fill text-warning"></i> Peak Order Day
-                    </h6>
-                    <div class="text-center p-4" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white; border-radius: 10px;">
-                      <div style="font-size: 2rem; font-weight: 700;">
-                        {{ \Carbon\Carbon::parse($peakDay->order_date)->format('d M Y') }}
-                      </div>
-                      <div class="mt-2">
-                        <div style="font-size: 1.5rem; font-weight: 600;">{{ $peakDay->order_count }}</div>
-                        <div>Orders</div>
-                      </div>
-                      <div class="mt-2">
-                        <div style="font-size: 1.2rem;">₹{{ number_format($peakDay->total_amount, 2) }}</div>
-                        <div>Revenue</div>
-                      </div>
+                    @if($totalVegNonVeg > 0)
+                    <div class="rpt-progress-bar-wrap">
+                        <div class="d-flex justify-content-between mb-1 small fw-bold text-muted">
+                            <span>Veg: {{ number_format($vegPct, 1) }}%</span>
+                            <span>Non-Veg: {{ number_format($nonVegPct, 1) }}%</span>
+                        </div>
+                        <div class="rpt-progress-bar-track">
+                            <div class="rpt-progress-bar-fill bg-success" style="width: {{ $vegPct }}%;"></div>
+                            <div class="rpt-progress-bar-fill bg-danger" style="width: {{ $nonVegPct }}%;"></div>
+                        </div>
                     </div>
-                  </div>
-                  @endif
-
-                  <!-- Hourly Distribution -->
-                  @if($hourlyDistribution->count() > 0)
-                  <div class="chart-container">
-                    <h6 class="chart-title">
-                      <i class="bi bi-clock text-primary"></i> Busiest Hours
-                    </h6>
-                    <div style="height: 200px;">
-                      <canvas id="hourlyChart"></canvas>
-                    </div>
-                  </div>
-                  @endif
+                    @endif
                 </div>
-              </div>
 
+                {{-- Peak Day Highlight --}}
+                @if($peakDay)
+                <div class="rpt-peak-card">
+                    <span class="badge bg-white text-dark fw-bold mb-2 px-3 py-1 text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Busiest Day Highlight</span>
+                    <div class="rpt-peak-date">{{ \Carbon\Carbon::parse($peakDay->order_date)->format('d M Y') }}</div>
+                    <div class="rpt-peak-metric">{{ $peakDay->order_count }} Orders Completed</div>
+                    <div class="fs-5 fw-extrabold text-white mt-1">₹{{ number_format($peakDay->total_amount, 2) }} Revenue</div>
+                </div>
+                @endif
+
+                {{-- Busiest Hours Bar Chart --}}
+                @if($hourlyDistribution->count() > 0)
+                <div class="rpt-chart-box">
+                    <div class="rpt-chart-title">
+                        <div class="title-left">
+                            <i class="fas fa-clock text-primary"></i>
+                            <span>Hourly Rush Peak</span>
+                        </div>
+                    </div>
+                    <div style="height: 220px; position: relative;">
+                        <canvas id="hourlyChart"></canvas>
+                    </div>
+                </div>
+                @endif
             </div>
-          </div>
         </div>
-      </div>
 
     </div>
-  </div>
 
-  <!-- JS Libraries -->
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-  @include('includes.script')
+</div>
+</div>
+@endsection
 
-  <script>
-    $(document).ready(function() {
-      // Print Report
-      $('#printReport').click(function() {
+@section('script')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+@include('includes.script')
+
+<script>
+$(document).ready(function() {
+    $('#btnPrintReport').on('click', function() {
         window.print();
-      });
+    });
 
-      // Daily Trend Chart
-      @if($dailyTrend->count() > 0)
-      const dailyCtx = document.getElementById('dailyTrendChart').getContext('2d');
-      const dailyChart = new Chart(dailyCtx, {
+    @if($dailyTrend->count() > 0)
+    const dailyCtx = document.getElementById('dailyTrendChart').getContext('2d');
+    new Chart(dailyCtx, {
         type: 'line',
         data: {
-          labels: [
-            @foreach($dailyTrend as $day)
-              "{{ \Carbon\Carbon::parse($day->order_date)->format('d M') }}",
-            @endforeach
-          ],
-          datasets: [{
-            label: 'Orders',
-            data: [
-              @foreach($dailyTrend as $day)
-                {{ $day->order_count }},
-              @endforeach
+            labels: [
+                @foreach($dailyTrend as $day)
+                    "{{ \Carbon\Carbon::parse($day->order_date)->format('d M') }}",
+                @endforeach
             ],
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            borderWidth: 3,
-            fill: true,
-            tension: 0.3
-          }, {
-            label: 'Revenue (₹)',
-            data: [
-              @foreach($dailyTrend as $day)
-                {{ $day->total_amount }},
-              @endforeach
-            ],
-            borderColor: '#10b981',
-            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-            borderWidth: 3,
-            fill: true,
-            tension: 0.3
-          }]
+            datasets: [
+                {
+                    label: 'Revenue (₹)',
+                    data: [
+                        @foreach($dailyTrend as $day)
+                            {{ $day->total_amount }},
+                        @endforeach
+                    ],
+                    borderColor: '#ff5e14',
+                    backgroundColor: 'rgba(255, 94, 20, 0.08)',
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.35,
+                    yAxisID: 'y1'
+                },
+                {
+                    label: 'Orders Count',
+                    data: [
+                        @foreach($dailyTrend as $day)
+                            {{ $day->order_count }},
+                        @endforeach
+                    ],
+                    borderColor: '#0284c7',
+                    backgroundColor: 'rgba(2, 132, 199, 0.08)',
+                    borderWidth: 2.5,
+                    fill: false,
+                    tension: 0.35,
+                    yAxisID: 'y'
+                }
+            ]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'top',
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        font: {
+                            family: "'Outfit', sans-serif",
+                            weight: '600'
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    },
+                    title: {
+                        display: true,
+                        text: 'Orders Count',
+                        font: { weight: 'bold' }
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    beginAtZero: true,
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                    title: {
+                        display: true,
+                        text: 'Revenue (₹)',
+                        font: { weight: 'bold' }
+                    }
+                }
             }
-          },
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
         }
-      });
-      @endif
+    });
+    @endif
 
-      // Hourly Distribution Chart
-      @if($hourlyDistribution->count() > 0)
-      const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
-      const hourlyChart = new Chart(hourlyCtx, {
+    @if($hourlyDistribution->count() > 0)
+    const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+    new Chart(hourlyCtx, {
         type: 'bar',
         data: {
-          labels: [
-            @foreach($hourlyDistribution as $hour)
-              "{{ $hour->order_hour }}:00",
-            @endforeach
-          ],
-          datasets: [{
-            label: 'Orders per Hour',
-            data: [
-              @foreach($hourlyDistribution as $hour)
-                {{ $hour->order_count }},
-              @endforeach
+            labels: [
+                @foreach($hourlyDistribution as $hour)
+                    "{{ sprintf('%02d:00', $hour->order_hour) }}",
+                @endforeach
             ],
-            backgroundColor: 'rgba(59, 130, 246, 0.7)',
-            borderColor: '#3b82f6',
-            borderWidth: 1
-          }]
+            datasets: [{
+                label: 'Orders',
+                data: [
+                    @foreach($hourlyDistribution as $hour)
+                        {{ $hour->order_count }},
+                    @endforeach
+                ],
+                backgroundColor: 'rgba(99, 102, 241, 0.75)',
+                borderColor: '#6366f1',
+                borderWidth: 1,
+                borderRadius: 6
+            }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0
+                    }
+                }
             }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 1
-              }
-            }
-          }
         }
-      });
-      @endif
     });
-  </script>
-
-</body>
-</html>
+    @endif
+});
+</script>
+@endsection

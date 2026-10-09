@@ -1,503 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Kitchen Panel</title>
-  @include('includes.style')
+  <title>Kitchen Display System (KDS) • Bill&Bite POS</title>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    :root {
-      --page-bg: #f8fafc;
-      --primary-orange: #ff6a00;
-      --light-orange: #fff0e6;
-      --text-primary: #1e293b;
-      --text-secondary: #64748b;
-      
-      --status-pending: #f59e0b;
-      --status-pending-bg: #fffbeb;
-      --status-pending-text: #b45309;
-      
-      --status-cooking: #3b82f6;
-      --status-cooking-bg: #eff6ff;
-      --status-cooking-text: #1d4ed8;
-      
-      --status-done: #10b981;
-      --status-done-bg: #ecfdf5;
-      --status-done-text: #047857;
-    }
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
 
-    body {
-      background: var(--page-bg);
-      color: var(--text-primary);
-      font-family: 'Public Sans', sans-serif;
-    }
+  @include('includes.style')
 
-    .kitchen-container {
-      padding: 15px 0;
-    }
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome 6 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-    /* Premium Filter Card */
-    .filter-section {
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 25px;
-      border: 1px solid rgba(0, 0, 0, 0.05);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
-    }
-
-    .filter-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      align-items: flex-end;
-    }
-
-    .filter-group {
-      flex: 1 1 200px;
-    }
-
-    .filter-group label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 700;
-      font-size: 0.75rem;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .filter-group input,
-    .filter-group select {
-      width: 100%;
-      padding: 10px 14px;
-      border: 1px solid #e2e8f0;
-      background-color: #f8fafc;
-      border-radius: 10px;
-      font-size: 0.9rem;
-      color: #1e293b;
-      transition: all 0.2s ease;
-    }
-
-    .filter-group input:focus,
-    .filter-group select:focus {
-      background-color: #ffffff;
-      border-color: var(--primary-orange);
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.1);
-    }
-
-    .btn-filter {
-      padding: 10px 28px;
-      background: linear-gradient(135deg, #ff6a00 0%, #ff8c42 100%);
-      color: white;
-      border: none;
-      border-radius: 30px;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 4px 15px rgba(255, 106, 0, 0.2);
-      transition: all 0.3s ease;
-      height: 42px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-filter:hover {
-      background: linear-gradient(135deg, #ff8c42 0%, #ff6a00 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(255, 106, 0, 0.3);
-    }
-
-    .btn-reset {
-      padding: 10px 24px;
-      background: #e2e8f0;
-      color: #475569;
-      border: none;
-      border-radius: 30px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      height: 42px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      text-decoration: none;
-    }
-
-    .btn-reset:hover {
-      background: #cbd5e1;
-      color: #1e293b;
-    }
-
-    /* Date Summary Box */
-    .date-summary {
-      margin: 20px 0;
-      padding: 14px 20px;
-      background: #eff6ff;
-      border-radius: 12px;
-      font-size: 0.9rem;
-      color: #1d4ed8;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      border-left: 4px solid var(--status-cooking);
-    }
-
-    .order-count {
-      margin-left: auto;
-      background: var(--primary-orange);
-      color: white;
-      padding: 6px 16px;
-      border-radius: 30px;
-      font-weight: 700;
-      font-size: 0.8rem;
-      box-shadow: 0 4px 10px rgba(255, 106, 0, 0.15);
-    }
-
-    /* Status Filters */
-    .filter-buttons {
-      margin: 24px 0;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .filter-btn {
-      padding: 8px 24px;
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      color: #64748b;
-      border-radius: 30px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.25s ease;
-    }
-
-    .filter-btn.active,
-    .filter-btn:hover {
-      background: linear-gradient(135deg, #ff6a00, #ff8c42);
-      color: white;
-      border-color: transparent;
-      box-shadow: 0 4px 12px rgba(255, 106, 0, 0.25);
-    }
-
-    /* Kitchen Grid layout */
-    .kitchen-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
-      padding: 10px 0;
-    }
-
-    /* Premium KOT Cards */
-    .order-card {
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 20px;
-      border: 1px solid rgba(0, 0, 0, 0.05);
-      box-shadow: 0 8px 30px rgba(15, 23, 42, 0.03);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .order-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      z-index: 10;
-    }
-
-    .order-card.PENDING::before {
-      background: var(--status-pending);
-    }
-    .order-card.COOKING::before {
-      background: var(--status-cooking);
-    }
-    .order-card.DONE::before {
-      background: var(--status-done);
-    }
-
-    .order-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
-      border-color: rgba(255, 106, 0, 0.15);
-    }
-
-    .card-header {
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid #f1f5f9;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .order-id {
-      font-size: 0.85rem;
-      font-weight: 800;
-      color: #0f172a;
-      margin: 0;
-    }
-
-    .kot-badge {
-      display: inline-flex;
-      padding: 4px 12px;
-      border-radius: 30px;
-      font-size: 0.75rem;
-      font-weight: 800;
-      background-color: #0f172a;
-      color: #ffffff;
-      align-self: flex-start;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    .order-time {
-      font-size: 0.75rem;
-      color: #64748b;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    /* Product layout */
-    .product-info {
-      margin-bottom: 15px;
-      flex-grow: 1;
-    }
-
-    .product-name {
-      font-size: 1.1rem;
-      font-weight: 800;
-      color: #0f172a;
-      margin-bottom: 10px;
-    }
-
-    .food-type {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 10px;
-      border-radius: 30px;
-      font-size: 0.65rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      margin-bottom: 16px;
-    }
-
-    .food-type.VEG {
-      background: #d1fae5;
-      color: #065f46;
-    }
-
-    .food-type.NON-VEG {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    /* Card Details Rows */
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      padding-bottom: 8px;
-      border-bottom: 1px dashed #f1f5f9;
-    }
-
-    .info-row:last-of-type {
-      border-bottom: none;
-      margin-bottom: 0;
-    }
-
-    .info-label {
-      font-size: 0.8rem;
-      color: #64748b;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .info-value {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #0f172a;
-    }
-
-    .quantity-badge {
-      background: linear-gradient(135deg, #ff6a00, #ff8c42);
-      color: white;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.85rem;
-      font-weight: 800;
-      box-shadow: 0 4px 10px rgba(255, 106, 0, 0.2);
-    }
-
-    .table-info {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 12px;
-      background: #f1f5f9;
-      border-radius: 30px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: #475569;
-    }
-
-    /* Note Container */
-    .order-note-box {
-      margin-top: 12px;
-      padding: 10px 14px;
-      background: #fffbeb;
-      border-radius: 10px;
-      border: 1px solid #fef3c7;
-      font-size: 0.8rem;
-      color: #92400e;
-      font-weight: 600;
-      display: flex;
-      align-items: start;
-      gap: 8px;
-    }
-
-    /* Select Styles */
-    .status-section {
-      margin-top: auto;
-      padding-top: 16px;
-    }
-
-    .status-select {
-      width: 100%;
-      border: 1px solid #e2e8f0 !important;
-      border-radius: 10px !important;
-      padding: 10px 14px !important;
-      font-size: 0.85rem !important;
-      font-weight: 700 !important;
-      cursor: pointer;
-      background: #f8fafc !important;
-      color: #0f172a !important;
-      transition: all 0.2s ease !important;
-      outline: none;
-    }
-
-    .order-card.PENDING .status-select {
-      border-left: 3px solid var(--status-pending) !important;
-      color: var(--status-pending-text) !important;
-    }
-
-    .order-card.COOKING .status-select {
-      border-left: 3px solid var(--status-cooking) !important;
-      color: var(--status-cooking-text) !important;
-    }
-
-    .order-card.DONE .status-select {
-      border-left: 3px solid var(--status-done) !important;
-      color: var(--status-done-text) !important;
-    }
-
-    .status-select:focus {
-      border-color: var(--primary-orange) !important;
-      background: #ffffff !important;
-    }
-
-    /* Empty view */
-    .empty-state {
-      padding: 80px 20px;
-      text-align: center;
-      background: #ffffff;
-      border-radius: 16px;
-      border: 2px dashed #e2e8f0;
-      grid-column: 1 / -1;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.01);
-    }
-
-    .empty-state i {
-      color: #cbd5e1;
-      margin-bottom: 20px;
-    }
-
-    .empty-state h4 {
-      font-weight: 800;
-      color: #0f172a;
-      margin-bottom: 8px;
-    }
-
-    .empty-state p {
-      color: #64748b;
-    }
-
-    /* Notification box */
-    .notification {
-      position: fixed;
-      top: 24px;
-      right: 24px;
-      min-width: 280px;
-      padding: 16px 24px;
-      color: #ffffff;
-      font-size: 0.9rem;
-      font-weight: 700;
-      border-radius: 12px;
-      z-index: 99999;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
-      animation: slideInToast 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    }
-
-    @keyframes slideInToast {
-      from {
-        transform: translateY(-20px) scale(0.95);
-        opacity: 0;
-      }
-      to {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-      }
-    }
-
-    /* Auto-refresh indicator styling */
-    .refresh-info {
-      font-size: 0.75rem;
-      color: #64748b;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .pulse-dot {
-      width: 8px;
-      height: 8px;
-      background-color: var(--primary-orange);
-      border-radius: 50%;
-      display: inline-block;
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% {
-        transform: scale(0.9);
-        box-shadow: 0 0 0 0 rgba(255, 106, 0, 0.4);
-      }
-      70% {
-        transform: scale(1);
-        box-shadow: 0 0 0 6px rgba(255, 106, 0, 0);
-      }
-      100% {
-        transform: scale(0.9);
-        box-shadow: 0 0 0 0 rgba(255, 106, 0, 0);
-      }
-    }
-  </style>
+  <!-- Kitchen Panel CSS -->
+  <link rel="stylesheet" href="{{ asset('admin_template/css/kitchen-panel.css') }}">
 </head>
 <body>
 @include('includes.sidebar')
@@ -505,308 +24,730 @@
 <div class="pc-container">
   <div class="pc-content">
     
-    <!-- Premium Header -->
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h5 class="m-b-10 text-dark font-weight-bold" style="font-size: 1.5rem;"><i class="fas fa-utensils me-2" style="color: #ff6a00;"></i> Kitchen Orders</h5>
-            <p class="text-muted mb-0" style="font-size: 0.9rem;">View and manage real-time KOT and order preparations</p>
+    <div class="kds-container">
+      
+      <!-- ===================================================
+           1. TOP HEADER & KDS CONTROLS
+           =================================================== -->
+      <div class="kds-header-card">
+        <div class="kds-header-left">
+          <div class="kds-header-icon">
+            <i class="fa-solid fa-fire-burner"></i>
+          </div>
+          <div class="kds-header-title-wrap">
+            <span class="kds-header-eyebrow">Kitchen Display System (KDS)</span>
+            <h1 class="kds-header-title">Live Kitchen Orders</h1>
+            <p class="kds-header-subtitle">
+              Showing KOTs from <strong>{{ date('d M Y', strtotime($from_date)) }}</strong> to <strong>{{ date('d M Y', strtotime($to_date)) }}</strong>
+              @if($from_date == date('Y-m-d', strtotime('-1 day')) && $to_date == date('Y-m-d'))
+                <span class="badge bg-light-primary text-primary ms-1" style="font-size: 0.7rem; font-weight: 700;">Last 2 Days</span>
+              @endif
+            </p>
+          </div>
         </div>
-        <div class="d-flex align-items-center gap-3">
-            <div class="refresh-info d-none d-sm-flex align-items-center gap-2">
-                <span class="pulse-dot"></span>
-                <span class="text-secondary font-weight-bold" style="font-size: 0.8rem; letter-spacing: 0.02em; text-transform: uppercase;">Real-time auto-sync</span>
-            </div>
-            <button id="refreshBtn" class="btn px-4 rounded-pill font-weight-bold text-white d-flex align-items-center gap-2" style="background: linear-gradient(135deg, #ff6a00 0%, #ff8c42 100%); border: none; box-shadow: 0 4px 15px rgba(255, 106, 0, 0.2); height: 40px; transition: all 0.3s ease;">
-                <i class="fa fa-sync-alt"></i> Refresh
-            </button>
-        </div>
-    </div>
 
-    <div class="kitchen-container">
-      <!-- Date Range Filter Section -->
-      <div class="filter-section">
+        <div class="kds-header-actions">
+          <!-- Live Auto-Sync Pill -->
+          <div class="kds-live-indicator" title="Connected to POS Server">
+            <span class="kds-pulse-dot"></span>
+            <span class="d-none d-sm-inline">Live Auto-Sync</span>
+          </div>
+
+          <!-- Sound Toggle -->
+          <button type="button" class="btn-kds-action" id="soundToggleBtn" title="Toggle New Order Audio Chime">
+            <i class="fa-solid fa-volume-high text-primary" id="soundIcon"></i>
+            <span class="d-none d-md-inline" id="soundLabel">Sound On</span>
+          </button>
+
+          <!-- Fullscreen Toggle for Kitchen Monitors -->
+          <button type="button" class="btn-kds-action" id="fullscreenToggleBtn" title="Toggle Fullscreen Mode">
+            <i class="fa-solid fa-expand"></i>
+            <span class="d-none d-md-inline">Fullscreen</span>
+          </button>
+
+          <!-- Manual Refresh Button -->
+          <button type="button" class="btn-kds-action btn-kds-primary" id="refreshBtn" title="Refresh Orders">
+            <i class="fa-solid fa-rotate"></i>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Flash Messages -->
+      @include('includes.message')
+
+      @php
+        $kotList = $kotGroups ?? collect([]);
+        $totalKotCount = $kotList->count();
+        $pendingKotCount = $kotList->where('status', 'PENDING')->count();
+        $cookingKotCount = $kotList->where('status', 'COOKING')->count();
+        $doneKotCount = $kotList->where('status', 'DONE')->count();
+        $totalDishesCount = count($OrderItems ?? []);
+      @endphp
+
+      <!-- ===================================================
+           2. QUICK METRICS STAT DECK (KOT GROUPED)
+           =================================================== -->
+      <div class="kds-stats-grid">
+        <!-- All KOT Orders -->
+        <div class="kds-stat-card stat-all {{ $selected_status == 'all' ? 'active' : '' }}" data-filter="all">
+          <div class="kds-stat-info">
+            <span class="kds-stat-label">Total KOT Cards</span>
+            <span class="kds-stat-value" id="statAllCount">{{ $totalKotCount }}</span>
+            <small class="text-muted" style="font-size: 0.72rem; font-weight: 600; margin-top: 2px;">{{ $totalDishesCount }} dishes total</small>
+          </div>
+          <div class="kds-stat-badge-icon">
+            <i class="fa-solid fa-utensils"></i>
+          </div>
+        </div>
+
+        <!-- Pending -->
+        <div class="kds-stat-card stat-pending {{ $selected_status == 'PENDING' ? 'active' : '' }}" data-filter="PENDING">
+          <div class="kds-stat-info">
+            <span class="kds-stat-label">⏳ Pending Prep</span>
+            <span class="kds-stat-value" id="statPendingCount">{{ $pendingKotCount }}</span>
+            <small class="text-muted" style="font-size: 0.72rem; font-weight: 600; margin-top: 2px;">Awaiting cook</small>
+          </div>
+          <div class="kds-stat-badge-icon">
+            <i class="fa-solid fa-clock"></i>
+          </div>
+        </div>
+
+        <!-- Cooking -->
+        <div class="kds-stat-card stat-cooking {{ $selected_status == 'COOKING' ? 'active' : '' }}" data-filter="COOKING">
+          <div class="kds-stat-info">
+            <span class="kds-stat-label">👨‍🍳 Cooking</span>
+            <span class="kds-stat-value" id="statCookingCount">{{ $cookingKotCount }}</span>
+            <small class="text-muted" style="font-size: 0.72rem; font-weight: 600; margin-top: 2px;">In preparation</small>
+          </div>
+          <div class="kds-stat-badge-icon">
+            <i class="fa-solid fa-fire"></i>
+          </div>
+        </div>
+
+        <!-- Ready / Done -->
+        <div class="kds-stat-card stat-done {{ $selected_status == 'DONE' ? 'active' : '' }}" data-filter="DONE">
+          <div class="kds-stat-info">
+            <span class="kds-stat-label">✅ Ready / Done</span>
+            <span class="kds-stat-value" id="statDoneCount">{{ $doneKotCount }}</span>
+            <small class="text-muted" style="font-size: 0.72rem; font-weight: 600; margin-top: 2px;">Prepared tickets</small>
+          </div>
+          <div class="kds-stat-badge-icon">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================
+           3. CONTROLS BAR: SEARCH & STATUS TABS
+           =================================================== -->
+      <div class="kds-controls-bar">
+        <!-- Real-Time Search Box -->
+        <div class="kds-search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="kdsSearchInput" class="kds-search-input" placeholder="Search dish, order #, table, KOT...">
+        </div>
+
+        <!-- Status Filter Tabs -->
+        <div class="kds-filter-tabs">
+          <button type="button" class="kds-tab-btn {{ $selected_status == 'all' ? 'active' : '' }}" data-filter="all">
+            <i class="fa-solid fa-border-all"></i> All ({{ $totalKotCount }})
+          </button>
+          <button type="button" class="kds-tab-btn {{ $selected_status == 'PENDING' ? 'active' : '' }}" data-filter="PENDING">
+            ⏳ Pending ({{ $pendingKotCount }})
+          </button>
+          <button type="button" class="kds-tab-btn {{ $selected_status == 'COOKING' ? 'active' : '' }}" data-filter="COOKING">
+            👨‍🍳 Cooking ({{ $cookingKotCount }})
+          </button>
+          <button type="button" class="kds-tab-btn {{ $selected_status == 'DONE' ? 'active' : '' }}" data-filter="DONE">
+            ✅ Done ({{ $doneKotCount }})
+          </button>
+          <button type="button" class="kds-tab-btn" id="toggleFilterPanelBtn" title="Toggle Date & Table Filter Panel">
+            <i class="fa-solid fa-sliders"></i>
+            <span class="d-none d-sm-inline">Date &amp; Filter</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ===================================================
+           4. DATE RANGE & TABLE FILTER PANEL (COLLAPSIBLE)
+           =================================================== -->
+      <div class="kds-date-filter-panel" id="dateFilterPanel" style="{{ ($from_date != date('Y-m-d', strtotime('-1 day')) || $to_date != date('Y-m-d') || !empty($selected_table)) ? '' : 'display: none;' }}">
         <form method="GET" action="{{ route('manage.kitchen-panel') }}" id="filterForm">
-          <div class="filter-row">
-            <div class="filter-group">
-              <label><i class="fa fa-calendar me-1"></i> From Date</label>
-              <input type="date" name="from_date" value="{{ $from_date }}" max="{{ date('Y-m-d') }}">
+          <div class="kds-filter-grid">
+            <div class="kds-form-group">
+              <label class="kds-form-label"><i class="fa-solid fa-calendar-days text-primary"></i> From Date</label>
+              <input type="date" name="from_date" id="formFromDate" class="kds-form-control" value="{{ $from_date }}" max="{{ date('Y-m-d') }}">
             </div>
-            <div class="filter-group">
-              <label><i class="fa fa-calendar me-1"></i> To Date</label>
-              <input type="date" name="to_date" value="{{ $to_date }}" max="{{ date('Y-m-d') }}">
+            
+            <div class="kds-form-group">
+              <label class="kds-form-label"><i class="fa-solid fa-calendar-days text-primary"></i> To Date</label>
+              <input type="date" name="to_date" id="formToDate" class="kds-form-control" value="{{ $to_date }}" max="{{ date('Y-m-d') }}">
             </div>
-            <div class="filter-group">
-              <label><i class="fa fa-filter me-1"></i> Status</label>
-              <select name="status">
-                <option value="all" {{ $selected_status == 'all' ? 'selected' : '' }}>All Status</option>
+
+            <div class="kds-form-group">
+              <label class="kds-form-label"><i class="fa-solid fa-filter text-primary"></i> Status Filter</label>
+              <select name="status" class="kds-form-control" id="formStatusSelect">
+                <option value="all" {{ $selected_status == 'all' ? 'selected' : '' }}>All Statuses</option>
                 <option value="PENDING" {{ $selected_status == 'PENDING' ? 'selected' : '' }}>⏳ Pending</option>
                 <option value="COOKING" {{ $selected_status == 'COOKING' ? 'selected' : '' }}>👨‍🍳 Cooking</option>
                 <option value="DONE" {{ $selected_status == 'DONE' ? 'selected' : '' }}>✅ Done</option>
               </select>
             </div>
-            <div class="filter-group">
-              <label><i class="fa fa-table me-1"></i> Table</label>
-              <select name="table_id">
-                <option value="">All Tables</option>
+
+            <div class="kds-form-group">
+              <label class="kds-form-label"><i class="fa-solid fa-chair text-primary"></i> Table</label>
+              <select name="table_id" class="kds-form-control">
+                <option value="">All Tables / Take Away</option>
                 @foreach($tables as $table)
                   <option value="{{ $table->id }}" {{ $selected_table == $table->id ? 'selected' : '' }}>{{ $table->name }}</option>
                 @endforeach
               </select>
             </div>
-            <div class="filter-actions">
-              <button type="submit" class="btn-filter">
-                <i class="fa fa-search"></i> Apply Filters
+
+            <div class="kds-filter-btn-group">
+              <button type="submit" class="btn-kds-action btn-kds-primary">
+                <i class="fa-solid fa-magnifying-glass"></i> Apply
               </button>
-              <a href="{{ route('manage.kitchen-panel') }}" class="btn-reset">
-                <i class="fa fa-undo"></i> Reset
+              <a href="{{ route('manage.kitchen-panel') }}" class="btn-kds-action">
+                <i class="fa-solid fa-rotate-left"></i> Reset (Last 2 Days)
               </a>
             </div>
+          </div>
+
+          <!-- Quick Date Presets -->
+          <div class="kds-quick-date-pills">
+            <span class="text-muted me-1" style="font-size: 0.74rem; font-weight: 700;">Quick Presets:</span>
+            <button type="button" class="kds-quick-date-btn {{ ($from_date == date('Y-m-d', strtotime('-1 day')) && $to_date == date('Y-m-d')) ? 'active' : '' }}" data-days="2">
+              Last 2 Days (Default)
+            </button>
+            <button type="button" class="kds-quick-date-btn {{ ($from_date == date('Y-m-d') && $to_date == date('Y-m-d')) ? 'active' : '' }}" data-days="1">
+              Today Only
+            </button>
+            <button type="button" class="kds-quick-date-btn {{ ($from_date == date('Y-m-d', strtotime('-6 days')) && $to_date == date('Y-m-d')) ? 'active' : '' }}" data-days="7">
+              Last 7 Days
+            </button>
+            <button type="button" class="kds-quick-date-btn {{ ($from_date == date('Y-m-01') && $to_date == date('Y-m-d')) ? 'active' : '' }}" data-days="month">
+              This Month
+            </button>
           </div>
         </form>
       </div>
 
-      <!-- Date Range Summary Box -->
-      <div class="date-summary shadow-sm">
-        <i class="fa fa-info-circle"></i>
-        <span>Showing orders from <strong>{{ \Carbon\Carbon::parse($from_date)->format('d M Y') }}</strong> to <strong>{{ \Carbon\Carbon::parse($to_date)->format('d M Y') }}</strong></span>
-        <span class="order-count">{{ count($OrderItems) }} items</span>
-      </div>
-
-      <!-- Filter Buttons -->
-      <div class="filter-buttons">
-        <button class="filter-btn {{ $selected_status == 'all' ? 'active' : '' }}" data-filter="all">All</button>
-        <button class="filter-btn {{ $selected_status == 'PENDING' ? 'active' : '' }}" data-filter="PENDING">⏳ Pending</button>
-        <button class="filter-btn {{ $selected_status == 'COOKING' ? 'active' : '' }}" data-filter="COOKING">👨‍🍳 Cooking</button>
-        <button class="filter-btn {{ $selected_status == 'DONE' ? 'active' : '' }}" data-filter="DONE">✅ Done</button>
-      </div>
-      
-      <!-- Orders Grid -->
-      <div class="kitchen-grid">
-        @forelse($OrderItems as $item)
-        <div class="order-card {{ $item->order_status }}" data-status="{{ $item->order_status }}" id="card_{{ $item->id }}">
-          <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <h6 class="order-id">ORDER #{{ $item->order->order_id }}</h6>
-              <button class="btn btn-sm btn-link p-0 text-secondary print-kot-trigger" 
-                      data-id="{{ $item->id }}"
-                      data-order-id="{{ $item->order->order_id }}"
-                      data-kot-no="{{ $item->kot_no ?? 'N/A' }}"
-                      data-date="{{ $item->created_at->format('d M, h:i A') }}"
-                      data-dish-name="{{ $item->subcategory->name }}"
-                      data-food-type="{{ $item->subcategory->food_type }}"
-                      data-quantity="{{ $item->quantity }}"
-                      data-table="{{ $item->order->table->name ?? 'Take Away' }}"
-                      data-note="{{ $item->note ?? '' }}"
-                      title="Print KOT Ticket"
-                      style="color: var(--text-secondary); border: none; background: none; outline: none; cursor: pointer;">
-                <i class="fas fa-print" style="font-size: 1.05rem; color: #ff6a00;"></i>
-              </button>
-            </div>
-            @if($item->kot_no)
-              <span class="kot-badge">
-                KOT: {{ $item->kot_no }}
-              </span>
-            @endif
-            <span class="order-time">
-              <i class="fa fa-clock"></i> {{ $item->created_at->format('d M, h:i A') }}
-            </span>
-          </div>
+      <!-- ===================================================
+           5. KDS ORDERS GRID (MERGED BY KOT NUMBER & ORDER)
+           =================================================== -->
+      <div class="kds-orders-grid" id="kdsOrdersGrid">
+        @forelse($kotList as $kot)
+        @php
+          $tableName = $kot->table_name;
+          $orderNo = $kot->order_no;
+          $kotNo = $kot->kot_no ?? 'N/A';
+          $status = $kot->status ?? 'PENDING';
           
-          <div class="product-info">
-            <h4 class="product-name">{{ $item->subcategory->name }}</h4>
-            <span class="food-type {{ $item->subcategory->food_type }}">
-              <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i> {{ $item->subcategory->food_type }}
-            </span>
-            
-            <div class="info-row">
-              <span class="info-label"><i class="fa fa-cubes"></i> Quantity</span>
-              <span class="quantity-badge">{{ $item->quantity }}</span>
+          // Build search string combining all dishes, notes, and addons in this KOT
+          $allDishNames = [];
+          $allNotes = [];
+          $allAddons = [];
+          foreach($kot->items as $it) {
+            $allDishNames[] = @$it->subcategory->name ?? 'Dish Item';
+            if (!empty($it->note)) $allNotes[] = $it->note;
+            if (!empty($it->addons_list) && !empty($it->subcategory_id)) {
+              foreach($it->addons_list as $add) {
+                $allAddons[] = $add['name'] ?? '';
+              }
+            }
+          }
+          $searchData = strtolower($orderNo . ' ' . $kotNo . ' ' . $tableName . ' ' . implode(' ', $allDishNames) . ' ' . implode(' ', $allNotes) . ' ' . implode(' ', $allAddons));
+        @endphp
+        
+        <div class="kds-order-card {{ $status }}" 
+             data-status="{{ $status }}" 
+             data-search="{{ $searchData }}" 
+             data-card-id="{{ $kot->card_id }}"
+             data-kot-no="{{ $kot->kot_no }}"
+             data-order-id="{{ $kot->order_id }}"
+             data-item-ids="{{ json_encode($kot->item_ids) }}"
+             id="card_{{ $kot->card_id }}">
+          
+          <!-- Card Header -->
+          <div class="kds-card-header">
+            <div class="kds-card-top-row">
+              <span class="kds-order-badge">
+                <i class="fa-solid fa-receipt text-primary"></i> #ORD-{{ $orderNo }}
+              </span>
+
+              <div style="display: flex; align-items: center; gap: 8px;">
+                @if($kot->kot_no)
+                <span class="kds-kot-badge">
+                  <i class="fa-solid fa-fire text-warning"></i> {{ $kot->kot_no }}
+                </span>
+                @endif
+
+                @if($kot->total_dishes > 1)
+                <span class="kds-items-count-pill" title="Multiple dishes in this KOT">
+                  <i class="fa-solid fa-layer-group"></i> {{ $kot->total_dishes }} Items
+                </span>
+                @endif
+
+                <!-- Print KOT Trigger Button (prints entire KOT lot) -->
+                <button type="button" class="btn-kds-print print-kot-trigger" 
+                        data-id="{{ $kot->primary_item_id }}"
+                        title="Print KOT Ticket">
+                  <i class="fa-solid fa-print"></i>
+                </button>
+              </div>
             </div>
-            
-            <div class="info-row">
-              <span class="info-label"><i class="fa fa-map-marker-alt"></i> Table</span>
-              <span class="table-info">
-                @if($item->order->table)
-                  <i class="fa fa-table"></i> {{ $item->order->table->name }}
+
+            <div class="kds-card-meta-row">
+              <span class="kds-meta-item">
+                <i class="fa-regular fa-clock"></i> {{ $kot->created_at ? $kot->created_at->format('d M, h:i A') : 'Just now' }}
+              </span>
+
+              <span class="kds-table-pill">
+                @if(!$kot->is_takeaway)
+                  <i class="fa-solid fa-chair text-primary"></i> {{ $tableName }}
                 @else
-                  <i class="fa fa-shopping-bag"></i> Take Away
+                  <i class="fa-solid fa-bag-shopping text-success"></i> Take Away
                 @endif
               </span>
             </div>
+          </div>
 
-            @if($item->note)
-            <div class="order-note-box">
-              <i class="fa fa-sticky-note mt-1"></i>
-              <span>{{ $item->note }}</span>
+          <!-- Card Body: Contains All Dishes in this KOT -->
+          <div class="kds-card-body">
+            <div class="kds-dishes-deck">
+              @foreach($kot->items as $item)
+              @php
+                $dishName = @$item->subcategory->name ?? 'Dish Item';
+                $foodType = strtoupper(@$item->subcategory->food_type ?? 'VEG');
+                $addons = $item->addons_list;
+              @endphp
+              <div class="kds-dish-block" id="item_{{ $item->id }}">
+                <div class="kds-dish-title-row">
+                  <div>
+                    <h3 class="kds-dish-name">{{ $dishName }}</h3>
+                    <span class="kds-food-type-tag {{ $foodType }}">
+                      <span class="kds-type-dot"></span>
+                      {{ $foodType }}
+                    </span>
+                  </div>
+
+                  <div class="kds-qty-badge" title="Quantity to Prepare">
+                    x{{ $item->quantity }}
+                  </div>
+                </div>
+
+                @if(!empty($addons) && !empty($item->subcategory_id))
+                <div class="kds-addons-container">
+                  <div class="kds-addons-header">
+                    <i class="fa-solid fa-puzzle-piece"></i> Mapped Add-ons ({{ count($addons) }})
+                  </div>
+                  <div class="kds-addons-list">
+                    @foreach($addons as $a)
+                    @php
+                      $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
+                      $aName = $a['name'] ?? 'Add-on';
+                      $aFoodType = strtoupper($a['food_type'] ?? 'VEG');
+                    @endphp
+                    <div class="kds-addon-item-row">
+                      <div class="kds-addon-left">
+                        <span class="kds-addon-pill"><i class="fa-solid fa-plus me-1"></i>ADD-ON</span>
+                        <span class="kds-food-type-tag {{ $aFoodType }}" style="margin-bottom: 0; padding: 1px 6px; font-size: 0.6rem;">
+                          <span class="kds-type-dot"></span>
+                          {{ $aFoodType }}
+                        </span>
+                        <span class="kds-addon-title" title="{{ $aName }}">{{ $aName }}</span>
+                      </div>
+                      <div class="kds-addon-qty-chip" title="Add-on Quantity">
+                        x{{ $aQty }}
+                      </div>
+                    </div>
+                    @endforeach
+                  </div>
+                </div>
+                @endif
+
+                @if($item->note)
+                <div class="kds-order-note">
+                  <i class="fa-solid fa-note-sticky"></i>
+                  <span><strong>Note:</strong> {{ $item->note }}</span>
+                </div>
+                @endif
+              </div>
+              @endforeach
             </div>
-            @endif
           </div>
-          
-          <div class="status-section">
-            <select class="status-select" data-id="{{ $item->id }}">
-              <option value="PENDING" {{ $item->order_status == 'PENDING' ? 'selected' : '' }}>⏳ Pending</option>
-              <option value="COOKING" {{ $item->order_status == 'COOKING' ? 'selected' : '' }}>👨‍🍳 Cooking</option>
-              <option value="DONE" {{ $item->order_status == 'DONE' ? 'selected' : '' }}>✅ Done</option>
-            </select>
+
+          <!-- Card Footer: Unified 1-Tap Status Switcher for entire KOT -->
+          <div class="kds-card-footer">
+            <div class="kds-status-segmented" 
+                 data-card-id="{{ $kot->card_id }}"
+                 data-kot-no="{{ $kot->kot_no }}"
+                 data-order-id="{{ $kot->order_id }}"
+                 data-item-ids="{{ json_encode($kot->item_ids) }}"
+                 data-primary-id="{{ $kot->primary_item_id }}">
+              <button type="button" class="kds-status-btn {{ $status == 'PENDING' ? 'active' : '' }}" data-status="PENDING">
+                ⏳ Pending
+              </button>
+              <button type="button" class="kds-status-btn {{ $status == 'COOKING' ? 'active' : '' }}" data-status="COOKING">
+                👨‍🍳 Cooking
+              </button>
+              <button type="button" class="kds-status-btn {{ $status == 'DONE' ? 'active' : '' }}" data-status="DONE">
+                ✅ Done
+              </button>
+            </div>
           </div>
-        </div>
+
+        </div><!-- /.kds-order-card -->
         @empty
-        <div class="empty-state">
-          <i class="fa fa-utensils fa-4x mb-3"></i>
-          <h4>No Orders Found</h4>
-          <p>No active kitchen orders found for the selected filter criteria.</p>
+        <!-- Empty State -->
+        <div class="kds-empty-deck" id="kdsEmptyDeck">
+          <div class="kds-empty-icon">
+            <i class="fa-solid fa-kitchen-set"></i>
+          </div>
+          <h3 class="kds-empty-title">No Kitchen Orders Found</h3>
+          <p class="kds-empty-desc">All current kitchen order tickets (KOT) have been prepared or no orders match the selected filters.</p>
+          <a href="{{ route('manage.kitchen-panel') }}" class="btn-kds-action btn-kds-primary">
+            <i class="fa-solid fa-rotate-left"></i> Reset to Last 2 Days
+          </a>
         </div>
         @endforelse
       </div>
-    </div>
-  </div>
-</div>
 
-<!-- JS -->
+    </div><!-- /.kds-container -->
+
+  </div><!-- /.pc-content -->
+</div><!-- /.pc-container -->
+
+
+<!-- Hidden Audio Element for New Order Audio Alert -->
+<audio id="kotAudioAlert" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
+<!-- JS & Scripts -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 @include('includes.script')
 
 <script>
 $(document).ready(function() {
+  let soundEnabled = true;
   let statusChangeInProgress = false;
-  
-  // Handle status change
-  $(document).on('change', '.status-select', function() {
+  let currentActiveFilter = "{{ $selected_status ?? 'all' }}";
+
+  // 1. Fullscreen Toggle
+  $('#fullscreenToggleBtn').on('click', function() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.warn(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+      $(this).find('i').removeClass('fa-expand').addClass('fa-compress');
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        $(this).find('i').removeClass('fa-compress').addClass('fa-expand');
+      }
+    }
+  });
+
+  // 2. Sound Toggle
+  $('#soundToggleBtn').on('click', function() {
+    soundEnabled = !soundEnabled;
+    if (soundEnabled) {
+      $('#soundIcon').removeClass('fa-volume-xmark text-muted').addClass('fa-volume-high text-primary');
+      $('#soundLabel').text('Sound On');
+      showToast('Sound alerts enabled', 'info');
+      playChime();
+    } else {
+      $('#soundIcon').removeClass('fa-volume-high text-primary').addClass('fa-volume-xmark text-muted');
+      $('#soundLabel').text('Sound Muted');
+      showToast('Sound alerts muted', 'info');
+    }
+  });
+
+  function playChime() {
+    if (!soundEnabled) return;
+    try {
+      const audio = document.getElementById('kotAudioAlert');
+      if (audio) {
+        audio.currentTime = 0;
+        audio.play().catch(e => {
+          synthBeep();
+        });
+      } else {
+        synthBeep();
+      }
+    } catch(e) {
+      synthBeep();
+    }
+  }
+
+  function synthBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+    } catch(e) {}
+  }
+
+  // 3. Toggle Date Filter Panel & Quick Presets
+  $('#toggleFilterPanelBtn').on('click', function() {
+    $('#dateFilterPanel').slideToggle(200);
+  });
+
+  $('.kds-quick-date-btn').on('click', function() {
+    const days = $(this).data('days');
+    const today = new Date();
+    const formatDate = d => d.toISOString().split('T')[0];
+
+    let fromD = new Date();
+    let toD = new Date();
+
+    if (days === 1) {
+      // Today
+      fromD = today;
+    } else if (days === 2) {
+      // Last 2 days
+      fromD.setDate(today.getDate() - 1);
+    } else if (days === 7) {
+      // Last 7 days
+      fromD.setDate(today.getDate() - 6);
+    } else if (days === 'month') {
+      // 1st of this month
+      fromD = new Date(today.getFullYear(), today.getMonth(), 1);
+    }
+
+    $('#formFromDate').val(formatDate(fromD));
+    $('#formToDate').val(formatDate(toD));
+    $('#filterForm').submit();
+  });
+
+  // 4. Live Client-Side Search & Filter
+  $('#kdsSearchInput').on('keyup', function() {
+    applyFilters();
+  });
+
+  $('.kds-tab-btn, .kds-stat-card').on('click', function() {
+    const filter = $(this).data('filter');
+    if (!filter) return;
+    
+    currentActiveFilter = filter;
+    
+    // Update active states
+    $('.kds-tab-btn').removeClass('active');
+    $(`.kds-tab-btn[data-filter="${filter}"]`).addClass('active');
+
+    $('.kds-stat-card').removeClass('active');
+    $(`.kds-stat-card[data-filter="${filter}"]`).addClass('active');
+
+    $('#formStatusSelect').val(filter);
+
+    applyFilters();
+  });
+
+  function applyFilters() {
+    const query = ($('#kdsSearchInput').val() || '').toLowerCase().trim();
+    let visibleCount = 0;
+
+    $('.kds-order-card').each(function() {
+      const card = $(this);
+      const status = card.attr('data-status') || '';
+      const searchData = card.attr('data-search') || '';
+
+      const matchesSearch = query === '' || searchData.includes(query);
+      const matchesStatus = (currentActiveFilter === 'all') || (status === currentActiveFilter);
+
+      if (matchesSearch && matchesStatus) {
+        card.show();
+        visibleCount++;
+      } else {
+        card.hide();
+      }
+    });
+
+    if (visibleCount === 0 && $('.kds-order-card').length > 0) {
+      if (!$('#noSearchResults').length) {
+        $('#kdsOrdersGrid').append(`
+          <div class="kds-empty-deck" id="noSearchResults">
+            <div class="kds-empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+            <h3 class="kds-empty-title">No Matching Orders</h3>
+            <p class="kds-empty-desc">No kitchen tickets found matching "${query}" in this view.</p>
+          </div>
+        `);
+      }
+      $('#noSearchResults').show();
+    } else {
+      $('#noSearchResults').remove();
+    }
+  }
+
+  // 5. One-Tap Status Update (Batch updates entire KOT ticket)
+  $(document).on('click', '.kds-status-btn', function(e) {
+    e.preventDefault();
     if (statusChangeInProgress) return;
-    
-    let id = $(this).data('id');
-    let order_status = $(this).val();
-    let card = $('#card_' + id);
-    let selectElement = $(this);
-    let currentStatus = card.attr('data-status');
-    
-    if (order_status === currentStatus) return;
-    
+
+    const btn = $(this);
+    const targetStatus = btn.data('status');
+    const segmentedWrap = btn.closest('.kds-status-segmented');
+    const cardId = segmentedWrap.data('card-id');
+    const kotNo = segmentedWrap.data('kot-no');
+    const orderId = segmentedWrap.data('order-id');
+    const itemIds = segmentedWrap.data('item-ids');
+    const primaryId = segmentedWrap.data('primary-id');
+
+    const card = $(`#card_${cardId}`);
+    const currentStatus = card.attr('data-status');
+
+    if (targetStatus === currentStatus) return;
+
     statusChangeInProgress = true;
-    
-    // Update UI immediately
-    card.removeClass('PENDING COOKING DONE').addClass(order_status);
-    card.attr('data-status', order_status);
-    card.css('opacity', '0.7');
-    selectElement.prop('disabled', true);
-    
+
+    // Optimistic UI Update
+    segmentedWrap.find('.kds-status-btn').removeClass('active');
+    btn.addClass('active');
+    card.removeClass('PENDING COOKING DONE').addClass(targetStatus).attr('data-status', targetStatus);
+    card.css('opacity', '0.75');
+
+    // Update Counts Dynamically
+    updateMetricsCount(currentStatus, targetStatus);
+
+    const postPayload = {
+      _token: "{{ csrf_token() }}",
+      order_status: targetStatus
+    };
+
+    if (kotNo && kotNo !== 'N/A') {
+      postPayload.kot_no = kotNo;
+      postPayload.order_id = orderId;
+    }
+    if (itemIds && itemIds.length) {
+      postPayload.item_ids = itemIds;
+    }
+    if (primaryId) {
+      postPayload.id = primaryId;
+    }
+
     $.ajax({
       url: "{{ route('update.kitchen.status') }}",
       method: "POST",
-      data: {
-        _token: "{{ csrf_token() }}",
-        id: id,
-        order_status: order_status
-      },
-      success: function(response) {
-        if (response.success) {
-          showNotification('✓ Status updated to ' + order_status, 'success');
+      data: postPayload,
+      success: function(res) {
+        if (res.success) {
+          const displayLabel = kotNo && kotNo !== 'N/A' ? kotNo : `#ORD-${orderId}`;
+          showToast(`✓ ${displayLabel} marked as ${targetStatus}`, 'success');
         } else {
           revertStatus();
-          showNotification('✗ Update failed', 'error');
+          showToast('✗ Status update failed', 'error');
         }
       },
       error: function() {
         revertStatus();
-        showNotification('⚠️ Server error', 'error');
+        showToast('⚠️ Server connection error', 'error');
       },
       complete: function() {
         card.css('opacity', '1');
-        selectElement.prop('disabled', false);
         statusChangeInProgress = false;
+        applyFilters();
       }
     });
-    
+
     function revertStatus() {
-      card.removeClass('PENDING COOKING DONE').addClass(currentStatus);
-      card.attr('data-status', currentStatus);
-      selectElement.val(currentStatus);
+      segmentedWrap.find('.kds-status-btn').removeClass('active');
+      segmentedWrap.find(`[data-status="${currentStatus}"]`).addClass('active');
+      card.removeClass('PENDING COOKING DONE').addClass(currentStatus).attr('data-status', currentStatus);
+      updateMetricsCount(targetStatus, currentStatus);
     }
   });
-  
-  // Filter functionality
-  $('.filter-btn').click(function() {
-    const filter = $(this).data('filter');
-    
-    // Update URL with status filter
-    const url = new URL(window.location.href);
-    if (filter === 'all') {
-      url.searchParams.delete('status');
-    } else {
-      url.searchParams.set('status', filter);
-    }
-    window.location.href = url.toString();
-  });
-  
-  // Manual refresh button
-  $('#refreshBtn').click(function() {
-    const btn = $(this);
-    btn.html('<i class="fa fa-spinner fa-spin"></i> Refreshing...');
-    btn.prop('disabled', true);
-    location.reload();
-  });
-  
 
+  function updateMetricsCount(oldStatus, newStatus) {
+    const statPending = $('#statPendingCount');
+    const statCooking = $('#statCookingCount');
+    const statDone = $('#statDoneCount');
 
-  // Notification function
-  function showNotification(message, type) {
-    $('.notification').remove();
-    
-    const notification = $('<div class="notification"></div>');
-    
-    if (type === 'success') {
-      notification.css('background', 'linear-gradient(135deg, #ff6a00, #ff8c42)');
-    } else {
-      notification.css('background', 'linear-gradient(135deg, #ef4444, #dc2626)');
-    }
-    
-    notification.text(message);
-    $('body').append(notification);
-    
-    setTimeout(function() {
-      notification.fadeOut(300, function() {
-        $(this).remove();
-      });
-    }, 3000);
+    let p = parseInt(statPending.text()) || 0;
+    let c = parseInt(statCooking.text()) || 0;
+    let d = parseInt(statDone.text()) || 0;
+
+    if (oldStatus === 'PENDING') p = Math.max(0, p - 1);
+    if (oldStatus === 'COOKING') c = Math.max(0, c - 1);
+    if (oldStatus === 'DONE') d = Math.max(0, d - 1);
+
+    if (newStatus === 'PENDING') p++;
+    if (newStatus === 'COOKING') c++;
+    if (newStatus === 'DONE') d++;
+
+    statPending.text(p);
+    statCooking.text(c);
+    statDone.text(d);
+
+    $(`.kds-tab-btn[data-filter="PENDING"]`).html(`⏳ Pending (${p})`);
+    $(`.kds-tab-btn[data-filter="COOKING"]`).html(`👨‍🍳 Cooking (${c})`);
+    $(`.kds-tab-btn[data-filter="DONE"]`).html(`✅ Done (${d})`);
   }
 
-  // Handle KOT Print Trigger click (direct print)
-  $(document).on('click', '.print-kot-trigger', function() {
-    let btn = $(this);
-    let id = btn.data('id');
-    let originalHtml = btn.html();
-    
-    // Change print icon to spinner to show it is loading
-    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin" style="font-size: 1.05rem; color: #ff6a00;"></i>');
-    
-    let pdfUrl = "{{ route('kitchen.kot.pdf', ':id') }}".replace(':id', id);
-    
-    // Remove old iframe and create a fresh one
+  // 6. Manual Refresh
+  $('#refreshBtn').on('click', function() {
+    const btn = $(this);
+    btn.find('i').addClass('fa-spin');
+    location.reload();
+  });
+
+  // 7. Direct KOT Ticket Thermal Printing
+  $(document).on('click', '.print-kot-trigger', function(e) {
+    e.preventDefault();
+    const btn = $(this);
+    const id = btn.data('id');
+    const originalHtml = btn.html();
+
+    btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i>');
+
+    const pdfUrl = "{{ route('kitchen.kot.pdf', ':id') }}".replace(':id', id);
+
     $('#kotPdfFrame').remove();
-    
-    let iframe = $('<iframe>', {
-        id: 'kotPdfFrame',
-        src: pdfUrl,
-        style: 'position: absolute; width: 0; height: 0; border: 0; visibility: hidden;'
+
+    const iframe = $('<iframe>', {
+      id: 'kotPdfFrame',
+      src: pdfUrl,
+      style: 'position: absolute; width: 0; height: 0; border: 0; visibility: hidden;'
     }).appendTo('body');
 
-    // Wait for iframe to fully load, print, and restore icon
     iframe[0].onload = function() {
-        btn.prop('disabled', false).html(originalHtml);
-        try {
-            iframe[0].contentWindow.focus();
-            iframe[0].contentWindow.print();
-        } catch (e) {
-            // Fallback: open in new tab if iframe print fails
-            window.open(pdfUrl, '_blank');
-        }
+      btn.prop('disabled', false).html(originalHtml);
+      try {
+        iframe[0].contentWindow.focus();
+        iframe[0].contentWindow.print();
+      } catch(e) {
+        window.open(pdfUrl, '_blank');
+      }
     };
 
-    // Fallback timeout to restore icon in case onload doesn't fire
     setTimeout(function() {
-        btn.prop('disabled', false).html(originalHtml);
+      btn.prop('disabled', false).html(originalHtml);
     }, 5000);
   });
+
+  // 9. Toast Notification Helper
+  function showToast(message, type = 'info') {
+    $('.kds-toast').remove();
+    const toast = $(`<div class="kds-toast ${type}">${message}</div>`);
+    $('body').append(toast);
+
+    setTimeout(function() {
+      toast.fadeOut(300, function() {
+        $(this).remove();
+      });
+    }, 3200);
+  }
+
 });
 </script>
 

@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\OrderApiController;
 
 // Public route - no authentication needed
 Route::post('/login', [AuthController::class, 'login']);
+Route::match(['GET', 'POST'], '/razorpay/webhook', [\App\Http\Controllers\Admin\WebhookController::class, 'handle']);
 // Password Reset API Routes (Public - No Authentication)
 Route::prefix('password')->group(function () {
     Route::post('/forgot', [PasswordResetApiController::class, 'forgotPassword']);      // Request reset link

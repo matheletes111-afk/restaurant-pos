@@ -1,0 +1,297 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Multi-Outlet Management - Implementation Plan</title>
+<!--[if gte mso 9]>
+<xml>
+ <w:WordDocument>
+  <w:View>Print</w:View>
+  <w:Zoom>100</w:Zoom>
+  <w:DoNotOptimizeForBrowser/>
+ </w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+  body {
+    font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #2D3748;
+    margin: 40px;
+  }
+  h1 {
+    font-size: 24pt;
+    color: #FF6A00;
+    border-bottom: 2px solid #FF6A00;
+    padding-bottom: 8px;
+    margin-top: 24px;
+    margin-bottom: 12px;
+  }
+  h2 {
+    font-size: 16pt;
+    color: #1A202C;
+    border-left: 4px solid #FF6A00;
+    padding-left: 10px;
+    margin-top: 24px;
+    margin-bottom: 12px;
+  }
+  h3 {
+    font-size: 13pt;
+    color: #2D3748;
+    margin-top: 18px;
+    margin-bottom: 8px;
+  }
+  p {
+    margin-bottom: 10px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+  }
+  th {
+    background-color: #FF6A00;
+    color: #ffffff;
+    font-weight: bold;
+    text-align: left;
+    padding: 10px;
+    border: 1px solid #E2E8F0;
+  }
+  td {
+    padding: 8px 10px;
+    border: 1px solid #CBD5E1;
+    background-color: #FFFFFF;
+  }
+  tr:nth-child(even) td {
+    background-color: #F8FAFC;
+  }
+  .highlight-box {
+    background-color: #FFF7ED;
+    border-left: 4px solid #FF6A00;
+    padding: 14px 18px;
+    margin: 15px 0;
+    border-radius: 4px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    background-color: #FFEDD5;
+    color: #C2410C;
+    font-weight: bold;
+    border-radius: 4px;
+    font-size: 9pt;
+  }
+  code {
+    font-family: Consolas, Monaco, monospace;
+    background-color: #F1F5F9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #0F172A;
+    font-size: 10pt;
+  }
+  pre {
+    background-color: #0F172A;
+    color: #F8FAFC;
+    padding: 14px;
+    border-radius: 6px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 10pt;
+    overflow-x: auto;
+  }
+  ul, ol {
+    margin-left: 20px;
+    margin-bottom: 14px;
+  }
+  li {
+    margin-bottom: 6px;
+  }
+  .header-card {
+    text-align: center;
+    background: #FF6A00;
+    color: white;
+    padding: 30px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+  }
+  .header-card h1 {
+    color: white !important;
+    border: none !important;
+    margin: 0;
+    font-size: 26pt;
+  }
+  .header-card p {
+    color: #FFF1F2;
+    margin: 8px 0 0 0;
+    font-size: 13pt;
+  }
+</style>
+</head>
+<body>
+
+<div class="header-card">
+  <h1>Bill&Bite POS - Multi-Outlet Management</h1>
+  <p>Technical &amp; Architectural Implementation Plan (একাধিক আউটলেট বা শাখা পরিচালনা প্ল্যান)</p>
+</div>
+
+<div class="highlight-box">
+  <strong>Executive Summary:</strong> এই সিস্টেমের মাধ্যমে একজন <strong>Restaurant Owner (রেস্তোরাঁর মালিক)</strong> তার একক অ্যাকাউন্ট থেকেই একাধিক <strong>Outlet / Branch (শাখা)</strong> তৈরি ও পরিচালনা করতে পারবেন। প্রতিটি আউটলেটের নিজস্ব মেনু, টেবিল, POS বিলিং, কিচেন ডিসপ্লে, ইনভেন্টরি ও স্টাফ থাকবে। টপ নেভিগেশন বার থেকে ওনার এক ক্লিকেই আউটলেট সুইচ করতে পারবেন এবং সকল শাখার একত্রিত ও তুলনামূলক সেলস রিপোর্ট দেখতে পারবেন।
+</div>
+
+<h2>১. মূল আর্কিটেকচার (Core System Architecture)</h2>
+<table>
+  <tr>
+    <th width="30%">কম্পোনেন্ট</th>
+    <th width="70%">বিবরণ ও কার্যপ্রণালী</th>
+  </tr>
+  <tr>
+    <td><strong>Restaurant Owner Account</strong></td>
+    <td>একক মালিক অ্যাকাউন্ট (User ID) যার অধীনে একাধিক <code>RestaurantMaster</code> (আউটলেট/শাখা) রেকর্ড যুক্ত থাকবে (<code>owner_id = user_id</code>)।</td>
+  </tr>
+  <tr>
+    <td><strong>Outlet Switcher Dropdown</strong></td>
+    <td>টপবারে সক্রিয় আউটলেটের নাম থাকবে (যেমন: <code>🏢 Salt Lake Branch ▼</code>)। ড্রপডাউনে ক্লিক করলেই সব আউটলেটের লিস্ট আসবে এবং সুইচ করা যাবে।</td>
+  </tr>
+  <tr>
+    <td><strong>Session Context Isolation</strong></td>
+    <td>সেশনে <code>session("active_restaurant_id")</code> সংরক্ষিত থাকবে। সমস্ত মেনু, অর্ডার, টেবিল, পারচেজ ও ইনভেন্টরি স্বয়ংক্রিয়ভাবে বর্তমান আউটলেটের আওতায় কাজ করবে।</td>
+  </tr>
+  <tr>
+    <td><strong>Multi-Outlet Analytics</strong></td>
+    <td>সেন্ট্রাল ড্যাশবোর্ড যেখানে সব আউটলেটের মোট আয়, তুলনামূলক সেলস বার-চার্ট, এবং স্টক লেভেল ওভারভিউ দেখা যাবে।</td>
+  </tr>
+</table>
+
+<h2>২. মূল ফিচারসমূহ (Key Features Breakdown)</h2>
+
+<h3>১. টপবার আউটলেট সুইচার (Top Navbar Outlet Switcher)</h3>
+<ul>
+  <li>রেস্তোরাঁ লগইন করার পর টপবারে বর্তমান সক্রিয় আউটলেটের নাম দেখাবে (যেমন: <strong>🏢 Salt Lake Branch [Active]</strong>)।</li>
+  <li>ড্রপডাউনে ক্লিক করলেই তার তৈরি করা সকল আউটলেটের তালিকা প্রদর্শিত হবে।</li>
+  <li>যেকোনো আউটলেটে ক্লিক করলেই সিস্টেম তাৎক্ষণিকভাবে সেই আউটলেটের ডেটা লোড করবে।</li>
+  <li>ড্রপডাউনের নিচে সরাসরি <code>+ Add New Outlet</code> বাটন থাকবে।</li>
+</ul>
+
+<h3>২. নতুন আউটলেট প্রোফাইল ও সেটআপ (Outlet Creation & Setup)</h3>
+<ul>
+  <li><strong>শাখার বিবরণ:</strong> Branch Name, Branch Unique Code (যেমন: <code>BILL-BITE-001-B1</code>), ঠিকানা ও পিনকোড।</li>
+  <li><strong>ট্যাক্স ও লাইসেন্স:</strong> প্রতিটি শাখার নিজস্ব GSTIN এবং FSSAI নম্বর।</li>
+  <li><strong>পেমেন্ট ও কিউআর:</strong> প্রতিটি শাখার জন্য আলাদা UPI ID ও টেবিল QR কোড।</li>
+  <li><strong>স্ট্যাটাস কন্ট্রোল:</strong> আউটলেট সাময়িকভাবে বন্ধ (Inactive) বা চালু (Active) করার সুবিধা।</li>
+</ul>
+
+<h3>৩. প্রতিটি আউটলেটের স্বাধীন অপারেশন (Outlet-wise Operations)</h3>
+<table>
+  <tr>
+    <th>মডিউল</th>
+    <th>আউটলেট স্তরের কার্যপ্রণালী</th>
+  </tr>
+  <tr>
+    <td><strong>Menu & Categories</strong></td>
+    <td>প্রতিটি শাখার জন্য নিজস্ব মেনু তৈরি করা যাবে অথবা মূল শাখার মেনু এক ক্লিকে ক্লোন/কপি করা যাবে।</td>
+  </tr>
+  <tr>
+    <td><strong>POS & Tables</strong></td>
+    <td>শাখার টেবিল লেআউট ও ডাইনিং এরিয়া আলাদাভাবে কনফিগার করা যাবে।</td>
+  </tr>
+  <tr>
+    <td><strong>Kitchen / KOT</strong></td>
+    <td>নির্দিষ্ট শাখার রান্নাঘরের স্ক্রিনে শুধুমাত্র সেই শাখার অর্ডারগুলোই আসবে।</td>
+  </tr>
+  <tr>
+    <td><strong>Inventory & Stock</strong></td>
+    <td>প্রতিটি শাখার নিজস্ব কাঁচামাল স্টক, পারচেজ অর্ডার, সাপ্লায়ার লেজার ও ডেবিট নোট থাকবে।</td>
+  </tr>
+  <tr>
+    <td><strong>Staff Assignment</strong></td>
+    <td>কর্মচারীদের নির্দিষ্ট আউটলেটে অ্যাসাইন করা যাবে যাতে ম্যানেজার বা কিচেন স্টাফ শুধু তাদের নির্দিষ্ট শাখার ডেটাই দেখতে পায়।</td>
+  </tr>
+</table>
+
+<h3>৪. একত্রিত ও তুলনামূলক রিপোর্ট (Consolidated & Branch Analytics)</h3>
+<ul>
+  <li><strong>All-Outlets Comparison Dashboard:</strong>
+    <ul>
+      <li>কোন আউটলেটে আজকের এবং মাসিক সেলস কত?</li>
+      <li>কোন শাখাটি সর্বোচ্চ লাভজনক (Top Performing Branch)?</li>
+      <li>শাখাভিত্তিক টপ-সেলিং ডিশ ও আইটেম অ্যানালাইসিস।</li>
+    </ul>
+  </li>
+  <li><strong>Report Filter:</strong> প্রতিটি রিপোর্টে <code>All Outlets (Consolidated)</code> অথবা <code>Specific Branch</code> নির্বাচন করার ড্রপডাউন ফিল্টার থাকবে।</li>
+</ul>
+
+<h3>৫. প্ল্যান ও সাবস্ক্রিপশন লিমিট (Subscription Limits)</h3>
+<ul>
+  <li>অ্যাডমিন প্যানেল থেকে প্ল্যানে <code>max_outlets</code> কনফিগার করা যাবে:
+    <ul>
+      <li><strong>Basic Plan:</strong> ১টি আউটলেট</li>
+      <li><strong>Standard Plan:</strong> ৩টি আউটলেট</li>
+      <li><strong>Premium / Enterprise:</strong> ১০টি বা আনলিমিটেড আউটলেট</li>
+    </ul>
+  </li>
+  <li>ওনার যখন নতুন আউটলেট যুক্ত করতে যাবেন, সিস্টেম প্ল্যানের লিমিট ভ্যালিডেট করবে।</li>
+</ul>
+
+<h2>৩. ডাটাবেস ডিজাইন পরিবর্তন (Database Schema Changes)</h2>
+
+<pre>
+-- 1. Add Parent Restaurant & Branch fields to restaurant_master
+ALTER TABLE `restaurant_master` 
+ADD COLUMN `parent_restaurant_id` BIGINT UNSIGNED NULL AFTER `id`,
+ADD COLUMN `is_main_branch` ENUM('Y', 'N') DEFAULT 'N' AFTER `status`,
+ADD COLUMN `branch_name` VARCHAR(255) NULL AFTER `name`;
+
+-- 2. Add Max Outlets Limit to Subscription Plans table
+ALTER TABLE `plans` 
+ADD COLUMN `max_outlets` INT DEFAULT 1 AFTER `total_number_of_table`;
+
+-- 3. Add Allowed Outlets for Staff Users
+ALTER TABLE `users` 
+ADD COLUMN `allowed_outlets` JSON NULL AFTER `permissions`;
+</pre>
+
+<h2>৪. টেকনিক্যাল বাস্তবায়ন ধাপসমূহ (Step-by-Step Implementation Roadmap)</h2>
+<table>
+  <tr>
+    <th width="15%">ধাপ</th>
+    <th width="35%">টাস্ক</th>
+    <th width="50%">ফাইল ও কম্পোনেন্ট</th>
+  </tr>
+  <tr>
+    <td><strong>Step 1</strong></td>
+    <td>Database Migrations & Models</td>
+    <td><code>restaurant_master</code>, <code>plans</code>, <code>users</code> মাইগ্রেশন এবং <code>RestaurantMaster</code> রিলেশনশিপ (<code>branches()</code>, <code>parent()</code>, <code>owner()</code>)।</td>
+  </tr>
+  <tr>
+    <td><strong>Step 2</strong></td>
+    <td>Session Helper & Middleware</td>
+    <td><code>current_restaurant_id()</code> হেল্পার ফাংশন ও <code>SecureRestaurantData</code> মিডলওয়্যার আপডেট।</td>
+  </tr>
+  <tr>
+    <td><strong>Step 3</strong></td>
+    <td>Outlet Management Controller & Views</td>
+    <td><code>OutletController</code> (CRUD, switch branch, clone menu) এবং <code>/restaurant/outlets</code> ভিউ।</td>
+  </tr>
+  <tr>
+    <td><strong>Step 4</strong></td>
+    <td>Top Navbar Switcher UI</td>
+    <td><code>navbar.blade.php</code> ফাইলে ইন্টারঅ্যাক্টিভ আউটলেট সুইচার ড্রপডাউন এবং মোডাল।</td>
+  </tr>
+  <tr>
+    <td><strong>Step 5</strong></td>
+    <td>Multi-Outlet Consolidated Reports</td>
+    <td><code>RestaurantAnalyticsController</code>-এ শাখাভিত্তিক ও একত্রিত সেলস চার্ট ও ফিল্টার।</td>
+  </tr>
+  <tr>
+    <td><strong>Step 6</strong></td>
+    <td>Testing & Validation</td>
+    <td>ফিচার টেস্ট ও পারমিশন ভ্যালিডেশন।</td>
+  </tr>
+</table>
+
+<div class="highlight-box">
+  <strong>ডকুমেন্ট তৈরির সময়:</strong> 14 Sep 2026, 04:13 PM<br>
+  <strong>সিস্টেম:</strong> Bill&Bite Restaurant POS & Multi-Outlet Management Platform
+</div>
+
+</body>
+</html>

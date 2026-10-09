@@ -183,14 +183,53 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>
-                        <span class="item-name">{{ $item->subcategory->name }}</span>
-                        <br>
-                        <small style="font-size: 8px;">Category: {{ $item->subcategory->category->name ?? 'N/A' }} ({{ $item->subcategory->food_type }})</small>
-                    </td>
-                    <td class="right bold item-qty">{{ $item->quantity }}</td>
-                </tr>
+                @if(isset($items) && count($items) > 0)
+                    @foreach($items as $kotItem)
+                        @php
+                            $addons = $kotItem->addons_list;
+                        @endphp
+                        <tr>
+                            <td>
+                                <span class="item-name">{{ $kotItem->subcategory->name ?? 'Unknown' }}</span>
+                                <br>
+                                <small style="font-size: 8px;">Category: {{ $kotItem->subcategory->category->name ?? 'N/A' }} ({{ $kotItem->subcategory->food_type ?? '' }})</small>
+                                @if(!empty($addons) && !empty($kotItem->subcategory_id))
+                                    @foreach($addons as $a)
+                                        @php
+                                            $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
+                                        @endphp
+                                        <div style="font-size: 9px; font-weight: bold; color: #000; padding-left: 6px; margin-top: 2px;">
+                                            • [ADD-ON] {{ $a['name'] ?? 'Addon' }} x{{ $aQty }}
+                                        </div>
+                                    @endforeach
+                                @endif
+                            </td>
+                            <td class="right bold item-qty">{{ $kotItem->quantity }}</td>
+                        </tr>
+                    @endforeach
+                @else
+                    @php
+                        $addons = $item->addons_list;
+                    @endphp
+                    <tr>
+                        <td>
+                            <span class="item-name">{{ $item->subcategory->name }}</span>
+                            <br>
+                            <small style="font-size: 8px;">Category: {{ $item->subcategory->category->name ?? 'N/A' }} ({{ $item->subcategory->food_type }})</small>
+                            @if(!empty($addons) && !empty($item->subcategory_id))
+                                @foreach($addons as $a)
+                                    @php
+                                        $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
+                                    @endphp
+                                    <div style="font-size: 9px; font-weight: bold; color: #000; padding-left: 6px; margin-top: 2px;">
+                                        • [ADD-ON] {{ $a['name'] ?? 'Addon' }} x{{ $aQty }}
+                                    </div>
+                                @endforeach
+                            @endif
+                        </td>
+                        <td class="right bold item-qty">{{ $item->quantity }}</td>
+                    </tr>
+                @endif
             </tbody>
         </table>
         

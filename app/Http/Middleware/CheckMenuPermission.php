@@ -22,17 +22,27 @@ class CheckMenuPermission
             return $next($request);
         }
 
-        // Default Super Admin ID 1 can do anything by default
-        if ($user->role === 'SA' && $user->id == 1) {
+        // Super Admin (role == 'SA') has full access to everything
+        if ($user->role === 'SA') {
             return $next($request);
         }
 
         // Restrict access for restaurant level users without an active subscription
         if ($user->role === 'RES') {
-            $hasActiveSubscription = \DB::table('subscriptions')
-                ->where('user_id', $user->restaurant_id)
-                ->whereIn('status', ['active', 'completed'])
-                ->exists();
+            $subRestaurantId = method_exists($user, 'getSubscriptionRestaurantId') ? $user->getSubscriptionRestaurantId() : $user->restaurant_id;
+            $hasActiveSubscription = false;
+            if (!empty($subRestaurantId)) {
+                $hasActiveSubscription = \DB::table('subscriptions')
+                    ->where('user_id', $subRestaurantId)
+                    ->where(function ($query) {
+                        $query->where('status', 'active')
+                              ->orWhere(function ($q) {
+                                  $q->where('status', 'completed')
+                                    ->whereDate('end_date', '>=', now());
+                              });
+                    })
+                    ->exists();
+            }
 
             if (!$hasActiveSubscription) {
                 $allowedRoutes = [
@@ -45,9 +55,11 @@ class CheckMenuPermission
                     'admin.subscriptions.payment.success.get',
                     'admin.subscriptions.payment.failed',
                     'admin.subscriptions.payment.failed.get',
+                    'admin.subscriptions.changePaymentMethod',
                     'admin.subscriptions.invoice',
                     'restaurant.support.tickets',
                     'restaurant-support',
+                    'restaurant.qr.notifications',
                     'logout',
                     'logout.user'
                 ];
@@ -63,7 +75,7 @@ class CheckMenuPermission
                     }
                 }
 
-                if (str_contains($path, 'subscribe') || str_contains($path, 'payment') || str_contains($path, 'support') || str_contains($path, 'logout') || str_contains($path, 'invoice')) {
+                if (str_contains($path, 'subscribe') || str_contains($path, 'payment') || str_contains($path, 'support') || str_contains($path, 'logout') || str_contains($path, 'invoice') || str_contains($path, 'qr-notifications')) {
                     $isAllowed = true;
                 }
 
@@ -89,6 +101,8 @@ class CheckMenuPermission
             'payment-history' => 'payment_history',
             'admin.crm' => 'admin_crm', 
             'crm' => 'admin_crm',
+            'admin.marketing' => 'marketing_notifications',
+            'admin/marketing' => 'marketing_notifications',
             'admin.support.tickets' => 'customer_support', 
             'admin-support' => 'customer_support',
             'admin.users' => 'admin_user_management',
@@ -114,6 +128,13 @@ class CheckMenuPermission
             }
         }
 
+        // Prevent staff / non-admin from accessing outlet management routes
+        if ($user->role === 'RES' && $user->role_type !== 'ADMIN') {
+            if (($routeName && str_starts_with($routeName, 'restaurant.outlets')) || str_contains($path, 'outlets')) {
+                abort(403, 'Unauthorized. Only restaurant administrators can access outlet management.');
+            }
+        }
+
         // Restaurant ADMIN and Super Admin have all access by default
         if ($user->role !== 'RES' || $user->role_type === 'ADMIN') {
             return $next($request);
@@ -121,16 +142,20 @@ class CheckMenuPermission
 
         // Map route/path patterns to permission keys
         $mappings = [
+            'master_report' => ['admin/reports/master', 'reports.master', 'admin.reports.master', 'master-report'],
             'menu_master' => ['manage-menu-category', 'manage.category'],
+            'dish_addon_master' => ['dish-addons', 'addon.index', 'addon.store', 'addon.edit', 'addon.update', 'addon.destroy', 'addon.toggle.status', 'addon.template.download', 'addon.bulk.upload'],
             'menu_availability' => ['menu-availability', 'menu.availability'],
             'table_master' => ['table-manage', 'table.manage'],
             'order_master' => ['order-management-dashboard', 'order.management.dashboard', 'order-create', 'order.create', 'order-edit', 'order.edit', 'order-save', 'order.save', 'order-update', 'order.update', 'order/payment', 'order.payment', 'order/print', 'order.print', 'order/receipt', 'order.receipt.pdf', 'order-item-delete', 'order.item.delete', 'add-payment', 'order.add.payment', 'delete-payment', 'order.delete.payment', 'get-payments', 'order.get.payments', 'invoice', 'order.invoice'],
+            'rapid_bill' => ['rapid-bill', 'rapid.bill', 'rapid.bill.store', 'admin/rapid-bill'],
             'kitchen_order' => ['kitchen-panel', 'manage.kitchen-panel', 'update-kitchen-status', 'update.kitchen.status', 'kitchen/orders/refresh', 'kitchen.orders.refresh'],
             'pending_order' => ['pending-temp-orders', 'temp.orders', 'temp-order', 'admin.temporder'],
-            'restro_ai' => ['ask-ai'],
             'billing_subscription' => ['subscriptions', 'admin.subscriptions.index', 'plans/subscribe', 'admin.subscriptions.create', 'subscriptions/payment', 'admin.subscriptions.payment', 'razorpay/webhook'],
             'customer_support' => ['restaurant-support', 'restaurant.support.tickets'],
             'staff' => ['restaurant-staff', 'restaurant.staff.index'],
+            'cash_drawer' => ['cash-drawer', 'cash.drawer'],
+            'expense_management' => ['expense', 'expense.index', 'expense.store', 'expense.update', 'expense.destroy', 'expense.show', 'expense.export'],
             'inventory_setting' => ['manage-units', 'manage.units', 'products/manage', 'products.manage', 'suppliers', 'suppliers.index', 'purchases', 'purchases.index', 'stock-outs', 'stock-outs.index', 'debit-notes', 'debit-notes.index', 'inventory/manage', 'inventory.manage', 'inventory/stock-report', 'inventory.stock-report', 'inventory.delete', 'products/store', 'products.store', 'products/update', 'products.update', 'products/delete', 'products.delete', 'products/import', 'products.import', 'products/export', 'products.export', 'products/download-sample', 'products.download-sample'],
             'reports' => ['report-top-analysis', 'order.report.top.analysis', 'report-order-analysis', 'order.report.analysis', 'report-order-management', 'order.report.management', 'item-gst-summary', 'report.item.gst.summary', 'inventory/live', 'inventory.live', 'order-report', 'order.report']
         ];
@@ -139,14 +164,17 @@ class CheckMenuPermission
         foreach ($mappings as $permission => $patterns) {
             foreach ($patterns as $pattern) {
                 if (($routeName && str_starts_with($routeName, $pattern)) || str_contains($path, $pattern)) {
-                    $granularModules = ['menu_master', 'table_master', 'staff', 'inventory_setting'];
+                    $granularModules = ['menu_master', 'dish_addon_master', 'table_master', 'staff', 'inventory_setting'];
                     if (in_array($permission, $granularModules)) {
                         $action = $this->getRequiredAction($request, $routeName, $path);
                     } else {
                         $action = 'view';
                     }
 
-                    if (!$user->hasPermission($permission, $action)) {
+                    if (!$user->hasPermission($permission, $action) 
+                        && !($permission === 'dish_addon_master' && $user->hasPermission('menu_master', $action))
+                        && !($permission === 'rapid_bill' && $user->hasPermission('order_master', $action))
+                    ) {
                         abort(403, 'Unauthorized access to this menu/module.');
                     }
                     return $next($request);

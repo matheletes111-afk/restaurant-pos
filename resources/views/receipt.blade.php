@@ -246,26 +246,53 @@
             <tbody>
                 @php
                     $displaySubtotal = 0;
+                    $displayTaxableSum = 0;
+                    $displayGstSum = 0;
                     $isGstBill = isset($order->is_gst_bill) && $order->is_gst_bill == 'YES';
-                    $restaurantGstPercentage = $order->restaurant_gst_percentage ?? 0;
+                    $restaurantGstPercentage = (float)($order->restaurant_gst_percentage ?? 0);
                 @endphp
                 @foreach($order->orderItems as $item)
                 @php
-                    $itemDiscount = $item->item_discount_percentage ?? 0;
-                    $originalPrice = $item->price;
-                    $discountedPrice = $item->discounted_price ?? ($originalPrice - ($originalPrice * $itemDiscount / 100));
-                    $quantity = $item->quantity;
-                    $taxableAmount = $item->taxable_amount ?? ($discountedPrice * $quantity);
+                    $itemDiscount = (float)($item->item_discount_percentage ?? 0);
+                    $originalPrice = (float)$item->price;
+                    $discountedPrice = (float)($item->discounted_price ?? ($originalPrice - ($originalPrice * $itemDiscount / 100)));
+                    $quantity = (int)$item->quantity;
+                    $addons = $item->addons_list;
+                    $addonsCost = 0;
+                    if (!empty($addons) && is_array($addons)) {
+                        foreach ($addons as $a) {
+                            $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                        }
+                    }
+                    $isAddonItem = empty($item->subcategory_id);
+                    $lineOriginal = $isAddonItem ? ($originalPrice * $quantity) : (($originalPrice * $quantity) + $addonsCost);
+                    $taxableAmount = $isAddonItem ? ($discountedPrice * $quantity) : (($discountedPrice * $quantity) + $addonsCost);
                     
                     // Use restaurant GST percentage if GST bill, otherwise 0
-                    $gstRate = $isGstBill ? $restaurantGstPercentage : 0;
-                    $gstAmount = $item->gst_amount ?? (($taxableAmount * $gstRate) / 100);
+                    $gstRate = $isGstBill ? (float)($item->gst_rate ?? $restaurantGstPercentage) : 0;
+                    $gstAmount = ($taxableAmount * $gstRate) / 100;
                     $itemTotal = $taxableAmount + $gstAmount;
-                    $displaySubtotal += $originalPrice * $quantity;
+                    $displaySubtotal += $lineOriginal;
+                    $displayTaxableSum += $taxableAmount;
+                    $displayGstSum += $gstAmount;
                 @endphp
                 <tr>
                     <td class="item-name">
-                        {{ \Illuminate\Support\Str::limit($item->subcategory->name ?? 'Item', 22) }}
+                        {{ \Illuminate\Support\Str::limit($item->subcategory->name ?? 'Item', 26) }}
+                        @php
+                            $addons = $item->addons_list;
+                        @endphp
+                        @if(!empty($addons) && !$isAddonItem)
+                            @foreach($addons as $a)
+                                @php
+                                    $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
+                                    $aPrice = floatval($a['price'] ?? 0);
+                                @endphp
+                                <div style="font-size: 8px; color: #333; padding-left: 4px; font-weight: 600;">
+                                    + {{ $a['name'] ?? 'Addon' }} x{{ $aQty }} ({{ number_format($aPrice * $aQty, 2) }})
+                                </div>
+                            @endforeach
+                        @endif
                         @if($itemDiscount > 0)
                             <div class="item-discount">-{{ $itemDiscount }}% off</div>
                         @endif
@@ -296,16 +323,15 @@
         
         <!-- Totals Section -->
         @php
-            // Calculate totals from the data passed from controller
-            $totalOriginalSubtotal = $original_subtotal ?? $order->total_amount ?? 0;
-            $totalTaxableAmount = $total_taxable ?? $order->taxable_amount ?? 0;
-            $totalGstAmount = $total_gst ?? $order->gst_amount ?? 0;
-            $orderDiscountPercent = $order->discount_percentage ?? 0;
-            $orderDiscountAmount = $order->discount ?? (($totalTaxableAmount + $totalGstAmount) * $orderDiscountPercent / 100);
+            $totalOriginalSubtotal = ($original_subtotal ?? 0) > 0 ? $original_subtotal : ($order->total_amount > 0 ? $order->total_amount : $displaySubtotal);
+            $totalTaxableAmount = ($total_taxable ?? 0) > 0 ? $total_taxable : ($order->taxable_amount > 0 ? $order->taxable_amount : $displayTaxableSum);
+            $totalGstAmount = ($total_gst ?? 0) > 0 ? $total_gst : ($order->gst_amount > 0 ? $order->gst_amount : $displayGstSum);
+            $orderDiscountPercent = (float)($order->discount_percentage ?? 0);
+            $orderDiscountAmount = (float)($order->discount ?? (($totalTaxableAmount + $totalGstAmount) * $orderDiscountPercent / 100));
             $grandTotalBeforeRound = ($totalTaxableAmount + $totalGstAmount) - $orderDiscountAmount;
-            $finalTotal = $order->grand_total ?? round($grandTotalBeforeRound);
-            $roundOff = $order->round_off ?? ($finalTotal - $grandTotalBeforeRound);
-            $totalItemDiscount = $totalOriginalSubtotal - $totalTaxableAmount;
+            $finalTotal = (float)($order->grand_total ?? round($grandTotalBeforeRound));
+            $roundOff = (float)($order->round_off ?? ($finalTotal - $grandTotalBeforeRound));
+            $totalItemDiscount = max(0, $totalOriginalSubtotal - $totalTaxableAmount);
         @endphp
         
         <table class="totals-table">
@@ -398,7 +424,7 @@
         @endif -->
         
         <!-- Remarks -->
-        @if($order->remarks)
+        @if($order->remarks && trim($order->remarks) !== '' && $order->remarks !== 'Rapid Bill Checkout')
         <div class="info-row">
             <span class="info-label">Remarks:</span>
             <span>{{ $order->remarks }}</span>

@@ -46,27 +46,29 @@ public function showPlans()
     // Pick the first default plan for backward compatibility or view placeholder usage
     $defaultPlan = $defaultPlans->first();
     
+    $subRestaurantId = $user->getSubscriptionRestaurantId() ?? $user->restaurant_id;
+
     // Check if user has already used free trial
-    $hasFreeTrial = Subscription::where('user_id', $user->restaurant_id)
+    $hasFreeTrial = Subscription::where('user_id', $subRestaurantId)
         ->whereHas('plan', function($query) {
             $query->where('price', 0);
         })
         ->exists();
     
     // Get active subscription plan IDs (only for active parent plans)
-    $activeSubscriptionPlanIds = Subscription::where('user_id', $user->restaurant_id)
+    $activeSubscriptionPlanIds = Subscription::where('user_id', $subRestaurantId)
         ->active()
         ->pluck('plan_id')
         ->toArray();
     
     // Get active subscriptions for expiry dates
-    $activeSubscriptions = Subscription::where('user_id', $user->restaurant_id)
+    $activeSubscriptions = Subscription::where('user_id', $subRestaurantId)
         ->active()
         ->get()
         ->keyBy('plan_id');
 
     // Filter plans: if there is an active subscription, only show plans with price > current active plan price
-    $activeSubscription = Subscription::where('user_id', $user->restaurant_id)
+    $activeSubscription = Subscription::where('user_id', $subRestaurantId)
         ->active()
         ->with('plan')
         ->first();

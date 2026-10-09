@@ -15,18 +15,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // 2. units
-        Schema::create('units', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('status', 1)->default('A');
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
-            $table->string('created_by')->nullable();
-            $table->string('updated_by')->nullable();
-            $table->timestamps();
-        });
-
-        // 3. restaurant_master
+        // 2. restaurant_master
         Schema::create('restaurant_master', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -35,9 +24,20 @@ return new class extends Migration
             $table->string('gstin')->nullable();
             $table->decimal('gst_percentage', 8, 2)->default(0.00);
             $table->foreignId('owner_id')->nullable()->constrained('users');
-            $table->string('status', 1);
+            $table->string('status', 20)->default('A');
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
+            $table->timestamps();
+        });
+
+        // 3. units
+        Schema::create('units', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('status', 20)->default('A');
+            $table->unsignedBigInteger('restaurant_id');
+            $table->string('created_by')->nullable();
+            $table->string('updated_by')->nullable();
             $table->timestamps();
         });
 
@@ -46,10 +46,11 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->nullable();
+            $table->text('description')->nullable();
             $table->string('image')->nullable();
-            $table->string('status', 1)->default('A');
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
-            $table->foreignId('user_id')->nullable()->constrained('users');
+            $table->string('status', 20)->default('A');
+            $table->unsignedBigInteger('restaurant_id');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->timestamps();
         });
 
@@ -61,9 +62,9 @@ return new class extends Migration
             $table->string('qr_code')->nullable();
             $table->string('table_status', 20)->default('AVAILABLE');
             $table->unsignedBigInteger('order_id')->nullable();
-            $table->string('status', 1)->default('A');
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
-            $table->foreignId('user_id')->nullable()->constrained('users');
+            $table->string('status', 20)->default('A');
+            $table->unsignedBigInteger('restaurant_id');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->timestamps();
         });
 
@@ -78,7 +79,7 @@ return new class extends Migration
             $table->decimal('gst_amount', 10, 2)->default(0.00);
             $table->integer('country_id')->nullable();
             $table->string('currency', 10)->default('INR');
-            $table->string('billing_cycle', 20);
+            $table->string('billing_cycle', 20)->default('monthly');
             $table->integer('duration_days')->default(30);
             $table->text('description')->nullable();
             $table->integer('category_number')->default(0);
@@ -103,9 +104,9 @@ return new class extends Migration
             $table->string('product_name');
             $table->unsignedBigInteger('unit_id')->nullable();
             $table->decimal('opening_qty', 12, 2)->default(0.00);
-            $table->string('status', 1)->default('A');
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
-            $table->foreignId('user_id')->nullable()->constrained('users');
+            $table->string('status', 20)->default('A');
+            $table->unsignedBigInteger('restaurant_id');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
@@ -125,9 +126,9 @@ return new class extends Migration
             $table->decimal('total_deposits', 12, 2)->default(0.00);
             $table->date('last_deposit_date')->nullable();
             $table->date('last_purchase_date')->nullable();
-            $table->string('status', 1)->default('A');
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
-            $table->foreignId('user_id')->nullable()->constrained('users');
+            $table->string('status', 20)->default('A');
+            $table->unsignedBigInteger('restaurant_id');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
@@ -136,15 +137,17 @@ return new class extends Migration
         Schema::create('sub_category', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->text('description')->nullable();
             $table->decimal('price', 10, 2)->default(0.00);
             $table->decimal('gst_rate', 5, 2)->default(0.00);
             $table->string('food_type', 20)->default('VEG');
             $table->decimal('discount_percentage', 5, 2)->default(0.00);
             $table->string('image')->nullable();
-            $table->string('status', 1)->default('A');
-            $table->foreignId('category_id')->constrained('category');
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
-            $table->foreignId('user_id')->nullable()->constrained('users');
+            $table->boolean('is_available')->default(true);
+            $table->string('status', 20)->default('A');
+            $table->unsignedBigInteger('category_id');
+            $table->unsignedBigInteger('restaurant_id');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->timestamps();
         });
 
@@ -155,7 +158,7 @@ return new class extends Migration
             $table->decimal('total_qty', 12, 2)->default(0.00);
             $table->decimal('opening_qty', 12, 2)->default(0.00);
             $table->string('created_by')->nullable();
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
+            $table->unsignedBigInteger('restaurant_id');
             $table->timestamps();
             $table->softDeletes();
 
@@ -174,8 +177,8 @@ return new class extends Migration
             $table->string('bill_attachment')->nullable();
             $table->text('remarks')->nullable();
             $table->string('status', 20)->default('COMPLETED');
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
-            $table->foreignId('user_id')->nullable()->constrained('users');
+            $table->unsignedBigInteger('restaurant_id');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
@@ -188,7 +191,7 @@ return new class extends Migration
             $table->unsignedBigInteger('unit_id')->nullable();
             $table->decimal('quantity', 12, 2)->default(0.00);
             $table->decimal('price', 10, 2)->default(0.00);
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
+            $table->unsignedBigInteger('restaurant_id');
             $table->timestamps();
 
             $table->foreign('unit_id')->references('id')->on('units');
@@ -202,8 +205,8 @@ return new class extends Migration
             $table->integer('total_items')->default(0);
             $table->text('remarks')->nullable();
             $table->string('status', 20)->default('COMPLETED');
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
-            $table->foreignId('user_id')->nullable()->constrained('users');
+            $table->unsignedBigInteger('restaurant_id');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
@@ -215,7 +218,7 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained('products');
             $table->unsignedBigInteger('unit_id')->nullable();
             $table->decimal('quantity', 12, 2)->default(0.00);
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
+            $table->unsignedBigInteger('restaurant_id');
             $table->timestamps();
 
             $table->foreign('unit_id')->references('id')->on('units');
@@ -228,8 +231,8 @@ return new class extends Migration
             $table->foreignId('supplier_id')->constrained('suppliers');
             $table->date('debit_date');
             $table->text('remarks')->nullable();
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
-            $table->foreignId('user_id')->nullable()->constrained('users');
+            $table->unsignedBigInteger('restaurant_id');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->timestamps();
         });
 
@@ -240,7 +243,7 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained('products');
             $table->unsignedBigInteger('unit_id')->nullable();
             $table->decimal('quantity', 12, 3)->default(0.000);
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
+            $table->unsignedBigInteger('restaurant_id');
             $table->timestamps();
 
             $table->foreign('unit_id')->references('id')->on('units');
@@ -273,8 +276,9 @@ return new class extends Migration
             $table->string('is_gst_bill', 5)->default('NO');
             $table->decimal('restaurant_gst_percentage', 5, 2)->default(0.00);
             $table->string('restaurant_gstin', 50)->nullable();
-            $table->foreignId('user_id')->nullable()->constrained('users');
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->unsignedBigInteger('restaurant_id');
             $table->timestamps();
 
             $table->foreign('table_id')->references('id')->on('table_management');
@@ -284,7 +288,7 @@ return new class extends Migration
         Schema::create('order_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained('orders');
-            $table->unsignedBigInteger('subcategory_id');
+            $table->unsignedBigInteger('subcategory_id')->nullable();
             $table->integer('quantity')->default(1);
             $table->decimal('price', 10, 2)->default(0.00);
             $table->decimal('discounted_price', 10, 2)->default(0.00);
@@ -298,8 +302,8 @@ return new class extends Migration
             $table->decimal('total_amount', 12, 2)->default(0.00);
             $table->string('order_status', 20)->default('PENDING');
             $table->boolean('is_new')->default(true);
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
-            $table->foreignId('user_id')->nullable()->constrained('users');
+            $table->unsignedBigInteger('restaurant_id');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->timestamps();
 
             $table->foreign('subcategory_id')->references('id')->on('sub_category');
@@ -377,7 +381,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->date('expense_date');
             $table->string('payment_method', 100)->nullable();
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
+            $table->unsignedBigInteger('restaurant_id');
             $table->unsignedBigInteger('created_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
@@ -389,7 +393,7 @@ return new class extends Migration
         Schema::create('temp_orders', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('table_id')->nullable();
-            $table->unsignedBigInteger('order_id')->nullable();
+            $table->string('order_id', 50)->nullable();
             $table->string('customer_name');
             $table->string('customer_phone', 20)->nullable();
             $table->string('order_type', 20);
@@ -411,20 +415,19 @@ return new class extends Migration
             $table->string('payment_status', 20)->default('PENDING');
             $table->string('payment_method', 50)->nullable();
             $table->decimal('amount_paid', 12, 2)->default(0.00);
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
-            $table->foreignId('user_id')->nullable()->constrained('users');
+            $table->unsignedBigInteger('restaurant_id');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->timestamps();
 
             $table->foreign('table_id')->references('id')->on('table_management');
-            $table->foreign('order_id')->references('id')->on('orders');
         });
 
         // 24. temp_order_items
         Schema::create('temp_order_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('temp_order_id')->constrained('temp_orders');
-            $table->unsignedBigInteger('subcategory_id');
+            $table->unsignedBigInteger('subcategory_id')->nullable();
             $table->integer('quantity')->default(1);
             $table->decimal('price', 10, 2)->default(0.00);
             $table->decimal('discounted_price', 10, 2)->default(0.00);
@@ -438,8 +441,8 @@ return new class extends Migration
             $table->decimal('total_amount', 12, 2)->default(0.00);
             $table->string('order_status', 20)->default('PENDING');
             $table->boolean('is_new')->default(true);
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
-            $table->foreignId('user_id')->nullable()->constrained('users');
+            $table->unsignedBigInteger('restaurant_id');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->timestamps();
 
             $table->foreign('subcategory_id')->references('id')->on('sub_category');
@@ -465,7 +468,7 @@ return new class extends Migration
         // 27. restaurant_to_custom_plan
         Schema::create('restaurant_to_custom_plan', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
+            $table->unsignedBigInteger('restaurant_id');
             $table->foreignId('plan_id')->constrained('plans');
             $table->unsignedBigInteger('created_by')->nullable();
             $table->timestamps();
@@ -477,7 +480,7 @@ return new class extends Migration
         Schema::create('support_tickets', function (Blueprint $table) {
             $table->id();
             $table->string('ticket_no', 50);
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
+            $table->unsignedBigInteger('restaurant_id');
             $table->string('subject');
             $table->text('message');
             $table->string('status', 20)->default('NEW');
@@ -506,7 +509,7 @@ return new class extends Migration
         // 30. enquiry_management
         Schema::create('enquiry_management', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
+            $table->unsignedBigInteger('restaurant_id');
             $table->text('query');
             $table->unsignedBigInteger('created_by')->nullable();
             $table->string('status', 5)->default('NEW');
@@ -522,7 +525,7 @@ return new class extends Migration
         Schema::create('order_to_payments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained('orders');
-            $table->foreignId('restaurant_id')->constrained('restaurant_master');
+            $table->unsignedBigInteger('restaurant_id');
             $table->decimal('amount', 12, 2)->default(0.00);
             $table->string('payment_method', 20);
             $table->string('transaction_no', 100)->nullable();

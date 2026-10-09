@@ -31,10 +31,29 @@ class TempOrder extends Model
         'payment_status',
         'payment_method',
         'amount_paid',
+        'is_read',
+        'read_at',
         'restaurant_id',
         'user_id',
         'created_by'
     ];
+
+    protected $casts = [
+        'is_read' => 'boolean',
+        'read_at' => 'datetime',
+        'total_amount' => 'decimal:2',
+        'grand_total' => 'decimal:2',
+    ];
+
+    public function scopePastWeek($query)
+    {
+        return $query->where('created_at', '>=', now()->subDays(7));
+    }
+
+    public function scopeUnread($query)
+    {
+        return $query->where('is_read', false);
+    }
 
     public function items()
     {

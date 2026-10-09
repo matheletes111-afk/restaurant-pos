@@ -1,7 +1,8 @@
 <link rel="shortcut icon" href="{{ asset('fav_web.png') }}">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" id="main-font-link">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<!-- [Font Awesome Icons] https://fontawesome.com/icons -->
+<!-- [Font Awesome Icons] -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="{{asset('admin_template/fonts/fontawesome.css')}}">
 <!-- [Material Icons] https://fonts.google.com/icons -->
 <link rel="stylesheet" href="{{asset('admin_template/fonts/material.css')}}" >
@@ -259,5 +260,28 @@
         height: 1rem !important;
         max-width: 1rem !important;
         max-height: 1rem !important;
+    }
+
+    /* Mobile Sidebar & Navbar Blur Fix */
+    .pc-menu-overlay {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: rgba(15, 23, 42, 0.55) !important;
+        z-index: 1024 !important;
+    }
+    @media (max-width: 1024px) {
+        .pc-sidebar {
+            z-index: 1026 !important;
+        }
+        .pc-sidebar .navbar-wrapper {
+            position: relative !important;
+            z-index: 1028 !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            filter: none !important;
+        }
+        .pc-sidebar.mob-sidebar-active {
+            box-shadow: 10px 0 35px rgba(0, 0, 0, 0.4) !important;
+        }
     }
 </style>

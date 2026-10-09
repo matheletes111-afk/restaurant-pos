@@ -294,7 +294,7 @@ public function orderManagementReport(Request $request)
     $restaurantId = auth()->user()->restaurant_id;
 
     // Base query
-    $query = OrderManage::with('table')
+    $query = OrderManage::with(['table', 'orderItems'])
         ->where('restaurant_id', $restaurantId)
         ->whereBetween('created_at', [$fromDate, $toDate]);
 
@@ -338,16 +338,41 @@ public function orderManagementReport(Request $request)
         'total_taxable_amount' => $allOrders->sum('taxable_amount'),
         
         // Discount Summary
-        'total_discount_amount' => $allOrders->sum('discount'),
-        // Add to your summary array in the controller
-'total_item_discount' => $allOrders->sum(function($order) {
-    $total = 0;
-    foreach ($order->orderItems as $item) {
-        $total += ($item->price * $item->quantity) - $item->taxable_amount;
-    }
-    return $total;
-}),
-'total_order_discount' => $allOrders->sum('discount'),
+        'total_item_discount' => $allOrders->sum(function($order) {
+            $total = 0;
+            if ($order->orderItems) {
+                foreach ($order->orderItems as $item) {
+                    $itemDiscPercent = floatval($item->item_discount_percentage ?? 0);
+                    $qty = intval($item->quantity ?? 1);
+                    $basePrice = floatval($item->price ?? 0);
+                    if ($itemDiscPercent > 0) {
+                        $total += ($basePrice * $itemDiscPercent / 100) * $qty;
+                    } elseif (!empty($item->discounted_price) && $item->discounted_price < $basePrice) {
+                        $total += ($basePrice - floatval($item->discounted_price)) * $qty;
+                    }
+                }
+            }
+            return $total;
+        }),
+        'total_order_discount' => $allOrders->sum(function($order) {
+            return floatval($order->discount ?? 0);
+        }),
+        'total_discount_amount' => $allOrders->sum(function($order) {
+            $itemDisc = 0;
+            if ($order->orderItems) {
+                foreach ($order->orderItems as $item) {
+                    $itemDiscPercent = floatval($item->item_discount_percentage ?? 0);
+                    $qty = intval($item->quantity ?? 1);
+                    $basePrice = floatval($item->price ?? 0);
+                    if ($itemDiscPercent > 0) {
+                        $itemDisc += ($basePrice * $itemDiscPercent / 100) * $qty;
+                    } elseif (!empty($item->discounted_price) && $item->discounted_price < $basePrice) {
+                        $itemDisc += ($basePrice - floatval($item->discounted_price)) * $qty;
+                    }
+                }
+            }
+            return $itemDisc + floatval($order->discount ?? 0);
+        }),
     ];
 
     // Get distinct values for dropdowns

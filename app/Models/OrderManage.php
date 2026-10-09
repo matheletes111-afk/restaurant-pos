@@ -78,4 +78,81 @@ class OrderManage extends Model
     {
         return $this->belongsTo(RestaurantMaster::class, 'restaurant_id');
     }
+
+    /**
+     * Recalculate order totals based on order items
+     */
+    public function recalculateTotals()
+    {
+        $items = $this->orderItems()->get();
+        $originalSubtotal = 0;
+        $totalTaxable = 0;
+        $totalGst = 0;
+        $totalCgst = 0;
+        $totalSgst = 0;
+        $totalIgst = 0;
+        $totalItemDiscount = 0;
+
+        foreach ($items as $item) {
+            $basePrice = floatval($item->price);
+            $qty = max(1, intval($item->quantity ?? 1));
+            $itemDiscPercent = floatval($item->item_discount_percentage ?? 0);
+            $discPrice = floatval($item->discounted_price ?: ($basePrice - ($basePrice * $itemDiscPercent / 100)));
+
+            $addonsCost = 0;
+            if (!empty($item->addons_list) && is_array($item->addons_list)) {
+                foreach ($item->addons_list as $a) {
+                    $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                }
+            }
+            $isAddon = empty($item->subcategory_id);
+            $lineOrig = $isAddon ? ($basePrice * $qty) : (($basePrice * $qty) + $addonsCost);
+            $lineTax = $isAddon ? ($discPrice * $qty) : (($discPrice * $qty) + $addonsCost);
+            $gstRate = floatval($item->gst_rate ?? 0);
+            $lineGst = ($lineTax * $gstRate) / 100;
+            $lineCgst = ($lineTax * ($gstRate / 2)) / 100;
+            $lineSgst = ($lineTax * ($gstRate / 2)) / 100;
+            $lineTotal = $lineTax + $lineGst;
+
+            $itemDiscountAmt = ($basePrice * $itemDiscPercent / 100) * $qty;
+
+            // Ensure item attributes are consistent
+            $item->taxable_amount = $lineTax;
+            $item->gst_amount = $lineGst;
+            $item->cgst_amount = $lineCgst;
+            $item->sgst_amount = $lineSgst;
+            $item->total_amount = $lineTotal;
+            $item->discounted_price = $discPrice;
+            $item->save();
+
+            $originalSubtotal += $lineOrig;
+            $totalTaxable += $lineTax;
+            $totalGst += $lineGst;
+            $totalCgst += $lineCgst;
+            $totalSgst += $lineSgst;
+            $totalItemDiscount += $itemDiscountAmt;
+        }
+
+        $orderDiscountPercent = floatval($this->discount_percentage ?? 0);
+        $orderDiscountAmount = ($totalTaxable * $orderDiscountPercent) / 100;
+        $totalDiscountAll = $totalItemDiscount + $orderDiscountAmount;
+        $taxableAfterOrderDiscount = $totalTaxable - $orderDiscountAmount;
+
+        $grandTotal = $taxableAfterOrderDiscount + $totalGst;
+        $finalTotal = round($grandTotal);
+        $roundOff = $finalTotal - $grandTotal;
+
+        $this->total_amount = $originalSubtotal;
+        $this->taxable_amount = $totalTaxable;
+        $this->gst_amount = $totalGst;
+        $this->cgst_amount = $totalCgst;
+        $this->sgst_amount = $totalSgst;
+        $this->igst_amount = 0;
+        $this->discount = $totalDiscountAll;
+        $this->grand_total = $finalTotal;
+        $this->round_off = $roundOff;
+        $this->save();
+
+        return $this;
+    }
 }

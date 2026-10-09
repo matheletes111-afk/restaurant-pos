@@ -255,13 +255,15 @@ public function store(Request $request)
         $plan->billing_cycle = $request->billing_cycle;
         $plan->duration_days = $request->duration_days;
         $plan->description = $request->description;
-        $plan->is_default_free = $request->is_default_free;
-        $plan->is_default_paid = $request->is_default_paid;
+        $plan->is_default_free = $request->is_default_free ?? 'N';
+        $plan->is_default_paid = $request->is_default_paid ?? 'N';
         $plan->razorpay_plan_id = $razorpayPlanId;
         $plan->category_number = $request->category_number ?? 0;
         $plan->total_number_of_dishes = $request->total_number_of_dishes ?? 0;
         $plan->total_number_of_table = $request->total_number_of_table ?? 0;
         $plan->inventory_checkbox = $request->inventory_checkbox ?? 'N';
+        $plan->multi_outlet_checkbox = $request->multi_outlet_checkbox ?? 'N';
+        $plan->total_number_of_outlets = ($request->multi_outlet_checkbox === 'Y') ? (int) ($request->total_number_of_outlets ?? 1) : 1;
         $plan->is_default_plan = $request->is_default_plan ?? 'N';
         $plan->is_delete = 'N';
         $plan->plan_status = 'A';
@@ -289,12 +291,14 @@ public function store(Request $request)
         $history->billing_cycle = $request->billing_cycle;
         $history->duration_days = $request->duration_days;
         $history->description = $request->description;
-        $history->is_default_free = $request->is_default_free;
-        $history->is_default_paid = $request->is_default_paid;
+        $history->is_default_free = $request->is_default_free ?? 'N';
+        $history->is_default_paid = $request->is_default_paid ?? 'N';
         $history->category_number = $request->category_number ?? 0;
         $history->total_number_of_dishes = $request->total_number_of_dishes ?? 0;
         $history->total_number_of_table = $request->total_number_of_table ?? 0;
         $history->inventory_checkbox = $request->inventory_checkbox ?? 'N';
+        $history->multi_outlet_checkbox = $request->multi_outlet_checkbox ?? 'N';
+        $history->total_number_of_outlets = ($request->multi_outlet_checkbox === 'Y') ? (int) ($request->total_number_of_outlets ?? 1) : 1;
         $history->save();
 
         return redirect()->route('plans.index')
@@ -459,14 +463,17 @@ public function update(Request $request, $id)
         $newUpdatedPlan->billing_cycle = $request->billing_cycle;
         $newUpdatedPlan->duration_days = $request->duration_days;
         $newUpdatedPlan->description = $request->description;
-        $newUpdatedPlan->is_default_free = $request->is_default_free;
-        $newUpdatedPlan->is_default_paid = $request->is_default_paid;
+        $newUpdatedPlan->is_default_free = $request->is_default_free ?? 'N';
+        $newUpdatedPlan->is_default_paid = $request->is_default_paid ?? 'N';
         $newUpdatedPlan->razorpay_plan_id = $razorpayPlan->id;
         $newUpdatedPlan->category_number = $request->category_number;
         $newUpdatedPlan->total_number_of_dishes = $request->total_number_of_dishes;
         $newUpdatedPlan->total_number_of_table = $request->total_number_of_table;
-        $newUpdatedPlan->inventory_checkbox = $request->inventory_checkbox;
-        $newUpdatedPlan->is_default_plan = $request->is_default_plan;
+        $newUpdatedPlan->inventory_checkbox = $request->inventory_checkbox ?? 'N';
+        $newUpdatedPlan->multi_outlet_checkbox = $request->multi_outlet_checkbox ?? 'N';
+        $newUpdatedPlan->total_number_of_outlets = ($request->multi_outlet_checkbox === 'Y') ? (int) ($request->total_number_of_outlets ?? 1) : 1;
+        $newUpdatedPlan->is_default_plan = $request->is_default_plan ?? 'N';
+        $newUpdatedPlan->sort_order = $plan->sort_order ?? 0;
         $newUpdatedPlan->plan_status = 'A';
         $newUpdatedPlan->save();
 
@@ -496,12 +503,14 @@ public function update(Request $request, $id)
         $insHis->billing_cycle = $request->billing_cycle;
         $insHis->duration_days = $request->duration_days;
         $insHis->description = $request->description;
-        $insHis->is_default_free = $request->is_default_free;
-        $insHis->is_default_paid = $request->is_default_paid;
+        $insHis->is_default_free = $request->is_default_free ?? 'N';
+        $insHis->is_default_paid = $request->is_default_paid ?? 'N';
         $insHis->category_number = $request->category_number;
         $insHis->total_number_of_dishes = $request->total_number_of_dishes;
         $insHis->total_number_of_table = $request->total_number_of_table;
         $insHis->inventory_checkbox = $request->inventory_checkbox;
+        $insHis->multi_outlet_checkbox = $request->multi_outlet_checkbox ?? 'N';
+        $insHis->total_number_of_outlets = ($request->multi_outlet_checkbox === 'Y') ? (int) ($request->total_number_of_outlets ?? 1) : 1;
         $insHis->save();
 
         return redirect()->route('plans.index')
@@ -557,6 +566,24 @@ public function update(Request $request, $id)
             'success' => true,
             'message' => 'Plan default status updated successfully',
             'is_default_plan' => $plan->is_default_plan
+        ]);
+    }
+
+    public function toggleStatus($id)
+    {
+        if (auth()->user()->role != "SA") {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $plan = Plan::findOrFail($id);
+        $plan->plan_status = ($plan->plan_status == 'A') ? 'I' : 'A';
+        $plan->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Plan status updated to ' . ($plan->plan_status == 'A' ? 'Active' : 'Inactive') . ' successfully!',
+            'plan_status' => $plan->plan_status,
+            'is_active' => ($plan->plan_status == 'A')
         ]);
     }
 

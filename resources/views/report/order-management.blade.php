@@ -1,845 +1,582 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <title>Admin - Order Management Report</title>
-  @include('includes.style')
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    .filter-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 25px;
-    }
-    .filter-card label {
-      font-weight: 500;
-      margin-bottom: 8px;
-    }
-    .summary-card {
-      background: white;
-      border-radius: 12px;
-      padding: 18px;
-      margin-bottom: 15px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-      text-align: center;
-      border-top: 4px solid;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .summary-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-    }
-    .summary-value {
-      font-size: 1.8rem;
-      font-weight: 700;
-      margin-bottom: 5px;
-    }
-    .summary-label {
-      color: #64748b;
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .status-badge {
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      display: inline-block;
-    }
-    .badge-paid { background: #10b981; color: white; }
-    .badge-pending { background: #f59e0b; color: white; }
-    .badge-misc { background: #8b5cf6; color: white; }
-    .badge-dinein { background: #3b82f6; color: white; }
-    .badge-takeaway { background: #10b981; color: white; }
-    .badge-gst { background: #8b5cf6; color: white; }
-    .badge-non-gst { background: #64748b; color: white; }
-    
-    .amount-cell {
-      font-weight: 600;
-    }
-    .amount-paid {
-      color: #10b981;
-    }
-    .amount-pending {
-      color: #ef4444;
-    }
-    
-    .action-buttons {
-      display: flex;
-      gap: 5px;
-      justify-content: flex-start;
-      flex-wrap: wrap;
-    }
-    
-    .table-responsive {
-      overflow-x: auto;
-    }
-    
-    #ordersTable {
-      width: 100% !important;
-    }
-    
-    #ordersTable th {
-      white-space: nowrap;
-    }
-    
-    .dataTables_filter {
-      margin-bottom: 15px;
-    }
-    
-    .dataTables_filter input {
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 6px 12px;
-      margin-left: 8px;
-    }
-    
-    .dt-buttons {
-      margin-bottom: 15px;
-    }
-    
-    .btn-sm {
-      padding: 5px 12px;
-      font-size: 0.8rem;
-    }
-    
-    .gst-bill-badge {
-      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-      color: white;
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 0.65rem;
-      font-weight: 500;
-      display: inline-block;
-    }
-    .non-gst-bill-badge {
-      background: #64748b;
-      color: white;
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 0.65rem;
-      font-weight: 500;
-      display: inline-block;
-    }
-  </style>
-</head>
+@extends('layouts.app')
 
-<body data-pc-theme="light">
-  <div class="loader-bg">
-    <div class="loader-track">
-      <div class="loader-fill"></div>
-    </div>
-  </div>
+@section('title')
+<title>Admin - Order Management Report</title>
+@endsection
 
-  @include('includes.sidebar')
+@section('style')
+@include('includes.style')
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{{ asset('admin_template/css/report-analytics.css') }}">
+<style>
+  .dataTables_wrapper {
+    padding: 16px 20px;
+  }
+  .dataTables_filter input {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 6px 14px;
+    outline: none;
+    font-size: 0.85rem;
+  }
+  .dataTables_filter input:focus {
+    border-color: var(--rpt-primary);
+    background: #ffffff;
+  }
+  .dt-buttons .dt-button {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 20px !important;
+    padding: 6px 14px !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    color: var(--rpt-slate) !important;
+    margin-right: 6px !important;
+    transition: all 0.2s ease !important;
+  }
+  .dt-buttons .dt-button:hover {
+    background: #f8fafc !important;
+    border-color: var(--rpt-primary) !important;
+    color: var(--rpt-primary) !important;
+  }
+</style>
+@endsection
 
-  <div class="pc-container">
-    <div class="pc-content">
+@section('body')
+@include('includes.sidebar')
 
-      <!-- Breadcrumb -->
-      <div class="page-header">
-        <div class="page-block">
-          <div class="row align-items-center">
-            <div class="col-md-12">
-              <div class="page-header-title">
-                <h5 class="m-b-10">Order Management Report</h5>
-              </div>
-              <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-                <li class="breadcrumb-item"><a href="#">Reports</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Order Management</li>
-              </ul>
+<div class="pc-container">
+<div class="pc-content">
+
+    <div class="rpt-page-wrap">
+        {{-- Flash / Error Messages --}}
+        @include('includes.message')
+
+        {{-- 1. Header Deck --}}
+        <div class="rpt-header-deck">
+            <div class="rpt-header-left">
+                <div class="rpt-header-icon icon-orders">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                </div>
+                <div class="rpt-header-title-meta">
+                    <span class="rpt-header-eyebrow">Financial & Sales Audit</span>
+                    <h1 class="rpt-header-title">Order Management Report</h1>
+                    <p class="rpt-header-sub">Comprehensive order ledger, revenue analytics, tax breakdown, and payment auditing</p>
+                </div>
             </div>
-          </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-muted small fw-bold">Period: {{ $fromDate->format('d M Y') }} - {{ $toDate->format('d M Y') }}</span>
+            </div>
         </div>
-      </div>
 
-      <div class="row">
-        <div class="col-sm-12">
-          <div class="card">
-            <div class="card-body">
-              <!-- Filter Form -->
-              <div class="filter-card">
-                <form method="GET" action="{{ route('order.report.management') }}" class="row g-3 align-items-end">
-                  <div class="col-md-2">
-                    <label class="form-label text-white">From Date</label>
-                    <input type="date" name="from_date" value="{{ $fromDate->format('Y-m-d') }}" class="form-control">
-                  </div>
-                  <div class="col-md-2">
-                    <label class="form-label text-white">To Date</label>
-                    <input type="date" name="to_date" value="{{ $toDate->format('Y-m-d') }}" class="form-control">
-                  </div>
-                  <div class="col-md-2">
-                    <label class="form-label text-white">Order Type</label>
-                    <select name="order_type" class="form-control">
-                      <option value="all" {{ ($orderType == 'all' || !$orderType) ? 'selected' : '' }}>All Types</option>
-                      @foreach($orderTypes as $type)
-                        <option value="{{ $type }}" {{ $orderType == $type ? 'selected' : '' }}>
-                          {{ ucfirst(str_replace('_', ' ', strtolower($type))) }}
-                        </option>
-                      @endforeach
+        {{-- 2. Filter Form --}}
+        <div class="rpt-filter-card">
+            <form method="GET" action="{{ route('order.report.management') }}" class="row g-3 align-items-end">
+                <div class="col-md-3 col-sm-6">
+                    <label class="rpt-filter-label">From Date</label>
+                    <input type="date" name="from_date" value="{{ $fromDate->format('Y-m-d') }}" class="rpt-filter-control">
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <label class="rpt-filter-label">To Date</label>
+                    <input type="date" name="to_date" value="{{ $toDate->format('Y-m-d') }}" class="rpt-filter-control">
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <label class="rpt-filter-label">Order Type</label>
+                    <select name="order_type" class="rpt-filter-control">
+                        <option value="all" {{ ($orderType == 'all' || !$orderType) ? 'selected' : '' }}>All Types</option>
+                        @foreach($orderTypes as $type)
+                            <option value="{{ $type }}" {{ $orderType == $type ? 'selected' : '' }}>
+                                {{ ucfirst(str_replace('_', ' ', strtolower($type))) }}
+                            </option>
+                        @endforeach
                     </select>
-                  </div>
-                  <div class="col-md-2">
-                    <label class="form-label text-white">Payment Status</label>
-                    <select name="payment_status" class="form-control">
-                      <option value="all" {{ ($paymentStatus == 'all' || !$paymentStatus) ? 'selected' : '' }}>All Status</option>
-                      @foreach($paymentStatuses as $status)
-                        <option value="{{ $status }}" {{ $paymentStatus == $status ? 'selected' : '' }}>
-                          {{ ucfirst($status) }}
-                        </option>
-                      @endforeach
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <label class="rpt-filter-label">Payment Status</label>
+                    <select name="payment_status" class="rpt-filter-control">
+                        <option value="all" {{ ($paymentStatus == 'all' || !$paymentStatus) ? 'selected' : '' }}>All Status</option>
+                        @foreach($paymentStatuses as $status)
+                            <option value="{{ $status }}" {{ $paymentStatus == $status ? 'selected' : '' }}>
+                                {{ ucfirst($status) }}
+                            </option>
+                        @endforeach
                     </select>
-                  </div>
-                  <div class="col-md-4">
-                    <button type="submit" class="btn btn-light w-100">
-                      <i class="bi bi-funnel me-1"></i> Filter
+                </div>
+                <div class="col-md-2 col-sm-12">
+                    <button type="submit" class="btn-rpt-primary w-100 justify-content-center">
+                        <i class="fas fa-filter"></i> Apply Filter
                     </button>
-                  </div>
-                </form>
-              </div>
+                </div>
+            </form>
+        </div>
 
-              <!-- Summary Stats -->
-              <div class="row mb-4">
-                <div class="col-md-3">
-                  <div class="summary-card" style="border-top-color: #3b82f6;">
-                    <div class="summary-value text-primary">₹{{ number_format($summary['total_revenue'], 2) }}</div>
-                    <div class="summary-label">Total Revenue</div>
-                    <div class="mt-2">
-                      <small class="text-muted">{{ $summary['total_orders'] }} Orders</small>
-                    </div>
-                  </div>
+        {{-- 3. Summary Stats Deck --}}
+        <div class="rpt-stats-grid">
+            <div class="rpt-stat-card stat-primary">
+                <div class="rpt-stat-info">
+                    <span class="rpt-stat-label">Total Revenue</span>
+                    <span class="rpt-stat-val">₹{{ number_format($summary['total_revenue'], 2) }}</span>
+                    <small class="text-muted mt-1">{{ $summary['total_orders'] }} Total Orders</small>
                 </div>
-                <div class="col-md-3">
-                  <div class="summary-card" style="border-top-color: #10b981;">
-                    <div class="summary-value text-success">₹{{ number_format($summary['total_collected'], 2) }}</div>
-                    <div class="summary-label">Amount Collected</div>
-                    <div class="mt-2">
-                      <small class="text-muted">{{ $summary['paid_count'] }} Paid Orders</small>
-                    </div>
-                  </div>
+                <div class="rpt-stat-icon">
+                    <i class="fas fa-wallet"></i>
                 </div>
-                <div class="col-md-3">
-                  <div class="summary-card" style="border-top-color: #ef4444;">
-                    <div class="summary-value text-danger">₹{{ number_format($summary['pending_amount'], 2) }}</div>
-                    <div class="summary-label">Pending Amount</div>
-                    <div class="mt-2">
-                      <small class="text-muted">{{ $summary['pending_count'] }} Pending Orders</small>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="summary-card" style="border-top-color: #8b5cf6;">
-                    <div class="summary-value text-purple">{{ $summary['total_orders'] }}</div>
-                    <div class="summary-label">Total Orders</div>
-                    <div class="mt-2">
-                      <small class="text-muted">
-                        Dine-in: {{ $summary['dine_in_count'] }} | Takeaway: {{ $summary['takeaway_count'] }}
-                      </small>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            </div>
 
-              <!-- GST & Discount Summary Stats -->
-              <div class="row mb-4">
-                <div class="col-md-3">
-                  <div class="summary-card" style="border-top-color: #8b5cf6;">
-                    <div class="summary-value text-purple">{{ $summary['gst_bills_count'] ?? 0 }}</div>
-                    <div class="summary-label">GST Bills</div>
-                    <div class="mt-2">
-                      <small class="text-muted">{{ $summary['non_gst_bills_count'] ?? 0 }} Non-GST Bills</small>
-                    </div>
-                  </div>
+            <div class="rpt-stat-card stat-success">
+                <div class="rpt-stat-info">
+                    <span class="rpt-stat-label">Amount Collected</span>
+                    <span class="rpt-stat-val text-success">₹{{ number_format($summary['total_collected'], 2) }}</span>
+                    <small class="text-muted mt-1">{{ $summary['paid_count'] }} Paid Orders</small>
                 </div>
-                <div class="col-md-3">
-                  <div class="summary-card" style="border-top-color: #f59e0b;">
-                    <div class="summary-value text-warning">₹{{ number_format($summary['total_gst_amount'] ?? 0, 2) }}</div>
-                    <div class="summary-label">Total GST Collected</div>
-                    <div class="mt-2">
-                      <small class="text-muted">Taxable: ₹{{ number_format($summary['total_taxable_amount'] ?? 0, 2) }}</small>
-                    </div>
-                  </div>
+                <div class="rpt-stat-icon">
+                    <i class="fas fa-hand-holding-usd"></i>
                 </div>
-                <div class="col-md-3">
-                  <div class="summary-card" style="border-top-color: #10b981;">
-                    <div class="summary-value text-success">₹{{ number_format($summary['total_item_discount'] ?? 0, 2) }}</div>
-                    <div class="summary-label">Item Discount</div>
-                    <div class="mt-2">
-                      <small class="text-muted">From order items</small>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="summary-card" style="border-top-color: #ef4444;">
-                    <div class="summary-value text-danger">₹{{ number_format($summary['total_order_discount'] ?? 0, 2) }}</div>
-                    <div class="summary-label">Order Discount</div>
-                    <div class="mt-2">
-                      <small class="text-muted">From orders table</small>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            </div>
 
-              <!-- Orders Table -->
-              <div class="table-responsive">
-                <table id="ordersTable" class="table table-hover table-striped">
-                  <thead class="thead-light">
-                    <tr>
-                      <th class="text-center" style="width: 50px;">#</th>
-                      <th>Actions</th>
-                      <th>Order ID</th>
-                      <th>Customer</th>
-                      <th>Phone</th>
-                      <th>Type</th>
-                      <th>Subtotal</th>
-                      <th>Item Disc</th>
-                      <th>Order Disc</th>
-                      <th>Taxable</th>
-                      <th>GST</th>
-                      <th>Grand Total</th>
-                      <th>Paid</th>
-                      <th>Balance</th>
-                      <th>Bill Type</th>
-                      <th>Status</th>
-                      <th>Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @forelse($orders as $key => $order)
-                      @php
-                        $balance = round($order->grand_total, 2) - ($order->amount_paid ?? 0);
-                        $isFullyPaid = $balance <= 0;
-                        $isGstBill = ($order->is_gst_bill ?? 'NO') == 'YES';
-                        $gstPercentage = $order->restaurant_gst_percentage ?? 0;
-                        
-                        // Calculate total item discount from order items
-                        $totalItemDiscount = 0;
-                        foreach ($order->orderItems as $item) {
-                            $itemDiscountAmount = ($item->price * $item->quantity) - $item->taxable_amount;
-                            $totalItemDiscount += $itemDiscountAmount;
-                        }
-                        
-                        $orderDiscountAmount = $order->discount ?? 0;
-                        $totalDiscount = $totalItemDiscount + $orderDiscountAmount;
-                      @endphp
-                      <tr>
-                        <td class="text-center">{{ ($orders->currentPage() - 1) * $orders->perPage() + $key + 1 }}</td>
-                        <td class="text-start">
-                          <div class="action-buttons">
-                            <a href="{{ route('order.invoice', $order->id) }}" 
-                               class="btn btn-sm btn-outline-primary" 
-                               title="View Invoice"
-                               target="_blank">
-                              <i class="bi bi-receipt"></i>
-                            </a>
-                            <a href="{{ route('order.report.order.details', $order->id) }}" 
-                               class="btn btn-sm btn-outline-info" 
-                               title="View Details">
-                              <i class="bi bi-eye"></i>
-                            </a>
-                            @if($order->payment_status == 'PENDING')
-                              <a href="{{ route('order.payment', $order->id) }}" 
-                                 class="btn btn-sm btn-outline-success" 
-                                 title="Add Payment">
-                                <i class="bi bi-cash"></i>
-                              </a>
-                            @endif
-                            <button type="button" 
-                                    class="btn btn-sm btn-outline-danger btn-delete-order" 
-                                    data-order-id="{{ $order->id }}"
-                                    data-order-uid="{{ $order->order_id }}"
-                                    title="Delete Order">
-                              <i class="bi bi-trash"></i>
-                            </button>
-                          </div>
-                        </td>
-                        <td>
-                          <span class="fw-bold text-primary">{{ $order->order_id }}</span>
-                        </td>
-                        <td>{{ $order->customer_name ?? 'Walk-in Customer' }}</td>
-                        <td>{{ $order->customer_phone ?? '-' }}</td>
-                        <td>
-                          @if($order->order_type == 'DINE_IN')
-                            <span class="status-badge badge-dinein">
-                              <i class="bi bi-table"></i> Dine-in
-                            </span>
-                            @if($order->table)
-                              <br><small class="text-muted">{{ $order->table->name }}</small>
-                            @endif
-                          @else
-                            <span class="status-badge badge-takeaway">
-                              <i class="bi bi-box"></i> Takeaway
-                            </span>
-                          @endif
-                        </td>
-                        <td class="amount-cell text-end">₹{{ number_format($order->total_amount ?? 0, 2) }}</td>
-                        <td class="amount-cell text-end text-success">- ₹{{ number_format($totalItemDiscount, 2) }}</td>
-                        <td class="amount-cell text-end text-danger">- ₹{{ number_format($orderDiscountAmount, 2) }}</td>
-                        <td class="amount-cell text-end">₹{{ number_format($order->taxable_amount ?? 0, 2) }}</td>
-                        <td class="amount-cell text-end">
-                          @if($isGstBill)
-                            ₹{{ number_format($order->gst_amount ?? 0, 2) }}
-                            <br><small class="text-muted">({{ $gstPercentage }}%)</small>
-                          @else
-                            <span class="text-muted">-</span>
-                          @endif
-                        </td>
-                        <td class="amount-cell text-end">
-                          <strong>₹{{ number_format($order->grand_total, 2) }}</strong>
-                        </td>
-                        <td class="amount-cell text-end amount-paid">
-                          ₹{{ number_format($order->amount_paid ?? 0, 2) }}
-                        </td>
-                        <td class="amount-cell text-end {{ $isFullyPaid ? 'amount-paid' : 'amount-pending' }}">
-                          ₹{{ number_format($balance, 2) }}
-                          @if(!$isFullyPaid)
-                            <br><small class="text-danger"><i class="bi bi-exclamation-circle"></i> Due</small>
-                          @endif
-                        </td>
-                        <td class="text-center">
-                          @if($isGstBill)
-                            <span class="gst-bill-badge">
-                              <i class="bi bi-file-text"></i> GST Bill
-                            </span>
-                          @else
-                            <span class="non-gst-bill-badge">
-                              <i class="bi bi-receipt"></i> Non-GST
-                            </span>
-                          @endif
-                        </td>
-                        <td>
-                          @if($order->payment_status == 'PAID')
-                            <span class="status-badge badge-paid">
-                              <i class="bi bi-check-circle"></i> Paid
-                            </span>
-                          @elseif($order->payment_status == 'PENDING')
-                            <span class="status-badge badge-pending">
-                              <i class="bi bi-clock"></i> Pending
-                            </span>
-                          @elseif($order->payment_status == 'MISCORDER')
-                            <span class="status-badge badge-misc">
-                              <i class="bi bi-receipt"></i> Misc
-                            </span>
-                          @else
-                            <span class="text-muted">{{ $order->payment_status }}</span>
-                          @endif
-                        </td>
-                        <td>
-                          <div>{{ $order->created_at->format('d M Y') }}</div>
-                          <small class="text-muted">{{ $order->created_at->format('h:i A') }}</small>
-                        </td>
-                      </tr>
-                    @empty
-                      <tr>
-                        <td colspan="17" class="text-center py-5">
-                          <div class="empty-state">
-                            <i class="bi bi-inbox" style="font-size: 48px; color: #cbd5e1;"></i>
-                            <h5 class="mt-3">No Orders Found</h5>
-                            <p class="text-muted">No orders match your filter criteria.</p>
-                          </div>
-                        </td>
-                      </tr>
-                    @endforelse
-                  </tbody>
+            <div class="rpt-stat-card stat-danger">
+                <div class="rpt-stat-info">
+                    <span class="rpt-stat-label">Pending Balance</span>
+                    <span class="rpt-stat-val text-danger">₹{{ number_format($summary['pending_amount'], 2) }}</span>
+                    <small class="text-muted mt-1">{{ $summary['pending_count'] }} Pending Orders</small>
+                </div>
+                <div class="rpt-stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+
+            <div class="rpt-stat-card stat-purple">
+                <div class="rpt-stat-info">
+                    <span class="rpt-stat-label">GST Invoices</span>
+                    <span class="rpt-stat-val text-purple">{{ $summary['gst_bills_count'] ?? 0 }}</span>
+                    <small class="text-muted mt-1">₹{{ number_format($summary['total_gst_amount'] ?? 0, 2) }} Tax Collected</small>
+                </div>
+                <div class="rpt-stat-icon">
+                    <i class="fas fa-receipt"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="rpt-stats-grid">
+            <div class="rpt-stat-card stat-info">
+                <div class="rpt-stat-info">
+                    <span class="rpt-stat-label">Dine-in Orders</span>
+                    <span class="rpt-stat-val text-info">{{ $summary['dine_in_count'] }}</span>
+                    <small class="text-muted mt-1">Table Service</small>
+                </div>
+                <div class="rpt-stat-icon">
+                    <i class="fas fa-chair"></i>
+                </div>
+            </div>
+
+            <div class="rpt-stat-card stat-indigo">
+                <div class="rpt-stat-info">
+                    <span class="rpt-stat-label">Takeaway Orders</span>
+                    <span class="rpt-stat-val" style="color: var(--rpt-indigo); font-family: 'Outfit', sans-serif;">{{ $summary['takeaway_count'] }}</span>
+                    <small class="text-muted mt-1">Parcel / Delivery</small>
+                </div>
+                <div class="rpt-stat-icon">
+                    <i class="fas fa-shopping-bag"></i>
+                </div>
+            </div>
+
+            <div class="rpt-stat-card stat-warning">
+                <div class="rpt-stat-info">
+                    <span class="rpt-stat-label">Item Discounts</span>
+                    <span class="rpt-stat-val text-warning">₹{{ number_format($summary['total_item_discount'] ?? 0, 2) }}</span>
+                    <small class="text-muted mt-1">Menu Dish Discounts</small>
+                </div>
+                <div class="rpt-stat-icon">
+                    <i class="fas fa-percentage"></i>
+                </div>
+            </div>
+
+            <div class="rpt-stat-card stat-dark">
+                <div class="rpt-stat-info">
+                    <span class="rpt-stat-label">Order Discounts</span>
+                    <span class="rpt-stat-val text-danger">₹{{ number_format($summary['total_order_discount'] ?? 0, 2) }}</span>
+                    <small class="text-muted mt-1">Overall Bill Discounts</small>
+                </div>
+                <div class="rpt-stat-icon">
+                    <i class="fas fa-tags"></i>
+                </div>
+            </div>
+        </div>
+
+        {{-- 4. Orders Datatable Card --}}
+        <div class="rpt-card">
+            <div class="rpt-card-header">
+                <h5 class="rpt-card-title">
+                    <i class="fas fa-list-alt text-primary"></i> Detailed Orders Audit
+                </h5>
+                <span class="text-muted small fw-bold">Displaying {{ $orders->count() }} records</span>
+            </div>
+
+            <div class="table-responsive">
+                <table id="ordersTable" class="rpt-table table-hover">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 50px;">#</th>
+                            <th class="text-center">Actions</th>
+                            <th>Order UID</th>
+                            <th>Customer Info</th>
+                            <th>Service Type</th>
+                            <th class="text-end">Subtotal</th>
+                            <th class="text-end">Discounts</th>
+                            <th class="text-end">Taxable</th>
+                            <th class="text-end">GST</th>
+                            <th class="text-end">Grand Total</th>
+                            <th class="text-end">Paid</th>
+                            <th class="text-end">Due Balance</th>
+                            <th class="text-center">Bill Type</th>
+                            <th class="text-center">Status</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($orders as $key => $order)
+                        @php
+                            $balance = round($order->grand_total, 2) - ($order->amount_paid ?? 0);
+                            $isFullyPaid = $balance <= 0;
+                            $isGstBill = ($order->is_gst_bill ?? 'NO') == 'YES';
+                            $gstPercentage = $order->restaurant_gst_percentage ?? 0;
+                            
+                            $totalItemDiscount = 0;
+                            if($order->orderItems) {
+                                foreach ($order->orderItems as $item) {
+                                    $itemDiscPercent = floatval($item->item_discount_percentage ?? 0);
+                                    $qty = intval($item->quantity ?? 1);
+                                    $basePrice = floatval($item->price ?? 0);
+                                    if ($itemDiscPercent > 0) {
+                                        $totalItemDiscount += ($basePrice * $itemDiscPercent / 100) * $qty;
+                                    } elseif (!empty($item->discounted_price) && $item->discounted_price < $basePrice) {
+                                        $totalItemDiscount += ($basePrice - floatval($item->discounted_price)) * $qty;
+                                    }
+                                }
+                            }
+                            $orderDiscountAmount = floatval($order->discount ?? 0);
+                            $totalDiscount = $totalItemDiscount + $orderDiscountAmount;
+                        @endphp
+                        <tr>
+                            <td class="text-center text-muted fw-bold">
+                                {{ method_exists($orders, 'currentPage') ? ($orders->currentPage() - 1) * $orders->perPage() + $key + 1 : $key + 1 }}
+                            </td>
+                            <td>
+                                <div class="rpt-actions justify-content-center">
+                                    <a href="{{ route('order.invoice', $order->id) }}" 
+                                       class="rpt-btn-action btn-print" 
+                                       title="View / Print Tax Invoice"
+                                       target="_blank">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                    <a href="{{ route('order.report.order.details', $order->id) }}" 
+                                       class="rpt-btn-action btn-view" 
+                                       title="View Order Breakdown">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button type="button" 
+                                            class="rpt-btn-action btn-del btn-delete-order" 
+                                            data-order-id="{{ $order->id }}"
+                                            data-order-uid="{{ $order->order_id }}"
+                                            title="Delete Order (Requires OTP)">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="fw-bold" style="font-family: 'Outfit', sans-serif; color: var(--rpt-primary);">
+                                    #{{ $order->order_id }}
+                                </span>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong class="text-dark">{{ $order->customer_name ?? 'Walk-in Guest' }}</strong>
+                                    @if($order->customer_phone)
+                                    <div class="text-muted small">
+                                        <i class="fas fa-phone-alt me-1 text-secondary"></i> {{ $order->customer_phone }}
+                                    </div>
+                                    @endif
+                                </div>
+                            </td>
+                            <td>
+                                @if($order->order_type == 'DINE_IN')
+                                    <span class="rpt-badge badge-dinein">
+                                        <i class="fas fa-chair"></i> Dine-in
+                                    </span>
+                                    @if($order->table)
+                                        <div class="text-muted small mt-1">{{ $order->table->name }}</div>
+                                    @endif
+                                @else
+                                    <span class="rpt-badge badge-takeaway">
+                                        <i class="fas fa-shopping-bag"></i> Takeaway
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="text-end fw-semibold">₹{{ number_format($order->total_amount ?? 0, 2) }}</td>
+                            <td class="text-end {{ $totalDiscount > 0 ? 'text-danger' : 'text-muted' }} fw-semibold">
+                                {{ $totalDiscount > 0 ? '- ₹' . number_format($totalDiscount, 2) : '₹0.00' }}
+                            </td>
+                            <td class="text-end fw-semibold">₹{{ number_format($order->taxable_amount ?? 0, 2) }}</td>
+                            <td class="text-end">
+                                @if($isGstBill)
+                                    <span class="fw-bold text-dark">₹{{ number_format($order->gst_amount ?? 0, 2) }}</span>
+                                    <div class="text-muted small">({{ $gstPercentage }}%)</div>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
+                            <td class="text-end">
+                                <strong style="font-family: 'Outfit', sans-serif; font-size: 1rem; color: var(--rpt-dark);">
+                                    ₹{{ number_format($order->grand_total, 2) }}
+                                </strong>
+                            </td>
+                            <td class="text-end text-success fw-bold">
+                                ₹{{ number_format($order->amount_paid ?? 0, 2) }}
+                            </td>
+                            <td class="text-end">
+                                @if($isFullyPaid)
+                                    <span class="text-success fw-bold">₹0.00</span>
+                                @else
+                                    <span class="text-danger fw-bold">₹{{ number_format($balance, 2) }}</span>
+                                    <div class="text-danger small"><i class="fas fa-exclamation-circle"></i> Due</div>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                @if($isGstBill)
+                                    <span class="rpt-badge badge-gst">
+                                        <i class="fas fa-file-invoice"></i> GST
+                                    </span>
+                                @else
+                                    <span class="rpt-badge badge-nongst">Non-GST</span>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                @if($order->payment_status == 'PAID')
+                                    <span class="rpt-badge badge-paid">
+                                        <i class="fas fa-check-circle"></i> Paid
+                                    </span>
+                                @elseif($order->payment_status == 'PENDING')
+                                    <span class="rpt-badge badge-pending">
+                                        <i class="fas fa-clock"></i> Pending
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary">{{ $order->payment_status }}</span>
+                                @endif
+                            </td>
+                            <td>
+                                <div class="text-dark fw-semibold small">{{ $order->created_at->format('d M Y') }}</div>
+                                <small class="text-muted">{{ $order->created_at->format('h:i A') }}</small>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="15" class="text-center py-5 text-muted">
+                                <i class="fas fa-file-invoice fa-3x mb-3 text-secondary opacity-50"></i>
+                                <h6 class="fw-bold">No Orders Found</h6>
+                                <p class="small text-muted mb-0">No transaction records match the selected date or filter criteria.</p>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
                 </table>
-              </div>
-
-              <!-- Pagination -->
-              @if($orders->hasPages())
-                <div class="mt-4 d-flex justify-content-end">
-                  {{ $orders->appends(request()->query())->links() }}
-                </div>
-              @endif
-
-              <!-- Filter Summary -->
-              <div class="row mt-4">
-                <div class="col-md-12">
-                  <div class="alert alert-info bg-light border">
-                    <div class="row align-items-center">
-                      <div class="col-md-3">
-                        <strong><i class="bi bi-calendar-range"></i> Date Range:</strong><br>
-                        {{ $fromDate->format('d M Y') }} - {{ $toDate->format('d M Y') }}
-                      </div>
-                      <div class="col-md-3">
-                        <strong><i class="bi bi-funnel"></i> Applied Filters:</strong><br>
-                        <span class="badge bg-secondary me-1">Type: {{ $orderType == 'all' || !$orderType ? 'All' : ucfirst(strtolower($orderType)) }}</span>
-                        <span class="badge bg-secondary">Status: {{ $paymentStatus == 'all' || !$paymentStatus ? 'All' : ucfirst($paymentStatus) }}</span>
-                      </div>
-                      <div class="col-md-3">
-                        <strong><i class="bi bi-calculator"></i> Discount Summary:</strong><br>
-                        <span class="badge bg-success me-1">Item Disc: ₹{{ number_format($summary['total_item_discount'] ?? 0, 2) }}</span>
-                        <span class="badge bg-danger">Order Disc: ₹{{ number_format($summary['total_order_discount'] ?? 0, 2) }}</span>
-                      </div>
-                      <div class="col-md-3 text-md-end">
-                        <strong><i class="bi bi-table"></i> Showing:</strong><br>
-                        {{ $orders->firstItem() ?? 0 }} - {{ $orders->lastItem() ?? 0 }} of {{ $orders->total() }} orders
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
             </div>
-          </div>
+
+            @if(method_exists($orders, 'links'))
+            <div class="p-3 border-top">
+                {{ $orders->links() }}
+            </div>
+            @endif
         </div>
-      </div>
 
     </div>
-  </div>
 
-  <!-- JS Libraries -->
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-  @include('includes.script')
+</div>
+</div>
 
-  <script>
-  $(document).ready(function() {
-    // Initialize DataTable with export buttons only if the table has data
-    if ($('#ordersTable .empty-state').length === 0) {
-      $('#ordersTable').DataTable({
-        "paging": false,
-        "searching": true,
-        "ordering": true,
-        "info": false,
-        "responsive": true,
-        "dom": '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dt-search"f>>rt<"row"<"col-sm-12"i>>',
-        "columnDefs": [
-          { "orderable": false, "targets": [1] } // Disable sorting on Actions column
-        ],
-        "buttons": [
-          {
-            extend: 'excelHtml5',
-            text: '<i class="bi bi-file-excel me-1"></i> Export Excel',
-            className: 'btn btn-success btn-sm',
-            title: 'Order_Management_Report_{{ date('Y-m-d') }}',
-            exportOptions: {
-              columns: [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], // Exclude Actions column (index 1)
-              format: {
-                body: function(data, row, column, node) {
-                  let $node = $(node);
-                  // For column 0 (Index/S.No)
-                  if (column === 0) {
-                    return $node.text().trim();
-                  }
-                  // For Order ID column
-                  if (column === 2) {
-                    return $node.find('.fw-bold').text().trim();
-                  }
-                  // For Type column
-                  if (column === 5) {
-                    return $node.text().replace(/\s+/g, ' ').trim();
-                  }
-                  // For amount columns
-                  if (column >= 6 && column <= 13) {
-                    let val = $node.find('strong').text() || $node.text();
-                    return val.replace('₹', '').replace(/\s+/g, ' ').trim();
-                  }
-                  // For Bill Type column
-                  if (column === 14) {
-                    return $node.text().trim();
-                  }
-                  // For Status column
-                  if (column === 15) {
-                    return $node.text().replace(/\s+/g, ' ').trim();
-                  }
-                  // For Date column
-                  if (column === 16) {
-                    let date = $node.find('div').text().trim();
-                    let time = $node.find('small').text().trim();
-                    return `${date} ${time}`;
-                  }
-                  return $node.text().trim();
-                }
-              }
-            }
-          },
-          {
-            extend: 'print',
-            text: '<i class="bi bi-printer me-1"></i> Print',
-            className: 'btn btn-primary btn-sm',
-            title: 'Order Management Report',
-            exportOptions: {
-              columns: [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], // Exclude Actions column
-              format: {
-                body: function(data, row, column, node) {
-                  let $node = $(node);
-                  if (column === 0) {
-                    return $node.text().trim();
-                  }
-                  if (column === 2) {
-                    return $node.find('.fw-bold').text().trim();
-                  }
-                  if (column === 5) {
-                    return $node.text().replace(/\s+/g, ' ').trim();
-                  }
-                  if (column >= 6 && column <= 13) {
-                    let val = $node.find('strong').text() || $node.text();
-                    return val.replace('₹', '').trim();
-                  }
-                  if (column === 14) {
-                    return $node.text().trim();
-                  }
-                  if (column === 15) {
-                    return $node.text().replace(/\s+/g, ' ').trim();
-                  }
-                  if (column === 16) {
-                    let date = $node.find('div').text().trim();
-                    let time = $node.find('small').text().trim();
-                    return `${date} ${time}`;
-                  }
-                  return $node.text().trim();
-                }
-              }
-            },
-            customize: function(win) {
-              $(win.document.body).find('table').addClass('table table-bordered');
-              $(win.document.body).find('h1').css({
-                'text-align': 'center',
-                'font-size': '18px'
-              });
-              
-              $(win.document.body).prepend(`
-                <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                  <div class="row">
-                    <div class="col-md-6">
-                      <p><strong>Date Range:</strong> {{ $fromDate->format('d M Y') }} - {{ $toDate->format('d M Y') }}</p>
-                      <p><strong>Total Orders:</strong> {{ $summary['total_orders'] }}</p>
-                      <p><strong>Total Revenue:</strong> ₹{{ number_format($summary['total_revenue'], 2) }}</p>
+{{-- Delete Order Modal (OTP verification) --}}
+<div class="modal fade" id="deleteOrderModal" tabindex="-1" aria-labelledby="deleteOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rpt-modal-content" style="border-radius: var(--rpt-radius-lg); border: none; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);">
+            <div class="modal-header p-4 border-bottom">
+                <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2" id="deleteOrderModalLabel" style="font-family: 'Outfit', sans-serif;">
+                    <i class="fas fa-exclamation-triangle"></i> Delete Order
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                {{-- Step 1: Reason / Remarks --}}
+                <div id="deleteStepRemarks">
+                    <div class="alert alert-warning border-0 p-3 mb-3 d-flex align-items-start gap-2" style="border-radius: 12px; font-size: 0.88rem;">
+                        <i class="fas fa-info-circle text-warning mt-1"></i>
+                        <div>
+                            Are you sure you want to delete order <strong id="deleteOrderUIDDisplay"></strong>? This will soft-delete the transaction and require OTP confirmation.
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                      <p><strong>Filters:</strong> Type: {{ $orderType == 'all' || !$orderType ? 'All' : ucfirst(strtolower($orderType)) }}</p>
-                      <p><strong>Amount Collected:</strong> ₹{{ number_format($summary['total_collected'], 2) }}</p>
-                      <p><strong>Pending Amount:</strong> ₹{{ number_format($summary['pending_amount'], 2) }}</p>
+                    <div class="mb-3">
+                        <label class="rpt-filter-label">Reason / Remarks <span class="text-danger">*</span></label>
+                        <textarea class="rpt-filter-control" id="deleteRemarks" rows="3" placeholder="Enter reason for deletion..." required></textarea>
+                        <div class="text-danger small mt-1 fw-bold" id="deleteRemarksFeedback" style="display: none;">Reason is required.</div>
                     </div>
-                  </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold" id="btnSendDeleteOTP">
+                            Send Verification OTP
+                        </button>
+                    </div>
                 </div>
-              `);
-            }
-          }
-        ],
-        "language": {
-          "search": "<i class='bi bi-search'></i>",
-          "searchPlaceholder": "Search orders..."
-        }
-      });
-    }
-  });
-  </script>
 
-  <style>
-    .dt-buttons .btn {
-      margin-right: 5px;
-    }
-    .dataTables_filter {
-      text-align: right;
-    }
-    .dataTables_filter label {
-      font-weight: normal;
-      margin-bottom: 0;
-    }
-    .dataTables_filter input {
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 5px 10px;
-      margin-left: 8px;
-    }
-    .text-purple {
-      color: #8b5cf6;
-    }
-    .bg-purple {
-      background-color: #8b5cf6;
-      color: white;
-    }
-    .empty-state {
-      text-align: center;
-      padding: 40px;
-    }
-    .table td {
-      vertical-align: middle;
-    }
-    .action-buttons .btn {
-      padding: 4px 8px;
-    }
-  </style>
-
-  <!-- Delete Order Modal -->
-  <div class="modal fade" id="deleteOrderModal" tabindex="-1" role="dialog" aria-labelledby="deleteOrderModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content" style="border: none !important; border-radius: 16px !important; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12) !important;">
-        <div class="modal-header" style="background: #f8fafc; border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important; padding: 1.5rem 1.75rem !important;">
-          <h5 class="modal-title text-danger" id="deleteOrderModalLabel" style="font-weight: 700 !important; font-size: 1.2rem !important; display: flex; align-items: center; gap: 8px;">
-            <i class="bi bi-exclamation-triangle-fill"></i> Delete Order
-          </h5>
-          <button type="button" class="close btn-close-custom" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="background: #e2e8f0; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #475569; font-size: 0.85rem; cursor: pointer; transition: all 0.3s ease;">
-            <span aria-hidden="true">&times;</span>
-          </button>
+                {{-- Step 2: OTP Verification --}}
+                <div id="deleteStepOTP" style="display: none;">
+                    <div class="alert alert-info border-0 p-3 mb-3 d-flex align-items-start gap-2" style="border-radius: 12px; font-size: 0.88rem;">
+                        <i class="fas fa-envelope text-info mt-1"></i>
+                        <div>
+                            A 6-digit verification OTP has been sent to the Restaurant Administrator's registered email address.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="rpt-filter-label text-center d-block">Enter Verification OTP <span class="text-danger">*</span></label>
+                        <input type="text" class="rpt-filter-control text-center fw-bold fs-3" id="deleteOTP" maxlength="6" placeholder="000000" style="letter-spacing: 6px;">
+                        <div class="text-danger small text-center mt-1 fw-bold" id="deleteOTPFeedback" style="display: none;">Invalid OTP entered.</div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-light rounded-pill px-3" id="btnBackToRemarks">Back</button>
+                        <button type="button" class="btn btn-success rounded-pill px-4 fw-bold" id="btnVerifyAndDelete">
+                            Verify &amp; Delete Order
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="modal-body" style="padding: 2rem 1.75rem !important;">
-          <!-- Step 1: Enter Remarks -->
-          <div id="deleteStepRemarks">
-            <div class="alert alert-warning" style="border-radius: 10px; font-size: 0.9rem;">
-              Are you sure you want to delete Order <strong id="deleteOrderUIDDisplay"></strong>? This action will soft-delete the order.
-            </div>
-            <div class="form-group mb-3">
-              <label for="deleteRemarks" class="form-label" style="font-weight: 700 !important; color: #475569 !important; font-size: 0.75rem !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; margin-bottom: 0.5rem !important;">Reason/Remarks <span class="text-danger">*</span></label>
-              <textarea class="form-control" id="deleteRemarks" rows="3" placeholder="Enter reason for deletion..." required style="background-color: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: 10px !important; padding: 0.7rem 1rem !important; font-size: 0.9rem !important; color: #1e293b !important;"></textarea>
-              <div class="text-danger" id="deleteRemarksFeedback" style="display: none; font-size: 0.85rem; margin-top: 5px; font-weight: 600;">Remarks are required.</div>
-            </div>
-            <div class="text-right text-end mt-4">
-              <button type="button" class="btn btn-secondary me-2" data-dismiss="modal" data-bs-dismiss="modal" style="border-radius: 10px; padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.9rem;">Cancel</button>
-              <button type="button" class="btn btn-danger" id="btnSendDeleteOTP" style="border-radius: 10px; padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.9rem; background: linear-gradient(90deg, #ff3333 0%, #ff5555 100%); border: none;">Send Verification OTP</button>
-            </div>
-          </div>
-
-          <!-- Step 2: Verify OTP -->
-          <div id="deleteStepOTP" style="display: none;">
-            <div class="alert alert-info" style="border-radius: 10px; font-size: 0.9rem;">
-              Verification OTP has been sent to the Restaurant Administrator's email. Please enter it below.
-            </div>
-            <div class="form-group mb-3">
-              <label for="deleteOTP" class="form-label" style="font-weight: 700 !important; color: #475569 !important; font-size: 0.75rem !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; margin-bottom: 0.5rem !important;">Verification OTP <span class="text-danger">*</span></label>
-              <input type="text" class="form-control text-center fw-bold" id="deleteOTP" maxlength="6" placeholder="000000" style="letter-spacing: 8px; font-size: 1.5rem !important; background-color: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: 10px !important; padding: 0.7rem 1rem !important; color: #1e293b !important;">
-              <div class="text-danger" id="deleteOTPFeedback" style="display: none; font-size: 0.85rem; margin-top: 5px; font-weight: 600;">Invalid OTP.</div>
-            </div>
-            <div class="text-right text-end mt-4">
-              <button type="button" class="btn btn-secondary me-2" id="btnBackToRemarks" style="border-radius: 10px; padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.9rem;">Back</button>
-              <button type="button" class="btn btn-success" id="btnVerifyAndDelete" style="border-radius: 10px; padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.9rem; background: linear-gradient(90deg, #10b981 0%, #059669 100%); border: none;">Verify &amp; Delete</button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
+</div>
 
-  <script>
-  $(document).ready(function() {
+@endsection
+
+@section('script')
+@include('includes.script')
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+
+<script>
+$(document).ready(function() {
     let currentDeleteOrderId = null;
 
     // Handle delete button click
     $(document).on('click', '.btn-delete-order', function(e) {
-      e.preventDefault();
-      currentDeleteOrderId = $(this).data('order-id');
-      let orderUID = $(this).data('order-uid');
+        e.preventDefault();
+        currentDeleteOrderId = $(this).data('order-id');
+        let orderUID = $(this).data('order-uid');
 
-      $('#deleteOrderUIDDisplay').text(orderUID);
-      $('#deleteRemarks').val('');
-      $('#deleteOTP').val('');
-      $('#deleteRemarksFeedback').hide();
-      $('#deleteOTPFeedback').hide();
-      
-      $('#deleteStepRemarks').show();
-      $('#deleteStepOTP').hide();
+        $('#deleteOrderUIDDisplay').text(orderUID);
+        $('#deleteRemarks').val('');
+        $('#deleteOTP').val('');
+        $('#deleteRemarksFeedback').hide();
+        $('#deleteOTPFeedback').hide();
+        
+        $('#deleteStepRemarks').show();
+        $('#deleteStepOTP').hide();
 
-      // Show modal
-      $('#deleteOrderModal').modal('show');
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteOrderModal'));
+        deleteModal.show();
     });
 
     // Send OTP
     $('#btnSendDeleteOTP').on('click', function() {
-      let remarks = $('#deleteRemarks').val().trim();
-      if (!remarks) {
-        $('#deleteRemarksFeedback').text('Remarks are required.').show();
-        return;
-      }
-      $('#deleteRemarksFeedback').hide();
-
-      let btn = $(this);
-      btn.prop('disabled', true).text('Sending OTP...');
-
-      $.ajax({
-        url: "{{ route('order.report.management.send-otp') }}",
-        method: "POST",
-        data: {
-          _token: "{{ csrf_token() }}",
-          order_id: currentDeleteOrderId,
-          remarks: remarks
-        },
-        success: function(response) {
-          btn.prop('disabled', false).text('Send Verification OTP');
-          if (response.success) {
-            $('#deleteStepRemarks').hide();
-            $('#deleteStepOTP').show();
-          } else {
-            alert(response.message || 'An error occurred.');
-          }
-        },
-        error: function(xhr) {
-          btn.prop('disabled', false).text('Send Verification OTP');
-          let msg = 'An error occurred while sending OTP.';
-          if (xhr.responseJSON && xhr.responseJSON.message) {
-            msg = xhr.responseJSON.message;
-          }
-          alert(msg);
+        let remarks = $('#deleteRemarks').val().trim();
+        if (!remarks) {
+            $('#deleteRemarksFeedback').text('Reason is required.').show();
+            return;
         }
-      });
+        $('#deleteRemarksFeedback').hide();
+
+        let btn = $(this);
+        btn.prop('disabled', true).text('Sending OTP...');
+
+        $.ajax({
+            url: "{{ route('order.report.management.send-otp') }}",
+            method: "POST",
+            data: {
+                _token: "{{ csrf_token() }}",
+                order_id: currentDeleteOrderId,
+                remarks: remarks
+            },
+            success: function(response) {
+                btn.prop('disabled', false).text('Send Verification OTP');
+                if (response.success) {
+                    $('#deleteStepRemarks').hide();
+                    $('#deleteStepOTP').show();
+                } else {
+                    alert(response.message || 'An error occurred.');
+                }
+            },
+            error: function(xhr) {
+                btn.prop('disabled', false).text('Send Verification OTP');
+                let msg = 'An error occurred while sending OTP.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    msg = xhr.responseJSON.message;
+                }
+                alert(msg);
+            }
+        });
     });
 
     // Back to remarks
     $('#btnBackToRemarks').on('click', function() {
-      $('#deleteStepOTP').hide();
-      $('#deleteStepRemarks').show();
+        $('#deleteStepOTP').hide();
+        $('#deleteStepRemarks').show();
     });
 
     // Verify OTP and Soft Delete
     $('#btnVerifyAndDelete').on('click', function() {
-      let otp = $('#deleteOTP').val().trim();
-      if (!otp || otp.length !== 6) {
-        $('#deleteOTPFeedback').text('Please enter a 6-digit OTP.').show();
-        return;
-      }
-      $('#deleteOTPFeedback').hide();
-
-      let btn = $(this);
-      btn.prop('disabled', true).text('Verifying...');
-
-      $.ajax({
-        url: "{{ route('order.report.management.verify-delete') }}",
-        method: "POST",
-        data: {
-          _token: "{{ csrf_token() }}",
-          order_id: currentDeleteOrderId,
-          otp: otp
-        },
-        success: function(response) {
-          btn.prop('disabled', false).text('Verify & Delete');
-          if (response.success) {
-            $('#deleteOrderModal').modal('hide');
-            alert('Order soft-deleted successfully.');
-            window.location.reload();
-          } else {
-            $('#deleteOTPFeedback').text(response.message || 'Verification failed.').show();
-          }
-        },
-        error: function(xhr) {
-          btn.prop('disabled', false).text('Verify & Delete');
-          let msg = 'Verification failed.';
-          if (xhr.responseJSON && xhr.responseJSON.message) {
-            msg = xhr.responseJSON.message;
-          }
-          $('#deleteOTPFeedback').text(msg).show();
+        let otp = $('#deleteOTP').val().trim();
+        if (!otp || otp.length !== 6) {
+            $('#deleteOTPFeedback').text('Please enter a 6-digit OTP.').show();
+            return;
         }
-      });
-    });
+        $('#deleteOTPFeedback').hide();
 
-    // Dismiss modal support for close buttons
-    $('[data-dismiss="modal"], [data-bs-dismiss="modal"]').on('click', function() {
-      $('#deleteOrderModal').modal('hide');
+        let btn = $(this);
+        btn.prop('disabled', true).text('Verifying...');
+
+        $.ajax({
+            url: "{{ route('order.report.management.verify-delete') }}",
+            method: "POST",
+            data: {
+                _token: "{{ csrf_token() }}",
+                order_id: currentDeleteOrderId,
+                otp: otp
+            },
+            success: function(response) {
+                btn.prop('disabled', false).text('Verify & Delete Order');
+                if (response.success) {
+                    const modalEl = document.getElementById('deleteOrderModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
+                    alert('Order deleted successfully.');
+                    window.location.reload();
+                } else {
+                    $('#deleteOTPFeedback').text(response.message || 'Verification failed.').show();
+                }
+            },
+            error: function(xhr) {
+                btn.prop('disabled', false).text('Verify & Delete Order');
+                let msg = 'Verification failed.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    msg = xhr.responseJSON.message;
+                }
+                $('#deleteOTPFeedback').text(msg).show();
+            }
+        });
     });
-  });
-  </script>
-</body>
-</html>
+});
+</script>
+@endsection

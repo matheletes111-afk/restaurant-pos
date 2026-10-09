@@ -11,6 +11,7 @@ use App\Models\Unit;
 use App\Models\Inventory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class PurchaseController extends Controller
 {
@@ -56,15 +57,109 @@ class PurchaseController extends Controller
     }
 
     
-    public function index()
+    public function index(Request $request)
     {
-        $purchases = Purchase::with(['supplier', 'items.product'])
-            ->where('restaurant_id', auth()->user()->restaurant_id)
-            ->orderBy('purchase_date', 'desc')
+        $restaurantId = auth()->user()->restaurant_id;
+
+        $hasExplicitFilter = $request->has('from_date') || $request->has('to_date') || $request->has('supplier_id') || $request->has('keyword');
+
+        $fromDate = $request->filled('from_date') 
+            ? Carbon::parse($request->from_date)->startOfDay() 
+            : Carbon::now()->startOfMonth()->startOfDay();
+
+        $toDate = $request->filled('to_date') 
+            ? Carbon::parse($request->to_date)->endOfDay() 
+            : Carbon::now()->endOfMonth()->endOfDay();
+
+        $supplierId = $request->supplier_id;
+        $keyword = $request->keyword;
+
+        $query = Purchase::with(['supplier', 'items.product'])
+            ->where('restaurant_id', $restaurantId);
+
+        // If custom filter applied (via form submit or query params)
+        if ($hasExplicitFilter) {
+            if ($request->filled('from_date') && $request->filled('to_date')) {
+                $query->where(function($dq) use ($fromDate, $toDate) {
+                    $dq->whereBetween('purchase_date', [$fromDate->format('Y-m-d'), $toDate->format('Y-m-d')])
+                       ->orWhereBetween('created_at', [$fromDate, $toDate]);
+                });
+            } elseif ($request->filled('from_date')) {
+                $query->where(function($dq) use ($fromDate) {
+                    $dq->where('purchase_date', '>=', $fromDate->format('Y-m-d'))
+                       ->orWhere('created_at', '>=', $fromDate);
+                });
+            } elseif ($request->filled('to_date')) {
+                $query->where(function($dq) use ($toDate) {
+                    $dq->where('purchase_date', '<=', $toDate->format('Y-m-d'))
+                       ->orWhere('created_at', '<=', $toDate);
+                });
+            }
+        } else {
+            // Default initial load:
+            // Check if purchases exist in current month
+            $currentMonthPurchases = (clone $query)->where(function($dq) use ($fromDate, $toDate) {
+                $dq->whereBetween('purchase_date', [$fromDate->format('Y-m-d'), $toDate->format('Y-m-d')])
+                   ->orWhereBetween('created_at', [$fromDate, $toDate]);
+            })->count();
+
+            if ($currentMonthPurchases > 0) {
+                $query->where(function($dq) use ($fromDate, $toDate) {
+                    $dq->whereBetween('purchase_date', [$fromDate->format('Y-m-d'), $toDate->format('Y-m-d')])
+                       ->orWhereBetween('created_at', [$fromDate, $toDate]);
+                });
+            } else {
+                // If no purchases exist in current month, show all purchases so user never sees empty screen
+                $minDate = Purchase::where('restaurant_id', $restaurantId)->min('purchase_date');
+                if ($minDate) {
+                    $fromDate = Carbon::parse($minDate)->startOfDay();
+                } else {
+                    $minCreated = Purchase::where('restaurant_id', $restaurantId)->min('created_at');
+                    if ($minCreated) {
+                        $fromDate = Carbon::parse($minCreated)->startOfDay();
+                    }
+                }
+            }
+        }
+
+        if ($request->filled('supplier_id') && $request->supplier_id !== 'all') {
+            $query->where('supplier_id', $request->supplier_id);
+        }
+
+        if ($request->filled('keyword')) {
+            $searchTerm = trim($request->keyword);
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('invoice_no', 'like', "%{$searchTerm}%")
+                  ->orWhere('remarks', 'like', "%{$searchTerm}%")
+                  ->orWhereHas('supplier', function($sq) use ($searchTerm) {
+                      $sq->where('supplier_name', 'like', "%{$searchTerm}%")
+                         ->orWhere('company_name', 'like', "%{$searchTerm}%")
+                         ->orWhere('phone', 'like', "%{$searchTerm}%");
+                  })
+                  ->orWhereHas('items.product', function($pq) use ($searchTerm) {
+                      $pq->where('product_name', 'like', "%{$searchTerm}%");
+                  });
+            });
+        }
+
+        $purchases = $query->orderBy('purchase_date', 'desc')
             ->orderBy('id', 'desc')
             ->get();
+
+        $suppliers = Supplier::where('restaurant_id', $restaurantId)
+            ->where('status', '!=', 'D')
+            ->orderBy('supplier_name')
+            ->get();
         
-        return view('purchases.index', compact('purchases'));
+        return view('purchases.index', compact(
+            'purchases', 
+            'suppliers', 
+            'fromDate', 
+            'toDate', 
+            'supplierId', 
+            'keyword',
+            'hasExplicitFilter'
+        ));
     }
 
     public function create()

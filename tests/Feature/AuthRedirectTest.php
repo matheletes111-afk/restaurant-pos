@@ -84,4 +84,20 @@ class AuthRedirectTest extends TestCase
         $response = $this->actingAs($superAdmin)->get('/forget-password-user');
         $response->assertRedirect(route('admin.dashboard'));
     }
+
+    public function test_guest_with_2fa_session_can_view_login_verify_page()
+    {
+        $response = $this->withSession([
+            'login_2fa_user_id' => 1,
+            'login_2fa_otp' => 123456,
+            'login_2fa_otp_expires_at' => now()->addMinutes(10),
+        ])->get('/login/verify');
+
+        $response->assertStatus(200);
+        $response->assertSee('Two-Factor Auth');
+        $response->assertSee('name="otp"', false);
+        $response->assertSee(route('login.verify.resend'));
+        $response->assertSee('Instant Billing');
+        $response->assertDontSee('₹');
+    }
 }

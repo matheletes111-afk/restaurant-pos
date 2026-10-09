@@ -167,8 +167,9 @@ class LoginController extends Controller
             return redirect()->route('admin.dashboard');
         }
         
+        $subRestaurantId = method_exists($user, 'getSubscriptionRestaurantId') ? $user->getSubscriptionRestaurantId() : $user->restaurant_id;
         $active = DB::table('subscriptions')
-            ->where('user_id', $user->restaurant_id)
+            ->where('user_id', $subRestaurantId)
             ->where(function ($query) {
                 $query->where('status', 'active')
                       ->orWhere(function ($q) {

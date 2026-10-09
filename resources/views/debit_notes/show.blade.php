@@ -1,145 +1,144 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>Debit Note Details</title>
-    @include('includes.style')
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
-</head>
+@extends('layouts.app')
 
-<body data-pc-theme="light">
-<div class="loader-bg">
-    <div class="loader-track">
-        <div class="loader-fill"></div>
-    </div>
-</div>
+@section('title')
+<title>Admin - Debit Note Details</title>
+@endsection
 
+@section('style')
+@include('includes.style')
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('admin_template/css/inventory-modules.css') }}">
+@endsection
+
+@section('body')
 @include('includes.sidebar')
 
 <div class="pc-container">
-    <div class="pc-content">
+<div class="pc-content">
 
-        <!-- Breadcrumb -->
-        <div class="page-header">
-            <div class="page-block">
-                <div class="row align-items-center">
-                    <div class="col-md-12">
-                        <div class="page-header-title">
-                            <h5 class="m-b-10">Debit Note Details</h5>
-                        </div>
-                        <ul class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('debit-notes.index') }}">Debit Notes</a></li>
-                            <li class="breadcrumb-item" aria-current="page">Details</li>
-                        </ul>
-                    </div>
+    <div class="inv-page-wrap">
+        {{-- Flash / Error Messages --}}
+        @include('includes.message')
+
+        {{-- 1. Header Deck --}}
+        <div class="inv-header-deck">
+            <div class="inv-header-left">
+                <div class="inv-header-icon icon-debit">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+                <div class="inv-header-title-meta">
+                    <span class="inv-header-eyebrow">Debit Note Record</span>
+                    <h1 class="inv-header-title">{{ $debitNote->debit_note_no }}</h1>
+                    <p class="inv-header-sub">Issued on {{ $debitNote->debit_date ? $debitNote->debit_date->format('d M, Y') : '-' }} to {{ $debitNote->supplier->supplier_name ?? 'Vendor' }}</p>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ route('debit-notes.index') }}" class="btn-inv-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to Debit Notes</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- 2. Metadata Cards --}}
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="inv-card p-4 h-100">
+                    <h6 class="fw-bold mb-3" style="font-family: 'Outfit', sans-serif; color: var(--inv-dark);">
+                        <i class="fas fa-info-circle text-primary me-2"></i> Note Summary
+                    </h6>
+                    <table class="inv-table">
+                        <tr>
+                            <td class="text-muted fw-semibold" style="width: 40%;">Debit Note No:</td>
+                            <td><strong class="text-dark">{{ $debitNote->debit_note_no }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-semibold">Issue Date:</td>
+                            <td><span>{{ $debitNote->debit_date ? $debitNote->debit_date->format('d-m-Y') : '-' }}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-semibold">Target Supplier:</td>
+                            <td><strong class="text-primary">{{ $debitNote->supplier->supplier_name ?? 'N/A' }}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="inv-card p-4 h-100">
+                    <h6 class="fw-bold mb-3" style="font-family: 'Outfit', sans-serif; color: var(--inv-dark);">
+                        <i class="fas fa-user-shield text-primary me-2"></i> Audit & Remarks
+                    </h6>
+                    <table class="inv-table">
+                        <tr>
+                            <td class="text-muted fw-semibold" style="width: 40%;">Created By:</td>
+                            <td><span class="text-dark fw-bold">{{ $debitNote->user->name ?? 'System' }}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-semibold">Timestamp:</td>
+                            <td><small class="text-muted">{{ $debitNote->created_at->format('d-m-Y h:i A') }}</small></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-semibold">Remarks:</td>
+                            <td><span>{{ $debitNote->remarks ?? 'No remarks provided' }}</span></td>
+                        </tr>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-sm-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5>Debit Note: {{ $debitNote->debit_note_no }}</h5>
-                        <div class="float-end">
-                            <a href="{{ route('debit-notes.index') }}" class="btn btn-secondary btn-sm">
-                                <i class="fa fa-arrow-left"></i> Back
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <div class="card-body">
-                        <!-- Debit Note Information -->
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <table class="table table-bordered">
-                                    <tr>
-                                        <th width="40%">Debit Note No:</th>
-                                        <td>{{ $debitNote->debit_note_no }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Date:</th>
-                                        <td>{{ $debitNote->debit_date->format('d-m-Y') }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Supplier:</th>
-                                        <td>{{ $debitNote->supplier->supplier_name ?? '-' }}</td>
-                                    </tr>
-                                </table>
-                            </div>
-                            <div class="col-md-6">
-                                <table class="table table-bordered">
-                                    <tr>
-                                        <th width="40%">Created By:</th>
-                                        <td>{{ $debitNote->user->name ?? 'System' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Created At:</th>
-                                        <td>{{ $debitNote->created_at->format('d-m-Y h:i A') }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Remarks:</th>
-                                        <td>{{ $debitNote->remarks ?? '-' }}</td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- Items Table -->
-                        <div class="row">
-                            <div class="col-md-12">
-                                <h5>Returned Items</h5>
-                                <div class="table-responsive">
-                                    <table class="table table-bordered">
-                                        <thead>
-                                            <tr>
-                                                <th>#</th>
-                                                <th>Product</th>
-                                                <th>Unit</th>
-                                                <th>Quantity</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($debitNote->items as $index => $item)
-                                            <tr>
-                                                <td>{{ $index + 1 }}</td>
-                                                <td>{{ $item->product->product_name ?? '-' }}</td>
-                                                <td>{{ $item->unit->name ?? '-' }}</td>
-                                                <td>{{ $item->quantity }}</td>
-                                            </tr>
-                                            @endforeach
-                                        </tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <th colspan="3" class="text-right">Total Items:</th>
-                                                <th>{{ $debitNote->items->count() }}</th>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="card-footer">
-                        <div class="row">
-                            <div class="col-md-12 text-right">
-                                <a href="{{ route('debit-notes.index') }}" class="btn btn-secondary">
-                                    <i class="fa fa-arrow-left"></i> Back to List
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        {{-- 3. Items Returned Table --}}
+        <div class="inv-card">
+            <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+                <h6 class="fw-bold mb-0" style="font-family: 'Outfit', sans-serif; color: var(--inv-dark);">
+                    <i class="fas fa-boxes text-danger me-2"></i> Returned Line Items ({{ $debitNote->items->count() }})
+                </h6>
+            </div>
+            <div class="table-responsive">
+                <table class="inv-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">#</th>
+                            <th>Product Name</th>
+                            <th>Measurement Unit</th>
+                            <th class="text-end">Returned Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($debitNote->items as $index => $item)
+                        <tr>
+                            <td class="text-muted fw-bold">{{ $index + 1 }}</td>
+                            <td>
+                                <strong class="text-dark">{{ $item->product->product_name ?? 'Item #'.$item->product_id }}</strong>
+                            </td>
+                            <td>
+                                <span class="inv-badge badge-unit">{{ $item->unit->name ?? 'N/A' }}</span>
+                            </td>
+                            <td class="text-end">
+                                <strong class="text-danger" style="font-family: 'Outfit', sans-serif; font-size: 1.05rem;">
+                                    -{{ number_format($item->quantity, 2) }}
+                                </strong>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No line items attached.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
 
     </div>
+
+</div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-@include('includes.script')
+@endsection
 
-</body>
-</html>
+@section('script')
+@include('includes.script')
+@endsection

@@ -16,14 +16,23 @@ class FrontendController extends Controller
     public function index()
     {
         $defaultPlans = \App\Models\Plan::where(function($q) {
-                $q->where('is_default_plan', 'Y');
+                $q->where('is_default_plan', 'Y')
+                  ->orWhere('is_default_free', 'Y')
+                  ->orWhere('is_default_paid', 'Y');
             })
             ->where('plan_status', 'A')
             ->where('is_delete', 'N')
             ->orderBy('sort_order', 'asc')
             ->orderBy('id', 'desc')
             ->get();
-            // return $defaultPlans;
+            
+        if ($defaultPlans->isEmpty()) {
+            $defaultPlans = \App\Models\Plan::where('plan_status', 'A')
+                ->where('is_delete', 'N')
+                ->orderBy('sort_order', 'asc')
+                ->orderBy('id', 'desc')
+                ->get();
+        }
             
         return view('welcome', compact('defaultPlans'));
     }

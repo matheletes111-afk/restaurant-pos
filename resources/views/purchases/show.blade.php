@@ -6,10 +6,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
     
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('admin_template/css/inventory-modules.css') }}">
+    
     <style>
         body {
-            background-color: #f8fafc;
-            font-family: 'Public Sans', sans-serif;
+            background-color: #f4f6fb;
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
         .page-header {
             background: white;
@@ -21,12 +26,13 @@
         }
         .page-header h5 {
             color: #0f172a;
+            font-family: 'Outfit', sans-serif;
             font-weight: 800;
             font-size: 1.3rem;
             margin-bottom: 5px;
         }
         .breadcrumb-item a {
-            color: #009d1a;
+            color: #ff5e14;
             text-decoration: none;
             font-weight: 600;
         }
@@ -50,6 +56,7 @@
         }
         .table-bordered th {
             background-color: #f8fafc;
+            font-family: 'Outfit', sans-serif;
             font-weight: 700;
             color: #475569;
             font-size: 0.8rem;
@@ -71,6 +78,7 @@
         .table-responsive thead th {
             background: #0f172a !important;
             color: white !important;
+            font-family: 'Outfit', sans-serif;
             font-weight: 700;
             font-size: 0.75rem;
             text-transform: uppercase;
@@ -89,34 +97,34 @@
         
         /* Action buttons */
         .btn-success {
-            background: linear-gradient(135deg, #009d1a 0%, #00bc20 100%) !important;
+            background: linear-gradient(135deg, #ff5e14 0%, #ff8c42 100%) !important;
             border: none !important;
             border-radius: 30px !important;
             padding: 10px 24px !important;
             font-weight: 700 !important;
-            box-shadow: 0 4px 12px rgba(0, 157, 26, 0.15) !important;
+            box-shadow: 0 4px 12px rgba(255, 94, 20, 0.2) !important;
             transition: all 0.3s ease !important;
             color: white !important;
         }
         .btn-success:hover {
-            background: linear-gradient(135deg, #00bc20 0%, #009d1a 100%) !important;
+            background: linear-gradient(135deg, #ea580c 0%, #ff5e14 100%) !important;
             transform: translateY(-1px) !important;
-            box-shadow: 0 6px 18px rgba(0, 157, 26, 0.25) !important;
+            box-shadow: 0 6px 18px rgba(255, 94, 20, 0.3) !important;
         }
         .btn-primary {
-            background: linear-gradient(135deg, #009d1a 0%, #00bc20 100%) !important;
+            background: linear-gradient(135deg, #ff5e14 0%, #ff8c42 100%) !important;
             border: none !important;
             border-radius: 30px !important;
             padding: 12px 30px !important;
             font-weight: 700 !important;
-            box-shadow: 0 4px 12px rgba(0, 157, 26, 0.15) !important;
+            box-shadow: 0 4px 12px rgba(255, 94, 20, 0.2) !important;
             transition: all 0.3s ease !important;
             color: white !important;
         }
         .btn-primary:hover {
-            background: linear-gradient(135deg, #00bc20 0%, #009d1a 100%) !important;
+            background: linear-gradient(135deg, #ea580c 0%, #ff5e14 100%) !important;
             transform: translateY(-1px) !important;
-            box-shadow: 0 6px 18px rgba(0, 157, 26, 0.25) !important;
+            box-shadow: 0 6px 18px rgba(255, 94, 20, 0.3) !important;
         }
         .btn-secondary {
             background-color: #e2e8f0 !important;

@@ -1,0 +1,639 @@
+/* ==========================================================================
+   Report & Analytics Modules - Premium Unified Stylesheet
+   Modules: Order Management Report, Item GST Summary, Top Analysis, Order Analysis
+   Design: Elegant, High-Contrast, Data-Dense, 100% Mobile Responsive
+   ========================================================================== */
+
+:root {
+  --rpt-primary: #ff5e14;
+  --rpt-primary-hover: #ea580c;
+  --rpt-primary-light: rgba(255, 94, 20, 0.08);
+  --rpt-primary-gradient: linear-gradient(135deg, #ff5e14 0%, #ff8c42 100%);
+  
+  --rpt-dark: #0f172a;
+  --rpt-slate: #1e293b;
+  --rpt-muted: #64748b;
+  --rpt-border: #e2e8f0;
+  --rpt-border-light: #eef2f6;
+  --rpt-bg: #f4f6fb;
+  --rpt-card-bg: #ffffff;
+  
+  --rpt-success: #10b981;
+  --rpt-success-bg: #ecfdf5;
+  --rpt-success-border: #a7f3d0;
+  --rpt-success-text: #047857;
+
+  --rpt-danger: #ef4444;
+  --rpt-danger-bg: #fef2f2;
+  --rpt-danger-border: #fecaca;
+  --rpt-danger-text: #b91c1c;
+
+  --rpt-warning: #f59e0b;
+  --rpt-warning-bg: #fffbeb;
+  --rpt-warning-border: #fde68a;
+  --rpt-warning-text: #b45309;
+
+  --rpt-info: #0284c7;
+  --rpt-info-bg: #f0f9ff;
+  --rpt-info-border: #bae6fd;
+  --rpt-info-text: #0369a1;
+
+  --rpt-indigo: #6366f1;
+  --rpt-indigo-bg: #eef2ff;
+  --rpt-indigo-border: #c7d2fe;
+  --rpt-indigo-text: #4338ca;
+
+  --rpt-purple: #8b5cf6;
+  --rpt-purple-bg: #f5f3ff;
+  --rpt-purple-border: #ddd6fe;
+  --rpt-purple-text: #6d28d9;
+
+  --rpt-radius-sm: 8px;
+  --rpt-radius-md: 14px;
+  --rpt-radius-lg: 18px;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--rpt-bg);
+  color: var(--rpt-slate);
+  overflow-x: hidden;
+}
+
+.rpt-page-wrap {
+  padding: 24px 28px;
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .rpt-page-wrap {
+    padding: 16px 14px;
+  }
+}
+
+/* ==========================================================================
+   1. HEADER DECK
+   ========================================================================== */
+.rpt-header-deck {
+  background: var(--rpt-card-bg);
+  border-radius: var(--rpt-radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 22px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--rpt-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.rpt-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1 1 auto;
+  min-width: 240px;
+}
+
+.rpt-header-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--rpt-primary-gradient);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  box-shadow: 0 6px 18px rgba(255, 94, 20, 0.28);
+  flex-shrink: 0;
+}
+
+.rpt-header-icon.icon-orders { background: linear-gradient(135deg, #ff5e14 0%, #ff8c42 100%); }
+.rpt-header-icon.icon-gst { background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%); box-shadow: 0 6px 18px rgba(2, 132, 199, 0.28); }
+.rpt-header-icon.icon-top { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); box-shadow: 0 6px 18px rgba(245, 158, 11, 0.28); }
+.rpt-header-icon.icon-analysis { background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); box-shadow: 0 6px 18px rgba(139, 92, 246, 0.28); }
+
+.rpt-header-title-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.rpt-header-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rpt-primary);
+  margin-bottom: 2px;
+}
+
+.rpt-header-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--rpt-dark);
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.rpt-header-sub {
+  font-size: 0.82rem;
+  color: var(--rpt-muted);
+  margin: 0;
+}
+
+.btn-rpt-primary {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 30px;
+  background: var(--rpt-primary-gradient);
+  border: none;
+  color: #ffffff;
+  font-size: 0.86rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(255, 94, 20, 0.25);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-rpt-primary:hover {
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(255, 94, 20, 0.35);
+}
+
+.btn-rpt-secondary {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 30px;
+  border: 1px solid var(--rpt-border);
+  background: #ffffff;
+  color: var(--rpt-slate);
+  font-size: 0.86rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-rpt-secondary:hover {
+  border-color: var(--rpt-primary);
+  color: var(--rpt-primary);
+  background: #fff8f5;
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   2. FILTER PANEL DECK
+   ========================================================================== */
+.rpt-filter-card {
+  background: #ffffff;
+  border-radius: var(--rpt-radius-md);
+  border: 1px solid var(--rpt-border-light);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+  padding: 20px 24px;
+  margin-bottom: 22px;
+}
+
+.rpt-filter-label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--rpt-slate);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.rpt-filter-control {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid var(--rpt-border);
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 0.88rem;
+  color: var(--rpt-slate);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.rpt-filter-control:focus {
+  background: #ffffff;
+  border-color: var(--rpt-primary);
+  box-shadow: 0 0 0 3px rgba(255, 94, 20, 0.12);
+}
+
+/* ==========================================================================
+   3. STATS & ANALYTICS METRICS GRID
+   ========================================================================== */
+.rpt-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.rpt-stat-card {
+  background: #ffffff;
+  border-radius: var(--rpt-radius-md);
+  padding: 18px 20px;
+  border: 1px solid var(--rpt-border-light);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.rpt-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.rpt-stat-card.stat-primary::before { background: var(--rpt-primary); }
+.rpt-stat-card.stat-success::before { background: var(--rpt-success); }
+.rpt-stat-card.stat-danger::before { background: var(--rpt-danger); }
+.rpt-stat-card.stat-info::before { background: var(--rpt-info); }
+.rpt-stat-card.stat-purple::before { background: var(--rpt-purple); }
+.rpt-stat-card.stat-indigo::before { background: var(--rpt-indigo); }
+.rpt-stat-card.stat-warning::before { background: var(--rpt-warning); }
+.rpt-stat-card.stat-dark::before { background: var(--rpt-dark); }
+
+.rpt-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.rpt-stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.rpt-stat-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--rpt-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.rpt-stat-val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--rpt-dark);
+  line-height: 1.1;
+}
+
+.rpt-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.stat-primary .rpt-stat-icon { background: var(--rpt-primary-light); color: var(--rpt-primary); }
+.stat-success .rpt-stat-icon { background: var(--rpt-success-bg); color: var(--rpt-success-text); }
+.stat-danger .rpt-stat-icon { background: var(--rpt-danger-bg); color: var(--rpt-danger-text); }
+.stat-info .rpt-stat-icon { background: var(--rpt-info-bg); color: var(--rpt-info-text); }
+.stat-purple .rpt-stat-icon { background: var(--rpt-purple-bg); color: var(--rpt-purple-text); }
+.stat-indigo .rpt-stat-icon { background: var(--rpt-indigo-bg); color: var(--rpt-indigo-text); }
+.stat-warning .rpt-stat-icon { background: var(--rpt-warning-bg); color: var(--rpt-warning-text); }
+.stat-dark .rpt-stat-icon { background: #f1f5f9; color: var(--rpt-dark); }
+
+/* ==========================================================================
+   4. DATA TABLES & SECTION CARDS
+   ========================================================================== */
+.rpt-card {
+  background: var(--rpt-card-bg);
+  border-radius: var(--rpt-radius-lg);
+  border: 1px solid var(--rpt-border-light);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.rpt-card-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--rpt-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.rpt-card-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--rpt-dark);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rpt-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.rpt-table thead th {
+  background: #f8fafc;
+  padding: 14px 18px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rpt-muted);
+  border-bottom: 1px solid var(--rpt-border);
+  white-space: nowrap;
+}
+
+.rpt-table tbody td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--rpt-border-light);
+  vertical-align: middle;
+  font-size: 0.88rem;
+}
+
+.rpt-table tbody tr:hover td {
+  background-color: #fafbfc;
+}
+
+/* Badges */
+.rpt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.rpt-badge.badge-paid { background: var(--rpt-success-bg); color: var(--rpt-success-text); border: 1px solid var(--rpt-success-border); }
+.rpt-badge.badge-pending { background: var(--rpt-warning-bg); color: var(--rpt-warning-text); border: 1px solid var(--rpt-warning-border); }
+.rpt-badge.badge-gst { background: var(--rpt-purple-bg); color: var(--rpt-purple-text); border: 1px solid var(--rpt-purple-border); }
+.rpt-badge.badge-nongst { background: #f1f5f9; color: var(--rpt-muted); border: 1px solid var(--rpt-border); }
+.rpt-badge.badge-dinein { background: var(--rpt-info-bg); color: var(--rpt-info-text); border: 1px solid var(--rpt-info-border); }
+.rpt-badge.badge-takeaway { background: var(--rpt-indigo-bg); color: var(--rpt-indigo-text); border: 1px solid var(--rpt-indigo-border); }
+
+/* Rank Badges */
+.rank-badge-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.rank-badge-circle.rank-1 { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.rank-badge-circle.rank-2 { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+.rank-badge-circle.rank-3 { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+.rank-badge-circle.rank-other { background: #f8fafc; color: var(--rpt-muted); border: 1px solid var(--rpt-border); }
+
+/* Food Type Badges */
+.food-type-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid;
+  font-size: 8px;
+  margin-right: 6px;
+}
+
+.food-type-icon.veg { border-color: #10b981; color: #10b981; }
+.food-type-icon.non-veg { border-color: #ef4444; color: #ef4444; }
+
+/* Action Buttons */
+.rpt-btn-action {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.rpt-btn-action.btn-view {
+  background: var(--rpt-info-bg);
+  color: var(--rpt-info-text);
+  border-color: var(--rpt-info-border);
+}
+.rpt-btn-action.btn-view:hover {
+  background: var(--rpt-info-text);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.rpt-btn-action.btn-print {
+  background: var(--rpt-indigo-bg);
+  color: var(--rpt-indigo-text);
+  border-color: var(--rpt-indigo-border);
+}
+.rpt-btn-action.btn-print:hover {
+  background: var(--rpt-indigo-text);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.rpt-btn-action.btn-del {
+  background: var(--rpt-danger-bg);
+  color: var(--rpt-danger-text);
+  border-color: var(--rpt-danger-border);
+}
+.rpt-btn-action.btn-del:hover {
+  background: var(--rpt-danger-text);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   5. CHART CONTAINERS & MODALS
+   ========================================================================== */
+.rpt-chart-box {
+  background: #ffffff;
+  border-radius: var(--rpt-radius-md);
+  border: 1px solid var(--rpt-border-light);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  transition: all 0.25s ease;
+}
+
+.rpt-chart-box:hover {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.rpt-chart-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--rpt-dark);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rpt-chart-title .title-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Counter Cards & Insight Blocks */
+.rpt-counter-card {
+  padding: 16px 20px;
+  border-radius: 14px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease;
+}
+
+.rpt-counter-card:hover {
+  transform: translateY(-2px);
+}
+
+.rpt-counter-val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.rpt-counter-lbl {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+
+.rpt-counter-sub {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+/* Highlight / Peak Cards */
+.rpt-peak-card {
+  background: linear-gradient(135deg, #ff5e14 0%, #ff8c42 100%);
+  color: #ffffff;
+  border-radius: var(--rpt-radius-md);
+  padding: 24px 20px;
+  text-align: center;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 24px rgba(255, 94, 20, 0.22);
+  position: relative;
+  overflow: hidden;
+}
+
+.rpt-peak-card::after {
+  content: '\f005';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  position: absolute;
+  right: -15px;
+  bottom: -20px;
+  font-size: 6rem;
+  opacity: 0.12;
+  color: #ffffff;
+}
+
+.rpt-peak-date {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+
+.rpt-peak-metric {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+/* Dual Progress Bars */
+.rpt-progress-bar-wrap {
+  margin-top: 14px;
+}
+
+.rpt-progress-bar-track {
+  height: 10px;
+  border-radius: 6px;
+  background: #e2e8f0;
+  overflow: hidden;
+  display: flex;
+}
+
+.rpt-progress-bar-fill {
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+/* Print Optimization */
+@media print {
+  .sidebar, .pc-sidebar, .page-header, .rpt-header-deck .btn-rpt-secondary,
+  .rpt-header-deck .btn-rpt-primary, .rpt-filter-card, .dt-buttons,
+  .dataTables_filter, .dataTables_info, .dataTables_paginate, #printReport {
+    display: none !important;
+  }
+
+  body, .pc-container, .pc-content, .rpt-page-wrap {
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .rpt-card, .rpt-chart-box, .rpt-stat-card {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    break-inside: avoid;
+  }
+}
+

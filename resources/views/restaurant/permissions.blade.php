@@ -6,93 +6,10 @@
 
 @section('style')
 @include('includes.style')
-<style>
-    .permission-card {
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        border-radius: 12px;
-        background: #ffffff;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        cursor: pointer;
-    }
-    .permission-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(0, 157, 26, 0.08);
-        border-color: rgba(0, 157, 26, 0.25);
-    }
-    .permission-card.active {
-        border-color: #009d1a;
-        background-color: rgba(0, 157, 26, 0.01);
-    }
-    .permission-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.25rem;
-        color: #009d1a;
-        background: rgba(0, 157, 26, 0.08);
-        transition: all 0.3s ease;
-    }
-    .permission-card:hover .permission-icon {
-        background: #009d1a;
-        color: #ffffff;
-    }
-    .switch-toggle {
-        position: relative;
-        display: inline-block;
-        width: 42px;
-        height: 24px;
-    }
-    .switch-toggle input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-    .slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #ccc;
-        transition: .4s;
-        border-radius: 34px;
-    }
-    .slider:before {
-        position: absolute;
-        content: "";
-        height: 16px;
-        width: 16px;
-        left: 4px;
-        bottom: 4px;
-        background-color: white;
-        transition: .4s;
-        border-radius: 50%;
-    }
-    input:checked + .slider {
-        background-color: #009d1a;
-    }
-    input:checked + .slider:before {
-        transform: translateX(18px);
-    }
-    .btn-gradient-success {
-        background: linear-gradient(135deg, #009d1a 0%, #00bc20 100%);
-        color: #ffffff;
-        border: none;
-        box-shadow: 0 4px 15px rgba(0, 157, 26, 0.2);
-        transition: all 0.3s ease;
-    }
-    .btn-gradient-success:hover {
-        background: linear-gradient(135deg, #00bc20 0%, #009d1a 100%);
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(0, 157, 26, 0.3);
-        color: #ffffff;
-    }
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('admin_template/css/restaurant-staff.css') }}">
 @endsection
 
 @section('body')
@@ -101,113 +18,167 @@
 <div class="pc-container">
 <div class="pc-content">
 
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h5 class="m-b-10 text-dark font-weight-bold">Staff Permissions</h5>
-            <p class="text-muted mb-0">Configure access permissions for <strong>{{ $staff->name }}</strong> ({{ $staff->email }} | Role: <span class="badge bg-secondary">{{ $staff->role_type }}</span>)</p>
-        </div>
-        <a href="{{ route('restaurant.staff.index') }}" class="btn btn-outline-secondary btn-sm px-3 rounded-pill">
-            <i class="fas fa-arrow-left me-2"></i> Back to Staff
-        </a>
-    </div>
-
-    <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+    <div class="staff-page-wrap">
+        {{-- Flash / Error Messages --}}
         @include('includes.message')
 
+        {{-- 1. Staff Profile Banner --}}
+        @php
+            $initials = '';
+            $nameParts = explode(' ', trim($staff->name));
+            foreach(array_slice($nameParts, 0, 2) as $part) {
+                if (!empty($part)) $initials .= strtoupper($part[0]);
+            }
+            if (empty($initials)) $initials = 'ST';
+
+            $roleClass = 'role-Default';
+            if (stripos($staff->role_type, 'Manager') !== false) $roleClass = 'role-Manager';
+            elseif (stripos($staff->role_type, 'Cashier') !== false) $roleClass = 'role-Cashier';
+            elseif (stripos($staff->role_type, 'Waiter') !== false) $roleClass = 'role-Waiter';
+            elseif (stripos($staff->role_type, 'Kitchen') !== false) $roleClass = 'role-Kitchen';
+        @endphp
+        <div class="perm-profile-banner">
+            <div class="perm-profile-left">
+                <div class="perm-profile-avatar">
+                    {{ $initials }}
+                </div>
+                <div class="perm-profile-meta">
+                    <h4>{{ $staff->name }}</h4>
+                    <p>
+                        <span><i class="fas fa-envelope text-muted me-1"></i> {{ $staff->email }}</span>
+                        <span>•</span>
+                        <span><i class="fas fa-phone text-muted me-1"></i> {{ $staff->phone }}</span>
+                        <span>•</span>
+                        <span class="staff-role-badge {{ $roleClass }} py-0 px-2" style="font-size: 0.72rem;">
+                            {{ $staff->role_type }}
+                        </span>
+                        @if($staff->restaurant)
+                        <span>•</span>
+                        <span class="staff-outlet-badge py-0 px-2" style="font-size: 0.72rem;">
+                            <i class="fas fa-store text-primary"></i> {{ $staff->restaurant->name }}
+                        </span>
+                        @endif
+                    </p>
+                </div>
+            </div>
+            <div>
+                <a href="{{ route('restaurant.staff.index') }}" class="btn-staff-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Staff
+                </a>
+            </div>
+        </div>
+
+        {{-- 2. Form & Module Permissions Grid --}}
         <form action="{{ route('restaurant.staff.update-permissions', $staff->id) }}" method="POST" id="permissionsForm">
             @csrf
 
-            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center py-3">
-                <h6 class="mb-0 text-secondary font-weight-bold"><i class="fas fa-shield-alt me-2 text-primary"></i> Module Permissions</h6>
-                <button type="button" class="btn btn-light-primary btn-sm px-3 rounded-pill" id="selectAllBtn">
-                    Select All
-                </button>
+            <div class="staff-toolbar mb-4">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="staff-stat-icon" style="width: 38px; height: 38px; font-size: 1.1rem; background: var(--staff-primary-light); color: var(--staff-primary);">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold" style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; color: var(--staff-dark);">Module Permissions Matrix</h6>
+                        <small class="text-muted">Toggle specific feature access or individual CRUD privileges</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="selectAllBtn">
+                        <i class="fas fa-check-double me-1"></i> Select All
+                    </button>
+                    <button type="submit" class="btn-staff-primary py-2 px-4" style="height: 38px;">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
             </div>
 
-            <div class="card-body pt-0">
-                <div class="row g-4">
-                    @foreach($menus as $menu)
-                    @php
-                        $isGranular = in_array($menu['key'], ['menu_master', 'table_master', 'staff', 'inventory_setting']);
-                        if ($isGranular) {
-                            $hasView = in_array($menu['key'] . '.view', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
-                            $hasAdd = in_array($menu['key'] . '.add', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
-                            $hasEdit = in_array($menu['key'] . '.edit', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
-                            $hasDelete = in_array($menu['key'] . '.delete', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
-                            $hasAny = $hasView || $hasAdd || $hasEdit || $hasDelete;
-                        } else {
-                            $hasPerm = in_array($menu['key'] . '.view', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
-                        }
-                    @endphp
-                    <div class="col-xl-4 col-md-6">
-                        @if($isGranular)
-                        <div class="permission-card p-4 d-flex flex-column {{ $hasAny ? 'active' : '' }}">
-                            <div class="d-flex align-items-start w-100 mb-2">
-                                <div class="permission-icon me-3">
-                                    <i class="{{ $menu['icon'] }}"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1 text-dark font-weight-bold" style="font-size: 1rem;">{{ $menu['title'] }}</h6>
-                                    <p class="text-muted mb-0" style="font-size: 0.85rem; line-height: 1.4;">{{ $menu['description'] }}</p>
-                                </div>
-                            </div>
-                            <div class="d-flex flex-wrap gap-3 mt-3 pt-3 border-top w-100 justify-content-between">
-                                <div class="d-flex align-items-center">
-                                    <label class="switch-toggle mb-0 me-2" onclick="event.stopPropagation();">
-                                        <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}.view" class="permission-checkbox granular-checkbox" {{ $hasView ? 'checked' : '' }} onchange="onGranularChange(this)">
-                                        <span class="slider"></span>
-                                    </label>
-                                    <span class="text-dark font-weight-bold" style="font-size: 0.8rem;">View</span>
-                                </div>
-                                <div class="d-flex align-items-center">
-                                    <label class="switch-toggle mb-0 me-2" onclick="event.stopPropagation();">
-                                        <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}.add" class="permission-checkbox granular-checkbox" {{ $hasAdd ? 'checked' : '' }} onchange="onGranularChange(this)">
-                                        <span class="slider"></span>
-                                    </label>
-                                    <span class="text-dark font-weight-bold" style="font-size: 0.8rem;">Add</span>
-                                </div>
-                                <div class="d-flex align-items-center">
-                                    <label class="switch-toggle mb-0 me-2" onclick="event.stopPropagation();">
-                                        <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}.edit" class="permission-checkbox granular-checkbox" {{ $hasEdit ? 'checked' : '' }} onchange="onGranularChange(this)">
-                                        <span class="slider"></span>
-                                    </label>
-                                    <span class="text-dark font-weight-bold" style="font-size: 0.8rem;">Edit</span>
-                                </div>
-                                <div class="d-flex align-items-center">
-                                    <label class="switch-toggle mb-0 me-2" onclick="event.stopPropagation();">
-                                        <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}.delete" class="permission-checkbox granular-checkbox" {{ $hasDelete ? 'checked' : '' }} onchange="onGranularChange(this)">
-                                        <span class="slider"></span>
-                                    </label>
-                                    <span class="text-dark font-weight-bold" style="font-size: 0.8rem;">Delete</span>
-                                </div>
-                            </div>
-                        </div>
-                        @else
-                        <div class="permission-card p-4 d-flex align-items-start {{ $hasPerm ? 'active' : '' }}" onclick="toggleCard(this)">
-                            <div class="permission-icon me-3">
+            <div class="row g-3">
+                @foreach($menus as $menu)
+                @php
+                    $isGranular = in_array($menu['key'], ['menu_master', 'dish_addon_master', 'table_master', 'staff', 'inventory_setting']);
+                    if ($isGranular) {
+                        $hasView = in_array($menu['key'] . '.view', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
+                        $hasAdd = in_array($menu['key'] . '.add', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
+                        $hasEdit = in_array($menu['key'] . '.edit', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
+                        $hasDelete = in_array($menu['key'] . '.delete', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
+                        $hasAny = $hasView || $hasAdd || $hasEdit || $hasDelete;
+                    } else {
+                        $hasPerm = in_array($menu['key'] . '.view', $selectedPermissions) || in_array($menu['key'], $selectedPermissions);
+                    }
+                @endphp
+                <div class="col-xl-4 col-md-6">
+                    @if($isGranular)
+                    <div class="perm-card {{ $hasAny ? 'active' : '' }}">
+                        <div class="perm-card-top">
+                            <div class="perm-icon">
                                 <i class="{{ $menu['icon'] }}"></i>
                             </div>
-                            <div class="flex-grow-1">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <h6 class="mb-0 text-dark font-weight-bold" style="font-size: 1rem;">{{ $menu['title'] }}</h6>
-                                    <label class="switch-toggle mb-0" onclick="event.stopPropagation();">
-                                        <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}.view" class="permission-checkbox" {{ $hasPerm ? 'checked' : '' }} onchange="onCheckboxChange(this)">
-                                        <span class="slider"></span>
-                                    </label>
-                                </div>
-                                <p class="text-muted mb-0" style="font-size: 0.85rem; line-height: 1.4;">{{ $menu['description'] }}</p>
+                            <div class="perm-title-desc">
+                                <h6 class="perm-title">{{ $menu['title'] }}</h6>
+                                <p class="perm-desc">{{ $menu['description'] }}</p>
                             </div>
                         </div>
-                        @endif
-                    </div>
-                    @endforeach
-                </div>
 
-                <div class="text-end mt-5 pt-3 border-top">
-                    <button type="submit" class="btn btn-gradient-success px-5 py-2.5 rounded-pill font-weight-bold">
-                        <i class="fas fa-save me-2"></i> Save Permissions
-                      </button>
+                        <div class="perm-granular-grid">
+                            <div class="perm-granular-item">
+                                <label>View</label>
+                                <label class="staff-switch">
+                                    <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}.view" class="permission-checkbox granular-checkbox" {{ $hasView ? 'checked' : '' }} onchange="onGranularChange(this)">
+                                    <span class="staff-slider"></span>
+                                </label>
+                            </div>
+                            <div class="perm-granular-item">
+                                <label>Add</label>
+                                <label class="staff-switch">
+                                    <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}.add" class="permission-checkbox granular-checkbox" {{ $hasAdd ? 'checked' : '' }} onchange="onGranularChange(this)">
+                                    <span class="staff-slider"></span>
+                                </label>
+                            </div>
+                            <div class="perm-granular-item">
+                                <label>Edit</label>
+                                <label class="staff-switch">
+                                    <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}.edit" class="permission-checkbox granular-checkbox" {{ $hasEdit ? 'checked' : '' }} onchange="onGranularChange(this)">
+                                    <span class="staff-slider"></span>
+                                </label>
+                            </div>
+                            <div class="perm-granular-item">
+                                <label>Delete</label>
+                                <label class="staff-switch">
+                                    <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}.delete" class="permission-checkbox granular-checkbox" {{ $hasDelete ? 'checked' : '' }} onchange="onGranularChange(this)">
+                                    <span class="staff-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    @else
+                    <div class="perm-card {{ $hasPerm ? 'active' : '' }}" onclick="toggleCard(this)" style="cursor: pointer;">
+                        <div class="perm-card-top">
+                            <div class="perm-icon">
+                                <i class="{{ $menu['icon'] }}"></i>
+                            </div>
+                            <div class="perm-title-desc">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <h6 class="perm-title mb-0">{{ $menu['title'] }}</h6>
+                                    <label class="staff-switch" onclick="event.stopPropagation();">
+                                        <input type="checkbox" name="permissions[]" value="{{ $menu['key'] }}.view" class="permission-checkbox" {{ $hasPerm ? 'checked' : '' }} onchange="onCheckboxChange(this)">
+                                        <span class="staff-slider"></span>
+                                    </label>
+                                </div>
+                                <p class="perm-desc">{{ $menu['description'] }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                 </div>
+                @endforeach
+            </div>
+
+            {{-- Sticky/Bottom Save CTA --}}
+            <div class="d-flex justify-content-end align-items-center gap-3 mt-4 pt-3 border-top">
+                <a href="{{ route('restaurant.staff.index') }}" class="btn btn-light rounded-pill px-4">Cancel</a>
+                <button type="submit" class="btn-staff-primary px-5 py-2.5">
+                    <i class="fas fa-save me-2"></i> Save Permissions
+                </button>
             </div>
         </form>
     </div>
@@ -235,7 +206,7 @@
     }
 
     function onCheckboxChange(checkbox) {
-        const card = checkbox.closest('.permission-card');
+        const card = checkbox.closest('.perm-card');
         if (checkbox.checked) {
             card.classList.add('active');
         } else {
@@ -245,7 +216,7 @@
     }
 
     function onGranularChange(checkbox) {
-        const card = checkbox.closest('.permission-card');
+        const card = checkbox.closest('.perm-card');
         const viewCheckbox = card.querySelector('input[value$=".view"]');
         const isView = checkbox === viewCheckbox;
 
@@ -258,7 +229,7 @@
                 });
             }
         } else {
-            if (checkbox.checked) {
+            if (checkbox.checked && viewCheckbox) {
                 viewCheckbox.checked = true;
             }
         }
@@ -283,20 +254,22 @@
         const checkboxes = document.querySelectorAll('.permission-checkbox');
         const allChecked = Array.from(checkboxes).every(cb => cb.checked);
         const btn = document.getElementById('selectAllBtn');
-        if (allChecked && checkboxes.length > 0) {
-            btn.textContent = 'Deselect All';
-            btn.classList.remove('btn-light-primary');
-            btn.classList.add('btn-light-danger');
-        } else {
-            btn.textContent = 'Select All';
-            btn.classList.remove('btn-light-danger');
-            btn.classList.add('btn-light-primary');
+        if (btn) {
+            if (allChecked && checkboxes.length > 0) {
+                btn.innerHTML = '<i class="fas fa-times me-1"></i> Deselect All';
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-outline-danger');
+            } else {
+                btn.innerHTML = '<i class="fas fa-check-double me-1"></i> Select All';
+                btn.classList.remove('btn-outline-danger');
+                btn.classList.add('btn-outline-secondary');
+            }
         }
     }
 
     document.getElementById('selectAllBtn').addEventListener('click', function() {
         const checkboxes = document.querySelectorAll('.permission-checkbox');
-        const cards = document.querySelectorAll('.permission-card');
+        const cards = document.querySelectorAll('.perm-card');
         const allChecked = Array.from(checkboxes).every(cb => cb.checked);
         
         checkboxes.forEach((cb) => {
@@ -311,17 +284,9 @@
             }
         });
 
-        this.textContent = allChecked ? 'Select All' : 'Deselect All';
-        if (allChecked) {
-            this.classList.remove('btn-light-danger');
-            this.classList.add('btn-light-primary');
-        } else {
-            this.classList.remove('btn-light-primary');
-            this.classList.add('btn-light-danger');
-        }
+        updateSelectAllButton();
     });
 
-    // Initialize the button text based on start state
     window.addEventListener('DOMContentLoaded', () => {
         updateSelectAllButton();
     });

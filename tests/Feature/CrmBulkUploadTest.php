@@ -13,13 +13,17 @@ class CrmBulkUploadTest extends TestCase
 {
     protected function getSuperAdmin()
     {
-        $superAdmin = new User();
-        $superAdmin->id = 1;
-        $superAdmin->name = 'Super Admin';
-        $superAdmin->email = 'admin@example.com';
-        $superAdmin->role = 'SA';
-        $superAdmin->permissions = ['admin_crm'];
-        return $superAdmin;
+        return User::firstOrCreate(
+            ['email' => 'sa_crm_test@example.com'],
+            [
+                'name' => 'Super Admin',
+                'password' => bcrypt('password'),
+                'role' => 'SA',
+                'role_type' => 'SUPER_ADMIN',
+                'status' => 'A',
+                'permissions' => ['admin_crm']
+            ]
+        );
     }
 
     public function test_super_admin_can_download_sample_template()

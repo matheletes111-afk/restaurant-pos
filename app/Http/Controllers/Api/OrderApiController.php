@@ -15,6 +15,7 @@ use App\Models\RestaurantMaster;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Services\CashDrawerService;
 
 class OrderApiController extends Controller
 {
@@ -214,10 +215,12 @@ class OrderApiController extends Controller
             $order->user_id = $userId;
             $order->save();
        
-            // Save order items with all GST details and generate unique KOT number for each
+            // Generate a single KOT number for all items in this initial order batch
+            $kotNo = $this->generateKOTNumber($restaurantId);
+
+            // Save order items with all GST details
             foreach ($request->order_items as $index => $item) {
                 $calc = $calculatedItems[$index];
-                $kotNo = $this->generateKOTNumber($restaurantId);
                 
                 $orderItem = new OrderItems();
                 $orderItem->order_id = $order->id;
@@ -391,7 +394,10 @@ class OrderApiController extends Controller
             $isGstRegistered = !empty($restaurant->gstin);
 
             // Handle new item additions
-            if ($request->has('order_items') && is_array($request->order_items)) {
+            if ($request->has('order_items') && is_array($request->order_items) && count($request->order_items) > 0) {
+                // Generate a single new KOT number for all items in this edit/addition batch
+                $kotNo = $this->generateKOTNumber($restaurantId);
+
                 foreach ($request->order_items as $item) {
                     $itemDiscount = isset($item['item_discount']) ? floatval($item['item_discount']) : 0;
                     $calc = $this->calculateItemGST(
@@ -401,9 +407,6 @@ class OrderApiController extends Controller
                         $restaurantGstPercentage,
                         $isGstRegistered
                     );
-                    
-                    // Generate unique KOT number for each new item
-                    $kotNo = $this->generateKOTNumber($restaurantId);
 
                     OrderItems::create([
                         'order_id' => $id,
@@ -691,6 +694,11 @@ class OrderApiController extends Controller
                 'payment_date' => now(),
                 'created_by' => $userId
             ]);
+
+            // Sync with Cash Drawer if CASH payment
+            if (strtoupper($payment->payment_method) === 'CASH') {
+                app(CashDrawerService::class)->recordOrderPayment($payment, $order);
+            }
             
             // Update order payment status
             $totalPaid = OrderToPayment::where('order_id', $order_id)->sum('amount');
@@ -753,6 +761,12 @@ class OrderApiController extends Controller
         DB::beginTransaction();
         try {
             $order = OrderManage::findOrFail($payment->order_id);
+
+            // If cash payment, remove from Cash Drawer
+            if (strtoupper($payment->payment_method) === 'CASH') {
+                app(CashDrawerService::class)->removeOrderPayment($payment->id);
+            }
+
             $payment->delete();
             
             // Update order payment status
@@ -1067,13 +1081,23 @@ class OrderApiController extends Controller
      */
     private function generateKOTNumber($restaurantId)
     {
-        $latestItem = OrderItems::where('restaurant_id', $restaurantId)
-            ->whereNotNull('kot_no')
-            ->orderBy('id', 'desc')
-            ->first();
-            
         $todayDateStr = Carbon::now()->format('ymd');
         $nextSequence = 1;
+
+        // Find the latest KOT number generated today for this restaurant
+        $latestItem = OrderItems::where('restaurant_id', $restaurantId)
+            ->whereNotNull('kot_no')
+            ->where('kot_no', 'like', "KOT-{$todayDateStr}-%")
+            ->orderBy('id', 'desc')
+            ->first();
+
+        // If none found for today with prefix, fallback to latest overall item
+        if (!$latestItem) {
+            $latestItem = OrderItems::where('restaurant_id', $restaurantId)
+                ->whereNotNull('kot_no')
+                ->orderBy('id', 'desc')
+                ->first();
+        }
 
         if ($latestItem && preg_match('/KOT-(\d{6})-(\d+)/', $latestItem->kot_no, $matches)) {
             $latestDateStr = $matches[1];

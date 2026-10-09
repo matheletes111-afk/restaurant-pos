@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class OrderItems extends Model
 {
@@ -14,6 +15,7 @@ class OrderItems extends Model
         'subcategory_id',
         'quantity',
         'price',
+        'addons',
         'discounted_price',
         'item_discount_percentage',
         'taxable_amount',
@@ -43,6 +45,7 @@ class OrderItems extends Model
         'total_amount' => 'decimal:2',
         'quantity' => 'integer',
         'is_new' => 'boolean',
+        'addons' => 'array',
     ];
 
     public function order()
@@ -52,7 +55,34 @@ class OrderItems extends Model
 
     public function subcategory()
     {
-        return $this->belongsTo(SubCategory::class, 'subcategory_id');
+        return $this->belongsTo(SubCategory::class, 'subcategory_id')->withDefault(function ($subcat, $orderItem) {
+            $firstAddon = $orderItem->addons_list[0] ?? null;
+            $subcat->name = $firstAddon['name'] ?? 'Add-on';
+            $subcat->food_type = $firstAddon['food_type'] ?? 'VEG';
+            $subcat->price = $orderItem->price ?? 0;
+            return $subcat;
+        });
+    }
+
+    /**
+     * Get structured array of addons associated with this order item
+     */
+    public function getAddonsListAttribute()
+    {
+        $raw = $this->addons;
+        if (!empty($raw)) {
+            if (is_array($raw)) {
+                return $raw;
+            }
+            if (is_string($raw)) {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded) && !empty($decoded)) {
+                    return $decoded;
+                }
+            }
+        }
+
+        return [];
     }
 
     // Accessor to get item total before GST
@@ -77,5 +107,38 @@ class OrderItems extends Model
     public function getGstRateFormattedAttribute()
     {
         return $this->gst_rate ? $this->gst_rate . '%' : '0%';
+    }
+
+    /**
+     * Generate the next progressive KOT number for a restaurant
+     */
+    public static function generateNextKotNumber($restaurantId)
+    {
+        $todayDateStr = Carbon::now()->format('ymd');
+        $cacheKey = "kot_seq_{$restaurantId}_{$todayDateStr}";
+        $cachedSeq = intval(\Illuminate\Support\Facades\Cache::get($cacheKey, 0));
+
+        // Find the maximum KOT sequence currently in the database for today
+        $items = self::where('restaurant_id', $restaurantId)
+            ->whereNotNull('kot_no')
+            ->where('kot_no', 'like', "KOT-{$todayDateStr}-%")
+            ->pluck('kot_no');
+
+        $maxDbSeq = 0;
+        foreach ($items as $kot) {
+            if (preg_match('/KOT-\d{6}-(\d+)/', $kot, $m)) {
+                $seq = intval($m[1]);
+                if ($seq > $maxDbSeq) {
+                    $maxDbSeq = $seq;
+                }
+            }
+        }
+
+        $nextSequence = max($cachedSeq, $maxDbSeq) + 1;
+
+        // Remember the sequence for today so deletions never regress the KOT counter
+        \Illuminate\Support\Facades\Cache::put($cacheKey, $nextSequence, Carbon::now()->endOfDay());
+
+        return "KOT-{$todayDateStr}-" . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
     }
 }

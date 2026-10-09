@@ -61,12 +61,12 @@
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <div class="page-header-title">
-                                <h5 class="m-b-10">Complete Payment</h5>
+                                <h5 class="m-b-10">{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Update AutoPay Bank / Card' : 'Complete Payment' }}</h5>
                             </div>
                             <ul class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="">Home</a></li>
                                 <li class="breadcrumb-item"><a href="{{ route('plans.index') }}">Plans</a></li>
-                                <li class="breadcrumb-item" aria-current="page">Payment</li>
+                                <li class="breadcrumb-item" aria-current="page">{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Update Bank Details' : 'Payment' }}</li>
                             </ul>
                         </div>
                     </div>
@@ -78,43 +78,51 @@
                 <div class="col-sm-12">
                     <div class="card">
                         <div class="card-header">
-                            <h5>Payment Information</h5>
+                            <h5>{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Update AutoPay Payment Method' : 'Payment Information' }}</h5>
                         </div>
                         <div class="card-body">
                             @include('includes.message')
                             
                             <!-- Payment Status Messages -->
                             <div id="paymentSuccess" class="payment-status payment-success" style="display: none;">
-                                <h4><i class="fa fa-check-circle"></i> Payment Successful!</h4>
+                                <h4><i class="fa fa-check-circle"></i> {{ isset($is_payment_method_update) && $is_payment_method_update ? 'Bank / Card Updated Successfully!' : 'Payment Successful!' }}</h4>
                                 <p>Redirecting to subscriptions page...</p>
                             </div>
                             
                             <div id="paymentError" class="payment-status payment-error" style="display: none;">
-                                <h4><i class="fa fa-exclamation-circle"></i> Payment Failed</h4>
+                                <h4><i class="fa fa-exclamation-circle"></i> {{ isset($is_payment_method_update) && $is_payment_method_update ? 'Bank Update Failed' : 'Payment Failed' }}</h4>
                                 <p id="errorMessage"></p>
-                                <a href="{{ route('plans.index') }}" class="btn btn-secondary">Go Back to Plans</a>
+                                <a href="{{ route('admin.subscriptions.index') }}" class="btn btn-secondary">Go Back to Subscriptions</a>
                             </div>
                             
                             <div id="paymentForm">
                                 <div class="row">
                                     <div class="col-md-8 offset-md-2">
+                                        @if(isset($is_payment_method_update) && $is_payment_method_update)
+                                        <div class="alert alert-warning mb-4" style="border-radius: 10px;">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="fas fa-university fa-2x text-warning me-2"></i>
+                                                <div>
+                                                    <strong>Changing AutoPay Bank Account / Card</strong>
+                                                    <p class="mb-0 small text-dark">Your current active subscription validity and remaining days will not change. Authenticating with your new bank details will set them for all future renewals.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @endif
+
                                         <div class="payment-summary">
-                                            <h4 class="text-center mb-4">Payment Summary</h4>
+                                            <h4 class="text-center mb-4">{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Bank Update & Authorization Summary' : 'Payment Summary' }}</h4>
                                             
                                             <table class="table table-bordered">
                                                 <tr>
                                                     <th>Plan Name:</th>
-                                                    <td>{{ $plan->name }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Duration:</th>
-                                                    <td>{{ $plan->duration_days }} days</td>
+                                                    <td><strong>{{ $plan->name }}</strong></td>
                                                 </tr>
                                                 <tr>
                                                     <th>Billing Cycle:</th>
                                                     <td>{{ ucfirst($plan->billing_cycle) }}</td>
                                                 </tr>
-                                                @if($is_upgrade && $existing_subscription)
+                                                @if(isset($is_upgrade) && $is_upgrade && isset($existing_subscription) && $existing_subscription)
                                                 <tr>
                                                     <th>Previous Plan:</th>
                                                     <td>{{ $existing_subscription->plan->name ?? 'N/A' }}</td>
@@ -125,24 +133,25 @@
                                                 </tr>
                                                 @endif
                                                 <tr>
-                                                    <th>Amount Payable:</th>
-                                                    <td class="font-weight-bold">₹{{ number_format($payable_amount, 2) }}</td>
+                                                    <th>{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Renewal Rate / Auth Amount:' : 'Amount Payable:' }}</th>
+                                                    <td class="font-weight-bold text-success">₹{{ number_format($payable_amount, 2) }}</td>
                                                 </tr>
                                             </table>
                                             
                                             <div class="text-center mt-4">
-                                                <button id="rzp-button" class="btn btn-primary btn-lg">
-                                                    <i class="fa fa-credit-card"></i> Pay Now (₹{{ number_format($payable_amount, 2) }})
+                                                <button id="rzp-button" class="btn btn-primary btn-lg" style="box-shadow: 0 4px 14px rgba(255, 106, 0, 0.35); font-weight: 700; padding: 14px 32px; border-radius: 50px;">
+                                                    <i class="fa fa-credit-card me-2"></i> 
+                                                    <span id="rzp-button-text">{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Authorize New Bank / Card (₹' . number_format($payable_amount, 2) . ')' : 'Pay Now (₹' . number_format($payable_amount, 2) . ')' }}</span>
                                                 </button>
                                                 
-                                                <a href="{{ route('plans.index') }}" class="btn btn-secondary">
-                                                    <i class="fa fa-times"></i> Cancel
+                                                <a href="{{ route('admin.subscriptions.index') }}" class="btn btn-secondary btn-lg ms-2" style="padding: 14px 24px; border-radius: 50px;">
+                                                    <i class="fa fa-times me-1"></i> Cancel
                                                 </a>
                                             </div>
-                                            
-                                            <div class="alert alert-info mt-3">
-                                                <i class="fa fa-info-circle"></i> 
-                                                You will be redirected to Razorpay's secure payment gateway.
+
+                                            <div class="alert alert-info mt-3" id="autoPopupNotice" style="border-radius: 10px;">
+                                                <i class="fa fa-info-circle me-1"></i> 
+                                                <span>Razorpay's secure payment window will open automatically. If not opened, please click <strong>Pay Now</strong> above.</span>
                                             </div>
                                         </div>
                                     </div>
@@ -159,183 +168,241 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-    $(document).ready(function() {
-        var subscriptionId = "{{ $subscription_id }}";
-        var planId = "{{ $plan->id }}";
-        var userId = "{{ $user->id }}";
-        var csrfToken = "{{ csrf_token() }}";
-        var appName = "{{ config('app.name', 'App') }}";
-        var razorpayKey = "{{ config('services.razorpay.key_id') }}";
-        var existingSubscriptionId = "{{ $existing_subscription_id ?? '' }}";
-        var creditAmount = "{{ $credit_amount ?? 0 }}";
-        
-        console.log('Subscription ID:', subscriptionId);
-        console.log('Plan ID:', planId);
-        console.log('User ID:', userId);
-        
-        // Validate required data
-        if (!subscriptionId || !razorpayKey) {
-            showError('Payment configuration error. Please contact support.');
-            return;
-        }
-        
-        var options = {
-            "key": razorpayKey,
-            "subscription_id": subscriptionId,
-            "name": appName,
-            "description": "Subscription for {{ $plan->name }}",
-            "prefill": {
-                "name": "{{ $user->name }}",
-                "email": "{{ $user->email ?? auth()->user()->email ?? '' }}",
-                "contact": "{{ $user->phone ?? auth()->user()->phone ?? '' }}"
-            },
-            "theme": {
-                "color": "#F37254"
-            },
-            "handler": function(response) {
-                console.log('Payment successful response:', response);
-                
-                // Show loading
-                showLoading();
-                
-                // Prepare form data
-                var formData = new FormData();
-                formData.append('_token', csrfToken);
-                formData.append('razorpay_payment_id', response.razorpay_payment_id);
-                formData.append('razorpay_subscription_id', subscriptionId);
-                formData.append('razorpay_signature', response.razorpay_signature);
-                formData.append('plan_id', planId);
-                formData.append('user_id', userId);
-                
-                // Add upgrade info if applicable
-                if (existingSubscriptionId) {
-                    formData.append('existing_subscription_id', existingSubscriptionId);
-                    formData.append('credit_amount', creditAmount);
-                }
-                
-                formData.append('all_response', JSON.stringify(response));
-                
-                // Send to server via AJAX
-                $.ajax({
-                    url: "{{ route('admin.subscriptions.payment.success') }}",
-                    type: "POST",
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(data) {
-                        console.log('Server response:', data);
-                        
-                        if (data.success) {
-                            // Show success message
-                            $('#paymentForm').hide();
-                            $('#paymentSuccess').show();
-                            
-                            // Redirect after 2 seconds
-                            setTimeout(function() {
-                                if (data.redirect) {
-                                    window.location.href = data.redirect;
-                                } else {
-                                    window.location.href = "{{ route('admin.subscriptions.index') }}";
-                                }
-                            }, 2000);
-                        } else {
-                            showError(data.error || 'Payment processing failed on server.');
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Payment verification failed:', xhr.responseText);
-                        
-                        var errorMsg = 'Payment verification failed. ';
-                        
-                        try {
-                            var response = JSON.parse(xhr.responseText);
-                            if (response.error) {
-                                errorMsg += response.error;
-                            } else if (response.message) {
-                                errorMsg += response.message;
-                            }
-                        } catch (e) {
-                            errorMsg += 'Please try again or contact support.';
-                        }
-                        
-                        showError(errorMsg);
-                    },
-                    complete: function() {
-                        hideLoading();
-                    }
-                });
-            },
-            "modal": {
-                "ondismiss": function() {
-                    console.log('Payment modal dismissed');
-                    
-                    // Don't immediately redirect - let user decide
-                    if (confirm('Are you sure you want to cancel this payment?')) {
-                        // Send failure to server
-                        $.ajax({
-                            url: "{{ route('admin.subscriptions.payment.failed') }}",
-                            type: "POST",
-                            data: {
-                                _token: csrfToken,
-                                razorpay_subscription_id: subscriptionId,
-                                reason: 'user_cancelled'
-                            },
-                            success: function() {
-                                window.location.href = "{{ route('plans.index') }}";
-                            },
-                            error: function() {
-                                window.location.href = "{{ route('plans.index') }}";
-                            }
-                        });
-                    }
-                }
-            },
-            "notes": {
-                "plan_id": planId,
-                "user_id": userId
-            }
+    (function() {
+        // Safe configuration extraction
+        var config = {
+            subscriptionId: @json($subscription_id ?? ''),
+            planId: @json($plan->id ?? ''),
+            userId: @json($user->id ?? ''),
+            csrfToken: @json(csrf_token()),
+            appName: @json(config('app.name', 'Bill&Bite POS')),
+            razorpayKey: @json(config('services.razorpay.key_id') ?? env('RAZORPAY_KEY_ID', '')),
+            existingSubscriptionId: @json($existing_subscription_id ?? ''),
+            creditAmount: @json($credit_amount ?? 0),
+            isPaymentMethodUpdate: @json(isset($is_payment_method_update) && $is_payment_method_update ? 1 : 0),
+            oldSubscriptionId: @json($old_subscription_id ?? ''),
+            customerName: @json($user->name ?? 'Customer'),
+            customerEmail: @json($user->email ?? auth()->user()->email ?? ''),
+            customerPhone: @json(preg_replace('/[^0-9]/', '', $user->phone ?? auth()->user()->phone ?? '')),
+            planName: @json($plan->name ?? 'Subscription Plan'),
+            paymentSuccessUrl: @json(route('admin.subscriptions.payment.success')),
+            paymentFailedUrl: @json(route('admin.subscriptions.payment.failed')),
+            subscriptionsIndexUrl: @json(route('admin.subscriptions.index')),
+            plansIndexUrl: @json(route('plans.index'))
         };
 
-        var rzp = new Razorpay(options);
-        
-        // Open payment modal automatically
-        rzp.open();
-        
-        // Also attach to button click
-        $('#rzp-button').on('click', function(e) {
-            e.preventDefault();
-            rzp.open();
+        console.log('Payment Config Initialized:', {
+            subscriptionId: config.subscriptionId,
+            planId: config.planId,
+            userId: config.userId,
+            hasKey: !!config.razorpayKey
+        });
+
+        // 1. Dynamic SDK Loader with fallback
+        function ensureRazorpaySDK(callback, failureCallback) {
+            if (typeof window.Razorpay === 'function') {
+                callback();
+                return;
+            }
+
+            console.log('Razorpay SDK not detected in global scope. Dynamically injecting SDK...');
+            var existingScript = document.getElementById('rzp-sdk-script');
+            if (existingScript) {
+                existingScript.remove();
+            }
+
+            var script = document.createElement('script');
+            script.id = 'rzp-sdk-script';
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.async = true;
+            script.onload = function() {
+                if (typeof window.Razorpay === 'function') {
+                    console.log('Razorpay SDK successfully loaded dynamically.');
+                    callback();
+                } else if (typeof failureCallback === 'function') {
+                    failureCallback('Razorpay SDK failed to initialize.');
+                }
+            };
+            script.onerror = function() {
+                console.error('Failed to load Razorpay checkout.js script from CDN.');
+                if (typeof failureCallback === 'function') {
+                    failureCallback('Unable to connect to Razorpay payment gateway. Please check your internet connection or disable ad-blockers and try again.');
+                }
+            };
+            document.head.appendChild(script);
+        }
+
+        // 2. Build Options & Open Razorpay
+        var activeRzpInstance = null;
+        var isSubmittingPayment = false;
+
+        function launchRazorpayCheckout(isUserClick) {
+            if (isSubmittingPayment) return;
+
+            if (!config.subscriptionId || !config.razorpayKey) {
+                showError('Payment configuration error (Missing key or subscription ID). Please contact support.');
+                return;
+            }
+
+            var btn = $('#rzp-button');
+            var originalBtnHtml = btn.html();
+
+            if (isUserClick) {
+                btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Opening Gateway...');
+            }
+
+            ensureRazorpaySDK(function() {
+                btn.prop('disabled', false).html(originalBtnHtml);
+
+                var options = {
+                    "key": config.razorpayKey,
+                    "subscription_id": config.subscriptionId,
+                    "name": config.appName,
+                    "description": config.isPaymentMethodUpdate ? ("Update AutoPay Bank for " + config.planName) : ("Subscription for " + config.planName),
+                    "prefill": {
+                        "name": config.customerName,
+                        "email": config.customerEmail,
+                        "contact": config.customerPhone
+                    },
+                    "theme": {
+                        "color": "#ff6a00"
+                    },
+                    "handler": function(response) {
+                        console.log('Payment successful response received from Razorpay:', response);
+                        isSubmittingPayment = true;
+                        showLoading();
+
+                        var formData = new FormData();
+                        formData.append('_token', config.csrfToken);
+                        formData.append('razorpay_payment_id', response.razorpay_payment_id || '');
+                        formData.append('razorpay_subscription_id', config.subscriptionId);
+                        formData.append('razorpay_signature', response.razorpay_signature || '');
+                        formData.append('plan_id', config.planId);
+                        formData.append('user_id', config.userId);
+
+                        if (config.existingSubscriptionId) {
+                            formData.append('existing_subscription_id', config.existingSubscriptionId);
+                            formData.append('credit_amount', config.creditAmount);
+                        }
+
+                        if (config.isPaymentMethodUpdate) {
+                            formData.append('is_payment_method_update', '1');
+                            formData.append('old_subscription_id', config.oldSubscriptionId);
+                        }
+
+                        formData.append('all_response', JSON.stringify(response));
+
+                        $.ajax({
+                            url: config.paymentSuccessUrl,
+                            type: "POST",
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            dataType: 'json',
+                            success: function(data) {
+                                console.log('Server verification response:', data);
+                                if (data && data.success) {
+                                    $('#paymentForm').hide();
+                                    $('#paymentSuccess').show();
+                                    setTimeout(function() {
+                                        window.location.href = data.redirect || config.subscriptionsIndexUrl;
+                                    }, 1500);
+                                } else {
+                                    isSubmittingPayment = false;
+                                    showError((data && data.error) ? data.error : 'Payment verification failed on server.');
+                                }
+                            },
+                            error: function(xhr) {
+                                isSubmittingPayment = false;
+                                console.error('Payment verification failed:', xhr.responseText);
+                                var errorMsg = 'Payment verification failed. ';
+                                try {
+                                    var res = JSON.parse(xhr.responseText);
+                                    if (res.error) errorMsg += res.error;
+                                    else if (res.message) errorMsg += res.message;
+                                } catch (e) {
+                                    errorMsg += 'Please try again or contact support.';
+                                }
+                                showError(errorMsg);
+                            },
+                            complete: function() {
+                                hideLoading();
+                            }
+                        });
+                    },
+                    "modal": {
+                        "ondismiss": function() {
+                            console.log('Payment modal dismissed by user');
+                            btn.prop('disabled', false).html(originalBtnHtml);
+                            $('#autoPopupNotice').html('<i class="fa fa-info-circle text-warning me-1"></i> Payment window closed. Click <strong>Pay Now</strong> above whenever you are ready to complete payment.');
+                        }
+                    },
+                    "notes": {
+                        "plan_id": config.planId,
+                        "user_id": config.userId
+                    }
+                };
+
+                try {
+                    activeRzpInstance = new Razorpay(options);
+                    activeRzpInstance.on('payment.failed', function(resp) {
+                        console.warn('Razorpay payment failed callback:', resp);
+                        if (resp.error) {
+                            alert('Payment Failed: ' + (resp.error.description || resp.error.reason || 'Transaction could not be completed'));
+                        }
+                    });
+                    activeRzpInstance.open();
+                } catch (err) {
+                    console.error('Error invoking Razorpay instance:', err);
+                    if (isUserClick) {
+                        showError('Could not open Razorpay checkout: ' + (err.message || 'Unknown error'));
+                    }
+                }
+            }, function(errorMsg) {
+                btn.prop('disabled', false).html(originalBtnHtml);
+                showError(errorMsg);
+            });
+        }
+
+        // 3. Document Ready Initialization
+        $(document).ready(function() {
+            // Register button click handler FIRST to guarantee user interaction always works
+            $('#rzp-button').on('click', function(e) {
+                e.preventDefault();
+                launchRazorpayCheckout(true);
+            });
+
+            // Trigger safe auto-open with small delay
+            setTimeout(function() {
+                try {
+                    launchRazorpayCheckout(false);
+                } catch (autoErr) {
+                    console.warn('Auto-open was blocked by browser or failed:', autoErr);
+                }
+            }, 600);
         });
 
         // Helper functions
         function showLoading() {
-            $('#loadingOverlay').show();
+            $('#loadingOverlay').css('display', 'flex');
         }
-        
+
         function hideLoading() {
             $('#loadingOverlay').hide();
         }
-        
+
         function showError(message) {
             $('#paymentForm').hide();
             $('#errorMessage').text(message);
             $('#paymentError').show();
         }
-    });
-    
-    // Handle page visibility change (user might switch tabs during payment)
-    document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'visible') {
-            // Check if payment was completed while tab was inactive
-            console.log('Page became visible again');
-        }
-    });
-    
-    // Handle beforeunload to prevent accidental navigation
-    window.addEventListener('beforeunload', function(e) {
-        // Only show warning if payment might be in progress
-        return null; // You can add a warning message here if needed
-    });
+
+        window.retryPayment = function() {
+            $('#paymentError').hide();
+            $('#paymentForm').show();
+            launchRazorpayCheckout(true);
+        };
+    })();
     </script>
     
     @include('includes.script')

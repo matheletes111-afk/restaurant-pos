@@ -67,6 +67,11 @@ class User extends Authenticatable implements JWTSubject
             return false;
         }
 
+        // Automatic inheritance: Users with order_master permission automatically get rapid_bill access
+        if ($menuKey === 'rapid_bill' && (in_array('order_master', $perms) || in_array('order_master.' . $action, $perms) || in_array('order_master.view', $perms))) {
+            return true;
+        }
+
         // Support legacy permission where full module key is stored (meaning full access)
         if (in_array($menuKey, $perms)) {
             return true;
@@ -86,6 +91,87 @@ class User extends Authenticatable implements JWTSubject
         return [];
     }
 
+    public function isOwner(): bool
+    {
+        return ($this->role === 'RES' && $this->role_type === 'ADMIN');
+    }
+
+    public function getSubscriptionRestaurantId(): ?int
+    {
+        if (empty($this->restaurant_id)) {
+            return null;
+        }
+        $rest = $this->restaurant;
+        if (!$rest) {
+            $rest = \App\Models\RestaurantMaster::find($this->restaurant_id);
+        }
+        if ($rest && !empty($rest->parent_id)) {
+            return (int) $rest->parent_id;
+        }
+        return (int) $this->restaurant_id;
+    }
+
+    public function getMainRestaurant()
+    {
+        if (empty($this->restaurant_id)) {
+            return null;
+        }
+        $rest = $this->restaurant ?: \App\Models\RestaurantMaster::find($this->restaurant_id);
+        if (!$rest) {
+            return null;
+        }
+        return $rest->getMainRestaurant();
+    }
+
+    public function getAvailableOutlets()
+    {
+        $mainRest = $this->getMainRestaurant();
+        if ($mainRest && ($this->isOwner() || $this->hasPermission('master_report'))) {
+            // Return main restaurant plus all non-deleted outlets
+            $outlets = \App\Models\RestaurantMaster::where('parent_id', $mainRest->id)
+                ->where('status', '!=', 'D')
+                ->orderBy('id', 'asc')
+                ->get();
+
+            return collect([$mainRest])->merge($outlets);
+        }
+
+        if (!$this->isOwner()) {
+            return collect([$this->restaurant ?: \App\Models\RestaurantMaster::find($this->restaurant_id)])->filter();
+        }
+
+        if (!$mainRest) {
+            return collect();
+        }
+
+        // Return main restaurant plus all non-deleted outlets
+        $outlets = \App\Models\RestaurantMaster::where('parent_id', $mainRest->id)
+            ->where('status', '!=', 'D')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        return collect([$mainRest])->merge($outlets);
+    }
+
+    public function hasMultiOutletAccess(): bool
+    {
+        $subRestId = $this->getSubscriptionRestaurantId();
+        if (!$subRestId) {
+            return false;
+        }
+
+        $activeSub = \App\Models\Subscription::where('user_id', $subRestId)
+            ->whereIn('status', ['active', 'completed'])
+            ->with('plan')
+            ->first();
+
+        if ($activeSub && $activeSub->plan) {
+            return ($activeSub->plan->multi_outlet_checkbox === 'Y');
+        }
+
+        return false;
+    }
+
     /**
      * Get the appropriate dashboard/destination URL based on user role and subscription status.
      *
@@ -97,9 +183,10 @@ class User extends Authenticatable implements JWTSubject
             return route('admin.dashboard');
         }
 
-        if (!empty($this->restaurant_id)) {
+        $subRestaurantId = $this->getSubscriptionRestaurantId();
+        if (!empty($subRestaurantId)) {
             $active = \Illuminate\Support\Facades\DB::table('subscriptions')
-                ->where('user_id', $this->restaurant_id)
+                ->where('user_id', $subRestaurantId)
                 ->where(function ($query) {
                     $query->where('status', 'active')
                           ->orWhere(function ($q) {

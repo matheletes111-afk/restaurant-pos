@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Supplier;
 use App\Models\Purchase;
 use App\Models\SupplierDeposit;
+use App\Services\CashDrawerService;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -110,6 +111,11 @@ class SupplierLedgerController extends Controller
             $deposit->user_id = auth()->user()->id;
             $deposit->save();
             
+            // Sync with Cash Drawer if CASH payment
+            if (strtoupper($deposit->payment_mode) === 'CASH') {
+                app(CashDrawerService::class)->recordSupplierDeposit($deposit, $supplier);
+            }
+
             // Update supplier's outstanding balance
             $supplier->updateOutstanding($request->amount, 'deposit');
             
@@ -137,6 +143,11 @@ class SupplierLedgerController extends Controller
             $supplierId = $deposit->supplier_id;
             $amount = $deposit->amount;
             
+            // If cash deposit, remove from Cash Drawer
+            if (strtoupper($deposit->payment_mode) === 'CASH') {
+                app(CashDrawerService::class)->removeSupplierDeposit($deposit->id);
+            }
+
             // Reverse the deposit effect on supplier
             $supplier = Supplier::find($supplierId);
             $supplier->current_outstanding += $amount;

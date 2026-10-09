@@ -489,20 +489,79 @@
     <!-- Pricing / Packages Section -->
     <section class="pricing" id="pricing" style="padding: 80px 0; background-color: #f9fafb;">
         <div class="container">
-            <div class="section-header text-center" style="margin-bottom: 50px;">
+            <div class="section-header text-center" style="margin-bottom: 30px;">
                 <span class="section-subtitle">PRICING PLANS</span>
                 <h2>Choose the Right <span class="text-orange">Package</span></h2>
                 <p>Simple and transparent pricing for restaurants of all sizes.</p>
             </div>
 
+            <!-- Timeframe Tabs (Annual / Monthly) -->
+            <div class="pricing-tabs-wrapper text-center" style="margin-bottom: 45px;">
+                <div class="pricing-toggle-container">
+                    <button type="button" class="pricing-tab-btn active" id="btn-tab-yearly" onclick="switchPricingTab('yearly')">
+                        <i class="ph ph-calendar-check"></i> Annual Billing <span class="badge-save">Save More</span>
+                    </button>
+                    <button type="button" class="pricing-tab-btn" id="btn-tab-monthly" onclick="switchPricingTab('monthly')">
+                        <i class="ph ph-calendar"></i> Monthly Billing
+                    </button>
+                </div>
+            </div>
+
             <style>
+                .pricing-toggle-container {
+                    display: inline-flex;
+                    background: #ffffff;
+                    padding: 6px;
+                    border-radius: 50px;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+                    border: 1px solid #e5e7eb;
+                    position: relative;
+                    gap: 6px;
+                }
+                .pricing-tab-btn {
+                    border: none;
+                    background: transparent;
+                    padding: 10px 24px;
+                    border-radius: 40px;
+                    font-size: 0.95rem;
+                    font-weight: 600;
+                    color: #4b5563;
+                    cursor: pointer;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .pricing-tab-btn:hover {
+                    color: #ff6a00;
+                }
+                .pricing-tab-btn.active {
+                    background: linear-gradient(135deg, #ff6a00, #ff8c42);
+                    color: #ffffff;
+                    box-shadow: 0 4px 14px rgba(255, 106, 0, 0.3);
+                }
+                .badge-save {
+                    background: #10b981;
+                    color: white;
+                    font-size: 0.7rem;
+                    padding: 3px 8px;
+                    border-radius: 20px;
+                    font-weight: 700;
+                    margin-left: 4px;
+                    letter-spacing: 0.3px;
+                }
+                .pricing-tab-btn.active .badge-save {
+                    background: #ffffff;
+                    color: #059669;
+                }
                 .plans-wrapper {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
                     gap: 30px;
                     max-width: 1000px;
                     margin: 0 auto;
-                             .plan-card {
+                }
+                .plan-card {
                     background: #fff;
                     border-radius: 16px;
                     padding: 40px 30px;
@@ -513,6 +572,11 @@
                     display: flex;
                     flex-direction: column;
                     height: 100%;
+                    animation: fadeInPlan 0.4s ease forwards;
+                }
+                @keyframes fadeInPlan {
+                    from { opacity: 0; transform: translateY(12px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
                 .plan-card:hover {
                     transform: translateY(-5px);
@@ -533,6 +597,22 @@
                     border-radius: 20px;
                     font-size: 0.8rem;
                     font-weight: bold;
+                }
+                .timeframe-badge {
+                    display: inline-block;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    padding: 2px 10px;
+                    border-radius: 12px;
+                    margin-top: 5px;
+                }
+                .timeframe-badge.monthly {
+                    background: #eff6ff;
+                    color: #2563eb;
+                }
+                .timeframe-badge.yearly {
+                    background: #ecfdf5;
+                    color: #059669;
                 }
                 .plan-header {
                     text-align: center;
@@ -607,10 +687,13 @@
                 }
             </style>
  
-            <div class="plans-wrapper">
+            <div class="plans-wrapper" id="welcomePlansContainer">
                 @if(isset($defaultPlans) && $defaultPlans->count() > 0)
                     @foreach($defaultPlans as $plan)
-                        <div class="plan-card {{ $plan->is_default_plan == 'Y' ? 'default-plan' : '' }}">
+                        @php
+                            $pTimeframe = strtolower($plan->billing_cycle ?? 'monthly');
+                        @endphp
+                        <div class="plan-card {{ $plan->is_default_plan == 'Y' ? 'default-plan' : '' }}" data-timeframe="{{ $pTimeframe }}" style="{{ $pTimeframe === 'yearly' ? '' : 'display: none;' }}">
                             @if($plan->label_name)
                                 <div class="default-badge">{{ $plan->label_name }}</div>
                             @elseif($plan->is_default_plan == 'Y')
@@ -636,6 +719,13 @@
                                 </div>
                                 <div class="plan-duration">
                                     <i class="ph ph-calendar"></i> {{ $plan->duration_days }} days validity
+                                </div>
+                                <div>
+                                    @if($pTimeframe == 'yearly')
+                                        <span class="timeframe-badge yearly"><i class="ph ph-calendar-check"></i> Annual Plan</span>
+                                    @else
+                                        <span class="timeframe-badge monthly"><i class="ph ph-calendar"></i> Monthly Plan</span>
+                                    @endif
                                 </div>
                             </div>
                             <ul class="plan-features-list">
@@ -664,12 +754,26 @@
                                     <li><i class="ph-fill ph-x-circle" style="color: #d32f2f;"></i> Debit Note</li>
                                     <li><i class="ph-fill ph-x-circle" style="color: #d32f2f;"></i> Inventory</li>
                                 @endif
+
+                                @if($plan->multi_outlet_checkbox == 'Y')
+                                    <li><i class="ph-fill ph-check-circle" style="color: #2e7d32;"></i> Multi-Outlet Support (Up to {{ $plan->total_number_of_outlets == 0 ? 'Unlimited' : $plan->total_number_of_outlets }} Outlets)</li>
+                                @else
+                                    <li><i class="ph-fill ph-x-circle" style="color: #d32f2f;"></i> Multi-Outlet Support</li>
+                                @endif
                             </ul>
                             <a href="javascript:void(0)" class="btn-plan open-enquiry-btn">Get Started</a>
                         </div>
                     @endforeach
+                    
+                    <!-- Empty state placeholder for when a filtered timeframe has no plans -->
+                    <div id="noTimeframePlansMsg" class="text-center w-100 p-5" style="background:#fff; border-radius:16px; display:none; grid-column: 1 / -1;">
+                        <i class="ph ph-sparkle" style="font-size: 3rem; color: #ff6a00; margin-bottom: 12px; display: inline-block;"></i>
+                        <h4 style="font-weight: 700; color: #1e293b;">Custom Plans Available</h4>
+                        <p class="text-muted" id="noTimeframeText">Contact our team for customized plans for your restaurant.</p>
+                        <a href="javascript:void(0)" class="btn-plan open-enquiry-btn d-inline-block mt-3" style="max-width: 200px; margin: 15px auto 0;">Book a Demo</a>
+                    </div>
                 @else
-                    <div class="text-center w-100 p-5" style="background:#fff; border-radius:16px;">
+                    <div class="text-center w-100 p-5" style="background:#fff; border-radius:16px; grid-column: 1 / -1;">
                         <p class="text-muted">Packages will be displayed here.</p>
                     </div>
                 @endif
@@ -953,11 +1057,76 @@
                         <img src="{{ asset('logo.png') }}" alt="Bill&Bite Logo" style="height: 40px; width: auto;">
                     </a>
                     <p>Bill & Bite is a complete restaurant management system designed to simplify your operations and help your business grow.</p>
+                    <style>
+                        .footer-brand .social-links {
+                            display: flex;
+                            align-items: center;
+                            gap: 12px;
+                            margin-top: 18px;
+                        }
+                        .footer-brand .social-btn {
+                            width: 40px;
+                            height: 40px;
+                            border-radius: 12px;
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: #ffffff !important;
+                            font-size: 1.3rem;
+                            text-decoration: none;
+                            transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+                            position: relative;
+                            overflow: hidden;
+                        }
+                        .footer-brand .social-btn::after {
+                            content: '';
+                            position: absolute;
+                            inset: 0;
+                            background: linear-gradient(rgba(255,255,255,0.22), transparent);
+                            opacity: 0;
+                            transition: opacity 0.25s ease;
+                        }
+                        .footer-brand .social-btn:hover::after {
+                            opacity: 1;
+                        }
+                        .footer-brand .social-btn-facebook {
+                            background: linear-gradient(135deg, #1877f2 0%, #0d65d9 100%) !important;
+                            box-shadow: 0 4px 14px rgba(24, 119, 242, 0.35);
+                        }
+                        .footer-brand .social-btn-facebook:hover {
+                            transform: translateY(-3px) scale(1.08);
+                            box-shadow: 0 8px 22px rgba(24, 119, 242, 0.55);
+                        }
+                        .footer-brand .social-btn-instagram {
+                            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%) !important;
+                            box-shadow: 0 4px 14px rgba(220, 39, 67, 0.35);
+                        }
+                        .footer-brand .social-btn-instagram:hover {
+                            transform: translateY(-3px) scale(1.08);
+                            box-shadow: 0 8px 22px rgba(220, 39, 67, 0.55);
+                        }
+                        .footer-brand .social-btn-linkedin {
+                            background: linear-gradient(135deg, #0a66c2 0%, #004182 100%) !important;
+                            box-shadow: 0 4px 14px rgba(10, 102, 194, 0.35);
+                        }
+                        .footer-brand .social-btn-linkedin:hover {
+                            transform: translateY(-3px) scale(1.08);
+                            box-shadow: 0 8px 22px rgba(10, 102, 194, 0.55);
+                        }
+                        .footer-brand .social-btn-youtube {
+                            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%) !important;
+                            box-shadow: 0 4px 14px rgba(255, 0, 0, 0.35);
+                        }
+                        .footer-brand .social-btn-youtube:hover {
+                            transform: translateY(-3px) scale(1.08);
+                            box-shadow: 0 8px 22px rgba(255, 0, 0, 0.55);
+                        }
+                    </style>
                     <div class="social-links">
-                        <a href="#"><i class="ph-fill ph-facebook-logo"></i></a>
-                        <a href="#"><i class="ph-fill ph-instagram-logo"></i></a>
-                        <a href="#"><i class="ph-fill ph-linkedin-logo"></i></a>
-                        <a href="#"><i class="ph-fill ph-youtube-logo"></i></a>
+                        <a href="https://www.facebook.com/profile.php?id=61592626503884" class="social-btn social-btn-facebook" target="_blank" rel="noopener noreferrer" title="Facebook" aria-label="Facebook"><i class="ph-fill ph-facebook-logo"></i></a>
+                        <a href="https://www.instagram.com/billnbite_official?stkn=MzI0Z2pkenN0YWJ1&utm_source=qr" class="social-btn social-btn-instagram" target="_blank" rel="noopener noreferrer" title="Instagram" aria-label="Instagram"><i class="ph-fill ph-instagram-logo"></i></a>
+                        <a href="https://www.linkedin.com/company/bill-bite/home/?viewAsMember=true" class="social-btn social-btn-linkedin" target="_blank" rel="noopener noreferrer" title="LinkedIn" aria-label="LinkedIn"><i class="ph-fill ph-linkedin-logo"></i></a>
+                        <a href="https://www.youtube.com/@BillnBite_Official" class="social-btn social-btn-youtube" target="_blank" rel="noopener noreferrer" title="YouTube" aria-label="YouTube"><i class="ph-fill ph-youtube-logo"></i></a>
                     </div>
                 </div>
                 <div class="footer-links">
@@ -1320,6 +1489,44 @@
                 alertDiv.style.border = '1px solid #ef4444';
                 alertDiv.textContent = 'A network error occurred. Please try again later.';
             });
+        });
+
+        // Timeframe Pricing Tab Switcher
+        function switchPricingTab(timeframe) {
+            document.querySelectorAll('.pricing-tab-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.getElementById('btn-tab-' + timeframe);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            const cards = document.querySelectorAll('#welcomePlansContainer .plan-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const cardTf = card.getAttribute('data-timeframe');
+                if (cardTf === timeframe) {
+                    card.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            const emptyMsg = document.getElementById('noTimeframePlansMsg');
+            if (emptyMsg) {
+                if (visibleCount === 0) {
+                    emptyMsg.style.display = 'block';
+                    document.getElementById('noTimeframeText').textContent = 
+                        timeframe === 'yearly' 
+                            ? 'No annual packages currently listed. Contact us for custom annual pricing and volume discounts.' 
+                            : 'No monthly packages currently listed. Contact us for custom monthly options.';
+                } else {
+                    emptyMsg.style.display = 'none';
+                }
+            }
+        }
+
+        // Initialize with default yearly tab on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            switchPricingTab('yearly');
         });
     </script>
 </body>

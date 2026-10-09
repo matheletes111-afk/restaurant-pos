@@ -25,6 +25,8 @@ protected $fillable = [
     'total_number_of_dishes',
     'total_number_of_table',
     'inventory_checkbox',
+    'multi_outlet_checkbox',
+    'total_number_of_outlets',
     'is_default_free',
     'is_default_paid',
     'razorpay_plan_id',
@@ -37,7 +39,18 @@ protected $fillable = [
     protected $casts = [
         'price' => 'decimal:2',
         'end_date' => 'datetime',
+        'total_number_of_outlets' => 'integer',
     ];
+
+    public function isMultiOutletEnabled(): bool
+    {
+        return ($this->multi_outlet_checkbox === 'Y');
+    }
+
+    public function getMaxOutlets(): int
+    {
+        return (int) ($this->total_number_of_outlets ?? 1);
+    }
 
     public function parent()
     {

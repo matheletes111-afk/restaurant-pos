@@ -98,7 +98,6 @@ class SubscriptionDetailsTest extends TestCase
                 ],
                 'payment' => [
                     'status' => 'Success',
-                    'payment_method' => 'UPI',
                     'razorpay_payment_id' => 'pay_test123456'
                 ]
             ]

@@ -69,5 +69,9 @@ document.getElementById('enable-notifications-btn')?.addEventListener('click', a
 });
 </script>
 
+@auth
+    @include('includes.qr_notifications_script')
+@endauth
+
 
 
