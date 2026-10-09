@@ -250,11 +250,17 @@
                             $totalItemDiscount = 0;
                             if($order->orderItems) {
                                 foreach ($order->orderItems as $item) {
-                                    $itemDiscountAmount = ($item->price * $item->quantity) - $item->taxable_amount;
-                                    $totalItemDiscount += $itemDiscountAmount;
+                                    $itemDiscPercent = floatval($item->item_discount_percentage ?? 0);
+                                    $qty = intval($item->quantity ?? 1);
+                                    $basePrice = floatval($item->price ?? 0);
+                                    if ($itemDiscPercent > 0) {
+                                        $totalItemDiscount += ($basePrice * $itemDiscPercent / 100) * $qty;
+                                    } elseif (!empty($item->discounted_price) && $item->discounted_price < $basePrice) {
+                                        $totalItemDiscount += ($basePrice - floatval($item->discounted_price)) * $qty;
+                                    }
                                 }
                             }
-                            $orderDiscountAmount = $order->discount ?? 0;
+                            $orderDiscountAmount = floatval($order->discount ?? 0);
                             $totalDiscount = $totalItemDiscount + $orderDiscountAmount;
                         @endphp
                         <tr>
@@ -313,7 +319,9 @@
                                 @endif
                             </td>
                             <td class="text-end fw-semibold">₹{{ number_format($order->total_amount ?? 0, 2) }}</td>
-                            <td class="text-end text-danger fw-semibold">- ₹{{ number_format($totalDiscount, 2) }}</td>
+                            <td class="text-end {{ $totalDiscount > 0 ? 'text-danger' : 'text-muted' }} fw-semibold">
+                                {{ $totalDiscount > 0 ? '- ₹' . number_format($totalDiscount, 2) : '₹0.00' }}
+                            </td>
                             <td class="text-end fw-semibold">₹{{ number_format($order->taxable_amount ?? 0, 2) }}</td>
                             <td class="text-end">
                                 @if($isGstBill)
