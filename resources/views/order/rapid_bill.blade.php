@@ -1789,7 +1789,8 @@
               @php
                 $dishPrice = floatval($dish->price ?? 0);
                 $dishFoodType = strtolower($dish->food_type ?? 'veg');
-                $dishDiscount = floatval($dish->discount ?? 0);
+                $dishDiscount = floatval($dish->discount_percentage ?? $dish->discount ?? 0);
+                $dishFinalPrice = $dishDiscount > 0 ? ($dishPrice - ($dishPrice * $dishDiscount / 100)) : $dishPrice;
                 $dishAddons = ($dish->addons && $dish->addons->count() > 0) ? $dish->addons->where('status', '!=', 'D')->where('status', '!=', 'I')->values() : collect([]);
               @endphp
               <div class="dish-card" 
@@ -1811,6 +1812,11 @@
                         <i class="fa-solid fa-puzzle-piece"></i> {{ $dishAddons->count() }} Addon{{ $dishAddons->count() > 1 ? 's' : '' }}
                       </span>
                       @endif
+                      @if($dishDiscount > 0)
+                      <span class="badge bg-success-subtle text-success border border-success-subtle px-1 py-0.5" style="font-size: 0.65rem; font-weight: 800; border-radius: 6px;" title="{{ $dishDiscount }}% Discount">
+                        <i class="fa-solid fa-tag"></i> {{ $dishDiscount }}% OFF
+                      </span>
+                      @endif
                       <span class="dish-cart-badge" id="dishBadge-{{ $dish->id }}">0</span>
                     </div>
                   </div>
@@ -1819,7 +1825,14 @@
                 </div>
 
                 <div class="dish-bottom-bar">
-                  <div class="dish-price">₹{{ number_format($dishPrice, 2) }}</div>
+                  <div class="dish-price">
+                    @if($dishDiscount > 0)
+                      <span>₹{{ number_format($dishFinalPrice, 2) }}</span>
+                      <small class="text-muted text-decoration-line-through ms-1" style="font-size: 0.75rem; font-weight: normal;">₹{{ number_format($dishPrice, 2) }}</small>
+                    @else
+                      ₹{{ number_format($dishPrice, 2) }}
+                    @endif
+                  </div>
                   <div class="dish-add-btn">
                     <i class="fa-solid fa-plus"></i>
                   </div>

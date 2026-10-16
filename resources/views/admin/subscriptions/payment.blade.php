@@ -113,14 +113,24 @@
                                         <div class="payment-summary">
                                             <h4 class="text-center mb-4">{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Bank Update & Authorization Summary' : 'Payment Summary' }}</h4>
                                             
-                                            <table class="table table-bordered">
+                                             <table class="table table-bordered">
                                                 <tr>
                                                     <th>Plan Name:</th>
                                                     <td><strong>{{ $plan->name }}</strong></td>
                                                 </tr>
                                                 <tr>
-                                                    <th>Billing Cycle:</th>
-                                                    <td>{{ ucfirst($plan->billing_cycle) }}</td>
+                                                    <th>Billing Type:</th>
+                                                    <td>
+                                                        @if(!empty($is_one_time))
+                                                            <span class="badge bg-success text-white" style="font-size: 0.85rem; padding: 6px 12px; border-radius: 8px;">
+                                                                <i class="fas fa-calendar-check me-1"></i> 1 Cycle (365 Days) — AutoPay OFF
+                                                            </span>
+                                                        @else
+                                                            <span class="badge bg-primary text-white" style="font-size: 0.85rem; padding: 6px 12px; border-radius: 8px;">
+                                                                <i class="fas fa-sync-alt me-1"></i> Recurring AutoPay ({{ ucfirst($plan->billing_cycle) }})
+                                                            </span>
+                                                        @endif
+                                                    </td>
                                                 </tr>
                                                 @if(isset($is_upgrade) && $is_upgrade && isset($existing_subscription) && $existing_subscription)
                                                 <tr>
@@ -141,13 +151,20 @@
                                             <div class="text-center mt-4">
                                                 <button id="rzp-button" class="btn btn-primary btn-lg" style="box-shadow: 0 4px 14px rgba(255, 106, 0, 0.35); font-weight: 700; padding: 14px 32px; border-radius: 50px;">
                                                     <i class="fa fa-credit-card me-2"></i> 
-                                                    <span id="rzp-button-text">{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Authorize New Bank / Card (₹' . number_format($payable_amount, 2) . ')' : 'Pay Now (₹' . number_format($payable_amount, 2) . ')' }}</span>
+                                                    <span id="rzp-button-text">{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Authorize New Bank / Card (₹' . number_format($payable_amount, 2) . ')' : (!empty($is_one_time) ? 'Pay Now ₹' . number_format($payable_amount, 2) : 'Pay & Setup AutoPay (₹' . number_format($payable_amount, 2) . ')') }}</span>
                                                 </button>
                                                 
                                                 <a href="{{ route('admin.subscriptions.index') }}" class="btn btn-secondary btn-lg ms-2" style="padding: 14px 24px; border-radius: 50px;">
                                                     <i class="fa fa-times me-1"></i> Cancel
                                                 </a>
                                             </div>
+
+                                            @if(!empty($is_one_time))
+                                            <div class="alert alert-success mt-3" style="border-radius: 10px;">
+                                                <i class="fa fa-check-circle me-1"></i> 
+                                                <span>This is a <strong>one-time 365-day payment</strong>. <strong>AutoPay is OFF</strong> — no automatic recurring debits will happen.</span>
+                                            </div>
+                                            @endif
 
                                             <div class="alert alert-info mt-3" id="autoPopupNotice" style="border-radius: 10px;">
                                                 <i class="fa fa-info-circle me-1"></i> 
@@ -171,7 +188,10 @@
     (function() {
         // Safe configuration extraction
         var config = {
-            subscriptionId: @json($subscription_id ?? ''),
+            orderId: @json($order_id ?? session('razorpay_order_id') ?? ''),
+            subscriptionId: @json($subscription_id ?? session('razorpay_subscription_id') ?? ''),
+            isOneTime: @json(!empty($is_one_time) || session('is_one_time', false)),
+            payableAmountPaise: @json(max((int)round(($payable_amount ?? 0) * 100), 100)),
             planId: @json($plan->id ?? ''),
             userId: @json($user->id ?? ''),
             csrfToken: @json(csrf_token()),
@@ -192,7 +212,9 @@
         };
 
         console.log('Payment Config Initialized:', {
+            orderId: config.orderId,
             subscriptionId: config.subscriptionId,
+            isOneTime: config.isOneTime,
             planId: config.planId,
             userId: config.userId,
             hasKey: !!config.razorpayKey
@@ -239,9 +261,16 @@
         function launchRazorpayCheckout(isUserClick) {
             if (isSubmittingPayment) return;
 
-            if (!config.subscriptionId || !config.razorpayKey) {
-                showError('Payment configuration error (Missing key or subscription ID). Please contact support.');
-                return;
+            if (config.isOneTime) {
+                if (!config.orderId || !config.razorpayKey) {
+                    showError('Payment configuration error (Missing key or Order ID). Please contact support.');
+                    return;
+                }
+            } else {
+                if (!config.subscriptionId || !config.razorpayKey) {
+                    showError('Payment configuration error (Missing key or subscription ID). Please contact support.');
+                    return;
+                }
             }
 
             var btn = $('#rzp-button');
@@ -256,9 +285,10 @@
 
                 var options = {
                     "key": config.razorpayKey,
-                    "subscription_id": config.subscriptionId,
                     "name": config.appName,
-                    "description": config.isPaymentMethodUpdate ? ("Update AutoPay Bank for " + config.planName) : ("Subscription for " + config.planName),
+                    "description": config.isOneTime 
+                        ? ("Subscription for " + config.planName + " (365 Days - AutoPay OFF)")
+                        : (config.isPaymentMethodUpdate ? ("Update AutoPay Bank for " + config.planName) : ("Subscription for " + config.planName)),
                     "prefill": {
                         "name": config.customerName,
                         "email": config.customerEmail,
@@ -275,10 +305,12 @@
                         var formData = new FormData();
                         formData.append('_token', config.csrfToken);
                         formData.append('razorpay_payment_id', response.razorpay_payment_id || '');
-                        formData.append('razorpay_subscription_id', config.subscriptionId);
+                        formData.append('razorpay_order_id', response.razorpay_order_id || config.orderId || '');
+                        formData.append('razorpay_subscription_id', config.subscriptionId || '');
                         formData.append('razorpay_signature', response.razorpay_signature || '');
                         formData.append('plan_id', config.planId);
                         formData.append('user_id', config.userId);
+                        formData.append('is_one_time', config.isOneTime ? '1' : '0');
 
                         if (config.existingSubscriptionId) {
                             formData.append('existing_subscription_id', config.existingSubscriptionId);
@@ -339,9 +371,18 @@
                     },
                     "notes": {
                         "plan_id": config.planId,
-                        "user_id": config.userId
+                        "user_id": config.userId,
+                        "is_one_time": config.isOneTime ? "1" : "0"
                     }
                 };
+
+                if (config.isOneTime) {
+                    options["order_id"] = config.orderId;
+                    options["amount"] = config.payableAmountPaise;
+                    options["currency"] = "INR";
+                } else {
+                    options["subscription_id"] = config.subscriptionId;
+                }
 
                 try {
                     activeRzpInstance = new Razorpay(options);

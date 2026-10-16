@@ -608,4 +608,53 @@ class RapidBillTest extends TestCase
         ]);
         $this->assertStringContainsString('cannot exceed the Grand Total', $response->json('message'));
     }
+
+    public function test_rapid_bill_fetches_dish_discount_percentage_automatically()
+    {
+        $data = $this->setupRestaurantAndUser();
+
+        // Update dish1 to have 15% discount
+        $data['dish1']->update([
+            'discount_percentage' => 15,
+        ]);
+
+        // 1. Verify rapid bill page renders data-discount="15" and 15% OFF
+        $response = $this->actingAs($data['user'])->get(route('rapid.bill'));
+        $response->assertStatus(200);
+        $response->assertSee('data-discount="15"', false);
+        $response->assertSee('15% OFF');
+
+        // 2. Verify model accessor $dish->discount returns 15
+        $this->assertEquals(15, $data['dish1']->discount);
+
+        // 3. Verify storing rapid bill without passing discount_percentage automatically applies the 15% dish discount
+        $payload = [
+            'customer_name' => 'Discount Tester',
+            'order_type' => 'takeaway',
+            'cash_amount' => 107.10, // 120 - 15% (18) = 102 taxable + 5% gst (5.10) = 107.10 -> rounded 107
+            'items' => [
+                [
+                    'dish_id' => $data['dish1']->id,
+                    'quantity' => 1,
+                    'price' => 120,
+                ]
+            ]
+        ];
+
+        // Fetch exact rounded total
+        $calcTaxable = 120 * 0.85; // 102
+        $calcGst = $calcTaxable * 0.05; // 5.10
+        $exactTotal = round($calcTaxable + $calcGst); // 107
+        $payload['cash_amount'] = $exactTotal;
+
+        $storeResponse = $this->actingAs($data['user'])
+            ->postJson(route('rapid.bill.store'), $payload);
+
+        $storeResponse->assertStatus(200);
+
+        $createdOrder = OrderManage::latest('id')->first();
+        $item = $createdOrder->orderItems()->first();
+        $this->assertEquals(15, floatval($item->item_discount_percentage));
+        $this->assertEquals(102, floatval($item->discounted_price));
+    }
 }

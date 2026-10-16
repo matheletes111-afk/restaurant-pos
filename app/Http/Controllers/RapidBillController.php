@@ -146,13 +146,21 @@ class RapidBillController extends Controller
                 }
             }
 
-            // Fetch dish name if missing
+            // Fetch dish details if dishId is provided
             $dishName = $item['name'] ?? null;
-            if (!$dishName && $dishId) {
+            $dishObj = null;
+            if ($dishId && is_numeric($dishId)) {
                 $dishObj = SubCategory::find($dishId);
-                $dishName = $dishObj->name ?? 'Dish Item';
-                if ($origPrice <= 0 && $dishObj) {
-                    $origPrice = floatval($dishObj->price ?? 0);
+                if ($dishObj) {
+                    if (!$dishName) {
+                        $dishName = $dishObj->name;
+                    }
+                    if ($origPrice <= 0) {
+                        $origPrice = floatval($dishObj->price ?? 0);
+                    }
+                    if ($itemDiscountPercent <= 0 && !isset($item['discount_percentage']) && !isset($item['item_discount'])) {
+                        $itemDiscountPercent = floatval($dishObj->discount_percentage ?? 0);
+                    }
                 }
             }
             if (!$dishName) {

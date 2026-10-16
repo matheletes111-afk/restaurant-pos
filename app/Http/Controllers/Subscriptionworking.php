@@ -600,7 +600,7 @@ private function calculateProrationForRefund($subscription, $oldPlan)
             case 'monthly': return 24;       // 2 years
             case 'quarterly': return 8;       // 2 years
             case 'half-yearly': return 4;     // 2 years
-            default: return 1;                // 1 year
+            default: return 5;                // 5 years (prevents UPI AutoPay invalid end date error)
         }
     }
 

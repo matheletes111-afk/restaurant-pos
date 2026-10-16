@@ -225,6 +225,20 @@ class CheckMenuPermission
             return false;
         }
         foreach ($needles as $needle) {
+            if ($needle === 'add') {
+                // Match 'add' as an isolated token or path/route segment (not 'addon' or 'address')
+                if (preg_match('/(^|[^a-z0-9])add([^a-z0-9]|$)/i', $haystack)) {
+                    return true;
+                }
+                continue;
+            }
+            if ($needle === 'edit') {
+                // Match 'edit' as an isolated token or path/route segment (not 'credit' or 'editor')
+                if (preg_match('/(^|[^a-z0-9])edit([^a-z0-9]|$)/i', $haystack)) {
+                    return true;
+                }
+                continue;
+            }
             if (str_contains($haystack, $needle)) {
                 return true;
             }

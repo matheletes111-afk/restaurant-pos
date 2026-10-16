@@ -23,4 +23,10 @@ class SubCategory extends Model
                     ->where('dish_addons.status', '!=', 'D')
                     ->withTimestamps();
     }
+
+    // Accessor for discount attribute
+    public function getDiscountAttribute()
+    {
+        return $this->attributes['discount_percentage'] ?? 0;
+    }
 }
