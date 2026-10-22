@@ -29,9 +29,11 @@ class PurchaseController extends Controller
             }
 
             // Get active subscription using restaurant_id
+            $subRestId = method_exists(auth()->user(), 'getSubscriptionRestaurantId') ? auth()->user()->getSubscriptionRestaurantId() : auth()->user()->restaurant_id;
             $active = DB::table('subscriptions')
-                ->where('user_id', auth()->user()->restaurant_id)
+                ->where('user_id', $subRestId)
                 ->whereIn('status', ['active', 'completed'])
+                ->latest('id')
                 ->first();
 
             // If no active subscription found

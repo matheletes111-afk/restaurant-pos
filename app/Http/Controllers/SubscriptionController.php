@@ -37,7 +37,9 @@ class SubscriptionController extends Controller
         // Check if user already has this plan active
         $existingSubscription = Subscription::where('user_id', $subRestaurantId)
             ->where('plan_id', $planId)
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'completed'])
+            ->whereDate('end_date', '>=', now())
+            ->latest('id')
             ->first();
         
         if ($existingSubscription) {
@@ -58,7 +60,9 @@ class SubscriptionController extends Controller
         // Check if user already has this plan active
         $existingSubscription = Subscription::where('user_id', $subRestaurantId)
             ->where('plan_id', $planId)
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'completed'])
+            ->whereDate('end_date', '>=', now())
+            ->latest('id')
             ->first();
         
         if ($existingSubscription) {
@@ -169,8 +173,8 @@ class SubscriptionController extends Controller
             $existingSubscription = Subscription::where('user_id', $subRestaurantId)
                 ->whereDate('start_date', '<=', now())
                 ->whereDate('end_date', '>=', now())
-                ->where('status', 'active')
-                ->latest()
+                ->whereIn('status', ['active', 'completed'])
+                ->latest('id')
                 ->first();
 
             // 3. Determine if AutoPay is OFF (for 365 days / yearly / 1-cycle plan)
@@ -696,8 +700,11 @@ class SubscriptionController extends Controller
                 $existingSubId = session('existing_subscription_id') ?? $request->existing_subscription_id;
                 if ($existingSubId) {
                     $existingSub = Subscription::find($existingSubId);
-                    if ($existingSub && $existingSub->razorpay_subscription_id) {
-                        $this->cancelOldSubscription($existingSub);
+                    if ($existingSub) {
+                        if ($existingSub->razorpay_subscription_id) {
+                            $this->cancelOldSubscription($existingSub);
+                        }
+                        $existingSub->update(['status' => 'upgraded', 'auto_renew' => 0]);
                     }
                 }
 
@@ -772,12 +779,14 @@ class SubscriptionController extends Controller
             ]);
 
             // Return JSON response for AJAX or redirect
+            $razorpayStatus = $razorpaySubscription ? $razorpaySubscription->status : ($status ?? 'active');
+
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
                     'message' => $successMessage,
                     'subscription' => $subscription,
-                    'razorpay_status' => $razorpaySubscription->status,
+                    'razorpay_status' => $razorpayStatus,
                     'redirect' => route('admin.subscriptions.index')
                 ]);
             }
@@ -785,7 +794,7 @@ class SubscriptionController extends Controller
             return redirect()->route('admin.subscriptions.index')
                 ->with('success', $successMessage)
                 ->with('subscription', $subscription)
-                ->with('razorpay_status', $razorpaySubscription->status);
+                ->with('razorpay_status', $razorpayStatus);
 
         } catch (\Exception $e) {
             DB::rollBack();

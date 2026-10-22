@@ -163,6 +163,7 @@ class User extends Authenticatable implements JWTSubject
         $activeSub = \App\Models\Subscription::where('user_id', $subRestId)
             ->whereIn('status', ['active', 'completed'])
             ->with('plan')
+            ->latest('id')
             ->first();
 
         if ($activeSub && $activeSub->plan) {
@@ -194,6 +195,7 @@ class User extends Authenticatable implements JWTSubject
                                 ->whereDate('end_date', '>=', now());
                           });
                 })
+                ->latest('id')
                 ->first();
 
             if (!$active) {

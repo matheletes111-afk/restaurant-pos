@@ -318,6 +318,7 @@
                               ->whereDate('end_date', '>=', now());
                         });
               })
+              ->latest('id')
               ->first();
           }
           $plan_details = $active ? DB::table('plans')->where('id', $active->plan_id)->first() : null;

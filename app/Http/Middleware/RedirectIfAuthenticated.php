@@ -34,9 +34,10 @@ class RedirectIfAuthenticated
                         return redirect()->route('admin.dashboard');
                     }
 
-                    if (!empty($user->restaurant_id)) {
+                    $subRestId = method_exists($user, 'getSubscriptionRestaurantId') ? $user->getSubscriptionRestaurantId() : $user->restaurant_id;
+                    if (!empty($subRestId)) {
                         $active = DB::table('subscriptions')
-                            ->where('user_id', $user->restaurant_id)
+                            ->where('user_id', $subRestId)
                             ->where(function ($query) {
                                 $query->where('status', 'active')
                                       ->orWhere(function ($q) {
@@ -44,6 +45,7 @@ class RedirectIfAuthenticated
                                             ->whereDate('end_date', '>=', now());
                                       });
                             })
+                            ->latest('id')
                             ->first();
 
                         if (!$active) {

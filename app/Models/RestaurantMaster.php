@@ -125,7 +125,8 @@ class RestaurantMaster extends Model
     public function active_subscription()
     {
         return $this->hasOne(Subscription::class, 'user_id')
-            ->whereIn('status', ['active', 'completed']);
+            ->whereIn('status', ['active', 'completed'])
+            ->latestOfMany();
     }
 
     public function latest_subscription()

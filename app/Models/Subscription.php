@@ -48,6 +48,6 @@ class Subscription extends Model
 
     public function scopeActive($query)
     {
-        return $query->whereIn('status', ['active', 'completed']);
+        return $query->whereIn('status', ['active', 'completed'])->orderBy('id', 'desc');
     }
 }
