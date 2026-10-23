@@ -362,18 +362,36 @@
         </li>
         @endif
 
+        {{-- Table Management Dropdown --}}
         @if(auth()->user()->hasPermission('table_master'))
-        <li class="pc-item {{ $disabledClass }}">
-          <a href="{{route('table.category.manage')}}" class="pc-link @if(Request::is('*table-category*')) active_class @endif">
-            <span class="pc-micon"><i class="fas fa-layer-group"></i></span>
-            <span class="pc-mtext">Table Category Master</span>
+        @php
+          $isTableActive = Request::is('*table-category*') || Request::is('*table-manage*');
+        @endphp
+        <li class="pc-item pc-hasmenu {{ $isTableActive ? 'pc-trigger active' : '' }} {{ $disabledClass }}">
+          <a href="#!" class="pc-link {{ $isTableActive ? 'active-parent' : '' }}">
+            <span class="pc-micon">
+              <i class="fas fa-chair"></i>
+            </span>
+            <span class="pc-mtext">Table Management</span>
+            <span class="pc-arrow">
+              <i data-feather="chevron-right"></i>
+            </span>
           </a>
-        </li>
-        <li class="pc-item {{ $disabledClass }}">
-          <a href="{{route('table.manage')}}" class="pc-link @if(Request::is('*table-manage*') && !Request::is('*table-category*')) active_class @endif">
-            <span class="pc-micon"><i class="fas fa-chair"></i></span>
-            <span class="pc-mtext">Table Master</span>
-          </a>
+
+          <ul class="pc-submenu" style="{{ $isTableActive ? 'display: block;' : '' }}">
+            <li class="pc-item">
+              <a href="{{ route('table.category.manage') }}" class="pc-link @if(Request::is('*table-category*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-layer-group"></i></span>
+                <span class="pc-mtext">Table Category Master</span>
+              </a>
+            </li>
+            <li class="pc-item">
+              <a href="{{ route('table.manage') }}" class="pc-link @if(Request::is('*table-manage*') && !Request::is('*table-category*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-chair"></i></span>
+                <span class="pc-mtext">Table Master</span>
+              </a>
+            </li>
+          </ul>
         </li>
         @endif
 

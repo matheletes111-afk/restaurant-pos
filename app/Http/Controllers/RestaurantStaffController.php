@@ -161,8 +161,8 @@ class RestaurantStaffController extends Controller
             ],
             [
                 'key' => 'table_master',
-                'title' => 'Table Master',
-                'description' => 'Manage restaurant table layouts, details, and QR codes.',
+                'title' => 'Table Management',
+                'description' => 'Manage restaurant floor tables, table categories, dining zones, and QR standees.',
                 'icon' => 'fas fa-chair'
             ],
             [
