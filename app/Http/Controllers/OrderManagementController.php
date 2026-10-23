@@ -27,9 +27,12 @@ class OrderManagementController extends Controller
     {
         $data['data'] = TableManage::where('restaurant_id', auth()->user()->restaurant_id)
             ->where('status', 'A')
-            ->with(['activeOrders' => function($q) {
-                $q->orderBy('created_at', 'desc');
-            }])
+            ->with([
+                'category',
+                'activeOrders' => function($q) {
+                    $q->orderBy('created_at', 'desc');
+                }
+            ])
             ->get();
         return view('order.index', $data);
     }

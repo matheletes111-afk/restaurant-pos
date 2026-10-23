@@ -429,6 +429,7 @@
                                                 <li><i class="fas fa-utensils"></i> {{ $plan->total_number_of_dishes == 0 ? 'Unlimited' : number_format($plan->total_number_of_dishes) }} Dishes</li>
                                                 <li><i class="fas fa-table"></i> {{ $plan->total_number_of_table == 0 ? 'Unlimited' : number_format($plan->total_number_of_table) }} Tables</li>
                                                 <li><i class="fas fa-boxes"></i> Inventory {{ $plan->inventory_checkbox == 'Y' ? 'Enabled' : 'Disabled' }}</li>
+                                                <li><i class="fas fa-chart-line"></i> Report Management {{ ($plan->report_management_checkbox ?? 'Y') == 'Y' ? 'Enabled' : 'Disabled' }}</li>
                                             </ul>
 
                                             @if($isActive)

@@ -221,6 +221,7 @@
                       <th>Billing Cycle</th>
                       <th>Duration</th>
                       <th>Multi-Outlet</th>
+                      <th>Report Mgmt</th>
                       <th>Default Plan</th>
                       <th>Active Plan (Toggle)</th>
                       <th>Razorpay ID</th>
@@ -281,6 +282,18 @@
                           </span>
                         @else
                           <span class="badge bg-light text-muted border" style="font-size: 0.75rem;">Single</span>
+                        @endif
+                      </td>
+
+                      <td>
+                        @if(($plan->report_management_checkbox ?? 'Y') == 'Y')
+                          <span class="badge bg-success text-white" style="font-size: 0.75rem; border-radius: 12px; padding: 4px 8px;">
+                            <i class="fas fa-check me-1"></i> Enabled
+                          </span>
+                        @else
+                          <span class="badge bg-danger text-white" style="font-size: 0.75rem; border-radius: 12px; padding: 4px 8px;">
+                            <i class="fas fa-times me-1"></i> Disabled
+                          </span>
                         @endif
                       </td>
 

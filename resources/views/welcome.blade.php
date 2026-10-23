@@ -740,7 +740,11 @@
                                 <li><i class="ph-fill ph-check-circle"></i> Qr Code Ordering</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Customer Support</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Staff Management</li>
-                                <li><i class="ph-fill ph-check-circle"></i> Reports</li>
+                                @if(($plan->report_management_checkbox ?? 'Y') == 'Y')
+                                    <li><i class="ph-fill ph-check-circle" style="color: #2e7d32;"></i> Report Management</li>
+                                @else
+                                    <li><i class="ph-fill ph-x-circle" style="color: #d32f2f;"></i> Report Management</li>
+                                @endif
 
                                 @if($plan->inventory_checkbox == 'Y')
                                     <li><i class="ph-fill ph-check-circle" style="color: #2e7d32;"></i> Manage Product</li>

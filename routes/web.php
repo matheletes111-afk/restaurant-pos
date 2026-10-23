@@ -220,6 +220,13 @@ Route::get('/restaurant/table/{table_id}/{restaurant_id}', function($table_id,$r
     return "Table ID: $table_id <br> Restaurant ID: $restaurant_id";
 });
 
+// Table Category Master (Modal-based CRUD)
+Route::get('table-category-manage', [App\Http\Controllers\TableCategoryController::class, 'index'])->name('table.category.manage');
+Route::post('table-category-manage/insert', [App\Http\Controllers\TableCategoryController::class, 'store'])->name('table.category.insert');
+Route::post('table-category-manage/update', [App\Http\Controllers\TableCategoryController::class, 'update'])->name('table.category.update');
+Route::get('table-category-manage/status/{id}', [App\Http\Controllers\TableCategoryController::class, 'status'])->name('table.category.status');
+Route::get('table-category-manage/delete/{id}', [App\Http\Controllers\TableCategoryController::class, 'delete'])->name('table.category.delete');
+
 
 
     // Restaurant Analytics Dashboard

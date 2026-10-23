@@ -263,6 +263,7 @@ public function store(Request $request)
         $plan->total_number_of_table = $request->total_number_of_table ?? 0;
         $plan->inventory_checkbox = $request->inventory_checkbox ?? 'N';
         $plan->multi_outlet_checkbox = $request->multi_outlet_checkbox ?? 'N';
+        $plan->report_management_checkbox = $request->report_management_checkbox ?? 'Y';
         $plan->total_number_of_outlets = ($request->multi_outlet_checkbox === 'Y') ? (int) ($request->total_number_of_outlets ?? 1) : 1;
         $plan->is_default_plan = $request->is_default_plan ?? 'N';
         $plan->is_delete = 'N';
@@ -298,6 +299,7 @@ public function store(Request $request)
         $history->total_number_of_table = $request->total_number_of_table ?? 0;
         $history->inventory_checkbox = $request->inventory_checkbox ?? 'N';
         $history->multi_outlet_checkbox = $request->multi_outlet_checkbox ?? 'N';
+        $history->report_management_checkbox = $request->report_management_checkbox ?? 'Y';
         $history->total_number_of_outlets = ($request->multi_outlet_checkbox === 'Y') ? (int) ($request->total_number_of_outlets ?? 1) : 1;
         $history->save();
 
@@ -471,6 +473,7 @@ public function update(Request $request, $id)
         $newUpdatedPlan->total_number_of_table = $request->total_number_of_table;
         $newUpdatedPlan->inventory_checkbox = $request->inventory_checkbox ?? 'N';
         $newUpdatedPlan->multi_outlet_checkbox = $request->multi_outlet_checkbox ?? 'N';
+        $newUpdatedPlan->report_management_checkbox = $request->report_management_checkbox ?? 'Y';
         $newUpdatedPlan->total_number_of_outlets = ($request->multi_outlet_checkbox === 'Y') ? (int) ($request->total_number_of_outlets ?? 1) : 1;
         $newUpdatedPlan->is_default_plan = $request->is_default_plan ?? 'N';
         $newUpdatedPlan->sort_order = $plan->sort_order ?? 0;
@@ -510,6 +513,7 @@ public function update(Request $request, $id)
         $insHis->total_number_of_table = $request->total_number_of_table;
         $insHis->inventory_checkbox = $request->inventory_checkbox;
         $insHis->multi_outlet_checkbox = $request->multi_outlet_checkbox ?? 'N';
+        $insHis->report_management_checkbox = $request->report_management_checkbox ?? 'Y';
         $insHis->total_number_of_outlets = ($request->multi_outlet_checkbox === 'Y') ? (int) ($request->total_number_of_outlets ?? 1) : 1;
         $insHis->save();
 

@@ -556,7 +556,11 @@
                                         <li><i class="fas fa-check-circle text-success"></i> Qr Code Ordering</li>
                                         <li><i class="fas fa-check-circle text-success"></i> Customer Support</li>
                                         <li><i class="fas fa-check-circle text-success"></i> Staff Management</li>
-                                        <li><i class="fas fa-check-circle text-success"></i> Reports</li>
+                                        @if(($plan->report_management_checkbox ?? 'Y') == 'Y')
+                                            <li><i class="fas fa-check-circle text-success"></i> Report Management</li>
+                                        @else
+                                            <li><i class="fas fa-times-circle text-danger"></i> Report Management</li>
+                                        @endif
 
                                         @if($plan->inventory_checkbox == 'Y')
                                             <li><i class="fas fa-check-circle text-success"></i> Manage Product</li>

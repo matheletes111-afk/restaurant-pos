@@ -364,7 +364,13 @@
 
         @if(auth()->user()->hasPermission('table_master'))
         <li class="pc-item {{ $disabledClass }}">
-          <a href="{{route('table.manage')}}" class="pc-link @if(Request::is('*table-manage*') || Request::is('*table*')) active_class @endif">
+          <a href="{{route('table.category.manage')}}" class="pc-link @if(Request::is('*table-category*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-layer-group"></i></span>
+            <span class="pc-mtext">Table Category Master</span>
+          </a>
+        </li>
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{route('table.manage')}}" class="pc-link @if(Request::is('*table-manage*') && !Request::is('*table-category*')) active_class @endif">
             <span class="pc-micon"><i class="fas fa-chair"></i></span>
             <span class="pc-mtext">Table Master</span>
           </a>
@@ -535,7 +541,10 @@
         @endif
 
         {{-- Master Report Standalone Menu Item --}}
-        @if(auth()->user()->hasPermission('master_report'))
+        @php
+          $isReportPlanEnabled = !isset($plan_details->report_management_checkbox) || $plan_details->report_management_checkbox != 'N' || empty($active);
+        @endphp
+        @if(auth()->user()->hasPermission('master_report') && $isReportPlanEnabled)
         @php
           $isMasterReportActive = Request::is('*admin/reports/master*') || Request::is('*master-report*');
         @endphp
@@ -551,7 +560,7 @@
         @endif
 
         {{-- Reports Dropdown --}}
-        @if(auth()->user()->hasPermission('reports') || auth()->user()->hasPermission('master_report'))
+        @if((auth()->user()->hasPermission('reports') || auth()->user()->hasPermission('master_report')) && $isReportPlanEnabled)
         @php
           $isReportsActive = Request::is('*report*') || Request::is('*item-gst-summary*') || Request::is('*inventory/live*') || Request::is('*admin/reports/master*');
         @endphp

@@ -104,9 +104,18 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
         ],
 
-        'errorlog' => [
-            'driver' => 'errorlog',
-            'level' => env('LOG_LEVEL', 'debug'),
+        'sql_warning' => [
+            'driver' => env('LOG_SQL_DRIVER', 'daily'),
+            'path' => storage_path('logs/sql-warning.log'),
+            'level' => 'warning',
+            'days' => (int) env('LOG_SQL_WARNING_DAYS', 14),
+        ],
+
+        'sql_error' => [
+            'driver' => env('LOG_SQL_DRIVER', 'daily'),
+            'path' => storage_path('logs/sql-error.log'),
+            'level' => 'error',
+            'days' => (int) env('LOG_SQL_ERROR_DAYS', 30),
         ],
 
         'null' => [

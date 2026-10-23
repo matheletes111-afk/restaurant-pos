@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\TableManage;
+use App\Models\TableCategory;
 use App\Models\RestaurantMaster;
 use App\Models\Subscription;
 use App\Models\Plan;
@@ -14,10 +15,16 @@ class TableManageController extends Controller
     public function index()
     {
         $activeRestId = auth()->user()->restaurant_id;
-        $data['tables'] = TableManage::where('status', '!=', 'D')
+        $data['tables'] = TableManage::with('category')
+            ->where('status', '!=', 'D')
             ->where('restaurant_id', $activeRestId)
             ->get();
         
+        $data['categories'] = TableCategory::where('restaurant_id', $activeRestId)
+            ->where('status', 'A')
+            ->orderBy('name', 'ASC')
+            ->get();
+
         $data['restaurant'] = RestaurantMaster::find($activeRestId);
         $subRestaurantId = auth()->user()->getSubscriptionRestaurantId() ?? $activeRestId;
         $check_plan = Subscription::where('user_id', $subRestaurantId)->active()->first();
@@ -30,12 +37,14 @@ class TableManageController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'table_category_id' => 'nullable',
             'description' => 'nullable|string|max:500',
         ]);
 
         // SAVE TABLE DETAILS
         $table = new TableManage();
         $table->name = $request->name;
+        $table->table_category_id = $request->filled('table_category_id') ? $request->table_category_id : null;
         $table->description = $request->description;
         $table->user_id = auth()->user()->id;
         $table->restaurant_id = auth()->user()->restaurant_id;
@@ -55,6 +64,7 @@ class TableManageController extends Controller
         $request->validate([
             'id' => 'required',
             'name' => 'required|string|max:255',
+            'table_category_id' => 'nullable',
             'description' => 'nullable|string|max:500',
         ]);
 
@@ -63,6 +73,7 @@ class TableManageController extends Controller
             ->firstOrFail();
 
         $table->name = $request->name;
+        $table->table_category_id = $request->filled('table_category_id') ? $request->table_category_id : null;
         $table->description = $request->description;
         $table->save();
 

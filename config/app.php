@@ -196,6 +196,7 @@ return [
         App\Providers\RouteServiceProvider::class,
         Barryvdh\DomPDF\ServiceProvider::class,
         SimpleSoftwareIO\QrCode\QrCodeServiceProvider::class,
+        App\Providers\SqlLoggingServiceProvider::class,
     ],
 
     /*

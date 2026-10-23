@@ -68,6 +68,10 @@
           </div>
         @endif
 
+        <a href="{{ route('table.category.manage') }}" class="btn-header-secondary" title="Manage Table Categories & Zones">
+          <i class="fa-solid fa-layer-group"></i> Table Categories
+        </a>
+
         @if($totalTables > 0 && auth()->user()->hasPermission('table_master', 'edit'))
           <a href="{{ route('table.manage.regenerate.all') }}" 
              onclick="return confirm('Regenerate QR standees for ALL active tables with the latest logo and restaurant branding?')"
@@ -155,6 +159,7 @@
               <tr>
                 <th style="width: 50px;">#</th>
                 <th>Table &amp; Seating Info</th>
+                <th>Table Category</th>
                 <th>Description</th>
                 <th>Branded QR Standee</th>
                 <th style="width: 120px;">Status</th>
@@ -175,6 +180,17 @@
                       <span class="table-id-tag">ID: #{{ $table->id }}</span>
                     </div>
                   </div>
+                </td>
+                <td>
+                  @if($table->category && $table->category->status !== 'D')
+                    <span class="badge" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; border: 1px solid rgba(14, 165, 233, 0.25); font-weight: 700; padding: 6px 12px; border-radius: 8px; font-size: 0.82rem;">
+                      <i class="fa-solid fa-layer-group me-1"></i> {{ $table->category->name }}
+                    </span>
+                  @else
+                    <span class="badge" style="background: rgba(100, 116, 139, 0.12); color: #64748b; border: 1px solid rgba(100, 116, 139, 0.25); font-weight: 700; padding: 6px 12px; border-radius: 8px; font-size: 0.82rem;">
+                      <i class="fa-solid fa-layer-group me-1"></i> General Category
+                    </span>
+                  @endif
                 </td>
                 <td>
                   @if(!empty($table->description))
@@ -237,12 +253,17 @@
                          onclick="return confirm('Regenerate QR standee for {{ addslashes($table->name) }} with latest logo &amp; details?')"
                          class="table-action-btn regen-btn"
                          title="Regenerate Standee QR">
-                        <i class="fa-solid fa-arrows-rotate"></i>
+                         <i class="fa-solid fa-arrows-rotate"></i>
                       </a>
                       <button type="button" 
                               class="table-action-btn edit-btn editBtn"
+                              data-bs-toggle="modal"
+                              data-bs-target="#editTableModal"
+                              data-toggle="modal"
+                              data-target="#editTableModal"
                               data-id="{{ $table->id }}"
                               data-name="{{ $table->name }}"
+                              data-category-id="{{ $table->table_category_id }}"
                               data-description="{{ $table->description }}"
                               title="Edit Table Info">
                         <i class="fa-solid fa-pen-to-square"></i>
@@ -314,6 +335,21 @@
               <small class="text-muted">This label will be printed directly at the bottom of the QR standee.</small>
             </div>
 
+            <div class="col-12 mb-3">
+              <label class="form-pos-label">
+                Table Category <span class="text-muted fw-normal">(Optional)</span>
+              </label>
+              <select name="table_category_id" class="form-pos-control">
+                <option value="">General Category (Default)</option>
+                @if(isset($categories))
+                  @foreach($categories as $cat)
+                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                  @endforeach
+                @endif
+              </select>
+              <small class="text-muted">If no category is selected, the table will show as <strong>General Category</strong> by default.</small>
+            </div>
+
             <div class="col-12">
               <label class="form-pos-label">
                 Seating Capacity / Location Notes <span class="text-muted fw-normal">(Optional)</span>
@@ -365,6 +401,21 @@
                 Table Name / Number <span class="text-danger">*</span>
               </label>
               <input type="text" name="name" id="edit_name" class="form-pos-control" required placeholder="e.g. Table 01">
+            </div>
+
+            <div class="col-12 mb-3">
+              <label class="form-pos-label">
+                Table Category <span class="text-muted fw-normal">(Optional)</span>
+              </label>
+              <select name="table_category_id" id="edit_table_category_id" class="form-pos-control">
+                <option value="">General Category (Default)</option>
+                @if(isset($categories))
+                  @foreach($categories as $cat)
+                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                  @endforeach
+                @endif
+              </select>
+              <small class="text-muted">If no category is selected, the table will show as <strong>General Category</strong> by default.</small>
             </div>
 
             <div class="col-12">
@@ -443,13 +494,20 @@ $(document).ready(function() {
   $(document).on('click', '.editBtn', function() {
     var id = $(this).data('id');
     var name = $(this).data('name');
+    var categoryId = $(this).data('category-id');
     var description = $(this).data('description');
 
     $('#edit_id').val(id);
     $('#edit_name').val(name);
-    $('#edit_description').val(description);
+    $('#edit_table_category_id').val(categoryId || '');
+    $('#edit_description').val(description || '');
 
-    $('#editTableModal').modal('show');
+    var modalEl = document.getElementById('editTableModal');
+    if (window.bootstrap && bootstrap.Modal) {
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    } else if ($.fn.modal) {
+      $('#editTableModal').modal('show');
+    }
   });
 
   // Standee Full Preview Modal

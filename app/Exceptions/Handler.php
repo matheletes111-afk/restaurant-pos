@@ -43,8 +43,12 @@ class Handler extends ExceptionHandler
      */
     public function register()
     {
-        $this->reportable(function (Throwable $e) {
-            //
+        $this->reportable(function (\Illuminate\Database\QueryException $e) {
+            \App\Services\SqlLoggingService::logQueryException($e);
+        });
+
+        $this->reportable(function (\PDOException $e) {
+            \App\Services\SqlLoggingService::logPdoException($e);
         });
     }
 }

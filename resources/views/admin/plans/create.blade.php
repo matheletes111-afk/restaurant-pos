@@ -255,6 +255,17 @@
 
                   <div class="col-md-6">
                     <div class="form-group">
+                      <label for="report_management_checkbox">Report Management</label>
+                      <select class="form-control" id="report_management_checkbox" name="report_management_checkbox">
+                        <option value="Y" {{ old('report_management_checkbox', 'Y') == 'Y' ? 'selected' : '' }}>Enabled</option>
+                        <option value="N" {{ old('report_management_checkbox') == 'N' ? 'selected' : '' }}>Disabled</option>
+                      </select>
+                      <small class="text-muted">Allow this restaurant to access Order, GST & Master Reports</small>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="form-group">
                       <label for="multi_outlet_checkbox">Multi-Outlet Support</label>
                       <select class="form-control" id="multi_outlet_checkbox" name="multi_outlet_checkbox">
                         <option value="N" {{ old('multi_outlet_checkbox','N')=='N' ? 'selected' : '' }}>Disabled (Single Outlet Only)</option>

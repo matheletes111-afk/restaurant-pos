@@ -30,9 +30,9 @@ class CheckMenuPermission
         // Restrict access for restaurant level users without an active subscription
         if ($user->role === 'RES') {
             $subRestaurantId = method_exists($user, 'getSubscriptionRestaurantId') ? $user->getSubscriptionRestaurantId() : $user->restaurant_id;
-            $hasActiveSubscription = false;
+            $activeSub = null;
             if (!empty($subRestaurantId)) {
-                $hasActiveSubscription = \DB::table('subscriptions')
+                $activeSub = \DB::table('subscriptions')
                     ->where('user_id', $subRestaurantId)
                     ->where(function ($query) {
                         $query->where('status', 'active')
@@ -41,10 +41,11 @@ class CheckMenuPermission
                                     ->whereDate('end_date', '>=', now());
                               });
                     })
-                    ->exists();
+                    ->latest('id')
+                    ->first();
             }
 
-            if (!$hasActiveSubscription) {
+            if (!$activeSub) {
                 $allowedRoutes = [
                     'select.plan.page',
                     'admin.subscriptions.index',
@@ -82,6 +83,25 @@ class CheckMenuPermission
                 if (!$isAllowed) {
                     return redirect()->route('select.plan.page')
                         ->with('error', 'Please subscribe to a plan to access this feature.');
+                }
+            } else {
+                // If plan disables Report Management, block report routes
+                $plan = \DB::table('plans')->where('id', $activeSub->plan_id)->first();
+                if ($plan && isset($plan->report_management_checkbox) && $plan->report_management_checkbox === 'N') {
+                    $reportPatterns = [
+                        'admin/reports/master', 'reports.master', 'admin.reports.master', 'master-report',
+                        'report-top-analysis', 'order.report.top.analysis', 'report-order-analysis', 'order.report.analysis',
+                        'report-order-management', 'order.report.management', 'item-gst-summary', 'report.item.gst.summary',
+                        'order-report', 'order.report'
+                    ];
+                    $routeName = $request->route() ? $request->route()->getName() : '';
+                    $path = $request->path();
+                    foreach ($reportPatterns as $rp) {
+                        if (($routeName && (str_starts_with($routeName, $rp) || str_contains($routeName, $rp))) || str_contains($path, $rp)) {
+                            return redirect()->route('dashboard')
+                                ->with('error', 'Report Management is disabled in your current subscription plan.');
+                        }
+                    }
                 }
             }
         }
@@ -146,7 +166,7 @@ class CheckMenuPermission
             'menu_master' => ['manage-menu-category', 'manage.category'],
             'dish_addon_master' => ['dish-addons', 'addon.index', 'addon.store', 'addon.edit', 'addon.update', 'addon.destroy', 'addon.toggle.status', 'addon.template.download', 'addon.bulk.upload'],
             'menu_availability' => ['menu-availability', 'menu.availability'],
-            'table_master' => ['table-manage', 'table.manage'],
+            'table_master' => ['table-manage', 'table.manage', 'table-category-manage', 'table.category.manage', 'table.category'],
             'order_master' => ['order-management-dashboard', 'order.management.dashboard', 'order-create', 'order.create', 'order-edit', 'order.edit', 'order-save', 'order.save', 'order-update', 'order.update', 'order/payment', 'order.payment', 'order/print', 'order.print', 'order/receipt', 'order.receipt.pdf', 'order-item-delete', 'order.item.delete', 'add-payment', 'order.add.payment', 'delete-payment', 'order.delete.payment', 'get-payments', 'order.get.payments', 'invoice', 'order.invoice'],
             'rapid_bill' => ['rapid-bill', 'rapid.bill', 'rapid.bill.store', 'admin/rapid-bill'],
             'kitchen_order' => ['kitchen-panel', 'manage.kitchen-panel', 'update-kitchen-status', 'update.kitchen.status', 'kitchen/orders/refresh', 'kitchen.orders.refresh'],
