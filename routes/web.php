@@ -509,6 +509,22 @@ Route::get('admin/temp-order/reject/{id}', [App\Http\Controllers\TempOrderAdminC
     Route::post('report-order-management/send-otp', [App\Http\Controllers\ReportController::class, 'sendOrderDeleteOtp'])->name('order.report.management.send-otp');
     Route::post('report-order-management/verify-delete', [App\Http\Controllers\ReportController::class, 'verifyAndDeleteOrder'])->name('order.report.management.verify-delete');
     Route::get('item-gst-summary', [App\Http\Controllers\ReportController::class, 'itemGstSummary'])->name('report.item.gst.summary');
+
+    // Sales By Category Food Item Report
+    Route::get('report-sales-by-category', [App\Http\Controllers\ReportController::class, 'salesByCategoryReport'])->name('report.sales.by.category');
+    Route::get('report-sales-by-category/export', [App\Http\Controllers\ReportController::class, 'exportSalesByCategory'])->name('report.sales.by.category.export');
+
+    // Popular Item Report
+    Route::get('report-popular-items', [App\Http\Controllers\ReportController::class, 'popularItemsReport'])->name('report.popular.items');
+    Route::get('report-popular-items/export', [App\Http\Controllers\ReportController::class, 'exportPopularItems'])->name('report.popular.items.export');
+
+    // Payment Method Report
+    Route::get('report-payment-methods', [App\Http\Controllers\ReportController::class, 'paymentMethodsReport'])->name('report.payment.methods');
+    Route::get('report-payment-methods/export', [App\Http\Controllers\ReportController::class, 'exportPaymentMethods'])->name('report.payment.methods.export');
+
+    // New vs Return Customer Analysis Report
+    Route::get('report-customer-analysis', [App\Http\Controllers\ReportController::class, 'customerAnalysisReport'])->name('report.customer.analysis');
+    Route::get('report-customer-analysis/export', [App\Http\Controllers\ReportController::class, 'exportCustomerAnalysis'])->name('report.customer.analysis.export');
     // Expense Management Routes
     Route::prefix('expense')->group(function () {
         Route::get('/', [App\Http\Controllers\ExpenseController::class, 'index'])->name('expense.index');

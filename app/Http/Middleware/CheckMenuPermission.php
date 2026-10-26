@@ -92,7 +92,11 @@ class CheckMenuPermission
                         'admin/reports/master', 'reports.master', 'admin.reports.master', 'master-report',
                         'report-top-analysis', 'order.report.top.analysis', 'report-order-analysis', 'order.report.analysis',
                         'report-order-management', 'order.report.management', 'item-gst-summary', 'report.item.gst.summary',
-                        'order-report', 'order.report'
+                        'order-report', 'order.report',
+                        'report-sales-by-category', 'report.sales.by.category',
+                        'report-popular-items', 'report.popular.items',
+                        'report-payment-methods', 'report.payment.methods',
+                        'report-customer-analysis', 'report.customer.analysis'
                     ];
                     $routeName = $request->route() ? $request->route()->getName() : '';
                     $path = $request->path();
@@ -177,7 +181,15 @@ class CheckMenuPermission
             'cash_drawer' => ['cash-drawer', 'cash.drawer'],
             'expense_management' => ['expense', 'expense.index', 'expense.store', 'expense.update', 'expense.destroy', 'expense.show', 'expense.export'],
             'inventory_setting' => ['manage-units', 'manage.units', 'products/manage', 'products.manage', 'suppliers', 'suppliers.index', 'purchases', 'purchases.index', 'stock-outs', 'stock-outs.index', 'debit-notes', 'debit-notes.index', 'inventory/manage', 'inventory.manage', 'inventory/stock-report', 'inventory.stock-report', 'inventory.delete', 'products/store', 'products.store', 'products/update', 'products.update', 'products/delete', 'products.delete', 'products/import', 'products.import', 'products/export', 'products.export', 'products/download-sample', 'products.download-sample'],
-            'reports' => ['report-top-analysis', 'order.report.top.analysis', 'report-order-analysis', 'order.report.analysis', 'report-order-management', 'order.report.management', 'item-gst-summary', 'report.item.gst.summary', 'inventory/live', 'inventory.live', 'order-report', 'order.report']
+            'reports' => [
+                'report-top-analysis', 'order.report.top.analysis', 'report-order-analysis', 'order.report.analysis',
+                'report-order-management', 'order.report.management', 'item-gst-summary', 'report.item.gst.summary',
+                'inventory/live', 'inventory.live', 'order-report', 'order.report',
+                'report-sales-by-category', 'report.sales.by.category',
+                'report-popular-items', 'report.popular.items',
+                'report-payment-methods', 'report.payment.methods',
+                'report-customer-analysis', 'report.customer.analysis'
+            ]
         ];
 
         // Check if current route/path matches any of the mapped permissions

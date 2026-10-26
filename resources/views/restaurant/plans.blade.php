@@ -556,6 +556,7 @@
                                         <li><i class="fas fa-check-circle text-success"></i> Qr Code Ordering</li>
                                         <li><i class="fas fa-check-circle text-success"></i> Customer Support</li>
                                         <li><i class="fas fa-check-circle text-success"></i> Staff Management</li>
+                                        <li><i class="fas fa-check-circle text-success"></i> Cash Drawer Management</li>
                                         @if(($plan->report_management_checkbox ?? 'Y') == 'Y')
                                             <li><i class="fas fa-check-circle text-success"></i> Report Management</li>
                                         @else

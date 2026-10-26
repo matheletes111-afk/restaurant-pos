@@ -191,6 +191,10 @@
   }
 
   /* Custom Sleek Scrollbar */
+  .pc-sidebar .navbar-content {
+    max-height: calc(100vh - 70px) !important;
+    overflow-y: auto !important;
+  }
   .pc-sidebar .navbar-content::-webkit-scrollbar {
     width: 4px;
   }
@@ -628,6 +632,34 @@
               <a href="{{ route('order.report.analysis') }}" class="pc-link @if(Request::is('*report-order-analysis*')) active_class @endif">
                 <span class="pc-micon"><i class="ti ti-chart-line"></i></span>
                 <span class="pc-mtext">Order Analysis</span>
+              </a>
+            </li>
+
+            <li class="pc-item">
+              <a href="{{ route('report.sales.by.category') }}" class="pc-link @if(Request::is('*report-sales-by-category*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-layer-group"></i></span>
+                <span class="pc-mtext">Sales By Category</span>
+              </a>
+            </li>
+
+            <li class="pc-item">
+              <a href="{{ route('report.popular.items') }}" class="pc-link @if(Request::is('*report-popular-items*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-fire text-danger"></i></span>
+                <span class="pc-mtext">Popular Items</span>
+              </a>
+            </li>
+
+            <li class="pc-item">
+              <a href="{{ route('report.payment.methods') }}" class="pc-link @if(Request::is('*report-payment-methods*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-credit-card"></i></span>
+                <span class="pc-mtext">Payment Methods</span>
+              </a>
+            </li>
+
+            <li class="pc-item">
+              <a href="{{ route('report.customer.analysis') }}" class="pc-link @if(Request::is('*report-customer-analysis*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-user-friends text-info"></i></span>
+                <span class="pc-mtext">New vs Return Cust.</span>
               </a>
             </li>
 
