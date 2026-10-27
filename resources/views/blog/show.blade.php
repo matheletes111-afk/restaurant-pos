@@ -4,7 +4,7 @@
     @include('includes.gtm_head')
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $post->title }} - Bill&Bite Blog</title>
+    <title>{{ Str::limit($post->title, 45, '…') }} | Bill&Bite</title>
     <meta name="description" content="{{ $post->meta_description }}">
     <link rel="canonical" href="https://billnbite.com/blog/{{ $post->slug }}">
     <link rel="shortcut icon" href="{{ asset('fav_web.png') }}">
