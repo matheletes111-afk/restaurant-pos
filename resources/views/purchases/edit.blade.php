@@ -118,7 +118,7 @@
         }
         #itemsTable tbody td {
             padding: 14px 16px;
-            vertical-align: middle;
+            vertical-align: top;
             border-bottom: 1px solid #e2e8f0;
         }
         
@@ -188,6 +188,33 @@
             border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
             padding: 20px 30px !important;
         }
+
+        .bar-helper-box {
+            margin-top: 6px;
+            padding: 6px 8px;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 8px;
+            font-size: 0.74rem;
+            color: #92400e;
+        }
+        .bar-quick-btn {
+            display: inline-block;
+            background: #ffffff;
+            border: 1px solid #f59e0b;
+            color: #b45309;
+            border-radius: 5px;
+            padding: 1px 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-right: 3px;
+            margin-top: 3px;
+        }
+        .bar-quick-btn:hover {
+            background: #f59e0b;
+            color: #ffffff;
+        }
     </style>
 </head>
 
@@ -221,6 +248,12 @@
             </div>
         </div>
         <!-- Breadcrumb end -->
+
+        @php
+            $barProducts = $products->filter(fn($p) => !empty($p->sub_category_id));
+            $regularProducts = $products->filter(fn($p) => empty($p->sub_category_id));
+            $mlUnitId = isset($mlUnit) && $mlUnit ? $mlUnit->id : '';
+        @endphp
 
         <div class="row">
             <div class="col-sm-12">
@@ -296,40 +329,111 @@
 
                             <!-- Purchase Items -->
                             <div class="row mb-3">
-                                <div class="col-md-12">
-                                    <h5>Purchase Items</h5>
+                                <div class="col-md-12 d-flex justify-content-between align-items-center flex-wrap">
+                                    <h5 class="mb-0">Purchase Items</h5>
+                                    <small class="text-muted">
+                                        <i class="fa fa-glass-martini-alt text-warning"></i> Selecting a <strong>Bar Item</strong> automatically sets Unit to <strong>ML</strong> and updates <strong>Bar Inventory</strong>.
+                                    </small>
                                 </div>
                             </div>
+
+                            <!-- Hidden template for product options -->
+                            <template id="productOptionsTemplate">
+                                <option value="">Select Product / Bar Item</option>
+                                @if($barProducts->count() > 0)
+                                    <optgroup label="🍾 Bar & Liquor Items (Auto Unit: ML → Bar Inventory)">
+                                        @foreach($barProducts as $product)
+                                            @php
+                                                $bottleSize = floatval($product->barItem->bottle_size_ml ?? 750);
+                                                $barStock = floatval($product->barItem->current_stock_ml ?? 0);
+                                                $brandName = $product->barItem && $product->barItem->brand ? ' - ' . $product->barItem->brand->name : '';
+                                            @endphp
+                                            <option value="{{ $product->id }}"
+                                                    data-unit="ML"
+                                                    data-unit-id="{{ $mlUnitId ?: $product->unit_id }}"
+                                                    data-is-bar="1"
+                                                    data-bottle-size="{{ $bottleSize }}"
+                                                    data-stock="{{ $barStock }}">
+                                                🍾 {{ $product->product_name }}{{ $brandName }} ({{ number_format($bottleSize, 0) }}ml Btl | Unit: ML)
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+                                @if($regularProducts->count() > 0)
+                                    <optgroup label="📦 Store / Kitchen Inventory Products">
+                                        @foreach($regularProducts as $product)
+                                            <option value="{{ $product->id }}"
+                                                    data-unit="{{ $product->unit ? $product->unit->name : 'N/A' }}"
+                                                    data-unit-id="{{ $product->unit_id }}"
+                                                    data-is-bar="0"
+                                                    data-bottle-size="0">
+                                                {{ $product->product_name }} ({{ $product->unit ? $product->unit->name : 'N/A' }})
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+                            </template>
 
                             <div class="table-responsive">
                                 <table class="table table-bordered" id="itemsTable">
                                     <thead>
                                         <tr>
-                                            <th width="40%">Product *</th>
-                                            <th width="20%">Unit</th>
-                                            <th width="20%">Quantity *</th>
+                                            <th width="38%">Product / Bar Item *</th>
+                                            <th width="18%">Unit</th>
+                                            <th width="24%">Quantity *</th>
                                             <th width="15%">Price (₹) *</th>
                                             <th width="5%">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody id="itemsBody">
                                         @foreach($purchase->items as $index => $item)
+                                        @php
+                                            $isItemBar = !empty($item->sub_category_id) || ($item->product && !empty($item->product->sub_category_id));
+                                            $displayUnit = $isItemBar ? 'ML' : ($item->product && $item->product->unit ? $item->product->unit->name : 'N/A');
+                                        @endphp
                                         <tr id="row_{{ $index }}">
                                             <td>
                                                 <select name="items[{{ $index }}][product_id]" class="form-control product-select" required onchange="getProductDetails({{ $index }}, this.value)">
-                                                    <option value="">Select Product</option>
-                                                    @foreach($products as $product)
-                                                        <option value="{{ $product->id }}" 
-                                                                data-unit="{{ $product->unit ? $product->unit->name : 'N/A' }}"
-                                                                {{ $item->product_id == $product->id ? 'selected' : '' }}>
-                                                            {{ $product->product_name }}
-                                                        </option>
-                                                    @endforeach
+                                                    <option value="">Select Product / Bar Item</option>
+                                                    @if($barProducts->count() > 0)
+                                                        <optgroup label="🍾 Bar & Liquor Items (Auto Unit: ML → Bar Inventory)">
+                                                            @foreach($barProducts as $product)
+                                                                @php
+                                                                    $bottleSize = floatval($product->barItem->bottle_size_ml ?? 750);
+                                                                    $barStock = floatval($product->barItem->current_stock_ml ?? 0);
+                                                                    $brandName = $product->barItem && $product->barItem->brand ? ' - ' . $product->barItem->brand->name : '';
+                                                                @endphp
+                                                                <option value="{{ $product->id }}"
+                                                                        data-unit="ML"
+                                                                        data-unit-id="{{ $mlUnitId ?: $product->unit_id }}"
+                                                                        data-is-bar="1"
+                                                                        data-bottle-size="{{ $bottleSize }}"
+                                                                        data-stock="{{ $barStock }}"
+                                                                        {{ $item->product_id == $product->id ? 'selected' : '' }}>
+                                                                    🍾 {{ $product->product_name }}{{ $brandName }} ({{ number_format($bottleSize, 0) }}ml Btl | Unit: ML)
+                                                                </option>
+                                                            @endforeach
+                                                        </optgroup>
+                                                    @endif
+                                                    @if($regularProducts->count() > 0)
+                                                        <optgroup label="📦 Store / Kitchen Inventory Products">
+                                                            @foreach($regularProducts as $product)
+                                                                <option value="{{ $product->id }}"
+                                                                        data-unit="{{ $product->unit ? $product->unit->name : 'N/A' }}"
+                                                                        data-unit-id="{{ $product->unit_id }}"
+                                                                        data-is-bar="0"
+                                                                        data-bottle-size="0"
+                                                                        {{ $item->product_id == $product->id ? 'selected' : '' }}>
+                                                                    {{ $product->product_name }} ({{ $product->unit ? $product->unit->name : 'N/A' }})
+                                                                </option>
+                                                            @endforeach
+                                                        </optgroup>
+                                                    @endif
                                                 </select>
                                             </td>
                                             <td>
-                                                <input type="text" class="form-control unit-display" value="{{ $item->product->unit ? $item->product->unit->name : 'N/A' }}" readonly>
-                                                <small class="text-muted current-stock"></small>
+                                                <input type="text" class="form-control unit-display" value="{{ $displayUnit }}" readonly>
+                                                <small class="text-muted current-stock d-block mt-1"></small>
                                                 <input type="hidden" class="form-control unit-id" name="items[{{ $index }}][unit_id]" value="{{ $item->unit_id }}">
                                             </td>
                                             <td>
@@ -339,7 +443,7 @@
                                                 <input type="number" name="items[{{ $index }}][price]" class="form-control price" step="0.01" min="0" value="{{ $item->price }}" required>
                                             </td>
                                             <td>
-                                                <button type="button" class="btn btn-danger btn-sm" onclick="removeRow({{ $index }})" {{ $index == 0 ? 'disabled' : '' }}>
+                                                <button type="button" class="btn btn-danger btn-sm" onclick="removeRow({{ $index }})" {{ $index == 0 && count($purchase->items) == 1 ? 'disabled' : '' }}>
                                                     <i class="fa fa-trash"></i>
                                                 </button>
                                             </td>
@@ -402,21 +506,17 @@
     
     function addRow() {
         rowCount++;
+        const optionsHtml = document.getElementById('productOptionsTemplate').innerHTML;
         const newRow = `
             <tr id="row_${rowCount}">
                 <td>
                     <select name="items[${rowCount}][product_id]" class="form-control product-select" required onchange="getProductDetails(${rowCount}, this.value)">
-                        <option value="">Select Product</option>
-                        @foreach($products as $product)
-                            <option value="{{ $product->id }}" data-unit="{{ $product->unit ? $product->unit->name : 'N/A' }}">
-                                {{ $product->product_name }}
-                            </option>
-                        @endforeach
+                        ${optionsHtml}
                     </select>
                 </td>
                 <td>
                     <input type="text" class="form-control unit-display" readonly>
-                    <small class="text-muted current-stock"></small>
+                    <small class="text-muted current-stock d-block mt-1"></small>
                     <input type="hidden" class="form-control unit-id" name="items[${rowCount}][unit_id]">
                 </td>
                 <td>
@@ -438,8 +538,7 @@
     }
     
     function removeRow(rowId) {
-        if (rowId === 0 && $('#itemsBody tr').length === 1) {
-            // Don't remove the first row if it's the only one
+        if ($('#itemsBody tr').length === 1) {
             alert('At least one item is required');
             return;
         }
@@ -456,8 +555,21 @@
         }
         
         const selectedOption = $(`#row_${rowId} select option:selected`);
-        const unitName = selectedOption.data('unit');
+        const isBar = selectedOption.data('is-bar') == 1;
+        const unitName = isBar ? 'ML' : selectedOption.data('unit');
+        const unitId = selectedOption.data('unit-id') || '';
+
         $(`#row_${rowId} .unit-display`).val(unitName);
+        if (unitId) {
+            $(`#row_${rowId} .unit-id`).val(unitId);
+        }
+
+        if (isBar) {
+            const bottleSize = parseFloat(selectedOption.data('bottle-size')) || 750;
+            const initialStock = parseFloat(selectedOption.data('stock')) || 0;
+            const bottles = bottleSize > 0 ? (initialStock / bottleSize).toFixed(1) : 0;
+            $(`#row_${rowId} .current-stock`).html(`<span class="text-warning font-weight-bold">🍾 Bar Stock: ${initialStock} ML (${bottles} Btl)</span>`);
+        }
         
         // Get product details via AJAX
         $.ajax({
@@ -466,13 +578,22 @@
             success: function(response) {
                 if (response.success) {
                     $(`#row_${rowId} .unit-id`).val(response.product.unit_id);
+                    if (response.unit_name) {
+                        $(`#row_${rowId} .unit-display`).val(response.unit_name);
+                    }
                     
                     // Get current stock
                     $.ajax({
                         url: '{{ route("purchases.check-stock", "") }}/' + productId,
                         type: 'GET',
                         success: function(stockResponse) {
-                            $(`#row_${rowId} .current-stock`).text('Stock: ' + stockResponse.stock);
+                            if (stockResponse.is_bar_item) {
+                                const bSize = parseFloat(stockResponse.bottle_size_ml) || 750;
+                                const bCount = bSize > 0 ? (parseFloat(stockResponse.stock) / bSize).toFixed(1) : 0;
+                                $(`#row_${rowId} .current-stock`).html(`<span class="text-warning font-weight-bold">🍾 Bar Stock: ${stockResponse.stock} ML (${bCount} Btl)</span>`);
+                            } else {
+                                $(`#row_${rowId} .current-stock`).text('Stock: ' + stockResponse.stock + (stockResponse.unit_name ? ' ' + stockResponse.unit_name : ''));
+                            }
                         }
                     });
                 }

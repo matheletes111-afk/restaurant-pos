@@ -279,7 +279,6 @@
                                         <th>Total Amount:</th>
                                         <td class="text-right font-weight-bold">₹{{ number_format($purchase->total_amount, 2) }}</td>
                                     </tr>
-                                   
                                 </table>
                             </div>
                         </div>
@@ -341,7 +340,6 @@
                                                 <th>Unit</th>
                                                 <th class="text-right">Quantity</th>
                                                 <th class="text-right">Price (₹)</th>
-                                               
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -354,18 +352,30 @@
                                                     $itemTotal = $item->quantity * $item->price;
                                                     $totalQuantity += $item->quantity;
                                                     $totalPrice += $itemTotal;
+                                                    $isBar = !empty($item->sub_category_id) || ($item->product && !empty($item->product->sub_category_id));
+                                                    $unitLabel = $isBar ? 'ML' : ($item->product && $item->product->unit ? $item->product->unit->name : 'N/A');
+                                                    $bottleSize = $isBar && $item->product && $item->product->barItem ? floatval($item->product->barItem->bottle_size_ml ?: 750) : 0;
+                                                    $bottlesEq = ($isBar && $bottleSize > 0) ? round($item->quantity / $bottleSize, 2) : null;
                                                 @endphp
                                                 <tr>
                                                     <td>{{ $index + 1 }}</td>
-                                                    <td>{{ $item->product->product_name }}</td>
-                                                    <td>{{ $item->product->unit ? $item->product->unit->name : 'N/A' }}</td>
-                                                    <td class="text-right">{{ number_format($item->quantity, 2) }}</td>
+                                                    <td>
+                                                        {{ $item->product->product_name ?? 'N/A' }}
+                                                        @if($isBar)
+                                                            <span class="badge bg-warning text-dark ms-1">🍾 BAR INVENTORY</span>
+                                                        @endif
+                                                    </td>
+                                                    <td><strong>{{ $unitLabel }}</strong></td>
+                                                    <td class="text-right">
+                                                        {{ number_format($item->quantity, 2) }} {{ $unitLabel }}
+                                                        @if($isBar && $bottlesEq !== null)
+                                                            <br><small class="text-muted">({{ $bottlesEq }} Bottles @ {{ number_format($bottleSize, 0) }}ml)</small>
+                                                        @endif
+                                                    </td>
                                                     <td class="text-right">{{ number_format($item->price, 2) }}</td>
-                                                    
                                                 </tr>
                                             @endforeach
                                         </tbody>
-                                        
                                     </table>
                                 </div>
                             </div>

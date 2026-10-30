@@ -134,6 +134,9 @@ class BarItemController extends Controller
 
             $item->save();
 
+            // Sync with Purchase Management products (unit = ML)
+            \App\Models\Product::syncBarItems($restaurantId);
+
             // Auto-generate standard bottle variation if price provided
             if ($item->price > 0) {
                 BarItemVariation::create([
@@ -219,6 +222,9 @@ class BarItemController extends Controller
 
             $item->save();
 
+            // Sync with Purchase Management products (unit = ML)
+            \App\Models\Product::syncBarItems($restaurantId);
+
             return redirect()->back()->with('success', "Bar Item \"{$item->name}\" updated successfully.");
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to update bar item: ' . $e->getMessage());
@@ -289,6 +295,10 @@ class BarItemController extends Controller
         if ($item) {
             $item->status = 'D';
             $item->save();
+
+            \App\Models\Product::where('sub_category_id', $item->id)
+                ->where('restaurant_id', $restaurantId)
+                ->update(['status' => 'D']);
 
             return redirect()->back()->with('success', "Bar Item \"{$item->name}\" deleted successfully.");
         }

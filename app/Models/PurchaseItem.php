@@ -12,6 +12,7 @@ class PurchaseItem extends Model
     protected $fillable = [
         'purchase_id',
         'product_id',
+        'sub_category_id',
         'unit_id',
         'quantity',
         'price',
@@ -32,6 +33,11 @@ class PurchaseItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function barItem()
+    {
+        return $this->belongsTo(SubCategory::class, 'sub_category_id');
     }
 
     public function unit()
