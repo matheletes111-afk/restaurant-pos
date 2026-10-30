@@ -189,7 +189,7 @@
                                     <input type="number" name="gst_percentage" class="form-control" 
                                            value="{{ old('gst_percentage', $restaurant->gst_percentage ?? 0) }}" 
                                            step="0.01" min="0" max="100">
-                                    <small class="info-text">Default GST rate for billing (0-100%)</small>
+                                    <small class="info-text">Default GST rate for food billing (0-100%)</small>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -198,6 +198,27 @@
                                     <input type="text" name="fssai_number" class="form-control" 
                                            value="{{ old('fssai_number', $restaurant->fssai_number) }}" 
                                            placeholder="14-digit FSSAI number">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>VATIN / State VAT Number <small class="text-muted">(Optional - For Bar)</small></label>
+                                    <input type="text" name="vatin" class="form-control" 
+                                           value="{{ old('vatin', $restaurant->vatin) }}" 
+                                           placeholder="e.g. 27123456789V / Excise Lic.">
+                                    <small class="info-text">State Liquor VAT TIN or Excise License number as per state excise laws</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Default Bar VAT (%) <small class="text-muted">(Optional)</small></label>
+                                    <input type="number" name="vat_percentage" class="form-control" 
+                                           value="{{ old('vat_percentage', $restaurant->vat_percentage ?? 0) }}" 
+                                           step="0.01" min="0" max="100" placeholder="e.g. 20.00">
+                                    <small class="info-text">Default State VAT rate for liquor/bar items (e.g., 10%, 14.5%, 20%)</small>
                                 </div>
                             </div>
                         </div>

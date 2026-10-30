@@ -19,8 +19,10 @@ class RestaurantMaster extends Model
         'address',
         'pincode',
         'gstin',
+        'vatin',
         'fssai_number',
         'gst_percentage',
+        'vat_percentage',
         'owner_id',
         'status',
         'created_by',
@@ -30,7 +32,8 @@ class RestaurantMaster extends Model
     ];
     
     protected $casts = [
-        'gst_percentage' => 'decimal:2'
+        'gst_percentage' => 'decimal:2',
+        'vat_percentage' => 'decimal:2'
     ];
 
     /**

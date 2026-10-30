@@ -15,6 +15,7 @@
   
   <!-- Font Awesome 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="{{ asset('admin_template/css/order-terminal.css') }}?v={{ time() }}">
 
   <style>
     :root {
@@ -1515,6 +1516,66 @@
       justify-content: space-between;
     }
 
+    /* Bar Variation Card & Multi-Peg Stepper */
+    .bar-var-card-multi {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 2px solid #e2e8f0;
+      background: #ffffff;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      user-select: none;
+      margin-bottom: 8px;
+    }
+
+    .bar-var-card-multi:hover {
+      border-color: #f59e0b;
+      background: #fffcf8;
+    }
+
+    .bar-var-card-multi.active {
+      border-color: #f59e0b;
+      background: #fffcf8;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
+    }
+
+    .bar-var-checkbox {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      accent-color: #f59e0b;
+      flex-shrink: 0;
+    }
+
+    .btn-bar-var-step {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #1e293b;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .btn-bar-var-step:hover {
+      background: #f59e0b;
+      border-color: #f59e0b;
+      color: #ffffff;
+    }
+
+    .bar-var-qty-val {
+      min-width: 24px;
+      text-align: center;
+      font-size: 0.95rem;
+    }
+
     /* ===================================================
        RESPONSIVE BREAKPOINTS
        =================================================== */
@@ -1739,6 +1800,19 @@
       <!-- LEFT: Fast Menu & Dish Explorer -->
       <div class="menu-panel mobile-active" id="menuPanelSection">
         
+        <!-- Mode Switcher: Food Menu vs Bar Menu (Smooth Zero Refresh) -->
+        <div class="pos-menu-type-tabs mb-3 d-flex gap-2" style="background:#fff; padding:6px; border-radius:12px; border:1.5px solid var(--rp-border);">
+          <button type="button" class="btn-menu-mode-tab active" id="btnTabFoodMenu" style="flex:1; padding:9px 16px; border-radius:8px; border:none; font-weight:800; font-size:0.88rem; cursor:pointer; background:var(--rp-primary-gradient); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <i class="fa-solid fa-utensils"></i> Food Menu
+            <span class="badge ms-1 bg-white text-dark">{{ $categories->sum(function($c) { return $c->subcategories->count(); }) + (isset($restaurant_addons) ? $restaurant_addons->count() : 0) }}</span>
+          </button>
+          <button type="button" class="btn-menu-mode-tab" id="btnTabBarMenu" style="flex:1; padding:9px 16px; border-radius:8px; border:none; font-weight:800; font-size:0.88rem; cursor:pointer; background:#f1f5f9; color:var(--rp-slate); display:flex; align-items:center; justify-content:center; gap:8px;">
+            <i class="fa-solid fa-wine-glass text-warning"></i> Bar &amp; Liquor Menu
+            <span class="badge ms-1 bg-warning text-dark">{{ isset($bar_items) ? $bar_items->count() : 0 }}</span>
+          </button>
+        </div>
+
+        <div id="foodMenuSection">
         <div class="menu-filters-bar">
           <!-- Search & Veg/Non-veg Row -->
           <div class="search-veg-row">
@@ -1886,6 +1960,107 @@
             @endforeach
           @endif
         </div>
+        </div><!-- /#foodMenuSection -->
+
+        <!-- BAR MENU SECTION (Smooth no-refresh tab) -->
+        <div id="barMenuSection" style="display: none;">
+          <div class="menu-filters-bar">
+            <!-- Bar Search Row -->
+            <div class="search-veg-row">
+              <div class="search-input-wrap" style="flex: 1;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="barSearchInput" class="search-input" placeholder="Search liquor brand, drink name or category..." autocomplete="off">
+                <button type="button" id="clearBarSearchBtn" class="search-clear-btn" style="display: none;">
+                  <i class="fa-solid fa-circle-xmark"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Bar Category Scroll Pills -->
+            <div class="category-scroll-tabs" id="barCategoryScrollTabs">
+              <button type="button" class="cat-tab-btn bar-cat-tab-btn active" data-bar-category="all">
+                <i class="fa-solid fa-wine-bottle text-warning me-1"></i> All Liquors
+                <span class="cat-tab-badge" style="background:#f59e0b; color:#fff;">{{ isset($bar_items) ? $bar_items->count() : 0 }}</span>
+              </button>
+              @foreach($bar_categories ?? [] as $bcat)
+                <button type="button" class="cat-tab-btn bar-cat-tab-btn" data-bar-category="{{ $bcat->id }}">
+                  <i class="fa-solid fa-glass-water me-1"></i> {{ $bcat->name }}
+                  <span class="cat-tab-badge">{{ $bcat->subcategories->count() }}</span>
+                </button>
+              @endforeach
+            </div>
+          </div>
+
+          <!-- Bar Items Grid -->
+          <div class="dishes-grid" id="barDishesGridContainer">
+            @php $hasRapidBarItems = false; @endphp
+            @foreach($bar_items ?? [] as $bItem)
+              @php
+                $hasRapidBarItems = true;
+                $bBrandName = $bItem->brand->name ?? null;
+                $bCatName = $bItem->category->name ?? 'Liquor';
+                $bVariations = ($bItem->variations && $bItem->variations->count() > 0)
+                    ? $bItem->variations->where('status', '!=', 'D')->sortBy('ml')->values()
+                    : collect([]);
+                $bMinPrice = $bVariations->count() > 0 ? $bVariations->min('price') : $bItem->price;
+                $bVatRate = floatval($bItem->vat_rate ?? 0);
+              @endphp
+              <div class="dish-card bar-dish-card"
+                   data-id="bar-{{ $bItem->id }}"
+                   data-dish-id="{{ $bItem->id }}"
+                   data-name="{{ $bItem->name }}"
+                   data-category-id="{{ $bItem->category_id }}"
+                   data-bar-category="{{ $bItem->category_id }}"
+                   data-vat-rate="{{ $bVatRate }}"
+                   data-item='@json($bItem)'
+                   data-search-terms="{{ strtolower($bItem->name . ' ' . ($bBrandName ?? '') . ' ' . $bCatName) }}"
+                   style="border-color: #fde68a; background: linear-gradient(180deg, #ffffff 0%, #fffdfa 100%);">
+                <div>
+                  <div class="dish-top-meta">
+                    <span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a; font-size:0.68rem; font-weight:800; border-radius:6px; padding:2px 6px;">
+                      <i class="fa-solid fa-wine-glass me-1"></i>{{ $bCatName }}
+                    </span>
+                    @if($bVatRate > 0)
+                      <span class="badge bg-success-subtle text-success border border-success-subtle px-1 py-0.5" style="font-size: 0.65rem; font-weight: 800; border-radius: 6px;" title="State VAT">
+                        VAT {{ $bVatRate }}%
+                      </span>
+                    @endif
+                    <span class="dish-cart-badge" id="dishBadge-bar-{{ $bItem->id }}">0</span>
+                  </div>
+
+                  @if($bBrandName)
+                    <div class="text-muted fw-bold text-uppercase" style="letter-spacing:0.04em; font-size:0.65rem; margin-top:2px;">
+                      <i class="fa-solid fa-award text-warning me-1"></i>{{ $bBrandName }}
+                    </div>
+                  @endif
+                  <h3 class="dish-title" title="{{ $bItem->name }}">{{ $bItem->name }}</h3>
+                  @if($bVariations->count() > 0)
+                    <div class="text-muted small mt-1">
+                      <span class="badge bg-light text-dark border" style="font-size:0.68rem;">
+                        <i class="fa-solid fa-cubes-stacked me-1 text-warning"></i>{{ $bVariations->count() }} Peg Sizes
+                      </span>
+                    </div>
+                  @endif
+                </div>
+
+                <div class="dish-bottom-bar">
+                  <div class="dish-price">
+                    From ₹{{ number_format($bMinPrice, 2) }}
+                  </div>
+                  <div class="dish-add-btn" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #fff; width:auto; padding:2px 8px; border-radius:6px; font-weight:700; font-size:0.75rem; gap:4px;">
+                    <i class="fa-solid fa-wine-glass"></i> Select Peg
+                  </div>
+                </div>
+              </div>
+            @endforeach
+            @if(!$hasRapidBarItems)
+              <div class="col-12 text-center py-5 text-muted">
+                <i class="fa-solid fa-wine-bottle fa-3x mb-3 text-warning opacity-50"></i>
+                <p class="fw-bold">No active bar or liquor items found.</p>
+              </div>
+            @endif
+          </div>
+        </div><!-- /#barMenuSection -->
 
       </div>
 
@@ -1952,15 +2127,25 @@
           </div>
 
           @if($isGstEnabled)
-            <div class="summary-row">
-              <span>Taxable Subtotal:</span>
+            <div class="summary-row" id="rowFoodTaxable">
+              <span>Taxable Subtotal (Food):</span>
               <span id="lblTaxable">₹0.00</span>
             </div>
-            <div class="summary-row">
+            <div class="summary-row" id="rowGst">
               <span>GST ({{ $gstPercentage }}%):</span>
               <span id="lblGst">₹0.00</span>
             </div>
           @endif
+
+          <div class="summary-row" id="rowTotalVatable" style="display: none; color: #047857;">
+            <span>Vatable Amount (Liquor):</span>
+            <span class="fw-bold" id="lblTotalVatable">₹0.00</span>
+          </div>
+
+          <div class="summary-row" id="rowTotalVat" style="display: none; color: #047857;">
+            <span>State VAT (Liquor):</span>
+            <span class="fw-bold" id="lblTotalVat">+₹0.00</span>
+          </div>
 
           <div class="summary-row">
             <span>Round Off:</span>
@@ -2149,6 +2334,64 @@
   </div>
 </div>
 
+<!-- ===================================================
+     MODAL: BAR LIQUOR VARIATION SELECTOR
+     =================================================== -->
+<div class="modal-backdrop-custom" id="rapidBarVariationModal" style="display: none; z-index: 100000;">
+  <div class="modal-box-custom" style="max-width: 520px; border-radius: 18px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35);">
+    <div class="modal-header-custom" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 16px 20px;">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge bg-warning text-dark font-monospace fw-bold" id="rapidBarModalCat">Liquor</span>
+          <span class="badge bg-success text-white" id="rapidBarModalVatTag">VAT 20%</span>
+        </div>
+        <h5 class="m-0 text-white fw-bold" id="rapidBarModalDrinkName" style="font-size: 1.15rem;">Select Variation</h5>
+        <small class="text-white-50" id="rapidBarModalBrandName" style="font-size: 0.8rem;">Brand Name</small>
+      </div>
+      <button type="button" class="btn-close btn-close-white" id="btnCloseRapidBarModal"></button>
+    </div>
+
+    <div class="p-3" style="background: #ffffff;">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <label class="fw-bold small text-muted text-uppercase mb-0" style="letter-spacing: 0.05em;">Choose Peg / Pour Sizes &amp; Quantities:</label>
+        <span class="small text-muted"><i class="fa-solid fa-layer-group me-1 text-warning"></i> Add multiple pegs</span>
+      </div>
+      <div class="d-flex flex-column gap-2 mb-3" id="rapidBarVariationsList" style="max-height: 280px; overflow-y: auto;">
+        <!-- Injected via JS with individual quantity steppers -->
+      </div>
+
+      <!-- Breakdown Box -->
+      <div class="p-3 rounded-3 mb-3" style="background: #fffbeb; border: 1px solid #fde68a;">
+        <div class="d-flex justify-content-between text-muted small mb-1">
+          <span>Total Selected Drinks:</span>
+          <strong class="text-dark"><span id="rapidBarTotalQtyVal">0</span> pour(s)</strong>
+        </div>
+        <div class="d-flex justify-content-between text-muted small mb-1">
+          <span>Vatable Base Amount:</span>
+          <strong class="text-dark font-monospace">₹<span id="rapidBarTaxableAmt">0.00</span></strong>
+        </div>
+        <div class="d-flex justify-content-between text-muted small mb-1">
+          <span>State VAT (<span id="rapidBarVatRateVal">0</span>%):</span>
+          <strong class="text-success font-monospace">+₹<span id="rapidBarVatAmt">0.00</span></strong>
+        </div>
+        <div class="d-flex justify-content-between fs-6 fw-bold pt-2 border-top" style="border-color: #fef3c7 !important;">
+          <span class="text-dark">Total Amount (Incl. VAT):</span>
+          <span class="text-warning-dark font-monospace fs-5 text-dark">₹<span id="rapidBarLineTotal">0.00</span></span>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-light fw-bold border text-muted px-3" id="btnCancelRapidBarModal" style="border-radius: 10px;">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-warning fw-bold text-dark flex-grow-1" id="btnConfirmRapidBarVariation" style="border-radius: 10px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; color: #fff;">
+          <i class="fa-solid fa-plus-circle me-1"></i> <span id="rapidBarConfirmBtnText">Add Variations to Bill</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 @include('includes.footer')
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -2292,8 +2535,344 @@ $(document).ready(function() {
 
   let pendingMappingAddon = null;
 
+  // Food vs Bar Tab Switcher (Smooth zero refresh)
+  $('#btnTabFoodMenu').on('click', function(e) {
+    e.preventDefault();
+    $(this).css({'background': 'var(--rp-primary-gradient)', 'color': '#fff'});
+    $('#btnTabBarMenu').css({'background': '#f1f5f9', 'color': 'var(--rp-slate)'});
+    $('#barMenuSection').hide();
+    $('#foodMenuSection').fadeIn(150);
+  });
+
+  $('#btnTabBarMenu').on('click', function(e) {
+    e.preventDefault();
+    $(this).css({'background': 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 'color': '#fff'});
+    $('#btnTabFoodMenu').css({'background': '#f1f5f9', 'color': 'var(--rp-slate)'});
+    $('#foodMenuSection').hide();
+    $('#barMenuSection').fadeIn(150);
+  });
+
+  // Bar Category Pill Filter
+  $('.bar-cat-tab-btn').on('click', function() {
+    $('.bar-cat-tab-btn').removeClass('active');
+    $(this).addClass('active');
+    let cat = $(this).data('bar-category');
+    filterBarDishes(cat);
+  });
+
+  $('#barSearchInput').on('input', function() {
+    let val = $(this).val().trim();
+    if (val.length > 0) {
+      $('#clearBarSearchBtn').show();
+    } else {
+      $('#clearBarSearchBtn').hide();
+    }
+    let cat = $('.bar-cat-tab-btn.active').data('bar-category') || 'all';
+    filterBarDishes(cat);
+  });
+
+  $('#clearBarSearchBtn').on('click', function() {
+    $('#barSearchInput').val('').focus();
+    $(this).hide();
+    let cat = $('.bar-cat-tab-btn.active').data('bar-category') || 'all';
+    filterBarDishes(cat);
+  });
+
+  function filterBarDishes(category) {
+    let search = ($('#barSearchInput').val() || '').toLowerCase().trim();
+    $('.bar-dish-card').each(function() {
+      let card = $(this);
+      let catId = card.data('bar-category');
+      let searchTerms = (card.data('search-terms') || '').toString();
+
+      let matchesCat = (category === 'all' || category == catId);
+      let matchesSearch = (!search || searchTerms.includes(search));
+
+      if (matchesCat && matchesSearch) {
+        card.show();
+      } else {
+        card.hide();
+      }
+    });
+  }
+
+  // ==========================================
+  // RAPID BAR VARIATION MODAL LOGIC (Multi-Variation Stepper)
+  // ==========================================
+  let currentRapidBarItem = null;
+  let rapidBarVariationsState = {};
+
+  function openRapidBarModal(itemData) {
+    currentRapidBarItem = itemData;
+    rapidBarVariationsState = {};
+
+    $('#rapidBarModalDrinkName').text(itemData.name);
+    let brand = (itemData.brand && itemData.brand.name) ? itemData.brand.name : 'Selected Brand';
+    $('#rapidBarModalBrandName').text(brand);
+    let cat = (itemData.category && itemData.category.name) ? itemData.category.name : 'Liquor';
+    $('#rapidBarModalCat').text(cat);
+
+    let vatRate = parseFloat(itemData.vat_rate || 0);
+    $('#rapidBarModalVatTag').text(`State VAT ${vatRate}%`);
+    $('#rapidBarVatRateVal').text(vatRate);
+
+    let variations = (itemData.variations && Array.isArray(itemData.variations)) ? itemData.variations.slice() : [];
+    variations.sort((a, b) => (parseFloat(a.ml) || 0) - (parseFloat(b.ml) || 0));
+
+    let container = $('#rapidBarVariationsList');
+    container.empty();
+
+    if (variations.length === 0) {
+      let basePrice = parseFloat(itemData.price || 0);
+      rapidBarVariationsState['base'] = {
+        id: 'base',
+        name: 'Standard Pour / Bottle',
+        ml: null,
+        price: basePrice,
+        qty: 1
+      };
+      let vatAmt = (basePrice * vatRate) / 100;
+      container.html(`
+        <div class="bar-var-card-multi active" data-var-id="base">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center gap-2">
+              <input type="checkbox" class="form-check-input bar-var-checkbox mt-0" id="chk_peg_base" data-var-id="base" checked style="width: 20px; height: 20px; cursor: pointer; accent-color: #f59e0b;">
+              <label for="chk_peg_base" class="m-0" style="cursor: pointer;">
+                <div class="fw-bold text-dark fs-6">Standard Pour / Bottle</div>
+                <div class="small text-muted">Standard Portion</div>
+              </label>
+            </div>
+            <div class="text-end">
+              <div class="fw-bold text-dark fs-6 font-monospace">₹${basePrice.toFixed(2)}</div>
+              <div class="small text-success font-monospace">+₹${vatAmt.toFixed(2)} VAT (${vatRate}%)</div>
+            </div>
+          </div>
+          <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+            <span class="small text-muted fw-semibold">Quantity:</span>
+            <div class="d-flex align-items-center gap-2">
+              <button type="button" class="btn-bar-var-step btn-dec btn-rapid-var-step-dec" data-var-id="base" title="Decrease quantity"><i class="fa-solid fa-minus"></i></button>
+              <span class="bar-var-qty-val font-monospace fs-6 text-dark fw-bold" id="rapid_bar_var_qty_base">1</span>
+              <button type="button" class="btn-bar-var-step btn-inc btn-rapid-var-step-inc" data-var-id="base" title="Increase quantity"><i class="fa-solid fa-plus"></i></button>
+            </div>
+          </div>
+        </div>
+      `);
+    } else {
+      variations.forEach((v, vIdx) => {
+        let vPrice = parseFloat(v.price || 0);
+        let vatAmt = (vPrice * vatRate) / 100;
+        let defaultQty = (vIdx === 0) ? 1 : 0;
+        let isChecked = defaultQty > 0;
+        rapidBarVariationsState[v.id] = {
+          id: v.id,
+          name: v.name,
+          ml: v.ml || null,
+          price: vPrice,
+          qty: defaultQty
+        };
+
+        let cardHtml = `
+          <div class="bar-var-card-multi ${isChecked ? 'active' : ''}" data-var-id="${v.id}">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <input type="checkbox" class="form-check-input bar-var-checkbox mt-0" id="chk_peg_${v.id}" data-var-id="${v.id}" ${isChecked ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer; accent-color: #f59e0b;">
+                <label for="chk_peg_${v.id}" class="m-0" style="cursor: pointer;">
+                  <div class="d-flex align-items-center gap-1">
+                    <span class="fw-bold text-dark fs-6">${v.name}</span>
+                    ${v.ml ? `<span class="badge bg-light text-dark border font-monospace ms-1">${v.ml} ml</span>` : ''}
+                  </div>
+                  <div class="small text-muted">Peg / Pour Size</div>
+                </label>
+              </div>
+              <div class="text-end">
+                <div class="fw-bold text-dark fs-6 font-monospace">₹${vPrice.toFixed(2)}</div>
+                <div class="small text-success font-monospace">+₹${vatAmt.toFixed(2)} VAT (${vatRate}%)</div>
+              </div>
+            </div>
+            <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+              <span class="small text-muted fw-semibold">Quantity:</span>
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn-bar-var-step btn-dec btn-rapid-var-step-dec" data-var-id="${v.id}" title="Decrease quantity"><i class="fa-solid fa-minus"></i></button>
+                <span class="bar-var-qty-val font-monospace fs-6 text-dark fw-bold" id="rapid_bar_var_qty_${v.id}">${defaultQty}</span>
+                <button type="button" class="btn-bar-var-step btn-inc btn-rapid-var-step-inc" data-var-id="${v.id}" title="Increase quantity"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+          </div>
+        `;
+        container.append(cardHtml);
+      });
+    }
+
+    updateRapidBarCalculations();
+    $('#rapidBarVariationModal').css('display', 'flex').fadeIn(150);
+  }
+
+  function updateRapidBarCalculations() {
+    if (!currentRapidBarItem) return;
+    let vatRate = parseFloat(currentRapidBarItem.vat_rate || 0);
+    let totalQty = 0;
+    let totalTaxableAmt = 0;
+
+    Object.values(rapidBarVariationsState).forEach(v => {
+      let q = parseInt(v.qty) || 0;
+      if (q > 0) {
+        totalQty += q;
+        totalTaxableAmt += (v.price * q);
+      }
+    });
+
+    let totalVatAmt = (totalTaxableAmt * vatRate) / 100;
+    let totalLineAmt = totalTaxableAmt + totalVatAmt;
+
+    $('#rapidBarTotalQtyVal').text(totalQty);
+    $('#rapidBarTaxableAmt').text(totalTaxableAmt.toFixed(2));
+    $('#rapidBarVatAmt').text(totalVatAmt.toFixed(2));
+    $('#rapidBarLineTotal').text(totalLineAmt.toFixed(2));
+
+    let confirmBtn = $('#btnConfirmRapidBarVariation');
+    if (totalQty === 0) {
+      confirmBtn.prop('disabled', true).css('opacity', '0.6');
+      $('#rapidBarConfirmBtnText').text('Select at least 1 peg');
+    } else {
+      confirmBtn.prop('disabled', false).css('opacity', '1');
+      $('#rapidBarConfirmBtnText').text(`Add ${totalQty} Drink(s) to Bill (₹${totalLineAmt.toFixed(2)})`);
+    }
+  }
+
+  // Live Checkbox change inside Bar Variation Modal
+  $(document).on('change', '.bar-var-checkbox', function(e) {
+    let varId = $(this).data('var-id');
+    let isChecked = $(this).is(':checked');
+    let card = $(this).closest('.bar-var-card-multi');
+
+    if (rapidBarVariationsState[varId]) {
+      if (isChecked) {
+        if ((parseInt(rapidBarVariationsState[varId].qty) || 0) <= 0) {
+          rapidBarVariationsState[varId].qty = 1;
+        }
+        card.addClass('active');
+      } else {
+        rapidBarVariationsState[varId].qty = 0;
+        card.removeClass('active');
+      }
+      $(`#rapid_bar_var_qty_${varId}`).text(rapidBarVariationsState[varId].qty);
+      updateRapidBarCalculations();
+    }
+  });
+
+  // Step Increment
+  $(document).on('click', '.btn-rapid-var-step-inc', function(e) {
+    e.stopPropagation();
+    let varId = $(this).data('var-id');
+    if (rapidBarVariationsState[varId]) {
+      rapidBarVariationsState[varId].qty = (parseInt(rapidBarVariationsState[varId].qty) || 0) + 1;
+      let card = $(this).closest('.bar-var-card-multi');
+      card.addClass('active');
+      card.find('.bar-var-checkbox').prop('checked', true);
+      $(`#rapid_bar_var_qty_${varId}`).text(rapidBarVariationsState[varId].qty);
+      updateRapidBarCalculations();
+    }
+  });
+
+  // Step Decrement
+  $(document).on('click', '.btn-rapid-var-step-dec', function(e) {
+    e.stopPropagation();
+    let varId = $(this).data('var-id');
+    if (rapidBarVariationsState[varId] && rapidBarVariationsState[varId].qty > 0) {
+      rapidBarVariationsState[varId].qty = Math.max(0, (parseInt(rapidBarVariationsState[varId].qty) || 0) - 1);
+      let card = $(this).closest('.bar-var-card-multi');
+      if (rapidBarVariationsState[varId].qty === 0) {
+        card.removeClass('active');
+        card.find('.bar-var-checkbox').prop('checked', false);
+      }
+      $(`#rapid_bar_var_qty_${varId}`).text(rapidBarVariationsState[varId].qty);
+      updateRapidBarCalculations();
+    }
+  });
+
+  // Click on Card (excluding direct click on steppers, checkbox or label)
+  $(document).on('click', '#rapidBarVariationsList .bar-var-card-multi', function(e) {
+    if ($(e.target).closest('.btn-bar-var-step').length || $(e.target).is('.bar-var-checkbox') || $(e.target).closest('label').length) {
+      return;
+    }
+    let varId = $(this).data('var-id');
+    if (rapidBarVariationsState[varId]) {
+      let chk = $(this).find('.bar-var-checkbox');
+      let currentQ = parseInt(rapidBarVariationsState[varId].qty) || 0;
+      if (currentQ === 0) {
+        rapidBarVariationsState[varId].qty = 1;
+        $(this).addClass('active');
+        chk.prop('checked', true);
+      } else {
+        rapidBarVariationsState[varId].qty = 0;
+        $(this).removeClass('active');
+        chk.prop('checked', false);
+      }
+      $(`#rapid_bar_var_qty_${varId}`).text(rapidBarVariationsState[varId].qty);
+      updateRapidBarCalculations();
+    }
+  });
+
+  $('#btnCloseRapidBarModal, #btnCancelRapidBarModal').on('click', function() {
+    $('#rapidBarVariationModal').fadeOut(120);
+    currentRapidBarItem = null;
+    rapidBarVariationsState = {};
+  });
+
+  $('#btnConfirmRapidBarVariation').on('click', function() {
+    if (!currentRapidBarItem) return;
+    let vatRate = parseFloat(currentRapidBarItem.vat_rate || 0);
+
+    let addedAny = false;
+    Object.values(rapidBarVariationsState).forEach(v => {
+      if (v.qty > 0) {
+        addedAny = true;
+        let cartKey = 'bar_' + currentRapidBarItem.id + '_' + (v.id || 'base');
+        let varName = (v.id !== 'base' && v.name) ? v.name : '';
+        let varMl = (v.id !== 'base') ? v.ml : null;
+        let unitPrice = v.price;
+
+        if (cart[cartKey]) {
+          cart[cartKey].qty += v.qty;
+        } else {
+          cart[cartKey] = {
+            id: cartKey,
+            dish_id: currentRapidBarItem.id,
+            name: currentRapidBarItem.name + (varName ? ` (${varName})` : ''),
+            dish_name: currentRapidBarItem.name,
+            base_price: unitPrice,
+            price: unitPrice,
+            qty: v.qty,
+            discount_percent: 0,
+            vat_rate: vatRate,
+            bar_variation_id: (v.id !== 'base' ? v.id : null),
+            bar_variation_name: varName,
+            bar_variation_ml: varMl,
+            is_bar: true,
+            food_type: 'BAR',
+            addons: []
+          };
+        }
+      }
+    });
+
+    if (addedAny) {
+      $('#rapidBarVariationModal').fadeOut(120);
+      currentRapidBarItem = null;
+      rapidBarVariationsState = {};
+      renderCart();
+    }
+  });
+
   // Add Dish or Map Add-on to Cart
   $(document).on('click', '.dish-card', function(e) {
+    if ($(this).hasClass('bar-dish-card')) {
+      let rawItem = $(this).attr('data-item') || $(this).data('item');
+      let itemData = typeof rawItem === 'string' ? JSON.parse(rawItem) : rawItem;
+      openRapidBarModal(itemData);
+      return;
+    }
+
     let isAddon = $(this).data('is-addon');
 
     if (isAddon) {
@@ -2447,11 +3026,15 @@ $(document).ready(function() {
 
       // Update current line net total immediately
       let item = cart[id];
-      let origTotal = item.price * item.qty;
+      let base = item.base_price !== undefined ? parseFloat(item.base_price) : parseFloat(item.price);
+      let origTotal = base * item.qty;
       let discAmt = (origTotal * (item.discount_percent || 0)) / 100;
       let netTotal = origTotal - discAmt;
+      let vatAmt = (item.is_bar && item.vat_rate > 0) ? (netTotal * parseFloat(item.vat_rate)) / 100 : 0;
+      let displayTotal = netTotal + vatAmt;
+
       let row = $(this).closest('.cart-item-card');
-      row.find('.cart-item-net-val').text('₹' + netTotal.toFixed(2));
+      row.find('.cart-item-net-val').text('₹' + displayTotal.toFixed(2));
       if (discAmt > 0) {
         row.find('.item-disc-tag').text(`-₹${discAmt.toFixed(2)}`).show();
       } else {
@@ -2924,6 +3507,12 @@ $(document).ready(function() {
         lineNet = (dishOriginal - discAmt) + addonsCost;
       }
 
+      let lineVat = 0;
+      if (item.is_bar && item.vat_rate > 0) {
+        lineVat = (lineNet * parseFloat(item.vat_rate)) / 100;
+      }
+      let lineDisplayTotal = lineNet + lineVat;
+
       let hasAvailableAddons = item.available_addons && item.available_addons.length > 0;
       let totalAddonsQtyCount = (item.addons || []).reduce(function(sum, a) { return sum + (a.qty || 1); }, 0);
 
@@ -2989,7 +3578,20 @@ $(document).ready(function() {
       let foodTypeDot = (item.food_type === 'non-veg' || item.food_type === 'nonveg') ? 'nonveg' : 'veg';
 
       let itemHeaderHtml = '';
-      if (item.is_addon) {
+      if (item.is_bar) {
+        let vatRate = parseFloat(item.vat_rate || 0);
+        let unitVat = vatRate > 0 ? (basePrice * vatRate) / 100 : 0;
+        let unitTotal = basePrice + unitVat;
+        itemHeaderHtml = `
+          <div class="d-flex align-items-center gap-1 min-w-0" style="min-width: 0;">
+            <span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a; font-size:0.6rem; font-weight:800; padding:1px 4px; border-radius:4px;"><i class="fa-solid fa-wine-glass me-1"></i>BAR</span>
+            <span class="cart-item-title text-truncate" title="${item.name}">${item.name}</span>
+          </div>
+          <div class="cart-item-price-meta">
+            Rate: ₹${basePrice.toFixed(2)} / peg ${vatRate > 0 ? `• <span class="text-success fw-bold">+VAT ${vatRate}% = ₹${unitTotal.toFixed(2)}</span>` : ''}
+          </div>
+        `;
+      } else if (item.is_addon) {
         itemHeaderHtml = `
           <div class="d-flex align-items-center gap-1 min-w-0" style="min-width: 0;">
             <span class="food-symbol-micro ${foodTypeDot}"></span>
@@ -3034,7 +3636,8 @@ $(document).ready(function() {
               </div>
 
               <div class="cart-item-total">
-                <div class="cart-item-net-val">₹${lineNet.toFixed(2)}</div>
+                <div class="cart-item-net-val">₹${lineDisplayTotal.toFixed(2)}</div>
+                ${item.is_bar && item.vat_rate > 0 ? `<div class="small text-muted" style="font-size: 0.6rem; line-height: 1;">(incl. VAT)</div>` : ''}
                 <div class="item-disc-tag" style="${discAmt > 0 ? '' : 'display: none;'}">-₹${discAmt.toFixed(2)}</div>
               </div>
 
@@ -3055,32 +3658,47 @@ $(document).ready(function() {
 
   function getComputedGrandTotal() {
     let items = Object.values(cart);
-    let netTaxable = 0;
+    let foodTaxable = 0;
+    let liquorVatable = 0;
+    let totalVat = 0;
+
     items.forEach(function(i) {
       let base = i.base_price !== undefined ? parseFloat(i.base_price) : parseFloat(i.price);
       let q = parseFloat(i.qty) || 1;
       let discPercent = parseFloat(i.discount_percent) || 0;
+      let vatRate = parseFloat(i.vat_rate || 0);
+      let isLiquor = (i.is_bar || vatRate > 0);
       let aCost = (i.addons || []).reduce(function(sum, a) {
         return sum + ((parseFloat(a.price) || 0) * (a.qty || a.quantity || 1));
       }, 0);
 
+      let lineTaxable = 0;
       if (i.is_addon) {
         let orig = base * q;
         let discAmt = (orig * discPercent) / 100;
-        netTaxable += (orig - discAmt);
+        lineTaxable = orig - discAmt;
       } else {
         let dishOrig = base * q;
         let discAmt = (dishOrig * discPercent) / 100;
-        netTaxable += (dishOrig - discAmt) + aCost;
+        lineTaxable = (dishOrig - discAmt) + aCost;
+      }
+
+      if (isLiquor) {
+        liquorVatable += lineTaxable;
+        if (vatRate > 0) {
+          totalVat += (lineTaxable * vatRate) / 100;
+        }
+      } else {
+        foodTaxable += lineTaxable;
       }
     });
 
     let gstAmount = 0;
     if (IS_GST_ENABLED && RESTAURANT_GST_PERCENT > 0) {
-      gstAmount = (netTaxable * RESTAURANT_GST_PERCENT) / 100;
+      gstAmount = (foodTaxable * RESTAURANT_GST_PERCENT) / 100;
     }
 
-    let exactTotal = netTaxable + gstAmount;
+    let exactTotal = foodTaxable + gstAmount + liquorVatable + totalVat;
     return Math.round(exactTotal);
   }
 
@@ -3088,38 +3706,52 @@ $(document).ready(function() {
     let items = Object.values(cart);
     let grossSubtotal = 0;
     let totalDiscountAmount = 0;
-    let netTaxable = 0;
+    let foodTaxable = 0;
+    let liquorVatable = 0;
+    let totalVat = 0;
 
     items.forEach(function(i) {
       let base = i.base_price !== undefined ? parseFloat(i.base_price) : parseFloat(i.price);
       let q = parseFloat(i.qty) || 1;
       let discPercent = parseFloat(i.discount_percent) || 0;
+      let vatRate = parseFloat(i.vat_rate || 0);
+      let isLiquor = (i.is_bar || vatRate > 0);
       let aCost = (i.addons || []).reduce(function(sum, a) {
         return sum + ((parseFloat(a.price) || 0) * (a.qty || a.quantity || 1));
       }, 0);
 
+      let lineTaxable = 0;
       if (i.is_addon) {
         let orig = base * q;
         let discAmt = (orig * discPercent) / 100;
         grossSubtotal += orig;
         totalDiscountAmount += discAmt;
-        netTaxable += (orig - discAmt);
+        lineTaxable = orig - discAmt;
       } else {
         let dishOrig = base * q;
         let discAmt = (dishOrig * discPercent) / 100;
         let orig = dishOrig + aCost;
         grossSubtotal += orig;
         totalDiscountAmount += discAmt;
-        netTaxable += (dishOrig - discAmt) + aCost;
+        lineTaxable = (dishOrig - discAmt) + aCost;
+      }
+
+      if (isLiquor) {
+        liquorVatable += lineTaxable;
+        if (vatRate > 0) {
+          totalVat += (lineTaxable * vatRate) / 100;
+        }
+      } else {
+        foodTaxable += lineTaxable;
       }
     });
 
     let gstAmount = 0;
     if (IS_GST_ENABLED && RESTAURANT_GST_PERCENT > 0) {
-      gstAmount = (netTaxable * RESTAURANT_GST_PERCENT) / 100;
+      gstAmount = (foodTaxable * RESTAURANT_GST_PERCENT) / 100;
     }
 
-    let exactTotal = netTaxable + gstAmount;
+    let exactTotal = foodTaxable + gstAmount + liquorVatable + totalVat;
     let grandTotal = Math.round(exactTotal);
     let roundOff = grandTotal - exactTotal;
 
@@ -3133,9 +3765,28 @@ $(document).ready(function() {
     }
 
     if (IS_GST_ENABLED) {
-      $('#lblTaxable').text('₹' + netTaxable.toFixed(2));
-      $('#lblGst').text('₹' + gstAmount.toFixed(2));
+      if (foodTaxable > 0 || liquorVatable === 0) {
+        $('#rowFoodTaxable').show();
+        $('#rowGst').show();
+        $('#lblTaxable').text('₹' + foodTaxable.toFixed(2));
+        $('#lblGst').text('₹' + gstAmount.toFixed(2));
+      } else {
+        // Only liquor items in cart: hide food GST rows
+        $('#rowFoodTaxable').hide();
+        $('#rowGst').hide();
+      }
     }
+
+    if (liquorVatable > 0) {
+      $('#rowTotalVatable').show();
+      $('#lblTotalVatable').text('₹' + liquorVatable.toFixed(2));
+      $('#rowTotalVat').show();
+      $('#lblTotalVat').text('+₹' + totalVat.toFixed(2));
+    } else {
+      $('#rowTotalVatable').hide();
+      $('#rowTotalVat').hide();
+    }
+
     $('#lblRoundOff').text((roundOff >= 0 ? '+' : '') + '₹' + roundOff.toFixed(2));
     $('#lblGrandTotal').text('₹' + grandTotal.toFixed(2));
 
@@ -3259,10 +3910,16 @@ $(document).ready(function() {
       print_bill: $('#chkPrintBill').is(':checked') ? 1 : 0,
       items: items.map(function(i) {
         return {
-          dish_id: i.id,
+          dish_id: i.dish_id || i.id,
+          name: i.name,
           quantity: i.qty,
           price: i.base_price !== undefined ? i.base_price : i.price,
           discount_percentage: parseFloat(i.discount_percent) || 0,
+          vat_rate: i.vat_rate || 0,
+          bar_variation_id: i.bar_variation_id || null,
+          bar_variation_name: i.bar_variation_name || null,
+          bar_variation_ml: i.bar_variation_ml || null,
+          is_bar: i.is_bar ? 1 : 0,
           addons: (i.addons || []).map(function(a) {
             return {
               id: a.id,

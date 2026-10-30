@@ -179,7 +179,11 @@
                 Tel: {{ $restaurant_details->phone }}<br>
                 @endif
                 @if(!empty($restaurant_details->gstin))
-                GSTIN: {{ $restaurant_details->gstin }}
+                <strong>GSTIN:</strong> {{ $restaurant_details->gstin }}
+                @endif
+                @if(!empty($restaurant_details->vatin))
+                @if(!empty($restaurant_details->gstin)) | @endif
+                <strong>VATIN:</strong> {{ $restaurant_details->vatin }}
                 @endif
             </div>
         </div>
@@ -189,7 +193,7 @@
         <!-- Order Information -->
         <div class="info-row">
             <span class="info-label">Order #:</span>
-            <span>{{ $order->order_id }}</span>
+            <span>{{ $order->order_id ?? $order->id }}</span>
         </div>
         <div class="info-row">
             <span class="info-label">Date:</span>
@@ -197,7 +201,7 @@
         </div>
         <div class="info-row">
             <span class="info-label">Customer:</span>
-            <span>{{ $order->customer_name }}</span>
+            <span>{{ $order->customer_name ?: 'Walk-in Guest' }}</span>
         </div>
         @if($order->customer_phone)
         <div class="info-row">
@@ -215,23 +219,21 @@
             <span>{{ $order->table->name ?? 'Table ' . $order->table_id }}</span>
         </div>
         @endif
-        <!-- <div class="info-row">
-            <span class="info-label">Status:</span>
-            <span>{{ ucfirst($order->order_status) }}</span>
-        </div> -->
-        
-        <!-- GST Info Box -->
-        {{-- @if(isset($order->is_gst_bill) && $order->is_gst_bill == 'YES')
-        <div class="gst-info">
-            <i class="fas fa-file-invoice-dollar"></i> GST Bill ({{ $order->restaurant_gst_percentage ?? 0 }}% GST)
-        </div>
-        @else
-        <div class="non-gst-info">
-            <i class="fas fa-receipt"></i> Non-GST Bill
-        </div>
-        @endif --}}
         
         <div class="line-dotted"></div>
+
+        @php
+            $isGstBill = isset($order->is_gst_bill) && $order->is_gst_bill == 'YES';
+            $restaurantGstPercentage = (float)($order->restaurant_gst_percentage ?? 0);
+
+            $foodList = isset($food_order_items) ? $food_order_items : $order->orderItems->filter(function($i) {
+                return empty($i->bar_variation_id) && floatval($i->vat_rate ?? 0) <= 0 && (!isset($i->subcategory) || strtoupper($i->subcategory->food_type ?? '') !== 'BAR');
+            });
+
+            $barList = isset($bar_order_items) ? $bar_order_items : $order->orderItems->filter(function($i) {
+                return !empty($i->bar_variation_id) || floatval($i->vat_rate ?? 0) > 0 || (isset($i->subcategory) && strtoupper($i->subcategory->food_type ?? '') === 'BAR');
+            });
+        @endphp
         
         <!-- Items Header -->
         <table class="items-table">
@@ -244,78 +246,125 @@
                 </tr>
             </thead>
             <tbody>
-                @php
-                    $displaySubtotal = 0;
-                    $displayTaxableSum = 0;
-                    $displayGstSum = 0;
-                    $isGstBill = isset($order->is_gst_bill) && $order->is_gst_bill == 'YES';
-                    $restaurantGstPercentage = (float)($order->restaurant_gst_percentage ?? 0);
-                @endphp
-                @foreach($order->orderItems as $item)
-                @php
-                    $itemDiscount = (float)($item->item_discount_percentage ?? 0);
-                    $originalPrice = (float)$item->price;
-                    $discountedPrice = (float)($item->discounted_price ?? ($originalPrice - ($originalPrice * $itemDiscount / 100)));
-                    $quantity = (int)$item->quantity;
-                    $addons = $item->addons_list;
-                    $addonsCost = 0;
-                    if (!empty($addons) && is_array($addons)) {
-                        foreach ($addons as $a) {
-                            $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                {{-- 1. Food Items --}}
+                @if($foodList && $foodList->count() > 0)
+                    @if($barList && $barList->count() > 0)
+                    <tr>
+                        <td colspan="4" style="font-weight: bold; font-size: 9px; padding-top: 4px; padding-bottom: 2px; color: #333; text-decoration: underline;">
+                            -- FOOD &amp; KITCHEN ITEMS --
+                        </td>
+                    </tr>
+                    @endif
+                    @foreach($foodList as $item)
+                    @php
+                        $itemDiscount = (float)($item->item_discount_percentage ?? 0);
+                        $originalPrice = (float)$item->price;
+                        $discountedPrice = (float)($item->discounted_price ?? ($originalPrice - ($originalPrice * $itemDiscount / 100)));
+                        $quantity = (int)$item->quantity;
+                        $addons = $item->addons_list;
+                        $addonsCost = 0;
+                        if (!empty($addons) && is_array($addons)) {
+                            foreach ($addons as $a) {
+                                $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
+                            }
                         }
-                    }
-                    $isAddonItem = empty($item->subcategory_id);
-                    $lineOriginal = $isAddonItem ? ($originalPrice * $quantity) : (($originalPrice * $quantity) + $addonsCost);
-                    $taxableAmount = $isAddonItem ? ($discountedPrice * $quantity) : (($discountedPrice * $quantity) + $addonsCost);
-                    
-                    // Use restaurant GST percentage if GST bill, otherwise 0
-                    $gstRate = $isGstBill ? (float)($item->gst_rate ?? $restaurantGstPercentage) : 0;
-                    $gstAmount = ($taxableAmount * $gstRate) / 100;
-                    $itemTotal = $taxableAmount + $gstAmount;
-                    $displaySubtotal += $lineOriginal;
-                    $displayTaxableSum += $taxableAmount;
-                    $displayGstSum += $gstAmount;
-                @endphp
-                <tr>
-                    <td class="item-name">
-                        {{ \Illuminate\Support\Str::limit($item->subcategory->name ?? 'Item', 26) }}
-                        @php
-                            $addons = $item->addons_list;
-                        @endphp
-                        @if(!empty($addons) && !$isAddonItem)
-                            @foreach($addons as $a)
-                                @php
-                                    $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
-                                    $aPrice = floatval($a['price'] ?? 0);
-                                @endphp
-                                <div style="font-size: 8px; color: #333; padding-left: 4px; font-weight: 600;">
-                                    + {{ $a['name'] ?? 'Addon' }} x{{ $aQty }} ({{ number_format($aPrice * $aQty, 2) }})
-                                </div>
-                            @endforeach
-                        @endif
-                        @if($itemDiscount > 0)
-                            <div class="item-discount">-{{ $itemDiscount }}% off</div>
-                        @endif
-                    </td>
-                    <td class="right">{{ $quantity }}</td>
-                    <td class="right">
-                        @if($itemDiscount > 0)
-                            <del>{{ number_format($originalPrice, 2) }}</del><br>
-                            {{ number_format($discountedPrice, 2) }}
-                        @else
-                            {{ number_format($originalPrice, 2) }}
-                        @endif
-                    </td>
-                    <td class="right">{{ number_format($itemTotal, 2) }}</td>
-                </tr>
-                @if($isGstBill && $gstRate > 0)
-                <tr class="gst-note">
-                    <td colspan="4" class="right">
-                        (GST {{ number_format($gstRate, 2) }}%: {{ number_format($gstAmount, 2) }})
-                    </td>
-                </tr>
+                        $isAddonItem = empty($item->subcategory_id);
+                        $taxableAmount = $item->taxable_amount ?? ($isAddonItem ? ($discountedPrice * $quantity) : (($discountedPrice * $quantity) + $addonsCost));
+                        
+                        $gstRate = $isGstBill ? (float)($item->gst_rate ?? $restaurantGstPercentage) : 0;
+                        $gstAmount = $item->gst_amount ?? (($taxableAmount * $gstRate) / 100);
+                        $itemTotal = $taxableAmount + $gstAmount;
+                    @endphp
+                    <tr>
+                        <td class="item-name">
+                            {{ \Illuminate\Support\Str::limit($item->subcategory->name ?? 'Item', 24) }}
+                            @if(!empty($addons) && !$isAddonItem)
+                                @foreach($addons as $a)
+                                    @php
+                                        $aQty = $a['qty'] ?? $a['quantity'] ?? 1;
+                                        $aPrice = floatval($a['price'] ?? 0);
+                                    @endphp
+                                    <div style="font-size: 8px; color: #333; padding-left: 4px; font-weight: 600;">
+                                        + {{ $a['name'] ?? 'Addon' }} x{{ $aQty }} ({{ number_format($aPrice * $aQty, 2) }})
+                                    </div>
+                                @endforeach
+                            @endif
+                            @if($itemDiscount > 0)
+                                <div class="item-discount">-{{ $itemDiscount }}% off</div>
+                            @endif
+                        </td>
+                        <td class="right">{{ $quantity }}</td>
+                        <td class="right">
+                            @if($itemDiscount > 0)
+                                <del>{{ number_format($originalPrice, 2) }}</del><br>
+                                {{ number_format($discountedPrice, 2) }}
+                            @else
+                                {{ number_format($originalPrice, 2) }}
+                            @endif
+                        </td>
+                        <td class="right">{{ number_format($itemTotal, 2) }}</td>
+                    </tr>
+                    @if($isGstBill && $gstRate > 0)
+                    <tr class="gst-note">
+                        <td colspan="4" class="right">
+                            (GST {{ number_format($gstRate, 2) }}%: {{ number_format($gstAmount, 2) }})
+                        </td>
+                    </tr>
+                    @endif
+                    @endforeach
                 @endif
-                @endforeach
+
+                {{-- 2. Bar & Liquor Items (with ML and Peg size separate) --}}
+                @if($barList && $barList->count() > 0)
+                    <tr>
+                        <td colspan="4" style="font-weight: bold; font-size: 9px; padding-top: 6px; padding-bottom: 2px; color: #854d0e; text-decoration: underline;">
+                            -- BAR &amp; LIQUOR ITEMS --
+                        </td>
+                    </tr>
+                    @foreach($barList as $bItem)
+                    @php
+                        $bDiscount = (float)($bItem->item_discount_percentage ?? 0);
+                        $bPrice = (float)$bItem->price;
+                        $bDiscounted = (float)($bItem->discounted_price ?? ($bPrice - ($bPrice * $bDiscount / 100)));
+                        $bQty = (int)$bItem->quantity;
+                        $bTaxable = $bItem->taxable_amount ?? ($bDiscounted * $bQty);
+                        $bVatRate = floatval($bItem->vat_rate ?? 0);
+                        $bVatAmount = $bItem->vat_amount ?? (($bTaxable * $bVatRate) / 100);
+                        $bTotal = $bItem->total_amount ?? ($bTaxable + $bVatAmount);
+
+                        $varTitle = $bItem->bar_variation_name;
+                        $varMl = !empty($bItem->bar_variation_ml) ? floatval($bItem->bar_variation_ml) : null;
+                    @endphp
+                    <tr>
+                        <td class="item-name">
+                            {{ \Illuminate\Support\Str::limit($bItem->subcategory->name ?? 'Liquor Item', 24) }}
+                            <div style="font-size: 8px; color: #1e293b; font-weight: bold; padding-left: 2px;">
+                                [Peg: {{ $varTitle ?: 'Standard' }}@if($varMl) • {{ $varMl }}ml @endif]
+                            </div>
+                            @if($bDiscount > 0)
+                                <div class="item-discount">-{{ $bDiscount }}% off</div>
+                            @endif
+                        </td>
+                        <td class="right">{{ $bQty }}</td>
+                        <td class="right">
+                            @if($bDiscount > 0)
+                                <del>{{ number_format($bPrice, 2) }}</del><br>
+                                {{ number_format($bDiscounted, 2) }}
+                            @else
+                                {{ number_format($bPrice, 2) }}
+                            @endif
+                        </td>
+                        <td class="right">{{ number_format($bTotal, 2) }}</td>
+                    </tr>
+                    @if($bVatRate > 0)
+                    <tr class="gst-note">
+                        <td colspan="4" class="right" style="color: #047857;">
+                            (State VAT {{ number_format($bVatRate, 2) }}%: {{ number_format($bVatAmount, 2) }})
+                        </td>
+                    </tr>
+                    @endif
+                    @endforeach
+                @endif
             </tbody>
         </table>
         
@@ -323,22 +372,22 @@
         
         <!-- Totals Section -->
         @php
-            $totalOriginalSubtotal = ($original_subtotal ?? 0) > 0 ? $original_subtotal : ($order->total_amount > 0 ? $order->total_amount : $displaySubtotal);
-            $totalTaxableAmount = ($total_taxable ?? 0) > 0 ? $total_taxable : ($order->taxable_amount > 0 ? $order->taxable_amount : $displayTaxableSum);
-            $totalGstAmount = ($total_gst ?? 0) > 0 ? $total_gst : ($order->gst_amount > 0 ? $order->gst_amount : $displayGstSum);
+            $displaySubtotalVal = $original_subtotal ?? ($order->total_amount ?? 0);
+            $displayTaxableVal = $total_taxable ?? ($order->taxable_amount ?? 0);
+            $displayGstVal = $total_gst ?? ($order->gst_amount ?? 0);
+            $displayVatVal = $total_vat ?? ($order->vat_amount ?? 0);
             $orderDiscountPercent = (float)($order->discount_percentage ?? 0);
-            $orderDiscountAmount = (float)($order->discount ?? (($totalTaxableAmount + $totalGstAmount) * $orderDiscountPercent / 100));
-            $grandTotalBeforeRound = ($totalTaxableAmount + $totalGstAmount) - $orderDiscountAmount;
-            $finalTotal = (float)($order->grand_total ?? round($grandTotalBeforeRound));
-            $roundOff = (float)($order->round_off ?? ($finalTotal - $grandTotalBeforeRound));
-            $totalItemDiscount = max(0, $totalOriginalSubtotal - $totalTaxableAmount);
+            $orderDiscountAmount = (float)($order->discount ?? (($displayTaxableVal + $displayGstVal + $displayVatVal) * $orderDiscountPercent / 100));
+            $finalTotal = (float)($order->grand_total ?? ($displayTaxableVal + $displayGstVal + $displayVatVal - $orderDiscountAmount));
+            $roundOff = (float)($order->round_off ?? 0);
+            $totalItemDiscount = max(0, $displaySubtotalVal - $displayTaxableVal);
         @endphp
         
         <table class="totals-table">
-            @if($totalOriginalSubtotal > 0)
+            @if($displaySubtotalVal > 0)
             <tr>
                 <td>Subtotal:</td>
-                <td>{{ number_format($totalOriginalSubtotal, 2) }}</td>
+                <td>{{ number_format($displaySubtotalVal, 2) }}</td>
             </tr>
             @endif
             
@@ -351,13 +400,20 @@
             
             <tr>
                 <td>Taxable Amount:</td>
-                <td>{{ number_format($totalTaxableAmount, 2) }}</td>
+                <td>{{ number_format($displayTaxableVal, 2) }}</td>
             </tr>
             
-            @if($isGstBill && $totalGstAmount > 0)
+            @if($isGstBill && $displayGstVal > 0)
             <tr>
-                <td>GST Total ({{ $restaurantGstPercentage }}%):</td>
-                <td>{{ number_format($totalGstAmount, 2) }}</td>
+                <td>GST ({{ $restaurantGstPercentage }}%):</td>
+                <td>{{ number_format($displayGstVal, 2) }}</td>
+            </tr>
+            @endif
+
+            @if($displayVatVal > 0)
+            <tr>
+                <td>State VAT (Liquor):</td>
+                <td>{{ number_format($displayVatVal, 2) }}</td>
             </tr>
             @endif
             
@@ -380,6 +436,8 @@
                 <td><strong>{{ number_format($finalTotal, 2) }}</strong></td>
             </tr>
         </table>
+        
+
         
         <div class="line"></div>
         

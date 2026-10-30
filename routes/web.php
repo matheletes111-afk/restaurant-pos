@@ -41,6 +41,12 @@ Route::post('forget-password-user/enter-new-password',[LoginController::class, '
 
 
 Route::get('/', [App\Http\Controllers\FrontendController::class, 'index'])->name('home');
+Route::post('/', function (Request $request) {
+    if ($request->hasHeader('X-Razorpay-Signature') || $request->has('event')) {
+        return app(\App\Http\Controllers\Admin\WebhookController::class)->handle($request);
+    }
+    return app(\App\Http\Controllers\FrontendController::class)->index();
+});
 Route::post('/book-demo', [App\Http\Controllers\FrontendController::class, 'bookDemo'])->name('book.demo');
 Route::get('/terms-and-conditions', [App\Http\Controllers\FrontendController::class, 'terms'])->name('terms.conditions');
 Route::get('/privacy-policy', [App\Http\Controllers\FrontendController::class, 'privacy'])->name('privacy.policy');
@@ -227,6 +233,51 @@ Route::post('table-category-manage/update', [App\Http\Controllers\TableCategoryC
 Route::get('table-category-manage/status/{id}', [App\Http\Controllers\TableCategoryController::class, 'status'])->name('table.category.status');
 Route::get('table-category-manage/delete/{id}', [App\Http\Controllers\TableCategoryController::class, 'delete'])->name('table.category.delete');
 
+// Bar Management - Category Management (category_type = BAR)
+Route::get('bar/manage-category', [App\Http\Controllers\Bar\BarCategoryController::class, 'index'])->name('bar.category.index');
+Route::post('bar/manage-category/insert-category', [App\Http\Controllers\Bar\BarCategoryController::class, 'insert'])->name('bar.category.insert');
+Route::post('bar/manage-category/update-category', [App\Http\Controllers\Bar\BarCategoryController::class, 'update'])->name('bar.category.update');
+Route::get('bar/manage-category/delete-category/{id}', [App\Http\Controllers\Bar\BarCategoryController::class, 'delete'])->name('bar.category.delete');
+Route::post('bar/manage-category/bulk-upload', [App\Http\Controllers\Bar\BarCategoryController::class, 'bulkUploadCategory'])->name('bar.category.bulk.upload');
+Route::get('bar/manage-category/bulk-upload-template', [App\Http\Controllers\Bar\BarCategoryController::class, 'downloadCategoryTemplate'])->name('bar.category.template');
+
+// Bar Brand Management
+Route::get('bar/brands', [App\Http\Controllers\Bar\BarBrandController::class, 'index'])->name('bar.brand.index');
+Route::post('bar/brands/store', [App\Http\Controllers\Bar\BarBrandController::class, 'store'])->name('bar.brand.store');
+Route::post('bar/brands/update', [App\Http\Controllers\Bar\BarBrandController::class, 'update'])->name('bar.brand.update');
+Route::get('bar/brands/delete/{id}', [App\Http\Controllers\Bar\BarBrandController::class, 'delete'])->name('bar.brand.delete');
+Route::post('bar/brands/bulk-upload', [App\Http\Controllers\Bar\BarBrandController::class, 'bulkUpload'])->name('bar.brand.bulk.upload');
+Route::get('bar/brands/bulk-upload-template', [App\Http\Controllers\Bar\BarBrandController::class, 'downloadTemplate'])->name('bar.brand.template');
+
+// Variation Inner Page & Modal CRUD (Inner page of Bar Item Management)
+Route::get('bar/items/{item_id}/variations', [App\Http\Controllers\Bar\BarVariationController::class, 'index'])->name('bar.item.variations');
+Route::get('bar/items/{item_id}/variations-data', [App\Http\Controllers\Bar\BarItemController::class, 'getVariations'])->name('bar.item.variations.get');
+Route::post('bar/items/variations/store', [App\Http\Controllers\Bar\BarItemController::class, 'storeVariation'])->name('bar.item.variations.store');
+Route::match(['get', 'post'], 'bar/items/variations/delete/{id}', [App\Http\Controllers\Bar\BarItemController::class, 'deleteVariation'])->name('bar.item.variations.delete');
+
+// Bar Item Management & CRUD
+Route::post('bar/items/store', [App\Http\Controllers\Bar\BarItemController::class, 'store'])->name('bar.item.store');
+Route::post('bar/items/update', [App\Http\Controllers\Bar\BarItemController::class, 'update'])->name('bar.item.update');
+Route::match(['get', 'post'], 'bar/items/toggle-status/{id}', [App\Http\Controllers\Bar\BarItemController::class, 'toggleStatus'])->name('bar.item.toggle-status');
+Route::match(['get', 'post'], 'admin/bar/items/toggle-status/{id}', [App\Http\Controllers\Bar\BarItemController::class, 'toggleStatus']);
+Route::get('bar/items/delete/{id}', [App\Http\Controllers\Bar\BarItemController::class, 'delete'])->name('bar.item.delete');
+Route::get('bar/items/{category_id?}', [App\Http\Controllers\Bar\BarItemController::class, 'index'])->where('category_id', '[0-9]+')->name('bar.item.index');
+Route::get('admin/bar/items/{category_id?}', [App\Http\Controllers\Bar\BarItemController::class, 'index'])->where('category_id', '[0-9]+');
+
+// Bar Variation Operations (Inner Page Actions)
+Route::get('bar/variations/{item_id?}', [App\Http\Controllers\Bar\BarVariationController::class, 'index'])->name('bar.variation.index');
+Route::post('bar/variations/store', [App\Http\Controllers\Bar\BarVariationController::class, 'store'])->name('bar.variation.store');
+Route::post('bar/variations/update', [App\Http\Controllers\Bar\BarVariationController::class, 'update'])->name('bar.variation.update');
+// Bar KOT Counter Routes
+Route::get('bar/kot-counter', [App\Http\Controllers\Bar\BarKotController::class, 'index'])->name('bar.kot.index');
+Route::get('admin/bar/kot-counter', [App\Http\Controllers\Bar\BarKotController::class, 'index']);
+Route::post('bar/kot-counter/update-status', [App\Http\Controllers\Bar\BarKotController::class, 'updateStatus'])->name('bar.kot.status.update');
+Route::post('admin/bar/kot-counter/update-status', [App\Http\Controllers\Bar\BarKotController::class, 'updateStatus']);
+Route::match(['get', 'post'], 'bar/kot-counter/delete-item/{id?}', [App\Http\Controllers\Bar\BarKotController::class, 'deleteItem'])->name('bar.kot.delete');
+Route::match(['get', 'post'], 'admin/bar/kot-counter/delete-item/{id?}', [App\Http\Controllers\Bar\BarKotController::class, 'deleteItem']);
+Route::get('bar/kot-counter/refresh', [App\Http\Controllers\Bar\BarKotController::class, 'refreshOrders'])->name('bar.kot.refresh');
+Route::get('admin/bar/kot-counter/refresh', [App\Http\Controllers\Bar\BarKotController::class, 'refreshOrders']);
+
 
 
     // Restaurant Analytics Dashboard
@@ -393,6 +444,14 @@ Route::get('admin/temp-order/reject/{id}', [App\Http\Controllers\TempOrderAdminC
     Route::post('users/store', [\App\Http\Controllers\Admin\AdminUserController::class, 'store'])->name('admin.users.store');
     Route::post('users/update', [\App\Http\Controllers\Admin\AdminUserController::class, 'update'])->name('admin.users.update');
     Route::get('users/delete/{id}', [\App\Http\Controllers\Admin\AdminUserController::class, 'delete'])->name('admin.users.delete');
+
+    // Franchise Sponsorship Owner (Role: FSO) Management Routes
+    Route::get('franchise-owners', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'index'])->name('admin.fso.index');
+    Route::get('admin/franchise-owners', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'index']);
+    Route::post('franchise-owners/store', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'store'])->name('admin.fso.store');
+    Route::post('franchise-owners/update', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'update'])->name('admin.fso.update');
+    Route::get('franchise-owners/delete/{id}', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'delete'])->name('admin.fso.delete');
+    Route::post('franchise-owners/toggle-status/{id}', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'toggleStatus'])->name('admin.fso.toggle-status');
 
     Route::post('plans/update-order', [\App\Http\Controllers\PlanController::class, 'updateOrder'])->name('admin.plans.update-order');
     Route::resource('plans', \App\Http\Controllers\PlanController::class);
@@ -610,6 +669,9 @@ Route::prefix('restaurant/profile')->name('restaurant.profile.')->group(function
 });
 
 });
+
+// Root alias for Bar Item Status Toggle (supports both /bar/items/toggle-status/{id} and /admin/bar/items/toggle-status/{id})
+Route::match(['get', 'post'], 'bar/items/toggle-status/{id}', [App\Http\Controllers\Bar\BarItemController::class, 'toggleStatus']);
 
 });
 

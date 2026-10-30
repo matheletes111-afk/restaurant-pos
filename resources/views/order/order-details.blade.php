@@ -744,7 +744,17 @@
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
                                     <td>
-                                        <div class="item-name">{{ $item->subcategory->name ?? 'Custom Item' }}</div>
+                                        <div class="item-name">
+                                            @if(!empty($item->bar_variation_id) || floatval($item->vat_rate ?? 0) > 0 || (isset($item->subcategory) && strtoupper($item->subcategory->food_type ?? '') === 'BAR'))
+                                                <span class="badge bg-warning-subtle text-dark border border-warning me-1 px-1.5 py-0.5" style="font-size: 0.65rem;"><i class="fa-solid fa-wine-bottle text-warning"></i> BAR</span>
+                                            @endif
+                                            {{ $item->subcategory->name ?? 'Custom Item' }}
+                                            @if(!empty($item->bar_variation_name))
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1" style="font-size: 0.72rem;">{{ $item->bar_variation_name }}</span>
+                                            @elseif(!empty($item->bar_variation_ml))
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1" style="font-size: 0.72rem;">{{ $item->bar_variation_ml }}ml</span>
+                                            @endif
+                                        </div>
                                         @if(!empty($item->subcategory->category->name))
                                             <div class="item-category">{{ $item->subcategory->category->name }}</div>
                                         @endif
@@ -889,6 +899,13 @@
                     <div class="summary-row">
                         <span class="summary-label">GST Total ({{ $gstPercentage }}%)</span>
                         <span class="summary-value">₹{{ number_format($gstTotal, 2) }}</span>
+                    </div>
+                    @endif
+
+                    @if(($order->vat_amount ?? 0) > 0)
+                    <div class="summary-row" style="color: #047857;">
+                        <span class="summary-label"><i class="fas fa-wine-glass me-1"></i> State VAT (Liquor)</span>
+                        <span class="summary-value fw-bold">+ ₹{{ number_format($order->vat_amount, 2) }}</span>
                     </div>
                     @endif
                     

@@ -26,6 +26,7 @@ class User extends Authenticatable implements JWTSubject
         'role_type',
         'restaurant_id',
         'phone',
+        'address',
         'status',
         'permissions',
     ];
@@ -69,6 +70,11 @@ class User extends Authenticatable implements JWTSubject
 
         // Automatic inheritance: Users with order_master permission automatically get rapid_bill access
         if ($menuKey === 'rapid_bill' && (in_array('order_master', $perms) || in_array('order_master.' . $action, $perms) || in_array('order_master.view', $perms))) {
+            return true;
+        }
+
+        // Automatic inheritance: Users with menu_master permission automatically get bar_management access
+        if ($menuKey === 'bar_management' && (in_array('bar_management', $perms) || in_array('menu_master', $perms) || in_array('bar_management.' . $action, $perms) || in_array('menu_master.' . $action, $perms))) {
             return true;
         }
 

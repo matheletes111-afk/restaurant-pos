@@ -305,6 +305,15 @@
           </a>
         </li>
         @endif
+
+        @if($saUser->id == 1 || in_array('admin_user_management', $saPerms) || in_array('fso_management', $saPerms))
+        <li class="pc-item">
+          <a href="{{route('admin.fso.index')}}" class="pc-link @if(Request::is('*franchise-owners*') || Request::is('*fso*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-handshake"></i></span>
+            <span class="pc-mtext">Franchise Owners</span>
+          </a>
+        </li>
+        @endif
         {{-- ==================== END ADMIN ROUTES ==================== --}}
         @endif
 
@@ -399,6 +408,51 @@
         </li>
         @endif
 
+        {{-- Bar Management Dropdown --}}
+        @if(auth()->user()->hasPermission('bar_management') || auth()->user()->hasPermission('menu_master'))
+        @php
+          $isBarActive = Request::is('*bar/*') || Request::is('*bar-*') || request()->routeIs('bar.*');
+        @endphp
+        <li class="pc-item pc-hasmenu {{ $isBarActive ? 'pc-trigger active' : '' }} {{ $disabledClass }}">
+          <a href="#!" class="pc-link {{ $isBarActive ? 'active-parent' : '' }}">
+            <span class="pc-micon">
+              <i class="fas fa-cocktail"></i>
+            </span>
+            <span class="pc-mtext">Bar Management</span>
+            <span class="pc-arrow">
+              <i data-feather="chevron-right"></i>
+            </span>
+          </a>
+
+          <ul class="pc-submenu" style="{{ $isBarActive ? 'display: block;' : '' }}">
+            <li class="pc-item">
+              <a href="{{ route('bar.category.index') }}" class="pc-link @if(Request::is('*bar/manage-category*') || request()->routeIs('bar.category.*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-layer-group"></i></span>
+                <span class="pc-mtext">Category Management</span>
+              </a>
+            </li>
+            <li class="pc-item">
+              <a href="{{ route('bar.brand.index') }}" class="pc-link @if(Request::is('*bar/brands*') || request()->routeIs('bar.brand.*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-certificate"></i></span>
+                <span class="pc-mtext">Brand Management</span>
+              </a>
+            </li>
+            <li class="pc-item">
+              <a href="{{ route('bar.item.index') }}" class="pc-link @if(Request::is('*bar/items*') || request()->routeIs('bar.item.*') || Request::is('*bar/variations*') || request()->routeIs('bar.variation.*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-wine-bottle"></i></span>
+                <span class="pc-mtext">Item Management</span>
+              </a>
+            </li>
+            <!-- <li class="pc-item">
+              <a href="{{ route('bar.kot.index') }}" class="pc-link @if(Request::is('*bar/kot-counter*') || request()->routeIs('bar.kot.*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-martini-glass-citrus text-warning"></i></span>
+                <span class="pc-mtext">Bar KOT Counter</span>
+              </a>
+            </li> -->
+          </ul>
+        </li>
+        @endif
+
         @if(auth()->user()->hasPermission('rapid_bill') || auth()->user()->hasPermission('order_master'))
         <li class="pc-item {{ $disabledClass }}">
           <a href="{{route('rapid.bill')}}" class="pc-link @if(Request::is('*rapid-bill*')) active_class @endif">
@@ -425,6 +479,15 @@
           <a href="{{route('manage.kitchen-panel')}}" class="pc-link @if(Request::is('*kitchen*')) active_class @endif">
             <span class="pc-micon"><i class="fas fa-utensils"></i></span>
             <span class="pc-mtext">Kitchen Order</span>
+          </a>
+        </li>
+        @endif
+
+        @if(auth()->user()->hasPermission('bar_management') || auth()->user()->hasPermission('kitchen_order') || auth()->user()->hasPermission('order_master'))
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{ route('bar.kot.index') }}" class="pc-link @if(Request::is('*bar/kot-counter*') || request()->routeIs('bar.kot.*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-cocktail text-warning"></i></span>
+            <span class="pc-mtext">Bar KOT Counter</span>
           </a>
         </li>
         @endif
@@ -488,6 +551,15 @@
           <a href="{{ route('restaurant.outlets.index') }}" class="pc-link @if(Request::is('*outlets*')) active_class @endif">
             <span class="pc-micon"><i class="fas fa-store-alt"></i></span>
             <span class="pc-mtext">Outlets / Branches</span>
+          </a>
+        </li>
+        @endif
+
+        @if(auth()->user()->role == 'RES')
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{ route('restaurant.profile.index') }}" class="pc-link @if(Request::is('*restaurant/profile*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-id-card"></i></span>
+            <span class="pc-mtext">Restaurant Profile</span>
           </a>
         </li>
         @endif
@@ -782,7 +854,6 @@
     @endif
 
     <li class="dropdown pc-h-item header-user-profile">
-      @if(auth()->user()->role=="RES")
       <a
         class="pc-head-link dropdown-toggle arrow-none me-0"
         data-bs-toggle="dropdown"
@@ -792,24 +863,31 @@
         data-bs-auto-close="outside"
         aria-expanded="false"
       >
-      @endif
-        
-        <span>Welcome , {{auth()->user()->name}}</span>
+        <span>Welcome, {{ auth()->user()->name }}</span>
       </a>
-      <div class="dropdown-menu dropdown-user-profile dropdown-menu-end pc-h-dropdown">
-        <div class="dropdown-header">
-          <div class="d-flex mb-1">
-            
-            <div class="flex-grow-1 ms-3">
-              <h6 class="mb-1">@if(auth()->user()->role=="RES"){{ optional(auth()->user()->restaurant)->name ?? auth()->user()->name }} @endif</h6>
-              <span style="color:orange;"><i class="fas fa-user me-2"></i>View Profile</span>
-            </a>
-            
+      <div class="dropdown-menu dropdown-user-profile dropdown-menu-end pc-h-dropdown shadow border-0 p-2" style="min-width: 230px; border-radius: 12px;">
+        <div class="dropdown-header pb-2">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="flex-grow-1 me-2 text-truncate">
+              <h6 class="mb-0 text-truncate fw-bold">@if(auth()->user()->role=="RES"){{ optional(auth()->user()->restaurant)->name ?? auth()->user()->name }}@else{{ auth()->user()->name }}@endif</h6>
+              <small class="text-muted" style="font-size: 0.75rem;">{{ auth()->user()->role == 'RES' ? 'Restaurant Admin' : 'Admin' }}</small>
             </div>
-            <a href="{{route('logout')}}" class="pc-head-link bg-transparent"><i class="ti ti-power text-danger"></i></a>
+            <a href="{{ route('logout') }}" class="pc-head-link bg-transparent p-1" title="Logout">
+              <i class="ti ti-power text-danger fs-5"></i>
+            </a>
           </div>
         </div>
-        
+        <div class="dropdown-divider my-1"></div>
+        @if(auth()->user()->role=="RES")
+        <a href="{{ route('restaurant.profile.index') }}" class="dropdown-item d-flex align-items-center py-2 px-3 rounded mb-1" style="color: #ff6a00; font-weight: 600;">
+          <i class="fas fa-user-circle me-2 fs-5"></i>
+          <span>View Profile</span>
+        </a>
+        @endif
+        <a href="{{ route('logout') }}" class="dropdown-item d-flex align-items-center py-2 px-3 rounded text-danger" style="font-weight: 600;">
+          <i class="fas fa-sign-out-alt me-2"></i>
+          <span>Logout</span>
+        </a>
       </div>
     </li>
   </ul>

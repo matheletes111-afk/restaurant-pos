@@ -941,9 +941,15 @@
                 {{ @$value->name }}
               </h3>
               <div class="category-meta-row">
-                <span class="category-catalog-tag">
-                  <i class="fa-solid fa-circle-check me-1"></i> Active Category
-                </span>
+                @if(($value->category_type ?? 'RES') == 'BAR')
+                  <span class="badge" style="background: #faf5ff; color: #7c3aed; border: 1px solid #e9d5ff; font-size: 0.72rem; font-weight: 700; border-radius: 6px; padding: 3px 8px;">
+                    <i class="fa-solid fa-martini-glass me-1"></i> Bar Category
+                  </span>
+                @else
+                  <span class="category-catalog-tag">
+                    <i class="fa-solid fa-circle-check me-1"></i> Restaurant Category
+                  </span>
+                @endif
                 <span class="category-quick-info">
                   {{ ($value->subcategories_count ?? count($value->subcategories ?? [])) > 0 ? (($value->subcategories_count ?? count($value->subcategories ?? [])) . ' items') : '0 items' }}
                 </span>
@@ -967,6 +973,7 @@
                         data-id="{{ $value->id }}"
                         data-name="{{ $value->name }}"
                         data-image="{{ $value->image }}"
+                        data-type="{{ $value->category_type ?? 'RES' }}"
                         title="Edit Category">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
@@ -1046,6 +1053,17 @@
           <div class="modal-pos-body">
             <div class="form-group mb-3">
               <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
+                Category Type <span class="text-danger">*</span>
+              </label>
+              <select name="category_type" class="form-control-custom">
+                <option value="RES" selected>Restaurant (Dining &amp; Food) &mdash; Default</option>
+                <option value="BAR">Bar (Cocktails, Beers &amp; Spirits)</option>
+              </select>
+              <small class="form-text text-muted" style="font-size: 0.72rem;">Default is RES for dining menu.</small>
+            </div>
+
+            <div class="form-group mb-3">
+              <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
                 Category Name <span class="text-danger">*</span>
               </label>
               <input type="text" name="name" class="form-control-custom" required placeholder="e.g. Starters, Main Course, Beverages" autocomplete="off">
@@ -1100,6 +1118,16 @@
           </div>
 
           <div class="modal-pos-body">
+            <div class="form-group mb-3">
+              <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
+                Category Type <span class="text-danger">*</span>
+              </label>
+              <select name="category_type" id="edit_category_type" class="form-control-custom">
+                <option value="RES">Restaurant (Dining &amp; Food)</option>
+                <option value="BAR">Bar (Cocktails, Beers &amp; Spirits)</option>
+              </select>
+            </div>
+
             <div class="form-group mb-3">
               <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
                 Category Name <span class="text-danger">*</span>
@@ -1329,9 +1357,11 @@
         let id = $(this).data('id');
         let name = $(this).data('name');
         let image = $(this).data('image');
+        let type = $(this).data('type') || 'RES';
 
         $('#edit_id').val(id);
         $('#edit_name').val(name);
+        $('#edit_category_type').val(type);
 
         if (image) {
           $('#edit_image_preview').attr('src', '{{ URL::to("storage/category") }}/' + image);

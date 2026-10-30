@@ -15,27 +15,44 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $data = [];
-        $data['data'] = Category::where('status','!=','D')
-            ->where('restaurant_id',auth()->user()->restaurant_id)
+        $restaurantId = auth()->user()->restaurant_id;
+        $typeFilter = $request->get('type', 'RES'); // Default to RES
+
+        $query = Category::where('status', '!=', 'D')
+            ->where('restaurant_id', $restaurantId);
+
+        if ($typeFilter === 'RES') {
+            $query->where(function($q) {
+                $q->where('category_type', 'RES')->orWhereNull('category_type');
+            });
+        } elseif ($typeFilter === 'BAR') {
+            $query->where('category_type', 'BAR');
+        } // If 'ALL', shows both
+
+        $data['data'] = $query
             ->withCount(['subcategories' => function($query) {
                 $query->where('status', '!=', 'D');
             }])
+            ->orderBy('id', 'desc')
             ->get();
-        $subRestaurantId = auth()->user()->getSubscriptionRestaurantId() ?? auth()->user()->restaurant_id;
+
+        $subRestaurantId = auth()->user()->getSubscriptionRestaurantId() ?? $restaurantId;
         $check_plan = Subscription::where('user_id', $subRestaurantId)->active()->first();
-        $data['plan_details'] = $check_plan ? Plan::where('id',$check_plan->plan_id)->first() : null;
-        return view('category_admin',$data);
+        $data['plan_details'] = $check_plan ? Plan::where('id', $check_plan->plan_id)->first() : null;
+        $data['active_type'] = $typeFilter;
+        return view('category_admin', $data);
     }
 
     public function insert(Request $request)
     {
         \Log::info('Category Insert Request Data:', $request->except('image'));
         $request->validate([
-            'name'  => 'required|string|max:255',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+            'name'          => 'required|string|max:255',
+            'category_type' => 'nullable|in:RES,BAR',
+            'image'         => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
         ], [
             'image.image' => 'The category file must be an image.',
             'image.mimes' => 'The category image must be a file of type: jpg, jpeg, png, webp, gif.',
@@ -44,7 +61,8 @@ class CategoryController extends Controller
 
         try {
             $new = new Category;
-            $new->name = $request->name;
+            $new->name = trim($request->name);
+            $new->category_type = $request->input('category_type', 'RES') ?: 'RES'; // Default is RES
             $new->user_id = auth()->user()->id;
             $new->restaurant_id = auth()->user()->restaurant_id;
             if ($request->hasFile('image')) {
@@ -73,9 +91,10 @@ class CategoryController extends Controller
     {
         \Log::info('Category Update Request Data:', $request->except('image'));
         $request->validate([
-            'id'    => 'required',
-            'name'  => 'required|string|max:255',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+            'id'            => 'required',
+            'name'          => 'required|string|max:255',
+            'category_type' => 'nullable|in:RES,BAR',
+            'image'         => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
         ], [
             'image.image' => 'The category file must be an image.',
             'image.mimes' => 'The category image must be a file of type: jpg, jpeg, png, webp, gif.',
@@ -84,8 +103,11 @@ class CategoryController extends Controller
 
         try {
             $upd = [];
-            $upd['name'] = $request->name;
+            $upd['name'] = trim($request->name);
             $upd['slug'] = Str::slug($request->name).'-'.$request->id;
+            if ($request->filled('category_type')) {
+                $upd['category_type'] = $request->category_type;
+            }
             if ($request->hasFile('image')) {
                 $check = Category::where('id',$request->id)->first();
                 if ($check && $check->image) {
@@ -412,6 +434,7 @@ class CategoryController extends Controller
                 foreach ($toInsert as $catName) {
                     $new = new Category();
                     $new->name = $catName;
+                    $new->category_type = 'RES'; // Default is RES
                     $new->user_id = auth()->user()->id;
                     $new->restaurant_id = $restaurantId;
                     $new->status = 'A';

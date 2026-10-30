@@ -24,6 +24,7 @@ class OrderManage extends Model
         'cgst_amount',
         'sgst_amount',
         'igst_amount',
+        'vat_amount',
         'grand_total',
         'round_off',
         'amount_paid',
@@ -43,6 +44,7 @@ class OrderManage extends Model
         'cgst_amount' => 'decimal:2',
         'sgst_amount' => 'decimal:2',
         'igst_amount' => 'decimal:2',
+        'vat_amount' => 'decimal:2',
         'grand_total' => 'decimal:2',
         'round_off' => 'decimal:2',
         'amount_paid' => 'decimal:2',
@@ -91,7 +93,7 @@ class OrderManage extends Model
         $totalCgst = 0;
         $totalSgst = 0;
         $totalIgst = 0;
-        $totalItemDiscount = 0;
+        $totalVat = 0;
 
         foreach ($items as $item) {
             $basePrice = floatval($item->price);
@@ -108,11 +110,28 @@ class OrderManage extends Model
             $isAddon = empty($item->subcategory_id);
             $lineOrig = $isAddon ? ($basePrice * $qty) : (($basePrice * $qty) + $addonsCost);
             $lineTax = $isAddon ? ($discPrice * $qty) : (($discPrice * $qty) + $addonsCost);
-            $gstRate = floatval($item->gst_rate ?? 0);
-            $lineGst = ($lineTax * $gstRate) / 100;
-            $lineCgst = ($lineTax * ($gstRate / 2)) / 100;
-            $lineSgst = ($lineTax * ($gstRate / 2)) / 100;
-            $lineTotal = $lineTax + $lineGst;
+
+            $vatRate = floatval($item->vat_rate ?? 0);
+            if ($vatRate > 0) {
+                $lineVat = ($lineTax * $vatRate) / 100;
+                $lineGst = 0;
+                $lineCgst = 0;
+                $lineSgst = 0;
+                $lineTotal = $lineTax + $lineVat;
+                $item->vat_amount = $lineVat;
+                $totalVat += $lineVat;
+            } else {
+                $gstRate = floatval($item->gst_rate ?? 0);
+                $lineGst = ($lineTax * $gstRate) / 100;
+                $lineCgst = ($lineTax * ($gstRate / 2)) / 100;
+                $lineSgst = ($lineTax * ($gstRate / 2)) / 100;
+                $lineVat = 0;
+                $lineTotal = $lineTax + $lineGst;
+                $item->vat_amount = 0;
+                $totalGst += $lineGst;
+                $totalCgst += $lineCgst;
+                $totalSgst += $lineSgst;
+            }
 
             $itemDiscountAmt = ($basePrice * $itemDiscPercent / 100) * $qty;
 
@@ -127,9 +146,6 @@ class OrderManage extends Model
 
             $originalSubtotal += $lineOrig;
             $totalTaxable += $lineTax;
-            $totalGst += $lineGst;
-            $totalCgst += $lineCgst;
-            $totalSgst += $lineSgst;
             $totalItemDiscount += $itemDiscountAmt;
         }
 
@@ -138,7 +154,7 @@ class OrderManage extends Model
         $totalDiscountAll = $totalItemDiscount + $orderDiscountAmount;
         $taxableAfterOrderDiscount = $totalTaxable - $orderDiscountAmount;
 
-        $grandTotal = $taxableAfterOrderDiscount + $totalGst;
+        $grandTotal = $taxableAfterOrderDiscount + $totalGst + $totalVat;
         $finalTotal = round($grandTotal);
         $roundOff = $finalTotal - $grandTotal;
 
@@ -148,6 +164,7 @@ class OrderManage extends Model
         $this->cgst_amount = $totalCgst;
         $this->sgst_amount = $totalSgst;
         $this->igst_amount = 0;
+        $this->vat_amount = $totalVat;
         $this->discount = $totalDiscountAll;
         $this->grand_total = $finalTotal;
         $this->round_off = $roundOff;

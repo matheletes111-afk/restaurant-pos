@@ -33,16 +33,51 @@ class RapidBillController extends Controller
         $isGstEnabled = !empty($restaurantGstin) || (!empty($restaurant->is_gst_enable) && $restaurant->is_gst_enable != 0);
         $isGstRegistered = $isGstEnabled;
 
-        // Fetch all active categories with their active subcategory dishes and mapped addons
+        // Fetch Food categories (excluding BAR)
         $categories = Category::where('restaurant_id', $activeRestId)
             ->where('status', '!=', 'D')
+            ->where(function($q) {
+                $q->whereNull('category_type')->orWhere('category_type', '!=', 'BAR');
+            })
             ->with(['subcategories' => function($q) use ($activeRestId) {
                 $q->where('sub_category.restaurant_id', $activeRestId)
                   ->where('sub_category.status', '!=', 'D')
+                  ->where(function($sq) {
+                      $sq->whereNull('food_type')->orWhere('food_type', '!=', 'BAR');
+                  })
                   ->with(['addons' => function($aq) use ($activeRestId) {
                       $aq->where('dish_addons.restaurant_id', $activeRestId)
                          ->where('dish_addons.status', '!=', 'D');
                   }]);
+            }])
+            ->orderBy('name', 'asc')
+            ->get();
+
+        // Fetch Bar categories with brand and variations (Only Available items)
+        $bar_categories = Category::where('restaurant_id', $activeRestId)
+            ->where('category_type', 'BAR')
+            ->where('status', '!=', 'D')
+            ->with(['subcategories' => function($q) use ($activeRestId) {
+                $q->where('sub_category.restaurant_id', $activeRestId)
+                  ->where('sub_category.status', 'A')
+                  ->with(['brand', 'variations' => function($vq) {
+                      $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
+                  }]);
+            }])
+            ->orderBy('name', 'asc')
+            ->get();
+
+        // Fetch all Available Bar Items (liquor products)
+        $bar_items = SubCategory::where('restaurant_id', $activeRestId)
+            ->where('status', 'A')
+            ->where(function($q) {
+                $q->where('food_type', 'BAR')
+                  ->orWhereHas('category', function($cq) {
+                      $cq->where('category_type', 'BAR');
+                  });
+            })
+            ->with(['brand', 'category', 'variations' => function($vq) {
+                $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
             }])
             ->orderBy('name', 'asc')
             ->get();
@@ -67,6 +102,8 @@ class RapidBillController extends Controller
             'isGstRegistered',
             'isGstEnabled',
             'categories',
+            'bar_categories',
+            'bar_items',
             'restaurant_addons',
             'tables'
         ));
@@ -191,17 +228,37 @@ class RapidBillController extends Controller
                 $lineOriginal = ($origPrice * $qty) + $addonsCost;
             }
 
-            // Step B: GST Calculation
-            $gstRate = $isGstRegistered ? $restaurantGstPercentage : 0;
-            $gstAmount = ($taxableAmount * $gstRate) / 100;
-            $halfGstRate = $gstRate / 2;
-            $cgst = ($taxableAmount * $halfGstRate) / 100;
-            $sgst = ($taxableAmount * $halfGstRate) / 100;
-            $igst = 0;
-            $itemTotal = $taxableAmount + $gstAmount;
+            // Step B: GST / VAT Calculation
+            $vatRate = 0;
+            if (isset($item['vat_rate']) && is_numeric($item['vat_rate'])) {
+                $vatRate = floatval($item['vat_rate']);
+            } elseif ($dishObj && ($dishObj->food_type === 'BAR' || floatval($dishObj->vat_rate ?? 0) > 0)) {
+                $vatRate = floatval($dishObj->vat_rate ?? 0);
+            }
+
+            if ($vatRate > 0) {
+                $gstRate = 0;
+                $gstAmount = 0;
+                $cgst = 0;
+                $sgst = 0;
+                $igst = 0;
+                $vatAmount = ($taxableAmount * $vatRate) / 100;
+                $itemTotal = $taxableAmount + $vatAmount;
+            } else {
+                $vatAmount = 0;
+                $gstRate = $isGstRegistered ? $restaurantGstPercentage : 0;
+                $gstAmount = ($taxableAmount * $gstRate) / 100;
+                $halfGstRate = $gstRate / 2;
+                $cgst = ($taxableAmount * $halfGstRate) / 100;
+                $sgst = ($taxableAmount * $halfGstRate) / 100;
+                $igst = 0;
+                $itemTotal = $taxableAmount + $gstAmount;
+            }
 
             $displayName = $dishName;
-            if (!empty($addonNames)) {
+            if (!empty($item['bar_variation_name'])) {
+                $displayName .= ' (' . $item['bar_variation_name'] . ')';
+            } elseif (!empty($addonNames)) {
                 $displayName .= ' (' . implode(', ', $addonNames) . ')';
             }
 
@@ -217,6 +274,11 @@ class RapidBillController extends Controller
                 'discounted_price' => $discountedUnitPrice,
                 'item_discount_percentage' => $itemDiscountPercent,
                 'taxable_amount' => $taxableAmount,
+                'vat_rate' => $vatRate,
+                'vat_amount' => $vatAmount,
+                'bar_variation_id' => $item['bar_variation_id'] ?? null,
+                'bar_variation_name' => $item['bar_variation_name'] ?? null,
+                'bar_variation_ml' => $item['bar_variation_ml'] ?? null,
                 'gst_rate' => $gstRate,
                 'gst_amount' => $gstAmount,
                 'cgst_amount' => $cgst,
@@ -228,18 +290,24 @@ class RapidBillController extends Controller
 
             $originalSubtotal += $lineOriginal;
             $totalTaxable += $taxableAmount;
-            if ($isGstRegistered) {
+            if ($isGstRegistered && $vatRate <= 0) {
                 $totalGst += $gstAmount;
                 $totalCgst += $cgst;
                 $totalSgst += $sgst;
             }
         }
 
-        // 2. Compute Item Discounts & Round off
+        // 2. Compute Item Discounts, VAT & Round off
         $totalItemDiscount = max(0, $originalSubtotal - $totalTaxable);
         $orderDiscountPercent = $originalSubtotal > 0 ? round(($totalItemDiscount / $originalSubtotal) * 100, 2) : 0;
         $orderDiscountAmount = $totalItemDiscount;
-        $grandTotalRaw = $totalTaxable + $totalGst;
+        
+        $totalVat = 0;
+        foreach ($calculatedItems as $ci) {
+            $totalVat += floatval($ci['vat_amount'] ?? 0);
+        }
+
+        $grandTotalRaw = $totalTaxable + $totalGst + $totalVat;
         $finalTotal = round($grandTotalRaw);
         $roundOff = $finalTotal - $grandTotalRaw;
 
@@ -299,6 +367,7 @@ class RapidBillController extends Controller
             $order->order_type = $orderType;
             $order->total_amount = $originalSubtotal;
             $order->taxable_amount = $totalTaxable;
+            $order->vat_amount = $totalVat;
             $order->gst_amount = $totalGst;
             $order->cgst_amount = $totalCgst;
             $order->sgst_amount = $totalSgst;
@@ -314,7 +383,7 @@ class RapidBillController extends Controller
             $order->payment_status = $paymentStatus;
             $order->payment_method = $paymentMethodLabel;
             $order->order_complete = ($paymentStatus === 'PAID') ? 'DONE' : 'PENDING';
-            $order->order_status = 'PENDING';
+            $order->order_status = ($paymentStatus === 'PAID') ? 'COMPLETED' : 'PENDING';
             $order->remarks = $request->remarks ?: null;
             $order->save();
 
@@ -331,13 +400,28 @@ class RapidBillController extends Controller
                 $orderItem->discounted_price = $cItem['discounted_price'];
                 $orderItem->item_discount_percentage = $cItem['item_discount_percentage'];
                 $orderItem->taxable_amount = $cItem['taxable_amount'];
+                $orderItem->vat_rate = $cItem['vat_rate'] ?? 0;
+                $orderItem->vat_amount = $cItem['vat_amount'] ?? 0;
+                $orderItem->bar_variation_id = $cItem['bar_variation_id'] ?? null;
+                $orderItem->bar_variation_name = $cItem['bar_variation_name'] ?? null;
+                $orderItem->bar_variation_ml = $cItem['bar_variation_ml'] ?? null;
                 $orderItem->gst_rate = $cItem['gst_rate'];
                 $orderItem->gst_amount = $cItem['gst_amount'];
                 $orderItem->cgst_amount = $cItem['cgst_amount'];
                 $orderItem->sgst_amount = $cItem['sgst_amount'];
                 $orderItem->igst_amount = $cItem['igst_amount'];
                 $orderItem->total_amount = $cItem['total_amount'];
-                $orderItem->order_status = 'PENDING';
+
+                $isBar = !empty($cItem['bar_variation_id']) || ($cItem['vat_rate'] ?? 0) > 0;
+                if (!$isBar && $isNumericSubcat) {
+                    $dCheck = SubCategory::find(intval($cItem['id']));
+                    if ($dCheck && $dCheck->food_type === 'BAR') {
+                        $isBar = true;
+                    }
+                }
+
+                // If paid: Bar KOT -> SERVED, Kitchen KOT -> DONE
+                $orderItem->order_status = ($paymentStatus === 'PAID') ? ($isBar ? 'SERVED' : 'DONE') : 'PENDING';
                 $orderItem->is_new = 1;
                 $orderItem->restaurant_id = $restaurantId;
                 $orderItem->user_id = $user->id;

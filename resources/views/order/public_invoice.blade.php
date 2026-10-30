@@ -405,6 +405,9 @@
                         @if(!empty($order->restaurant->gstin))
                             | <strong>GSTIN:</strong> {{ $order->restaurant->gstin }}
                         @endif
+                        @if(!empty($order->restaurant->vatin))
+                            | <strong>VATIN:</strong> {{ $order->restaurant->vatin }}
+                        @endif
                     </p>
                 </div>
             </div>
@@ -445,7 +448,37 @@
             </div>
 
             @if($order->orderItems && count($order->orderItems) > 0)
-            <div class="table-responsive">
+            @php
+                $foodOrderItems = $order->orderItems->filter(function($item) {
+                    $isBar = !empty($item->bar_variation_id) 
+                        || floatval($item->vat_rate ?? 0) > 0 
+                        || (isset($item->subcategory) && strtoupper($item->subcategory->food_type ?? '') === 'BAR');
+                    return !$isBar;
+                });
+
+                $barOrderItems = $order->orderItems->filter(function($item) {
+                    $isBar = !empty($item->bar_variation_id) 
+                        || floatval($item->vat_rate ?? 0) > 0 
+                        || (isset($item->subcategory) && strtoupper($item->subcategory->food_type ?? '') === 'BAR');
+                    return $isBar;
+                });
+
+                $pubOriginalSubtotal = 0;
+                $pubTaxableTotal = 0;
+                $pubGstTotal = 0;
+                $pubVatTotal = 0;
+                $pubItemDiscountTotal = 0;
+            @endphp
+
+            {{-- Food Items Section --}}
+            @if($foodOrderItems->count() > 0)
+            <div class="pub-section-title">
+                <i class="fa-solid fa-bowl-food text-primary"></i>
+                <span>Food &amp; Kitchen Items</span>
+                <span class="badge bg-light text-muted border ms-auto" style="font-size: 0.75rem;">{{ $foodOrderItems->count() }} Items</span>
+            </div>
+
+            <div class="table-responsive mb-4">
                 <table class="pub-table">
                     <thead>
                         <tr>
@@ -456,13 +489,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @php
-                            $pubOriginalSubtotal = 0;
-                            $pubTaxableTotal = 0;
-                            $pubGstTotal = 0;
-                            $pubItemDiscountTotal = 0;
-                        @endphp
-                        @foreach($order->orderItems as $item)
+                        @foreach($foodOrderItems->values() as $item)
                         @php
                             $addons = $item->addons_list ?? [];
                             $isAddonItem = empty($item->subcategory_id);
@@ -533,13 +560,96 @@
             </div>
             @endif
 
+            {{-- Bar & Liquor Items Section (separately after food items) --}}
+            @if($barOrderItems->count() > 0)
+            <div class="pub-section-title {{ $foodOrderItems->count() > 0 ? 'mt-4 pt-3' : '' }}" style="{{ $foodOrderItems->count() > 0 ? 'border-top: 2px dashed var(--pub-border);' : '' }}">
+                <i class="fa-solid fa-wine-glass text-warning me-1"></i>
+                <span class="text-dark">Bar &amp; Liquor Items</span>
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-2 px-2 py-0.5" style="font-size: 0.72rem; font-weight: 700;">
+                    State VAT
+                </span>
+                <span class="badge bg-light text-muted border ms-auto" style="font-size: 0.75rem;">{{ $barOrderItems->count() }} Drinks</span>
+            </div>
+
+            <div class="table-responsive mb-3">
+                <table class="pub-table">
+                    <thead>
+                        <tr>
+                            <th>Drink &amp; Peg</th>
+                            <th class="text-center" width="60">Qty</th>
+                            <th class="text-end" width="90">Price</th>
+                            <th class="text-end" width="100">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($barOrderItems->values() as $bItem)
+                        @php
+                            $bPrice = (float)$bItem->price;
+                            $bQty = (int)$bItem->quantity;
+                            $bDiscount = (float)($bItem->item_discount_percentage ?? 0);
+                            $bDiscountedPrice = (float)($bItem->discounted_price ?? ($bPrice - ($bPrice * $bDiscount / 100)));
+                            
+                            $lineOriginal = $bPrice * $bQty;
+                            $lineTaxable = $bItem->taxable_amount ?? ($bDiscountedPrice * $bQty);
+                            $bVatRate = floatval($bItem->vat_rate ?? 0);
+                            $lineVat = $bItem->vat_amount ?? (($lineTaxable * $bVatRate) / 100);
+                            $lineTotal = $bItem->total_amount ?? ($lineTaxable + $lineVat);
+
+                            $pubOriginalSubtotal += $lineOriginal;
+                            $pubTaxableTotal += $lineTaxable;
+                            $pubVatTotal += $lineVat;
+                            $pubItemDiscountTotal += ($bPrice * $bDiscount / 100) * $bQty;
+
+                            $varName = $bItem->bar_variation_name;
+                            if (!$varName && !empty($bItem->bar_variation_ml)) {
+                                $varName = $bItem->bar_variation_ml . 'ml Peg';
+                            }
+                        @endphp
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="badge bg-warning-subtle text-dark border border-warning me-2" style="font-size: 0.68rem; padding: 2px 5px;">
+                                        <i class="fa-solid fa-wine-bottle text-warning"></i> BAR
+                                    </span>
+                                    <div>
+                                        <strong class="text-dark">{{ $bItem->subcategory->name ?? 'Liquor Item' }}</strong>
+                                        <div class="d-flex align-items-center gap-1 mt-1">
+                                            @if($varName)
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.72rem; font-weight: 700;">
+                                                    {{ $varName }}
+                                                </span>
+                                            @endif
+                                            @if(!empty($bItem->bar_variation_ml))
+                                                <span class="badge bg-dark text-white font-monospace" style="font-size: 0.72rem; font-weight: 800;">
+                                                    {{ floatval($bItem->bar_variation_ml) }} ml
+                                                </span>
+                                            @endif
+                                        </div>
+                                        @if($bVatRate > 0)
+                                            <span class="text-muted small d-block mt-0.5" style="font-size: 0.72rem;">State VAT: {{ $bVatRate }}% (+₹{{ number_format($lineVat, 2) }})</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center font-monospace fw-bold">{{ $bQty }}</td>
+                            <td class="text-end text-muted font-monospace">₹{{ number_format($bPrice, 2) }}</td>
+                            <td class="text-end fw-bold text-dark font-monospace">₹{{ number_format($lineTotal, 2) }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
+            @endif
+
             <!-- Calculation Box -->
             @php
                 $pubDisplaySubtotal = ($order->total_amount > 0 && abs($order->total_amount - $pubOriginalSubtotal) < 0.01) ? $order->total_amount : $pubOriginalSubtotal;
                 $pubDisplayTaxable = ($order->taxable_amount > 0 && abs($order->taxable_amount - $pubTaxableTotal) < 0.01) ? $order->taxable_amount : $pubTaxableTotal;
                 $pubDisplayGst = ($order->gst_amount > 0 && abs($order->gst_amount - $pubGstTotal) < 0.01) ? $order->gst_amount : $pubGstTotal;
-                $pubDisplayDiscount = $order->discount ?? (($pubDisplayTaxable + $pubDisplayGst) * ($order->discount_percentage ?? 0) / 100);
-                $pubDisplayGrandTotal = $order->grand_total ?? ($pubDisplayTaxable + $pubDisplayGst - $pubDisplayDiscount);
+                $pubDisplayVat = ($order->vat_amount > 0) ? (float)$order->vat_amount : (float)$pubVatTotal;
+                $pubDisplayDiscount = $order->discount ?? (($pubDisplayTaxable + $pubDisplayGst + $pubDisplayVat) * ($order->discount_percentage ?? 0) / 100);
+                $pubDisplayGrandTotal = $order->grand_total ?? ($pubDisplayTaxable + $pubDisplayGst + $pubDisplayVat - $pubDisplayDiscount);
             @endphp
             <div class="pub-calc-box">
                 <div class="pub-calc-row">
@@ -554,10 +664,22 @@
                     </div>
                 @endif
 
+                <div class="pub-calc-row">
+                    <span class="text-muted">Net Taxable:</span>
+                    <span class="fw-semibold">₹{{ number_format($pubDisplayTaxable, 2) }}</span>
+                </div>
+
                 @if($order->is_gst_bill == 'YES' && $pubDisplayGst > 0)
-                    <div class="pub-calc-row">
-                        <span class="text-muted">GST ({{ $order->restaurant_gst_percentage ?? 0 }}%):</span>
+                    <div class="pub-calc-row text-primary">
+                        <span>GST ({{ $order->restaurant_gst_percentage ?? 0 }}%) @if(!empty($order->restaurant->gstin))<small class="text-muted">({{ $order->restaurant->gstin }})</small>@endif:</span>
                         <span>+ ₹{{ number_format($pubDisplayGst, 2) }}</span>
+                    </div>
+                @endif
+
+                @if($pubDisplayVat > 0)
+                    <div class="pub-calc-row" style="color: #047857;">
+                        <span><i class="fa-solid fa-wine-glass me-1"></i> State VAT (Liquor) @if(!empty($order->restaurant->vatin))<small class="text-muted">({{ $order->restaurant->vatin }})</small>@endif:</span>
+                        <span class="fw-semibold">+ ₹{{ number_format($pubDisplayVat, 2) }}</span>
                     </div>
                 @endif
 

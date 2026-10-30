@@ -24,6 +24,11 @@ class OrderItems extends Model
         'cgst_amount',
         'sgst_amount',
         'igst_amount',
+        'vat_rate',
+        'vat_amount',
+        'bar_variation_id',
+        'bar_variation_name',
+        'bar_variation_ml',
         'total_amount',
         'order_status',
         'is_new',
@@ -42,6 +47,9 @@ class OrderItems extends Model
         'cgst_amount' => 'decimal:2',
         'sgst_amount' => 'decimal:2',
         'igst_amount' => 'decimal:2',
+        'vat_rate' => 'decimal:2',
+        'vat_amount' => 'decimal:2',
+        'bar_variation_ml' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'quantity' => 'integer',
         'is_new' => 'boolean',
@@ -62,6 +70,11 @@ class OrderItems extends Model
             $subcat->price = $orderItem->price ?? 0;
             return $subcat;
         });
+    }
+
+    public function barVariation()
+    {
+        return $this->belongsTo(BarItemVariation::class, 'bar_variation_id');
     }
 
     /**

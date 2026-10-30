@@ -1724,3 +1724,141 @@ body {
   color: #0f172a;
 }
 
+/* ===================================================
+   PREMIUM MENU MODE TABS (Food Menu vs Bar Menu)
+   =================================================== */
+.pos-menu-type-tabs {
+  background: #ffffff;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1.5px solid var(--pos-border);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  display: flex;
+  gap: 8px;
+}
+
+.btn-menu-mode-tab {
+  flex: 1;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 800;
+  font-size: 0.92rem;
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  background: #f1f5f9;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: none;
+}
+
+.btn-menu-mode-tab:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.97);
+}
+
+.btn-menu-mode-tab.tab-food.active,
+#btnTabFoodMenu.active {
+  background: linear-gradient(135deg, #ff5e14 0%, #ff8c42 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(255, 94, 20, 0.28);
+}
+
+.btn-menu-mode-tab.tab-bar.active,
+#btnTabBarMenu.active {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.28);
+}
+
+/* ===================================================
+   BAR MULTI-VARIATION CARDS WITH QTY STEPPERS
+   =================================================== */
+.bar-var-card-multi {
+  padding: 12px 14px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 2px solid #e2e8f0;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.bar-var-card-multi:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.bar-var-card-multi.is-selected {
+  border-color: #f59e0b !important;
+  background: #fffcf8 !important;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15) !important;
+}
+
+.bar-var-check-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid #cbd5e1;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 0.72rem;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.bar-var-card-multi.is-selected .bar-var-check-badge {
+  border-color: #f59e0b;
+  background: #f59e0b;
+}
+
+.btn-bar-var-step {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-bar-var-step.btn-dec {
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+}
+
+.btn-bar-var-step.btn-dec:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.btn-bar-var-step.btn-inc {
+  border: none;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+}
+
+.btn-bar-var-step.btn-inc:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4);
+}
+
+

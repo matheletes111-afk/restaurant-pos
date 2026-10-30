@@ -36,13 +36,52 @@ class TempOrderController extends Controller
             $restaurant_details = RestaurantMaster::first() ?? new RestaurantMaster(['name' => 'Restaurant Menu']);
         }
 
+        // Fetch Food categories (excluding BAR)
         $categories = Category::where('restaurant_id', $restaurant_id)
-                                ->with(['subcategories' => function($q) {
-                                    $q->where('status', '!=', 'D')->with(['addons' => function($aq) {
-                                        $aq->where('dish_addons.status', 'A');
-                                    }]);
-                                }])
-                                ->get();
+            ->where('status', '!=', 'D')
+            ->where(function($q) {
+                $q->whereNull('category_type')->orWhere('category_type', '!=', 'BAR');
+            })
+            ->with(['subcategories' => function($q) use ($restaurant_id) {
+                $q->where('sub_category.restaurant_id', $restaurant_id)
+                  ->where('sub_category.status', '!=', 'D')
+                  ->where(function($sq) {
+                      $sq->whereNull('food_type')->orWhere('food_type', '!=', 'BAR');
+                  })
+                  ->with(['addons' => function($aq) {
+                      $aq->where('dish_addons.status', 'A');
+                  }]);
+            }])
+            ->get();
+
+        // Fetch Bar categories with variations (Only Available items)
+        $bar_categories = Category::where('restaurant_id', $restaurant_id)
+            ->where('category_type', 'BAR')
+            ->where('status', '!=', 'D')
+            ->with(['subcategories' => function($q) use ($restaurant_id) {
+                $q->where('sub_category.restaurant_id', $restaurant_id)
+                  ->where('sub_category.status', 'A')
+                  ->with(['brand', 'variations' => function($vq) {
+                      $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
+                  }]);
+            }])
+            ->orderBy('name', 'asc')
+            ->get();
+
+        // Fetch all Available Bar Items (liquor products)
+        $bar_items = SubCategory::where('restaurant_id', $restaurant_id)
+            ->where('status', 'A')
+            ->where(function($q) {
+                $q->where('food_type', 'BAR')
+                  ->orWhereHas('category', function($cq) {
+                      $cq->where('category_type', 'BAR');
+                  });
+            })
+            ->with(['brand', 'category', 'variations' => function($vq) {
+                $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
+            }])
+            ->orderBy('name', 'asc')
+            ->get();
 
         $restaurant_addons = \App\Models\DishAddon::where('restaurant_id', $restaurant_id)
             ->where('status', 'A')
@@ -196,7 +235,7 @@ class TempOrderController extends Controller
             }
         }
 
-        return view('temp_order', compact('categories', 'table_id', 'restaurant_id', 'restaurant_details', 'table_details', 'activeOrder', 'pendingTempOrder', 'restaurant_addons'));
+        return view('temp_order', compact('categories', 'bar_categories', 'bar_items', 'table_id', 'restaurant_id', 'restaurant_details', 'table_details', 'activeOrder', 'pendingTempOrder', 'restaurant_addons'));
     }
 
 public function store(Request $request)
@@ -221,6 +260,7 @@ public function store(Request $request)
     $totalCgst = 0;
     $totalSgst = 0;
     $totalIgst = 0;
+    $totalVat = 0;
     $totalItemDiscount = 0;
 
     $calculatedItems = [];
@@ -237,6 +277,18 @@ public function store(Request $request)
         $isStandaloneAddon = !empty($item['is_addon']) || str_starts_with(strval($rawId), 'addon_');
         $subcatId = (!$isStandaloneAddon && is_numeric($rawId)) ? intval($rawId) : null;
         $isAddonItem = empty($subcatId);
+
+        $barVariationId = !empty($item['bar_variation_id']) ? intval($item['bar_variation_id']) : null;
+        $barVariationName = !empty($item['bar_variation_name']) ? trim($item['bar_variation_name']) : null;
+        $barVariationMl = !empty($item['bar_variation_ml']) ? floatval($item['bar_variation_ml']) : null;
+        $vatRate = isset($item['vat_rate']) ? floatval($item['vat_rate']) : 0;
+
+        if ($vatRate <= 0 && $subcatId) {
+            $subcModel = SubCategory::find($subcatId);
+            if ($subcModel && ($subcModel->food_type === 'BAR' || $subcModel->vat_rate > 0)) {
+                $vatRate = floatval($subcModel->vat_rate ?? 0);
+            }
+        }
 
         if (is_array($selectedAddons) && !empty($selectedAddons)) {
             $dishName = trim($item['name'] ?? '');
@@ -289,21 +341,31 @@ public function store(Request $request)
             $lineOriginal = ($basePrice * $quantity) + $addonsCost;
         }
         
-        // Calculate GST on discounted price
-        $gstRate = $isGstRegistered ? $restaurantGstPercentage : 0;
-        $gstAmount = ($taxableAmount * $gstRate) / 100;
-        
-        // Split GST
-        $halfGstRate = $gstRate / 2;
-        $cgstAmount = ($taxableAmount * $halfGstRate) / 100;
-        $sgstAmount = ($taxableAmount * $halfGstRate) / 100;
-        $totalAmount = $taxableAmount + $gstAmount;
+        $vatAmount = 0;
+        if ($vatRate > 0) {
+            $gstRate = 0;
+            $gstAmount = 0;
+            $cgstAmount = 0;
+            $sgstAmount = 0;
+            $igstAmount = 0;
+            $vatAmount = ($taxableAmount * $vatRate) / 100;
+            $totalAmount = $taxableAmount + $vatAmount;
+        } else {
+            $gstRate = $isGstRegistered ? $restaurantGstPercentage : 0;
+            $gstAmount = ($taxableAmount * $gstRate) / 100;
+            $halfGstRate = $gstRate / 2;
+            $cgstAmount = ($taxableAmount * $halfGstRate) / 100;
+            $sgstAmount = ($taxableAmount * $halfGstRate) / 100;
+            $igstAmount = 0;
+            $totalAmount = $taxableAmount + $gstAmount;
+        }
         
         $originalSubtotal += $lineOriginal;
         $totalTaxable += $taxableAmount;
         $totalGst += $gstAmount;
         $totalCgst += $cgstAmount;
         $totalSgst += $sgstAmount;
+        $totalVat += $vatAmount;
         $totalItemDiscount += ($basePrice * $itemDiscount / 100) * $quantity;
         
         $calculatedItems[] = [
@@ -314,6 +376,11 @@ public function store(Request $request)
             'discounted_price' => $discountedPrice,
             'item_discount_percentage' => $itemDiscount,
             'taxable_amount' => $taxableAmount,
+            'vat_rate' => $vatRate,
+            'vat_amount' => $vatAmount,
+            'bar_variation_id' => $barVariationId,
+            'bar_variation_name' => $barVariationName,
+            'bar_variation_ml' => $barVariationMl,
             'gst_rate' => $gstRate,
             'gst_amount' => $gstAmount,
             'cgst_amount' => $cgstAmount,
@@ -347,9 +414,10 @@ public function store(Request $request)
         'cgst_amount' => $totalCgst,
         'sgst_amount' => $totalSgst,
         'igst_amount' => $totalIgst,
+        'vat_amount' => $totalVat,
         'discount' => $totalItemDiscount,
         'discount_percentage' => 0,
-        'grand_total' => $totalTaxable + $totalGst,
+        'grand_total' => $totalTaxable + $totalGst + $totalVat,
         'round_off' => 0,
         'is_gst_bill' => $isGstRegistered ? 'YES' : 'NO',
         'restaurant_gst_percentage' => $restaurantGstPercentage,
@@ -370,6 +438,11 @@ public function store(Request $request)
             'discounted_price' => $item['discounted_price'],
             'item_discount_percentage' => $item['item_discount_percentage'],
             'taxable_amount' => $item['taxable_amount'],
+            'vat_rate' => $item['vat_rate'] ?? 0,
+            'vat_amount' => $item['vat_amount'] ?? 0,
+            'bar_variation_id' => $item['bar_variation_id'] ?? null,
+            'bar_variation_name' => $item['bar_variation_name'] ?? null,
+            'bar_variation_ml' => $item['bar_variation_ml'] ?? null,
             'gst_rate' => $item['gst_rate'],
             'gst_amount' => $item['gst_amount'],
             'cgst_amount' => $item['cgst_amount'],
@@ -471,14 +544,16 @@ public function store(Request $request)
             $subtotal = floatval($tempOrder->total_amount ?? 0);
             $taxableAmount = floatval($tempOrder->taxable_amount ?? 0);
             $gstAmount = floatval($tempOrder->gst_amount ?? 0);
+            $vatAmount = floatval($tempOrder->vat_amount ?? 0);
             $discount = floatval($tempOrder->discount ?? 0);
-            $grandTotal = floatval($tempOrder->grand_total ?? ($taxableAmount + $gstAmount));
+            $grandTotal = floatval($tempOrder->grand_total ?? ($taxableAmount + $gstAmount + $vatAmount));
 
             // Fallback calculation only if tempOrder stored totals were 0 or missing
             if ($grandTotal <= 0 && $items->isNotEmpty()) {
                 $computedSubtotal = 0;
                 $computedTaxable = 0;
                 $computedGst = 0;
+                $computedVat = 0;
                 $computedDiscount = 0;
 
                 foreach ($items as $itm) {
@@ -497,16 +572,25 @@ public function store(Request $request)
 
                     $lineOrig = $isAddonItem ? ($iPrice * $iQty) : (($iPrice * $iQty) + $addonsCost);
                     $lineTax = $isAddonItem ? ($iDiscPrice * $iQty) : (($iDiscPrice * $iQty) + $addonsCost);
-                    $gstRate = floatval($itm->gst_rate ?? 0);
-                    $lineGst = ($lineTax * $gstRate) / 100;
+                    
+                    $vRate = floatval($itm->vat_rate ?? 0);
+                    if ($vRate > 0) {
+                        $lineVat = ($lineTax * $vRate) / 100;
+                        $lineGst = 0;
+                        $computedVat += $lineVat;
+                    } else {
+                        $gstRate = floatval($itm->gst_rate ?? 0);
+                        $lineGst = ($lineTax * $gstRate) / 100;
+                        $computedGst += $lineGst;
+                    }
 
                     $computedSubtotal += $lineOrig;
                     $computedTaxable += $lineTax;
-                    $computedGst += $lineGst;
                     $computedDiscount += ($iPrice * $iDisc / 100) * $iQty;
                 }
 
-                $grandTotal = $computedTaxable + $computedGst;
+                $vatAmount = $computedVat;
+                $grandTotal = $computedTaxable + $computedGst + $vatAmount;
                 $subtotal = $computedSubtotal;
                 $taxableAmount = $computedTaxable;
                 $gstAmount = $computedGst;
@@ -526,6 +610,7 @@ public function store(Request $request)
                 'subtotal',
                 'discount',
                 'gstAmount',
+                'vatAmount',
                 'taxableAmount',
                 'isGstBill'
             ));
@@ -588,6 +673,7 @@ public function store(Request $request)
         $computedOriginalSubtotal = 0;
         $computedTaxable = 0;
         $computedGst = 0;
+        $computedVat = 0;
         $computedItemDiscount = 0;
 
         foreach ($orderItems as $item) {
@@ -605,12 +691,20 @@ public function store(Request $request)
             $isAddon = empty($item->subcategory_id);
             $lineOrig = $isAddon ? ($basePrice * $qty) : (($basePrice * $qty) + $addonsCost);
             $lineTax = $isAddon ? ($discPrice * $qty) : (($discPrice * $qty) + $addonsCost);
-            $gstRate = floatval($item->gst_rate ?? 0);
-            $lineGst = ($lineTax * $gstRate) / 100;
+            
+            $vRate = floatval($item->vat_rate ?? 0);
+            if ($vRate > 0) {
+                $lineVat = ($lineTax * $vRate) / 100;
+                $lineGst = 0;
+                $computedVat += $lineVat;
+            } else {
+                $gstRate = floatval($item->gst_rate ?? 0);
+                $lineGst = ($lineTax * $gstRate) / 100;
+                $computedGst += $lineGst;
+            }
 
             $computedOriginalSubtotal += $lineOrig;
             $computedTaxable += $lineTax;
-            $computedGst += $lineGst;
             $computedItemDiscount += ($basePrice * $itemDiscPercent / 100) * $qty;
         }
 
@@ -621,17 +715,19 @@ public function store(Request $request)
         $subtotal = $computedOriginalSubtotal;
         $taxableAmount = $computedTaxable;
         $gstAmount = $computedGst;
+        $vatAmount = floatval($mainOrder->vat_amount > 0 ? $mainOrder->vat_amount : $computedVat);
         $discount = $totalDiscount;
-        $grandTotal = round(($taxableAmount - $orderDiscAmt) + $gstAmount);
+        $grandTotal = round(($taxableAmount - $orderDiscAmt) + $gstAmount + $vatAmount);
 
         if (abs(floatval($mainOrder->grand_total) - $grandTotal) > 0.01) {
             $mainOrder->update([
                 'total_amount' => $subtotal,
                 'taxable_amount' => $taxableAmount,
                 'gst_amount' => $gstAmount,
+                'vat_amount' => $vatAmount,
                 'discount' => $discount,
                 'grand_total' => $grandTotal,
-                'round_off' => $grandTotal - (($taxableAmount - $orderDiscAmt) + $gstAmount),
+                'round_off' => $grandTotal - (($taxableAmount - $orderDiscAmt) + $gstAmount + $vatAmount),
             ]);
         }
         $isGstBill = ($mainOrder->is_gst_bill ?? 'NO') === 'YES';
@@ -664,6 +760,7 @@ public function store(Request $request)
             'subtotal',
             'discount',
             'gstAmount',
+            'vatAmount',
             'taxableAmount',
             'isGstBill',
             'isCompleted'
@@ -756,12 +853,16 @@ public function store(Request $request)
             'is_completed' => $isCompleted,
             'items' => $mainOrder->orderItems->map(function($itm) {
                 $status = strtoupper($itm->order_status ?? 'PENDING');
+                $isBar = !empty($itm->bar_variation_id) || floatval($itm->vat_rate ?? 0) > 0 || (isset($itm->subcategory) && strtoupper($itm->subcategory->food_type ?? '') === 'BAR');
                 return [
                     'id' => $itm->id,
                     'name' => $itm->subcategory->name ?? 'Dish',
                     'qty' => $itm->quantity,
                     'price' => floatval($itm->discounted_price ?? $itm->price),
                     'addons' => $itm->addons_list,
+                    'bar_variation_name' => $itm->bar_variation_name,
+                    'bar_variation_ml' => $itm->bar_variation_ml,
+                    'is_bar' => $isBar,
                     'total' => floatval($itm->total_amount),
                     'kot_no' => $itm->kot_no,
                     'order_status' => $status,
@@ -816,6 +917,8 @@ public function store(Request $request)
                     'qty' => $itm->quantity,
                     'price' => floatval($itm->discounted_price ?? $itm->price),
                     'addons' => $itm->addons_list,
+                    'bar_variation_name' => $itm->bar_variation_name,
+                    'bar_variation_ml' => $itm->bar_variation_ml,
                     'total' => floatval($itm->total_amount),
                     'kot_no' => 'Pending Approval',
                     'order_status' => 'PENDING',
@@ -1068,13 +1171,36 @@ public function store(Request $request)
                     $taxableAmount = ($discountedPrice * $quantity) + $addonsCost;
                 }
 
-                // GST
-                $gstRate = $isGstRegistered ? $restaurantGstPercentage : 0;
-                $gstAmount = ($taxableAmount * $gstRate) / 100;
-                $halfGstRate = $gstRate / 2;
-                $cgstAmount = ($taxableAmount * $halfGstRate) / 100;
-                $sgstAmount = ($taxableAmount * $halfGstRate) / 100;
-                $totalAmount = $taxableAmount + $gstAmount;
+                $barVariationId = !empty($item['bar_variation_id']) ? intval($item['bar_variation_id']) : null;
+                $barVariationName = !empty($item['bar_variation_name']) ? trim($item['bar_variation_name']) : null;
+                $barVariationMl = !empty($item['bar_variation_ml']) ? floatval($item['bar_variation_ml']) : null;
+                $vatRate = isset($item['vat_rate']) ? floatval($item['vat_rate']) : 0;
+
+                if ($vatRate <= 0 && $subcatId) {
+                    $subcModel = SubCategory::find($subcatId);
+                    if ($subcModel && ($subcModel->food_type === 'BAR' || $subcModel->vat_rate > 0)) {
+                        $vatRate = floatval($subcModel->vat_rate ?? 0);
+                    }
+                }
+
+                $vatAmount = 0;
+                if ($vatRate > 0) {
+                    $gstRate = 0;
+                    $gstAmount = 0;
+                    $cgstAmount = 0;
+                    $sgstAmount = 0;
+                    $igstAmount = 0;
+                    $vatAmount = ($taxableAmount * $vatRate) / 100;
+                    $totalAmount = $taxableAmount + $vatAmount;
+                } else {
+                    $gstRate = $isGstRegistered ? $restaurantGstPercentage : 0;
+                    $gstAmount = ($taxableAmount * $gstRate) / 100;
+                    $halfGstRate = $gstRate / 2;
+                    $cgstAmount = ($taxableAmount * $halfGstRate) / 100;
+                    $sgstAmount = ($taxableAmount * $halfGstRate) / 100;
+                    $igstAmount = 0;
+                    $totalAmount = $taxableAmount + $gstAmount;
+                }
 
                 OrderItems::create([
                     'order_id' => $order->id,
@@ -1089,7 +1215,12 @@ public function store(Request $request)
                     'gst_amount' => $gstAmount,
                     'cgst_amount' => $cgstAmount,
                     'sgst_amount' => $sgstAmount,
-                    'igst_amount' => 0,
+                    'igst_amount' => $igstAmount,
+                    'vat_rate' => $vatRate,
+                    'vat_amount' => $vatAmount,
+                    'bar_variation_id' => $barVariationId,
+                    'bar_variation_name' => $barVariationName,
+                    'bar_variation_ml' => $barVariationMl,
                     'total_amount' => $totalAmount,
                     'order_status' => 'PENDING',
                     'is_new' => 1,
