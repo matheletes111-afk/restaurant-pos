@@ -879,13 +879,7 @@
                     <option value="{{ $brand->id }}">{{ $brand->name }}</option>
                   @endforeach
                 </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">
-                  Base Bottle Price (₹) <small class="text-muted fw-normal">(Optional)</small>
-                </label>
-                <input type="number" step="0.01" name="price" class="form-control-custom" placeholder="e.g. 4500.00">
+                <input type="hidden" name="price" value="0">
               </div>
 
               <div class="col-md-6">
@@ -1026,11 +1020,7 @@
                     <option value="{{ $brand->id }}">{{ $brand->name }}</option>
                   @endforeach
                 </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">Base Price (₹)</label>
-                <input type="number" step="0.01" name="price" id="editItemPrice" class="form-control-custom">
+                <input type="hidden" name="price" id="editItemPrice" value="0">
               </div>
 
               <div class="col-md-6">

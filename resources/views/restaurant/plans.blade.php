@@ -563,6 +563,12 @@
                                             <li><i class="fas fa-times-circle text-danger"></i> Report Management</li>
                                         @endif
 
+                                        @if(($plan->bar_management_checkbox ?? 'N') == 'Y')
+                                            <li><i class="fas fa-check-circle text-success"></i> Bar Management</li>
+                                        @else
+                                            <li><i class="fas fa-times-circle text-danger"></i> Bar Management</li>
+                                        @endif
+
                                         @if($plan->inventory_checkbox == 'Y')
                                             <li><i class="fas fa-check-circle text-success"></i> Manage Product</li>
                                             <li><i class="fas fa-check-circle text-success"></i> Manage Purchase</li>

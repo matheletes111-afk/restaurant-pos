@@ -147,18 +147,6 @@ class BarItemController extends Controller
             // Sync with Purchase Management products (unit = ML)
             \App\Models\Product::syncBarItems($restaurantId);
 
-            // Auto-generate standard bottle variation if price provided
-            if ($item->price > 0) {
-                BarItemVariation::create([
-                    'restaurant_id'   => $restaurantId,
-                    'sub_category_id' => $item->id,
-                    'name'            => "Full Bottle ({$bottleSize}ml)",
-                    'ml'              => $bottleSize,
-                    'price'           => $item->price,
-                    'status'          => 'A',
-                ]);
-            }
-
             return redirect()->back()->with('success', "Bar Item \"{$item->name}\" created successfully with opening stock of {$currentStockMl} ml ({$bottleCount} bottles eq.) and {$vatRate}% VAT.");
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to save bar item: ' . $e->getMessage());

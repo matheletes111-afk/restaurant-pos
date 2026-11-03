@@ -250,8 +250,9 @@
         <!-- Breadcrumb end -->
 
         @php
-            $barProducts = $products->filter(fn($p) => !empty($p->sub_category_id));
-            $regularProducts = $products->filter(fn($p) => empty($p->sub_category_id));
+            $isBarEnabled = !empty($isBarEnabled);
+            $barProducts = $isBarEnabled ? $products->filter(fn($p) => !empty($p->sub_category_id)) : collect([]);
+            $regularProducts = $isBarEnabled ? $products->filter(fn($p) => empty($p->sub_category_id)) : $products;
             $mlUnitId = isset($mlUnit) && $mlUnit ? $mlUnit->id : '';
         @endphp
 
@@ -322,15 +323,17 @@
                             <div class="row mb-3">
                                 <div class="col-md-12 d-flex justify-content-between align-items-center flex-wrap">
                                     <h5 class="mb-0">Purchase Items</h5>
+                                    @if($isBarEnabled)
                                     <small class="text-muted">
                                         <i class="fa fa-glass-martini-alt text-warning"></i> Selecting a <strong>Bar Item</strong> automatically sets Unit to <strong>ML</strong> and adds stock to <strong>Bar Inventory</strong>.
                                     </small>
+                                    @endif
                                 </div>
                             </div>
 
                             <!-- Hidden template for product options -->
                             <template id="productOptionsTemplate">
-                                <option value="">Select Product / Bar Item</option>
+                                <option value="">{{ $isBarEnabled ? 'Select Product / Bar Item' : 'Select Product' }}</option>
                                 @if($barProducts->count() > 0)
                                     <optgroup label="🍾 Bar & Liquor Items (Auto Unit: ML → Bar Inventory)">
                                         @foreach($barProducts as $product)
@@ -351,7 +354,19 @@
                                     </optgroup>
                                 @endif
                                 @if($regularProducts->count() > 0)
-                                    <optgroup label="📦 Store / Kitchen Inventory Products">
+                                    @if($isBarEnabled)
+                                        <optgroup label="📦 Store / Kitchen Inventory Products">
+                                            @foreach($regularProducts as $product)
+                                                <option value="{{ $product->id }}"
+                                                        data-unit="{{ $product->unit ? $product->unit->name : 'N/A' }}"
+                                                        data-unit-id="{{ $product->unit_id }}"
+                                                        data-is-bar="0"
+                                                        data-bottle-size="0">
+                                                    {{ $product->product_name }} ({{ $product->unit ? $product->unit->name : 'N/A' }})
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
+                                    @else
                                         @foreach($regularProducts as $product)
                                             <option value="{{ $product->id }}"
                                                     data-unit="{{ $product->unit ? $product->unit->name : 'N/A' }}"
@@ -361,7 +376,7 @@
                                                 {{ $product->product_name }} ({{ $product->unit ? $product->unit->name : 'N/A' }})
                                             </option>
                                         @endforeach
-                                    </optgroup>
+                                    @endif
                                 @endif
                             </template>
 
@@ -369,7 +384,7 @@
                                 <table class="table table-bordered" id="itemsTable">
                                     <thead>
                                         <tr>
-                                            <th width="38%">Product / Bar Item *</th>
+                                            <th width="38%">{{ $isBarEnabled ? 'Product / Bar Item *' : 'Product *' }}</th>
                                             <th width="18%">Unit</th>
                                             <th width="24%">Quantity *</th>
                                             <th width="15%">Price (₹) *</th>
@@ -381,7 +396,7 @@
                                         <tr id="row_0">
                                             <td>
                                                 <select name="items[0][product_id]" class="form-control product-select" required onchange="getProductDetails(0, this.value)">
-                                                    <option value="">Select Product / Bar Item</option>
+                                                    <option value="">{{ $isBarEnabled ? 'Select Product / Bar Item' : 'Select Product' }}</option>
                                                     @if($barProducts->count() > 0)
                                                         <optgroup label="🍾 Bar & Liquor Items (Auto Unit: ML → Bar Inventory)">
                                                             @foreach($barProducts as $product)
@@ -402,7 +417,19 @@
                                                         </optgroup>
                                                     @endif
                                                     @if($regularProducts->count() > 0)
-                                                        <optgroup label="📦 Store / Kitchen Inventory Products">
+                                                        @if($isBarEnabled)
+                                                            <optgroup label="📦 Store / Kitchen Inventory Products">
+                                                                @foreach($regularProducts as $product)
+                                                                    <option value="{{ $product->id }}"
+                                                                            data-unit="{{ $product->unit ? $product->unit->name : 'N/A' }}"
+                                                                            data-unit-id="{{ $product->unit_id }}"
+                                                                            data-is-bar="0"
+                                                                            data-bottle-size="0">
+                                                                        {{ $product->product_name }} ({{ $product->unit ? $product->unit->name : 'N/A' }})
+                                                                    </option>
+                                                                @endforeach
+                                                            </optgroup>
+                                                        @else
                                                             @foreach($regularProducts as $product)
                                                                 <option value="{{ $product->id }}"
                                                                         data-unit="{{ $product->unit ? $product->unit->name : 'N/A' }}"
@@ -412,7 +439,7 @@
                                                                     {{ $product->product_name }} ({{ $product->unit ? $product->unit->name : 'N/A' }})
                                                                 </option>
                                                             @endforeach
-                                                        </optgroup>
+                                                        @endif
                                                     @endif
                                                 </select>
                                             </td>
@@ -424,7 +451,6 @@
                                             <td>
                                                 <input type="number" name="items[0][quantity]" class="form-control quantity" step="0.01" min="0.01" required oninput="updateBarHelper(0)">
                                                 <div class="bar-helper-box d-none" id="bar_helper_0"></div>
-                                                <input type="number" name="items[0][quantity]" class="form-control quantity" step="0.01" min="0.01" required>
                                             </td>
                                             <td>
                                                 <input type="number" name="items[0][price]" class="form-control price" step="0.01" min="0" required>
@@ -500,7 +526,6 @@
                 <td>
                     <input type="number" name="items[${rowCount}][quantity]" class="form-control quantity" step="0.01" min="0.01" required oninput="updateBarHelper(${rowCount})">
                     <div class="bar-helper-box d-none" id="bar_helper_${rowCount}"></div>
-                    <input type="number" name="items[${rowCount}][quantity]" class="form-control quantity" step="0.01" min="0.01" required>
                 </td>
                 <td>
                     <input type="number" name="items[${rowCount}][price]" class="form-control price" step="0.01" min="0" required>

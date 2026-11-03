@@ -621,14 +621,6 @@
             <input type="text" id="categorySearchInput" class="search-box-input" placeholder="Search bar categories...">
           </div>
 
-          <!-- Subscription Plan Quota Pill -->
-          @if(isset($plan_details) && isset($plan_details->category_number))
-          <div class="plan-usage-pill" title="Establishment Category Limit">
-            <i class="fa-solid fa-chart-pie"></i>
-            <span>{{ $total_all_categories ?? count($data ?? []) }} / {{ $plan_details->category_number }} Categories</span>
-          </div>
-          @endif
-
           <!-- Bulk Upload Button -->
           <button type="button" class="btn-bar-secondary" data-bs-toggle="modal" data-bs-target="#bulkUploadCategoryModal" title="Bulk Upload Bar Categories">
             <i class="fa-solid fa-file-excel text-success"></i>

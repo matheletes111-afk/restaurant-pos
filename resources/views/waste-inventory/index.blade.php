@@ -405,7 +405,9 @@
                         <select name="item_type" class="form-control">
                             <option value="">All Types</option>
                             <option value="FOOD" {{ $itemType === 'FOOD' ? 'selected' : '' }}>🍽️ Food Items</option>
+                            @if(!empty($isBarEnabled))
                             <option value="BAR" {{ $itemType === 'BAR' ? 'selected' : '' }}>🍾 Bar Items</option>
+                            @endif
                         </select>
                     </div>
                     <div class="col-md-2 col-sm-6">
@@ -570,11 +572,13 @@
                             <span class="type-pill-title">🍽️ Food Item</span>
                             <span class="type-pill-sub">Kitchen, groceries, raw material products</span>
                         </label>
+                        @if(!empty($isBarEnabled))
                         <label class="type-pill" id="modalPillBar">
                             <input type="radio" name="item_type" value="BAR" onchange="onModalTypeChange('BAR')">
                             <span class="type-pill-title">🍾 Bar Item</span>
                             <span class="type-pill-sub">Liquor, bottles, bar stock (Auto Unit: ML)</span>
                         </label>
+                        @endif
                     </div>
 
                     <div class="row g-3">

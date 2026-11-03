@@ -336,6 +336,7 @@
           }
           $plan_details = $active ? DB::table('plans')->where('id', $active->plan_id)->first() : null;
           $disabledClass = empty($active) ? 'sidebar-disabled-item' : '';
+          $isBarPlanEnabled = (auth()->user()->role === 'SA') || ($plan_details && ($plan_details->bar_management_checkbox ?? 'N') === 'Y');
         @endphp
 
         @if(auth()->user()->role == "RES")
@@ -409,7 +410,7 @@
         @endif
 
         {{-- Bar Management Dropdown --}}
-        @if(auth()->user()->hasPermission('bar_management') || auth()->user()->hasPermission('menu_master'))
+        @if($isBarPlanEnabled && (auth()->user()->hasPermission('bar_management') || auth()->user()->hasPermission('menu_master')))
         @php
           $isBarActive = Request::is('*bar/*') || Request::is('*bar-*') || request()->routeIs('bar.*');
         @endphp
@@ -483,7 +484,7 @@
         </li>
         @endif
 
-        @if(auth()->user()->hasPermission('bar_management') || auth()->user()->hasPermission('kitchen_order') || auth()->user()->hasPermission('order_master'))
+        @if($isBarPlanEnabled && (auth()->user()->hasPermission('bar_management') || auth()->user()->hasPermission('kitchen_order') || auth()->user()->hasPermission('order_master')))
         <li class="pc-item {{ $disabledClass }}">
           <a href="{{ route('bar.kot.index') }}" class="pc-link @if(Request::is('*bar/kot-counter*') || request()->routeIs('bar.kot.*')) active_class @endif">
             <span class="pc-micon"><i class="fas fa-cocktail text-warning"></i></span>

@@ -159,6 +159,30 @@ class User extends Authenticatable implements JWTSubject
         return collect([$mainRest])->merge($outlets);
     }
 
+    public function hasBarAccess(): bool
+    {
+        if ($this->role === 'SA') {
+            return true;
+        }
+
+        $subRestId = $this->getSubscriptionRestaurantId();
+        if (!$subRestId) {
+            return false;
+        }
+
+        $activeSub = \App\Models\Subscription::where('user_id', $subRestId)
+            ->whereIn('status', ['active', 'completed'])
+            ->with('plan')
+            ->latest('id')
+            ->first();
+
+        if ($activeSub && $activeSub->plan) {
+            return ($activeSub->plan->bar_management_checkbox === 'Y');
+        }
+
+        return false;
+    }
+
     public function hasMultiOutletAccess(): bool
     {
         $subRestId = $this->getSubscriptionRestaurantId();

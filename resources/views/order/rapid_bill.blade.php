@@ -1800,6 +1800,7 @@
       <!-- LEFT: Fast Menu & Dish Explorer -->
       <div class="menu-panel mobile-active" id="menuPanelSection">
         
+        @if(!empty($isBarEnabled))
         <!-- Mode Switcher: Food Menu vs Bar Menu (Smooth Zero Refresh) -->
         <div class="pos-menu-type-tabs mb-3 d-flex gap-2" style="background:#fff; padding:6px; border-radius:12px; border:1.5px solid var(--rp-border);">
           <button type="button" class="btn-menu-mode-tab active" id="btnTabFoodMenu" style="flex:1; padding:9px 16px; border-radius:8px; border:none; font-weight:800; font-size:0.88rem; cursor:pointer; background:var(--rp-primary-gradient); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;">
@@ -1811,6 +1812,7 @@
             <span class="badge ms-1 bg-warning text-dark">{{ isset($bar_items) ? $bar_items->count() : 0 }}</span>
           </button>
         </div>
+        @endif
 
         <div id="foodMenuSection">
         <div class="menu-filters-bar">
@@ -1962,6 +1964,7 @@
         </div>
         </div><!-- /#foodMenuSection -->
 
+        @if(!empty($isBarEnabled))
         <!-- BAR MENU SECTION (Smooth no-refresh tab) -->
         <div id="barMenuSection" style="display: none;">
           <div class="menu-filters-bar">
@@ -2061,6 +2064,7 @@
             @endif
           </div>
         </div><!-- /#barMenuSection -->
+        @endif
 
       </div>
 

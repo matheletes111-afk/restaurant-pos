@@ -271,6 +271,17 @@
 
                   <div class="col-md-6">
                     <div class="form-group">
+                      <label for="bar_management_checkbox">Bar Management</label>
+                      <select class="form-control" id="bar_management_checkbox" name="bar_management_checkbox">
+                        <option value="N" {{ old('bar_management_checkbox', $plan->bar_management_checkbox ?? 'N') == 'N' ? 'selected' : '' }}>Disabled</option>
+                        <option value="Y" {{ old('bar_management_checkbox', $plan->bar_management_checkbox ?? 'N') == 'Y' ? 'selected' : '' }}>Enabled</option>
+                      </select>
+                      <small class="text-muted">Allow this restaurant to access Bar Categories, Brands, Items & Bar KOT Counter</small>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="form-group">
                       <label for="multi_outlet_checkbox">Multi-Outlet Support</label>
                       <select class="form-control" id="multi_outlet_checkbox" name="multi_outlet_checkbox">
                         <option value="N" {{ old('multi_outlet_checkbox', $plan->multi_outlet_checkbox ?? 'N') == 'N' ? 'selected' : '' }}>Disabled (Single Outlet Only)</option>

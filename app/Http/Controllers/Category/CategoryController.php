@@ -43,6 +43,13 @@ class CategoryController extends Controller
         $check_plan = Subscription::where('user_id', $subRestaurantId)->active()->first();
         $data['plan_details'] = $check_plan ? Plan::where('id', $check_plan->plan_id)->first() : null;
         $data['active_type'] = $typeFilter;
+        // Total active food categories (excluding BAR categories)
+        $data['total_food_categories'] = Category::where('restaurant_id', $restaurantId)
+            ->where('status', '!=', 'D')
+            ->where(function($q) {
+                $q->where('category_type', 'RES')->orWhereNull('category_type');
+            })
+            ->count();
         return view('category_admin', $data);
     }
 
@@ -59,10 +66,31 @@ class CategoryController extends Controller
             'image.max'   => 'The category image must not be greater than 5MB.',
         ]);
 
+        $targetType = $request->input('category_type', 'RES') ?: 'RES';
+        if ($targetType !== 'BAR') {
+            $restaurantId = auth()->user()->restaurant_id;
+            $subRestaurantId = auth()->user()->getSubscriptionRestaurantId() ?? $restaurantId;
+            $check_plan = Subscription::where('user_id', $subRestaurantId)->active()->first();
+            $plan_details = $check_plan ? Plan::where('id', $check_plan->plan_id)->first() : null;
+
+            if ($plan_details && !empty($plan_details->category_number) && $plan_details->category_number > 0) {
+                $currentFoodCategories = Category::where('restaurant_id', $restaurantId)
+                    ->where('status', '!=', 'D')
+                    ->where(function($q) {
+                        $q->where('category_type', 'RES')->orWhereNull('category_type');
+                    })
+                    ->count();
+
+                if ($currentFoodCategories >= (int)$plan_details->category_number) {
+                    return redirect()->back()->with('error', "Category limit reached! Your plan allows a maximum of {$plan_details->category_number} food categories ({$currentFoodCategories} currently used). Please upgrade your plan to add more categories.");
+                }
+            }
+        }
+
         try {
             $new = new Category;
             $new->name = trim($request->name);
-            $new->category_type = $request->input('category_type', 'RES') ?: 'RES'; // Default is RES
+            $new->category_type = $targetType;
             $new->user_id = auth()->user()->id;
             $new->restaurant_id = auth()->user()->restaurant_id;
             if ($request->hasFile('image')) {
@@ -167,9 +195,14 @@ class CategoryController extends Controller
         $check_plan = Subscription::where('user_id', $subRestaurantId)->active()->first();
         $data['plan_details'] = $check_plan ? Plan::where('id',$check_plan->plan_id)->first() : null;
         
-        // Total active dishes across the ENTIRE restaurant (all categories)
+        // Total active food dishes across the ENTIRE restaurant (excluding BAR)
         $data['total_dishes'] = SubCategory::where('restaurant_id', $restaurantId)
             ->where('status', '!=', 'D')
+            ->whereHas('category', function($q) {
+                $q->where(function($cq) {
+                    $cq->where('category_type', 'RES')->orWhereNull('category_type');
+                });
+            })
             ->count();
 
         $data['id'] = $id;
@@ -196,14 +229,19 @@ class CategoryController extends Controller
         $check_plan = Subscription::where('user_id', $subRestaurantId)->active()->first();
         $plan_details = $check_plan ? Plan::where('id', $check_plan->plan_id)->first() : null;
 
-        // Check overall restaurant dish limit (across all categories)
+        // Check overall restaurant dish limit (food dishes only, excluding BAR)
         if ($plan_details && !empty($plan_details->total_number_of_dishes) && $plan_details->total_number_of_dishes > 0) {
             $totalRestaurantDishes = SubCategory::where('restaurant_id', $restaurantId)
                 ->where('status', '!=', 'D')
+                ->whereHas('category', function($q) {
+                    $q->where(function($cq) {
+                        $cq->where('category_type', 'RES')->orWhereNull('category_type');
+                    });
+                })
                 ->count();
 
             if ($totalRestaurantDishes >= (int)$plan_details->total_number_of_dishes) {
-                return redirect()->back()->with('error', "Dish limit reached! Your plan allows a maximum of {$plan_details->total_number_of_dishes} dishes for your restaurant overall ({$totalRestaurantDishes} currently used across all categories). Please upgrade your plan to add more dishes.");
+                return redirect()->back()->with('error', "Dish limit reached! Your plan allows a maximum of {$plan_details->total_number_of_dishes} food dishes for your restaurant ({$totalRestaurantDishes} currently used). Please upgrade your plan to add more dishes.");
             }
         }
 
@@ -362,11 +400,14 @@ class CategoryController extends Controller
         $maxCategories = ($plan_details && !empty($plan_details->category_number)) ? (int)$plan_details->category_number : 0;
         $currentCategoriesCount = Category::where('restaurant_id', $restaurantId)
             ->where('status', '!=', 'D')
+            ->where(function($q) {
+                $q->where('category_type', 'RES')->orWhereNull('category_type');
+            })
             ->count();
 
         // Check if category limit already reached
         if ($maxCategories > 0 && $currentCategoriesCount >= $maxCategories) {
-            return redirect()->back()->with('error', "Category limit reached! Your restaurant currently has {$currentCategoriesCount} / {$maxCategories} categories. Please upgrade your plan to add more categories.");
+            return redirect()->back()->with('error', "Category limit reached! Your restaurant currently has {$currentCategoriesCount} / {$maxCategories} food categories. Please upgrade your plan to add more categories.");
         }
 
         try {
@@ -511,11 +552,16 @@ class CategoryController extends Controller
         $maxDishes = ($plan_details && !empty($plan_details->total_number_of_dishes)) ? (int)$plan_details->total_number_of_dishes : 0;
         $currentTotalDishes = SubCategory::where('restaurant_id', $restaurantId)
             ->where('status', '!=', 'D')
+            ->whereHas('category', function($q) {
+                $q->where(function($cq) {
+                    $cq->where('category_type', 'RES')->orWhereNull('category_type');
+                });
+            })
             ->count();
 
         // Check if restaurant has already reached or exceeded overall dish limit
         if ($maxDishes > 0 && $currentTotalDishes >= $maxDishes) {
-            return redirect()->back()->with('error', "Dish limit reached! Your restaurant currently has {$currentTotalDishes} / {$maxDishes} dishes across all categories. Please upgrade your plan to upload more dishes.");
+            return redirect()->back()->with('error', "Dish limit reached! Your restaurant currently has {$currentTotalDishes} / {$maxDishes} food dishes across all categories. Please upgrade your plan to upload more dishes.");
         }
 
         // Active categories mapping for this restaurant
@@ -627,7 +673,7 @@ class CategoryController extends Controller
             if ($maxDishes > 0 && ($currentTotalDishes + count($itemsToInsert)) > $maxDishes) {
                 $uploadCount = count($itemsToInsert);
                 $available = max(0, $maxDishes - $currentTotalDishes);
-                return redirect()->back()->with('error', "Bulk upload failed! Overall restaurant dish limit exceeded. Your plan allows a maximum of {$maxDishes} dishes. You currently have {$currentTotalDishes} dishes and can only add {$available} more (file contains {$uploadCount} dishes). No dishes were inserted.");
+                return redirect()->back()->with('error', "Bulk upload failed! Overall restaurant food dish limit exceeded. Your plan allows a maximum of {$maxDishes} food dishes. You currently have {$currentTotalDishes} food dishes and can only add {$available} more (file contains {$uploadCount} dishes). No dishes were inserted.");
             }
 
             // All validations passed -> insert in transaction

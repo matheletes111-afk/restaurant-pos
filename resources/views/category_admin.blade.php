@@ -863,11 +863,17 @@
             <input type="text" id="categorySearchInput" class="search-box-input" placeholder="Search categories...">
           </div>
 
+          @php
+              $foodCatCount = $total_food_categories ?? count($data ?? []);
+              $planCatMax = (isset($plan_details) && isset($plan_details->category_number)) ? (int)$plan_details->category_number : 0;
+              $canAddCategory = auth()->user()->hasPermission('menu_master', 'add') && ($planCatMax == 0 || $foodCatCount < $planCatMax);
+          @endphp
+
           <!-- Subscription Plan Quota Pill -->
           @if(isset($plan_details) && isset($plan_details->category_number))
-          <div class="plan-usage-pill" title="Category Quota">
+          <div class="plan-usage-pill" title="Food Category Quota">
             <i class="fa-solid fa-chart-pie"></i>
-            <span>{{ count($data ?? []) }} / {{ $plan_details->category_number }} Used</span>
+            <span>{{ $foodCatCount }} / {{ $planCatMax == 0 ? 'Unlimited' : $planCatMax }} Used</span>
           </div>
           @endif
 
@@ -886,12 +892,7 @@
           @endif
 
           <!-- Add Category Action Button -->
-          @if(
-              auth()->user()->hasPermission('menu_master', 'add')
-              && isset($plan_details)
-              && isset($plan_details->category_number)
-              && count($data ?? []) < $plan_details->category_number
-          )
+          @if($canAddCategory)
           <button type="button" class="btn-pos-primary" data-toggle="modal" data-target="#addCategoryModal" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
             <i class="fa-solid fa-plus"></i>
             <span>Add Category</span>
@@ -1004,12 +1005,7 @@
           <p class="empty-desc">Get started by creating your first food &amp; beverage menu category or bulk upload categories via Excel.</p>
           
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            @if(
-                auth()->user()->hasPermission('menu_master', 'add')
-                && isset($plan_details)
-                && isset($plan_details->category_number)
-                && count($data ?? []) < $plan_details->category_number
-            )
+            @if($canAddCategory)
             <button type="button" class="btn-pos-primary" data-toggle="modal" data-target="#addCategoryModal" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
               <i class="fa-solid fa-plus"></i>
               <span>Create Category</span>

@@ -67,8 +67,12 @@ class WasteInventoryController extends Controller
     {
         $restaurantId = auth()->user()->restaurant_id;
 
-        // Ensure bar items are synchronized into products with ML unit
-        Product::syncBarItems($restaurantId);
+        $isBarEnabled = auth()->check() ? auth()->user()->hasBarAccess() : false;
+
+        // Ensure bar items are synchronized into products with ML unit if bar enabled
+        if ($isBarEnabled) {
+            Product::syncBarItems($restaurantId);
+        }
 
         $hasExplicitFilter = $request->has('from_date') || $request->has('to_date') || $request->has('keyword') || $request->has('item_type');
 
@@ -181,7 +185,7 @@ class WasteInventoryController extends Controller
 
         $nextWasteNo = WasteInventory::generateWasteNo($restaurantId);
 
-        return view('waste-inventory.index', compact(
+        return view('waste-inventory.index', compact('isBarEnabled', 
             'wasteList',
             'foodProducts',
             'barProducts',
@@ -201,9 +205,21 @@ class WasteInventoryController extends Controller
     public function create()
     {
         $restaurantId = auth()->user()->restaurant_id;
+        $isBarEnabled = auth()->check() ? auth()->user()->hasBarAccess() : false;
 
-        // Ensure bar items are synchronized
-        Product::syncBarItems($restaurantId);
+        if ($isBarEnabled) {
+            // Ensure bar items are synchronized
+            Product::syncBarItems($restaurantId);
+
+            $barProducts = Product::with(['unit', 'barItem.brand', 'barItem.category'])
+                ->where('restaurant_id', $restaurantId)
+                ->whereNotNull('sub_category_id')
+                ->where('status', 'A')
+                ->orderBy('product_name')
+                ->get();
+        } else {
+            $barProducts = collect();
+        }
 
         $foodProducts = Product::with('unit')
             ->where('restaurant_id', $restaurantId)
@@ -212,16 +228,9 @@ class WasteInventoryController extends Controller
             ->orderBy('product_name')
             ->get();
 
-        $barProducts = Product::with(['unit', 'barItem.brand', 'barItem.category'])
-            ->where('restaurant_id', $restaurantId)
-            ->whereNotNull('sub_category_id')
-            ->where('status', 'A')
-            ->orderBy('product_name')
-            ->get();
-
         $nextWasteNo = WasteInventory::generateWasteNo($restaurantId);
 
-        return view('waste-inventory.create', compact('foodProducts', 'barProducts', 'nextWasteNo'));
+        return view('waste-inventory.create', compact('foodProducts', 'barProducts', 'nextWasteNo', 'isBarEnabled'));
     }
 
     /**

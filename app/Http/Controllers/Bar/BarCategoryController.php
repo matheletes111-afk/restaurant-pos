@@ -36,11 +36,7 @@ class BarCategoryController extends Controller
         $check_plan = Subscription::where('user_id', $subRestaurantId)->active()->first();
         $data['plan_details'] = $check_plan ? Plan::where('id', $check_plan->plan_id)->first() : null;
 
-        // Count overall categories in restaurant to verify plan limits
-        $data['total_all_categories'] = Category::where('restaurant_id', $restaurantId)
-            ->where('status', '!=', 'D')
-            ->count();
-
+        // Bar categories are unlimited (no plan restrictions)
         $data['category_type'] = 'BAR';
 
         return view('bar.category_index', $data);
@@ -64,19 +60,6 @@ class BarCategoryController extends Controller
         ]);
 
         $restaurantId = auth()->user()->restaurant_id;
-        $subRestaurantId = auth()->user()->getSubscriptionRestaurantId() ?? $restaurantId;
-        $check_plan = Subscription::where('user_id', $subRestaurantId)->active()->first();
-        $plan_details = $check_plan ? Plan::where('id', $check_plan->plan_id)->first() : null;
-
-        if ($plan_details && !empty($plan_details->category_number) && $plan_details->category_number > 0) {
-            $currentCategoriesCount = Category::where('restaurant_id', $restaurantId)
-                ->where('status', '!=', 'D')
-                ->count();
-
-            if ($currentCategoriesCount >= (int)$plan_details->category_number) {
-                return redirect()->back()->with('error', "Category limit reached! Your plan allows a maximum of {$plan_details->category_number} categories across your establishment.");
-            }
-        }
 
         try {
             $new = new Category();
@@ -202,18 +185,6 @@ class BarCategoryController extends Controller
         ]);
 
         $restaurantId = auth()->user()->restaurant_id;
-        $subRestaurantId = auth()->user()->getSubscriptionRestaurantId() ?? $restaurantId;
-        $check_plan = Subscription::where('user_id', $subRestaurantId)->active()->first();
-        $plan_details = $check_plan ? Plan::where('id', $check_plan->plan_id)->first() : null;
-
-        $maxCategories = ($plan_details && !empty($plan_details->category_number)) ? (int)$plan_details->category_number : 0;
-        $currentCategoriesCount = Category::where('restaurant_id', $restaurantId)
-            ->where('status', '!=', 'D')
-            ->count();
-
-        if ($maxCategories > 0 && $currentCategoriesCount >= $maxCategories) {
-            return redirect()->back()->with('error', "Category limit reached! Your plan allows a maximum of {$maxCategories} categories.");
-        }
 
         try {
             $file = $request->file('bulk_file');
@@ -261,13 +232,7 @@ class BarCategoryController extends Controller
                 return redirect()->back()->with('error', 'No new valid bar categories found in the uploaded file.');
             }
 
-            $availableSlots = ($maxCategories > 0) ? max(0, $maxCategories - $currentCategoriesCount) : count($categoryNames);
-            $toInsert = array_slice($categoryNames, 0, $availableSlots);
-            $skippedCount = count($categoryNames) - count($toInsert);
-
-            if (empty($toInsert)) {
-                return redirect()->back()->with('error', "Category limit reached! Your plan allows a maximum of {$maxCategories} categories.");
-            }
+            $toInsert = $categoryNames;
 
             $successCount = 0;
             \DB::beginTransaction();
@@ -290,10 +255,6 @@ class BarCategoryController extends Controller
             } catch (\Exception $e) {
                 \DB::rollBack();
                 return redirect()->back()->with('error', 'Failed to insert categories: ' . $e->getMessage());
-            }
-
-            if ($skippedCount > 0) {
-                return redirect()->back()->with('warning', "Successfully added {$successCount} Bar categories. Reached plan limit of {$maxCategories} categories ({$skippedCount} skipped).");
             }
 
             return redirect()->back()->with('success', "Successfully imported {$successCount} Bar categories with category_type BAR!");

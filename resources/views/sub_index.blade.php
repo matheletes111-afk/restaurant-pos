@@ -969,9 +969,9 @@
 
           <!-- Subscription Plan Quota Pill (Restaurant-Wide Total) -->
           @if(isset($plan_details) && isset($plan_details->total_number_of_dishes))
-          <div class="plan-usage-pill {{ $isDishLimitReached ? 'quota-exceeded' : '' }}" title="Overall dishes across all categories for your restaurant">
+          <div class="plan-usage-pill {{ $isDishLimitReached ? 'quota-exceeded' : '' }}" title="Overall food dishes across all categories for your restaurant">
             <i class="fa-solid fa-chart-pie"></i>
-            <span>{{ $restaurantDishesCount }} / {{ $dishQuotaMax == 0 ? 'Unlimited' : $dishQuotaMax }} Used (Restaurant Total)</span>
+            <span>{{ $restaurantDishesCount }} / {{ $dishQuotaMax == 0 ? 'Unlimited' : $dishQuotaMax }} Food Dishes Used (Restaurant Total)</span>
           </div>
           @endif
 

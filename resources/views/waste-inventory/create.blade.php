@@ -220,11 +220,13 @@
                                     <span class="type-pill-title">🍽️ Food Item</span>
                                     <span class="type-pill-sub">Kitchen, groceries, ingredients, raw materials</span>
                                 </label>
+                                @if(!empty($isBarEnabled))
                                 <label class="type-pill" id="pillBar">
                                     <input type="radio" name="item_type" value="BAR" onchange="switchItemType('BAR')">
                                     <span class="type-pill-title">🍾 Bar Item</span>
                                     <span class="type-pill-sub">Liquor, wine, beer, spirits (Auto Unit: ML)</span>
                                 </label>
+                                @endif
                             </div>
 
                             <!-- 2. Product & Unit & Stock -->

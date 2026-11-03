@@ -92,6 +92,7 @@
           </div>
         </div>
 
+        @if(!empty($isBarEnabled))
         <!-- Menu Mode Switcher (Food vs Bar) - Premium RapidPOS Tab Design -->
         <div class="pos-menu-type-tabs mb-3 d-flex gap-2" style="background:#fff; padding:6px; border-radius:14px; border:1.5px solid var(--pos-border); box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);">
           <button type="button" class="btn-menu-mode-tab tab-food active" id="btnTabFoodMenu" style="flex:1; padding:10px 18px; border-radius:10px; border:none; font-weight:800; font-size:0.92rem; cursor:pointer; background:linear-gradient(135deg, #ff5e14 0%, #ff8c42 100%); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow: 0 4px 14px rgba(255, 94, 20, 0.28);">
@@ -103,6 +104,7 @@
             <span class="badge ms-1 bg-warning text-dark">{{ isset($bar_items) ? $bar_items->count() : 0 }}</span>
           </button>
         </div>
+        @endif
 
         <!-- FOOD MENU SECTION -->
         <div id="foodMenuSection">
@@ -286,6 +288,7 @@
         </div>
         </div><!-- /#foodMenuSection -->
 
+        @if(!empty($isBarEnabled))
         <!-- BAR MENU SECTION (Smooth no-refresh tab) -->
         <div id="barMenuSection" style="display: none;">
           <!-- Bar Menu Browser Toolbar -->
@@ -384,6 +387,7 @@
             </div>
           </div>
         </div><!-- /#barMenuSection -->
+        @endif
 
         <!-- Selected Order Items Cart Section -->
         <div class="pos-panel-card">

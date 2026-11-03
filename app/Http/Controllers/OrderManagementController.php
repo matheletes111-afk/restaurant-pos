@@ -83,32 +83,40 @@ class OrderManagementController extends Controller
             }])
             ->get();
 
-        // Bar Categories (Only Available items)
-        $data['bar_categories'] = Category::where('restaurant_id', $restaurantId)
-            ->where('category_type', 'BAR')
-            ->where('status', '!=', 'D')
-            ->with(['subcategories' => function($query) use ($restaurantId) {
-                $query->where('restaurant_id', $restaurantId)
-                    ->where('status', 'A')
-                    ->with(['brand', 'variations' => function($vq) {
-                        $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
-                    }]);
-            }])
-            ->get();
+        $isBarEnabled = auth()->check() ? auth()->user()->hasBarAccess() : false;
+        $data['isBarEnabled'] = $isBarEnabled;
 
-        // Bar Items (only available liquor products with variations and brand info)
-        $data['bar_items'] = SubCategory::where('restaurant_id', $restaurantId)
-            ->where('status', 'A')
-            ->where(function($q) {
-                $q->where('food_type', 'BAR')
-                  ->orWhereHas('category', function($cq) {
-                      $cq->where('category_type', 'BAR');
-                  });
-            })
-            ->with(['brand', 'category', 'variations' => function($vq) {
-                $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
-            }])
-            ->get();
+        if ($isBarEnabled) {
+            // Bar Categories (Only Available items)
+            $data['bar_categories'] = Category::where('restaurant_id', $restaurantId)
+                ->where('category_type', 'BAR')
+                ->where('status', '!=', 'D')
+                ->with(['subcategories' => function($query) use ($restaurantId) {
+                    $query->where('restaurant_id', $restaurantId)
+                        ->where('status', 'A')
+                        ->with(['brand', 'variations' => function($vq) {
+                            $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
+                        }]);
+                }])
+                ->get();
+
+            // Bar Items (only available liquor products with variations and brand info)
+            $data['bar_items'] = SubCategory::where('restaurant_id', $restaurantId)
+                ->where('status', 'A')
+                ->where(function($q) {
+                    $q->where('food_type', 'BAR')
+                      ->orWhereHas('category', function($cq) {
+                          $cq->where('category_type', 'BAR');
+                      });
+                })
+                ->with(['brand', 'category', 'variations' => function($vq) {
+                    $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
+                }])
+                ->get();
+        } else {
+            $data['bar_categories'] = collect();
+            $data['bar_items'] = collect();
+        }
         
         $data['payment_methods'] = ['Cash', 'UPI', 'Card'];
 
@@ -223,32 +231,40 @@ class OrderManagementController extends Controller
             }])
             ->get();
 
-        // Bar Categories (Only Available items)
-        $data['bar_categories'] = Category::where('restaurant_id', $restaurantId)
-            ->where('category_type', 'BAR')
-            ->where('status', '!=', 'D')
-            ->with(['subcategories' => function($query) use ($restaurantId) {
-                $query->where('restaurant_id', $restaurantId)
-                    ->where('status', 'A')
-                    ->with(['brand', 'variations' => function($vq) {
-                        $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
-                    }]);
-            }])
-            ->get();
+        $isBarEnabled = auth()->check() ? auth()->user()->hasBarAccess() : false;
+        $data['isBarEnabled'] = $isBarEnabled;
 
-        // Bar Items (only available liquor products with variations and brand info)
-        $data['bar_items'] = SubCategory::where('restaurant_id', $restaurantId)
-            ->where('status', 'A')
-            ->where(function($q) {
-                $q->where('food_type', 'BAR')
-                  ->orWhereHas('category', function($cq) {
-                      $cq->where('category_type', 'BAR');
-                  });
-            })
-            ->with(['brand', 'category', 'variations' => function($vq) {
-                $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
-            }])
-            ->get();
+        if ($isBarEnabled) {
+            // Bar Categories (Only Available items)
+            $data['bar_categories'] = Category::where('restaurant_id', $restaurantId)
+                ->where('category_type', 'BAR')
+                ->where('status', '!=', 'D')
+                ->with(['subcategories' => function($query) use ($restaurantId) {
+                    $query->where('restaurant_id', $restaurantId)
+                        ->where('status', 'A')
+                        ->with(['brand', 'variations' => function($vq) {
+                            $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
+                        }]);
+                }])
+                ->get();
+
+            // Bar Items (only available liquor products with variations and brand info)
+            $data['bar_items'] = SubCategory::where('restaurant_id', $restaurantId)
+                ->where('status', 'A')
+                ->where(function($q) {
+                    $q->where('food_type', 'BAR')
+                      ->orWhereHas('category', function($cq) {
+                          $cq->where('category_type', 'BAR');
+                      });
+                })
+                ->with(['brand', 'category', 'variations' => function($vq) {
+                    $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
+                }])
+                ->get();
+        } else {
+            $data['bar_categories'] = collect();
+            $data['bar_items'] = collect();
+        }
         
         $data['payment_methods'] = ['CASH', 'CARD', 'UPI'];
         $data['original_subtotal'] = $originalSubtotal;

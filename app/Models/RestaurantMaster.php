@@ -140,6 +140,19 @@ class RestaurantMaster extends Model
     /**
      * Check if the restaurant has an active, existing logo file.
      */
+    public function hasBarAccess(): bool
+    {
+        $sub = $this->active_subscription 
+            ?? $this->subscriptions()
+                ->whereIn('status', ['active', 'completed'])
+                ->whereDate('end_date', '>=', now())
+                ->with('plan')
+                ->latest('id')
+                ->first();
+
+        return (bool) ($sub && $sub->plan && $sub->plan->bar_management_checkbox === 'Y');
+    }
+
     public function hasLogo(): bool
     {
         if (empty($this->logo)) {

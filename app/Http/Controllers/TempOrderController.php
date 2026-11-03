@@ -54,34 +54,44 @@ class TempOrderController extends Controller
             }])
             ->get();
 
-        // Fetch Bar categories with variations (Only Available items)
-        $bar_categories = Category::where('restaurant_id', $restaurant_id)
-            ->where('category_type', 'BAR')
-            ->where('status', '!=', 'D')
-            ->with(['subcategories' => function($q) use ($restaurant_id) {
-                $q->where('sub_category.restaurant_id', $restaurant_id)
-                  ->where('sub_category.status', 'A')
-                  ->with(['brand', 'variations' => function($vq) {
-                      $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
-                  }]);
-            }])
-            ->orderBy('name', 'asc')
-            ->get();
+        // Check if restaurant plan has Bar Management enabled
+        $isBarEnabled = ($restaurant_details && method_exists($restaurant_details, 'hasBarAccess')) 
+            ? $restaurant_details->hasBarAccess() 
+            : false;
 
-        // Fetch all Available Bar Items (liquor products)
-        $bar_items = SubCategory::where('restaurant_id', $restaurant_id)
-            ->where('status', 'A')
-            ->where(function($q) {
-                $q->where('food_type', 'BAR')
-                  ->orWhereHas('category', function($cq) {
-                      $cq->where('category_type', 'BAR');
-                  });
-            })
-            ->with(['brand', 'category', 'variations' => function($vq) {
-                $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
-            }])
-            ->orderBy('name', 'asc')
-            ->get();
+        if ($isBarEnabled) {
+            // Fetch Bar categories with variations (Only Available items)
+            $bar_categories = Category::where('restaurant_id', $restaurant_id)
+                ->where('category_type', 'BAR')
+                ->where('status', '!=', 'D')
+                ->with(['subcategories' => function($q) use ($restaurant_id) {
+                    $q->where('sub_category.restaurant_id', $restaurant_id)
+                      ->where('sub_category.status', 'A')
+                      ->with(['brand', 'variations' => function($vq) {
+                          $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
+                      }]);
+                }])
+                ->orderBy('name', 'asc')
+                ->get();
+
+            // Fetch all Available Bar Items (liquor products)
+            $bar_items = SubCategory::where('restaurant_id', $restaurant_id)
+                ->where('status', 'A')
+                ->where(function($q) {
+                    $q->where('food_type', 'BAR')
+                      ->orWhereHas('category', function($cq) {
+                          $cq->where('category_type', 'BAR');
+                      });
+                })
+                ->with(['brand', 'category', 'variations' => function($vq) {
+                    $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
+                }])
+                ->orderBy('name', 'asc')
+                ->get();
+        } else {
+            $bar_categories = collect();
+            $bar_items = collect();
+        }
 
         $restaurant_addons = \App\Models\DishAddon::where('restaurant_id', $restaurant_id)
             ->where('status', 'A')
@@ -235,7 +245,7 @@ class TempOrderController extends Controller
             }
         }
 
-        return view('temp_order', compact('categories', 'bar_categories', 'bar_items', 'table_id', 'restaurant_id', 'restaurant_details', 'table_details', 'activeOrder', 'pendingTempOrder', 'restaurant_addons'));
+        return view('temp_order', compact('categories', 'bar_categories', 'bar_items', 'isBarEnabled', 'table_id', 'restaurant_id', 'restaurant_details', 'table_details', 'activeOrder', 'pendingTempOrder', 'restaurant_addons'));
     }
 
 public function store(Request $request)

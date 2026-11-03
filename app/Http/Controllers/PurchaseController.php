@@ -166,22 +166,34 @@ class PurchaseController extends Controller
     public function create()
     {
         $restaurantId = auth()->user()->restaurant_id;
+        $isBarEnabled = auth()->check() ? auth()->user()->hasBarAccess() : false;
 
-        // Sync Bar Items into Products with ML unit so they appear in the Purchase dropdown
-        $mlUnit = Product::syncBarItems($restaurantId);
+        $mlUnit = null;
+        if ($isBarEnabled) {
+            // Sync Bar Items into Products with ML unit so they appear in the Purchase dropdown
+            $mlUnit = Product::syncBarItems($restaurantId);
+
+            $products = Product::with(['unit', 'barItem.brand', 'barItem.category'])
+                ->where('restaurant_id', $restaurantId)
+                ->where('status', 'A')
+                ->orderBy('product_name')
+                ->get();
+        } else {
+            // Hide bar items if bar management is disabled in the plan
+            $products = Product::with('unit')
+                ->where('restaurant_id', $restaurantId)
+                ->whereNull('sub_category_id')
+                ->where('status', 'A')
+                ->orderBy('product_name')
+                ->get();
+        }
 
         $suppliers = Supplier::where('restaurant_id', $restaurantId)
             ->where('status', 'A')
             ->orderBy('supplier_name')
             ->get();
         
-        $products = Product::with(['unit', 'barItem.brand', 'barItem.category'])
-            ->where('restaurant_id', $restaurantId)
-            ->where('status', 'A')
-            ->orderBy('product_name')
-            ->get();
-        
-        return view('purchases.create', compact('suppliers', 'products', 'mlUnit'));
+        return view('purchases.create', compact('suppliers', 'products', 'mlUnit', 'isBarEnabled'));
     }
 
     public function store(Request $request)
@@ -279,9 +291,27 @@ class PurchaseController extends Controller
     public function edit($id)
     {
         $restaurantId = auth()->user()->restaurant_id;
+        $isBarEnabled = auth()->check() ? auth()->user()->hasBarAccess() : false;
 
-        // Sync Bar Items into Products with ML unit so they appear in the Purchase dropdown
-        $mlUnit = Product::syncBarItems($restaurantId);
+        $mlUnit = null;
+        if ($isBarEnabled) {
+            // Sync Bar Items into Products with ML unit so they appear in the Purchase dropdown
+            $mlUnit = Product::syncBarItems($restaurantId);
+
+            $products = Product::with(['unit', 'barItem.brand', 'barItem.category'])
+                ->where('restaurant_id', $restaurantId)
+                ->where('status', 'A')
+                ->orderBy('product_name')
+                ->get();
+        } else {
+            // Hide bar items if bar management is disabled in the plan
+            $products = Product::with('unit')
+                ->where('restaurant_id', $restaurantId)
+                ->whereNull('sub_category_id')
+                ->where('status', 'A')
+                ->orderBy('product_name')
+                ->get();
+        }
 
         $purchase = Purchase::with(['items.product.barItem', 'items.unit', 'supplier'])
             ->where('id', $id)
@@ -293,13 +323,7 @@ class PurchaseController extends Controller
             ->orderBy('supplier_name')
             ->get();
         
-        $products = Product::with(['unit', 'barItem.brand', 'barItem.category'])
-            ->where('restaurant_id', $restaurantId)
-            ->where('status', 'A')
-            ->orderBy('product_name')
-            ->get();
-        
-        return view('purchases.edit', compact('purchase', 'suppliers', 'products', 'mlUnit'));
+        return view('purchases.edit', compact('purchase', 'suppliers', 'products', 'mlUnit', 'isBarEnabled'));
     }
 
     public function update(Request $request)

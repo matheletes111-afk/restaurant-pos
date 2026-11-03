@@ -53,34 +53,42 @@ class RapidBillController extends Controller
             ->orderBy('name', 'asc')
             ->get();
 
-        // Fetch Bar categories with brand and variations (Only Available items)
-        $bar_categories = Category::where('restaurant_id', $activeRestId)
-            ->where('category_type', 'BAR')
-            ->where('status', '!=', 'D')
-            ->with(['subcategories' => function($q) use ($activeRestId) {
-                $q->where('sub_category.restaurant_id', $activeRestId)
-                  ->where('sub_category.status', 'A')
-                  ->with(['brand', 'variations' => function($vq) {
-                      $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
-                  }]);
-            }])
-            ->orderBy('name', 'asc')
-            ->get();
+        // Check if restaurant plan has Bar Management enabled
+        $isBarEnabled = auth()->check() ? auth()->user()->hasBarAccess() : false;
 
-        // Fetch all Available Bar Items (liquor products)
-        $bar_items = SubCategory::where('restaurant_id', $activeRestId)
-            ->where('status', 'A')
-            ->where(function($q) {
-                $q->where('food_type', 'BAR')
-                  ->orWhereHas('category', function($cq) {
-                      $cq->where('category_type', 'BAR');
-                  });
-            })
-            ->with(['brand', 'category', 'variations' => function($vq) {
-                $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
-            }])
-            ->orderBy('name', 'asc')
-            ->get();
+        if ($isBarEnabled) {
+            // Fetch Bar categories with brand and variations (Only Available items)
+            $bar_categories = Category::where('restaurant_id', $activeRestId)
+                ->where('category_type', 'BAR')
+                ->where('status', '!=', 'D')
+                ->with(['subcategories' => function($q) use ($activeRestId) {
+                    $q->where('sub_category.restaurant_id', $activeRestId)
+                      ->where('sub_category.status', 'A')
+                      ->with(['brand', 'variations' => function($vq) {
+                          $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
+                      }]);
+                }])
+                ->orderBy('name', 'asc')
+                ->get();
+
+            // Fetch all Available Bar Items (liquor products)
+            $bar_items = SubCategory::where('restaurant_id', $activeRestId)
+                ->where('status', 'A')
+                ->where(function($q) {
+                    $q->where('food_type', 'BAR')
+                      ->orWhereHas('category', function($cq) {
+                          $cq->where('category_type', 'BAR');
+                      });
+                })
+                ->with(['brand', 'category', 'variations' => function($vq) {
+                    $vq->where('status', '!=', 'D')->orderBy('ml', 'asc');
+                }])
+                ->orderBy('name', 'asc')
+                ->get();
+        } else {
+            $bar_categories = collect();
+            $bar_items = collect();
+        }
 
         // Fetch all active restaurant addons
         $restaurant_addons = DishAddon::where('restaurant_id', $activeRestId)
@@ -104,6 +112,7 @@ class RapidBillController extends Controller
             'categories',
             'bar_categories',
             'bar_items',
+            'isBarEnabled',
             'restaurant_addons',
             'tables'
         ));
