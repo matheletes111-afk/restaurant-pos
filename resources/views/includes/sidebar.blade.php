@@ -568,7 +568,7 @@
         @if(auth()->user()->hasPermission('inventory_setting'))
         @if(@$plan_details->inventory_checkbox=="Y" || $active == "")
         @php
-          $isInvActive = Request::is('*manage-units*') || Request::is('*units*') || Request::is('*products*') || Request::is('*product*') || (Request::is('*supplier*') && !Request::is('*debit-note*')) || Request::is('*purchase*') || Request::is('*stock-out*') || Request::is('*debit-note*');
+          $isInvActive = Request::is('*manage-units*') || Request::is('*units*') || Request::is('*products*') || Request::is('*product*') || (Request::is('*supplier*') && !Request::is('*debit-note*')) || Request::is('*purchase*') || Request::is('*stock-out*') || Request::is('*debit-note*') || Request::is('*waste-inventory*');
         @endphp
         <li class="pc-item pc-hasmenu {{ $isInvActive ? 'pc-trigger active' : '' }} {{ $disabledClass }}">
           <a href="#!" class="pc-link {{ $isInvActive ? 'active-parent' : '' }}">
@@ -627,6 +627,13 @@
               <a href="{{ route('debit-notes.index') }}" class="pc-link @if(Request::is('*debit-notes*') || Request::is('*debit-note*')) active_class @endif">
                 <span class="pc-micon"><i class="fas fa-file-invoice"></i></span>
                 <span class="pc-mtext">Supplier Debit Note</span>
+              </a>
+            </li>
+            <!-- Waste Inventory -->
+            <li class="pc-item">
+              <a href="{{ route('waste-inventory.index') }}" class="pc-link @if(Request::is('*waste-inventory*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-dumpster"></i></span>
+                <span class="pc-mtext">Waste Inventory</span>
               </a>
             </li>
           </ul>

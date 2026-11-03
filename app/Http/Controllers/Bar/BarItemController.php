@@ -81,27 +81,37 @@ class BarItemController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name'           => 'required|string|max:255',
-            'category_id'    => 'required|exists:category,id',
-            'brand_id'       => 'nullable|exists:bar_brands,id',
-            'bottle_size_ml' => 'required|numeric|min:1',
-            'opening_qty'    => 'required|numeric|min:0',
-            'price'          => 'nullable|numeric|min:0',
-            'vat_rate'       => 'nullable|numeric|min:0|max:100',
-            'description'    => 'nullable|string|max:1000',
-            'image'          => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+            'name'               => 'required|string|max:255',
+            'category_id'        => 'required|exists:category,id',
+            'brand_id'           => 'nullable|exists:bar_brands,id',
+            'bottle_size_ml'     => 'required|numeric|min:1',
+            'opening_bottle_qty' => 'nullable|numeric|min:0',
+            'extra_ml'           => 'nullable|numeric|min:0',
+            'opening_qty'        => 'nullable|numeric|min:0',
+            'price'              => 'nullable|numeric|min:0',
+            'vat_rate'           => 'nullable|numeric|min:0|max:100',
+            'description'        => 'nullable|string|max:1000',
+            'image'              => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
         ], [
             'name.required'           => 'Please enter the bar item name.',
             'category_id.required'    => 'Please select a bar category.',
             'bottle_size_ml.required' => 'Please enter the standard bottle size in ml (e.g. 750).',
-            'opening_qty.required'    => 'Please enter the opening stock in ml.',
         ]);
 
         $restaurantId = auth()->user()->restaurant_id;
 
         try {
             $bottleSize = floatval($request->bottle_size_ml);
-            $openingMl = floatval($request->opening_qty);
+
+            // Calculate opening ML: (Bottle Size * Opening Bottle Qty) + Extra ML
+            if ($request->filled('opening_bottle_qty') || $request->filled('extra_ml')) {
+                $bottleQty = floatval($request->opening_bottle_qty ?? 0);
+                $extraMl = floatval($request->extra_ml ?? 0);
+                $openingMl = ($bottleSize * $bottleQty) + $extraMl;
+            } else {
+                $openingMl = floatval($request->opening_qty ?? 0);
+            }
+
             $currentStockMl = $openingMl;
             $bottleCount = $bottleSize > 0 ? round($openingMl / $bottleSize, 1) : 0;
 
@@ -161,21 +171,22 @@ class BarItemController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'id'             => 'required|exists:sub_category,id',
-            'name'           => 'required|string|max:255',
-            'category_id'    => 'required|exists:category,id',
-            'brand_id'       => 'nullable|exists:bar_brands,id',
-            'bottle_size_ml' => 'required|numeric|min:1',
-            'opening_qty'    => 'required|numeric|min:0',
-            'price'          => 'nullable|numeric|min:0',
-            'vat_rate'       => 'nullable|numeric|min:0|max:100',
-            'description'    => 'nullable|string|max:1000',
-            'image'          => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+            'id'                 => 'required|exists:sub_category,id',
+            'name'               => 'required|string|max:255',
+            'category_id'        => 'required|exists:category,id',
+            'brand_id'           => 'nullable|exists:bar_brands,id',
+            'bottle_size_ml'     => 'required|numeric|min:1',
+            'opening_bottle_qty' => 'nullable|numeric|min:0',
+            'extra_ml'           => 'nullable|numeric|min:0',
+            'opening_qty'        => 'nullable|numeric|min:0',
+            'price'              => 'nullable|numeric|min:0',
+            'vat_rate'           => 'nullable|numeric|min:0|max:100',
+            'description'        => 'nullable|string|max:1000',
+            'image'              => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
         ], [
             'name.required'           => 'Please enter the bar item name.',
             'category_id.required'    => 'Please select a bar category.',
             'bottle_size_ml.required' => 'Please enter the standard bottle size in ml (e.g. 750).',
-            'opening_qty.required'    => 'Please enter the opening stock in ml.',
         ]);
 
         $restaurantId = auth()->user()->restaurant_id;
@@ -186,7 +197,15 @@ class BarItemController extends Controller
 
         try {
             $bottleSize = floatval($request->bottle_size_ml);
-            $openingMl = floatval($request->opening_qty);
+
+            // Calculate opening ML: (Bottle Size * Opening Bottle Qty) + Extra ML
+            if ($request->filled('opening_bottle_qty') || $request->filled('extra_ml')) {
+                $bottleQty = floatval($request->opening_bottle_qty ?? 0);
+                $extraMl = floatval($request->extra_ml ?? 0);
+                $openingMl = ($bottleSize * $bottleQty) + $extraMl;
+            } else {
+                $openingMl = floatval($request->opening_qty ?? 0);
+            }
 
             $oldStockMl = floatval($item->current_stock_ml);
             $oldOpeningMl = floatval($item->opening_qty);

@@ -733,8 +733,19 @@
                     <span class="inv-spec-val">{{ number_format($bottleSize) }} ml</span>
                   </div>
                   <div class="inv-spec-col">
-                    <span class="inv-spec-label">Opening ML</span>
-                    <span class="inv-spec-val">{{ number_format($openingQty) }} ml</span>
+                    <span class="inv-spec-label">Opening Stock</span>
+                    @php
+                      $bCount = $bottleSize > 0 ? floor($openingQty / $bottleSize) : 0;
+                      $extra = $bottleSize > 0 ? fmod($openingQty, $bottleSize) : 0;
+                    @endphp
+                    <span class="inv-spec-val">
+                      {{ number_format($openingQty) }} ml
+                      @if($bottleSize > 0)
+                        <small class="text-muted d-block fw-normal" style="font-size: 0.68rem;">
+                          ({{ $bCount }} Btl{{ $extra > 0 ? ' + ' . round($extra) . 'ml' : '' }})
+                        </small>
+                      @endif
+                    </span>
                   </div>
                   <div class="inv-spec-col" style="grid-column: span 2; border-top: 1px dashed #e2e8f0; padding-top: 6px;">
                     <span class="inv-spec-label">Total Inventory Volume</span>
@@ -895,21 +906,29 @@
                 </div>
               </div>
 
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">
                   Bottle Size in ml <span class="text-danger">*</span>
                 </label>
-                <input type="number" step="any" name="bottle_size_ml" id="addBottleSize" class="form-control-custom" required value="750" placeholder="e.g. 750, 1000, 330, 650">
+                <input type="number" step="any" min="1" name="bottle_size_ml" id="addBottleSize" class="form-control-custom" required value="750" placeholder="e.g. 750, 1000, 330, 650">
               </div>
 
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">
-                  Opening ML <span class="text-danger">*</span>
+                  Opening Bottle Qty <span class="text-danger">*</span>
                 </label>
-                <input type="number" step="any" name="opening_qty" id="addOpeningQty" class="form-control-custom" required value="750" placeholder="e.g. 750, 1500">
+                <input type="number" step="any" min="0" name="opening_bottle_qty" id="addOpeningBottleQty" class="form-control-custom" required value="1" placeholder="e.g. 2">
               </div>
 
-              <div class="col-md-6">
+              <div class="col-md-4">
+                <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">
+                  Extra ML <small class="text-muted fw-normal">(Optional)</small>
+                </label>
+                <input type="number" step="any" min="0" name="extra_ml" id="addExtraMl" class="form-control-custom" value="0" placeholder="e.g. 50">
+                <input type="hidden" name="opening_qty" id="addOpeningQty" value="750">
+              </div>
+
+              <div class="col-md-12">
                 <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">
                   Availability Status <span class="text-danger">*</span>
                 </label>
@@ -922,16 +941,16 @@
               <!-- Live Inventory Calculation Preview Banner -->
               <div class="col-12">
                 <div class="p-3 rounded-3" style="background: #faf5ff; border: 1.5px dashed #d8b4fe;">
-                  <div class="d-flex align-items-center justify-content-between">
+                  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <div>
                       <div style="font-size: 0.74rem; font-weight: 800; text-transform: uppercase; color: #7c3aed;">
-                        <i class="fa-solid fa-calculator me-1"></i> Stock &amp; Bottle Equivalent
+                        <i class="fa-solid fa-calculator me-1"></i> Opening Stock Formula &amp; Total Volume
                       </div>
                       <div class="fw-bold" style="font-size: 0.95rem; color: #4c1d95;" id="addInvCalcText">
-                        750 ml = 1.0 Bottle (750 ml each)
+                        (750 ml × 1 bottle) + 0 ml = 750 ml total stock
                       </div>
                     </div>
-                    <span class="badge" style="background: #7c3aed; color: #fff; font-size: 0.85rem; padding: 6px 12px; border-radius: 8px;" id="addInvCalcBadge">
+                    <span class="badge" style="background: #7c3aed; color: #fff; font-size: 0.88rem; padding: 7px 14px; border-radius: 8px;" id="addInvCalcBadge">
                       750 ml
                     </span>
                   </div>
@@ -1032,22 +1051,46 @@
                 </div>
               </div>
 
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">Bottle Size (ml) <span class="text-danger">*</span></label>
-                <input type="number" step="any" name="bottle_size_ml" id="editBottleSize" class="form-control-custom" required>
+                <input type="number" step="any" min="1" name="bottle_size_ml" id="editBottleSize" class="form-control-custom" required>
               </div>
 
-              <div class="col-md-6">
-                <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">Opening ML <span class="text-danger">*</span></label>
-                <input type="number" step="any" name="opening_qty" id="editOpeningQty" class="form-control-custom" required placeholder="e.g. 750, 1500">
+              <div class="col-md-4">
+                <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">Opening Bottle Qty <span class="text-danger">*</span></label>
+                <input type="number" step="any" min="0" name="opening_bottle_qty" id="editOpeningBottleQty" class="form-control-custom" required value="0">
               </div>
 
-              <div class="col-md-6">
+              <div class="col-md-4">
+                <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">Extra ML <small class="text-muted fw-normal">(Loose ml)</small></label>
+                <input type="number" step="any" min="0" name="extra_ml" id="editExtraMl" class="form-control-custom" value="0">
+                <input type="hidden" name="opening_qty" id="editOpeningQty">
+              </div>
+
+              <div class="col-md-12">
                 <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">Availability Status <span class="text-danger">*</span></label>
                 <select name="status" id="editItemStatus" class="form-control-custom" required>
                   <option value="A">Available (Visible in POS &amp; QR)</option>
                   <option value="I">Unavailable (Hidden from POS &amp; QR)</option>
                 </select>
+              </div>
+
+              <div class="col-12">
+                <div class="p-3 rounded-3" style="background: #faf5ff; border: 1.5px dashed #d8b4fe;">
+                  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div>
+                      <div style="font-size: 0.74rem; font-weight: 800; text-transform: uppercase; color: #7c3aed;">
+                        <i class="fa-solid fa-calculator me-1"></i> Opening Stock Formula
+                      </div>
+                      <div class="fw-bold" style="font-size: 0.95rem; color: #4c1d95;" id="editInvCalcText">
+                        0 ml
+                      </div>
+                    </div>
+                    <span class="badge" style="background: #7c3aed; color: #fff; font-size: 0.88rem; padding: 7px 14px; border-radius: 8px;" id="editInvCalcBadge">
+                      0 ml
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div class="col-12">
@@ -1180,14 +1223,44 @@
       // Auto Inventory Calculation in Add Modal
       function updateAddInventoryCalc() {
         const bottleSize = parseFloat($('#addBottleSize').val()) || 0;
-        const openingMl = parseFloat($('#addOpeningQty').val()) || 0;
-        const bottles = bottleSize > 0 ? (openingMl / bottleSize).toFixed(1) : 0;
+        const bottleQty = parseFloat($('#addOpeningBottleQty').val()) || 0;
+        const extraMl = parseFloat($('#addExtraMl').val()) || 0;
+        const finalMl = Math.round((bottleSize * bottleQty) + extraMl);
 
-        $('#addInvCalcText').text(`${openingMl.toLocaleString()} ml = ${bottles} ${bottles == 1 ? 'Bottle' : 'Bottles'} eq. (${bottleSize} ml per bottle)`);
-        $('#addInvCalcBadge').text(`${openingMl.toLocaleString()} ml`);
+        $('#addOpeningQty').val(finalMl);
+
+        let formulaText = `(${bottleSize} ml × ${bottleQty} ${bottleQty == 1 ? 'bottle' : 'bottles'})`;
+        if (extraMl > 0) {
+          formulaText += ` + ${extraMl} ml extra`;
+        }
+        formulaText += ` = ${finalMl.toLocaleString()} ml total stock`;
+
+        $('#addInvCalcText').text(formulaText);
+        $('#addInvCalcBadge').text(`${finalMl.toLocaleString()} ml`);
       }
 
-      $('#addBottleSize, #addOpeningQty').on('input', updateAddInventoryCalc);
+      $('#addBottleSize, #addOpeningBottleQty, #addExtraMl').on('input change', updateAddInventoryCalc);
+
+      // Auto Inventory Calculation in Edit Modal
+      function updateEditInventoryCalc() {
+        const bottleSize = parseFloat($('#editBottleSize').val()) || 0;
+        const bottleQty = parseFloat($('#editOpeningBottleQty').val()) || 0;
+        const extraMl = parseFloat($('#editExtraMl').val()) || 0;
+        const finalMl = Math.round((bottleSize * bottleQty) + extraMl);
+
+        $('#editOpeningQty').val(finalMl);
+
+        let formulaText = `(${bottleSize} ml × ${bottleQty} ${bottleQty == 1 ? 'bottle' : 'bottles'})`;
+        if (extraMl > 0) {
+          formulaText += ` + ${extraMl} ml extra`;
+        }
+        formulaText += ` = ${finalMl.toLocaleString()} ml total stock`;
+
+        $('#editInvCalcText').text(formulaText);
+        $('#editInvCalcBadge').text(`${finalMl.toLocaleString()} ml`);
+      }
+
+      $('#editBottleSize, #editOpeningBottleQty, #editExtraMl').on('input change', updateEditInventoryCalc);
 
       // Edit Item Populator
       $(document).on('click', '.editBarItemBtn', function() {
@@ -1196,24 +1269,31 @@
         const name = btn.attr('data-name');
         const catId = btn.attr('data-category-id');
         const brandId = btn.attr('data-brand-id') || '';
-        const size = btn.attr('data-bottle-size');
-        const qty = btn.attr('data-opening-qty');
+        const size = parseFloat(btn.attr('data-bottle-size')) || 750;
+        const qty = parseFloat(btn.attr('data-opening-qty')) || 0;
         const price = btn.attr('data-price');
         const vat = btn.attr('data-vat') !== undefined ? btn.attr('data-vat') : 20;
         const desc = btn.attr('data-description') || '';
         const rawStatus = btn.attr('data-status') || 'A';
         const status = (rawStatus === 'A') ? 'A' : 'I';
 
+        const bottleQty = size > 0 ? Math.floor(qty / size) : 0;
+        const extraMl = size > 0 ? Math.round(qty % size) : 0;
+
         $('#editItemId').val(id);
         $('#editItemName').val(name);
         $('#editItemCategory').val(catId);
         $('#editItemBrand').val(brandId);
         $('#editBottleSize').val(size);
+        $('#editOpeningBottleQty').val(bottleQty);
+        $('#editExtraMl').val(extraMl);
         $('#editOpeningQty').val(qty);
         $('#editItemPrice').val(price);
         $('#editItemVat').val(vat);
         $('#editItemDesc').val(desc);
         $('#editItemStatus').val(status);
+
+        updateEditInventoryCalc();
 
         const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('editBarItemModal'));
         modal.show();

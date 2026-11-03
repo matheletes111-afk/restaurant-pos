@@ -422,6 +422,8 @@
                                                 <input type="hidden" class="form-control unit-id" name="items[0][unit_id]">
                                             </td>
                                             <td>
+                                                <input type="number" name="items[0][quantity]" class="form-control quantity" step="0.01" min="0.01" required oninput="updateBarHelper(0)">
+                                                <div class="bar-helper-box d-none" id="bar_helper_0"></div>
                                                 <input type="number" name="items[0][quantity]" class="form-control quantity" step="0.01" min="0.01" required>
                                             </td>
                                             <td>
@@ -496,6 +498,8 @@
                     <input type="hidden" class="form-control unit-id" name="items[${rowCount}][unit_id]">
                 </td>
                 <td>
+                    <input type="number" name="items[${rowCount}][quantity]" class="form-control quantity" step="0.01" min="0.01" required oninput="updateBarHelper(${rowCount})">
+                    <div class="bar-helper-box d-none" id="bar_helper_${rowCount}"></div>
                     <input type="number" name="items[${rowCount}][quantity]" class="form-control quantity" step="0.01" min="0.01" required>
                 </td>
                 <td>
@@ -521,12 +525,45 @@
         
         $(`#row_${rowId}`).remove();
     }
+
+    function setBottleQty(rowId, bottles, bottleSizeMl) {
+        const totalMl = parseFloat(bottles) * parseFloat(bottleSizeMl);
+        $(`#row_${rowId} .quantity`).val(totalMl);
+        updateBarHelper(rowId);
+    }
+
+    function updateBarHelper(rowId) {
+        const selectedOption = $(`#row_${rowId} select option:selected`);
+        const isBar = selectedOption.data('is-bar') == 1;
+        const helperEl = $(`#bar_helper_${rowId}`);
+
+        if (!isBar) {
+            helperEl.addClass('d-none').html('');
+            return;
+        }
+
+        const bottleSize = parseFloat(selectedOption.data('bottle-size')) || 750;
+        const qtyMl = parseFloat($(`#row_${rowId} .quantity`).val()) || 0;
+        const bottlesEq = bottleSize > 0 ? (qtyMl / bottleSize).toFixed(2).replace(/\.00$/, '') : 0;
+
+        helperEl.removeClass('d-none').html(`
+            <div><strong>Unit: ML</strong> (1 Btl = ${bottleSize} ML)${qtyMl > 0 ? ` • <strong>${qtyMl} ML = ${bottlesEq} Btl</strong>` : ''}</div>
+            <div>
+                Quick set:
+                <span class="bar-quick-btn" onclick="setBottleQty(${rowId}, 1, ${bottleSize})">1 Btl (${bottleSize} ML)</span>
+                <span class="bar-quick-btn" onclick="setBottleQty(${rowId}, 2, ${bottleSize})">2 Btl (${bottleSize * 2} ML)</span>
+                <span class="bar-quick-btn" onclick="setBottleQty(${rowId}, 6, ${bottleSize})">6 Btl (${bottleSize * 6} ML)</span>
+                <span class="bar-quick-btn" onclick="setBottleQty(${rowId}, 12, ${bottleSize})">12 Btl (${bottleSize * 12} ML)</span>
+            </div>
+        `);
+    }
     
     function getProductDetails(rowId, productId) {
         if (!productId) {
             $(`#row_${rowId} .unit-display`).val('');
             $(`#row_${rowId} .unit-id`).val('');
             $(`#row_${rowId} .current-stock`).text('');
+            $(`#bar_helper_${rowId}`).addClass('d-none').html('');
             return;
         }
         
@@ -545,6 +582,9 @@
             const initialStock = parseFloat(selectedOption.data('stock')) || 0;
             const bottles = bottleSize > 0 ? (initialStock / bottleSize).toFixed(1) : 0;
             $(`#row_${rowId} .current-stock`).html(`<span class="text-warning font-weight-bold">🍾 Bar Stock: ${initialStock} ML (${bottles} Btl)</span>`);
+            updateBarHelper(rowId);
+        } else {
+            $(`#bar_helper_${rowId}`).addClass('d-none').html('');
         }
         
         // Get product details via AJAX

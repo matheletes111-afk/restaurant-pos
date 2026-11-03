@@ -620,12 +620,12 @@
                               style="border-radius: 8px; padding: 6px 10px;" title="Edit Variation">
                         <i class="fa-solid fa-pen-to-square"></i>
                       </button>
-                      <a href="{{ route('bar.variation.delete', $var->id) }}" 
+                      {{-- <a href="{{ route('bar.variation.delete', $var->id) }}" 
                          class="btn btn-sm btn-outline-danger" 
                          onclick="return confirm('Are you sure you want to soft delete \'{{ addslashes($var->name) }}\' for {{ addslashes($product ? $product->name : '') }}?')"
                          style="border-radius: 8px; padding: 6px 10px;" title="Delete Variation">
                         <i class="fa-solid fa-trash"></i>
-                      </a>
+                      </a> --}}
                     </div>
                   </td>
                 </tr>

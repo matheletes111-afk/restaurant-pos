@@ -541,6 +541,15 @@ Route::get('admin/temp-order/reject/{id}', [App\Http\Controllers\TempOrderAdminC
     Route::get('stock-outs/get-product/{id}', [App\Http\Controllers\StockOutController::class, 'getProduct'])->name('stock-outs.get-product');
     Route::get('stock-outs/check-stock/{productId}', [App\Http\Controllers\StockOutController::class, 'checkStock'])->name('stock-outs.check-stock');
 
+    // Waste Inventory Management Routes
+    Route::get('waste-inventory', [App\Http\Controllers\WasteInventoryController::class, 'index'])->name('waste-inventory.index');
+    Route::get('waste-inventory/create', [App\Http\Controllers\WasteInventoryController::class, 'create'])->name('waste-inventory.create');
+    Route::post('waste-inventory/store', [App\Http\Controllers\WasteInventoryController::class, 'store'])->name('waste-inventory.store');
+    Route::get('waste-inventory/delete/{id}', [App\Http\Controllers\WasteInventoryController::class, 'delete'])->name('waste-inventory.delete');
+    Route::get('waste-inventory/get-product/{id}', [App\Http\Controllers\WasteInventoryController::class, 'getProduct'])->name('waste-inventory.get-product');
+    Route::get('waste-inventory/check-stock/{productId}', [App\Http\Controllers\WasteInventoryController::class, 'checkStock'])->name('waste-inventory.check-stock');
+    Route::get('waste-inventory/export-excel', [App\Http\Controllers\WasteInventoryController::class, 'exportExcel'])->name('waste-inventory.export-excel');
+
     // Live Inventory Route
     Route::get('inventory/live', [App\Http\Controllers\InventoryController::class, 'live'])->name('inventory.live');
 
