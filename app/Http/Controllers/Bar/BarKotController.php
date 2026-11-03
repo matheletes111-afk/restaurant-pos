@@ -130,13 +130,19 @@ class BarKotController extends Controller
 
         // 1. By KOT Number + Order ID
         if ($request->filled('kot_no') && $request->filled('order_id')) {
-            OrderItems::where('restaurant_id', $restaurantId)
+            $items = OrderItems::where('restaurant_id', $restaurantId)
                 ->where('order_id', $request->order_id)
                 ->where('kot_no', $request->kot_no)
-                ->update([
-                    'order_status' => $newStatus,
-                    'is_new' => 0
-                ]);
+                ->get();
+
+            foreach ($items as $item) {
+                if ($newStatus === 'SERVED') {
+                    $item->deductBarStock();
+                }
+                $item->order_status = $newStatus;
+                $item->is_new = 0;
+                $item->save();
+            }
 
             return response()->json([
                 'success' => true,
@@ -146,12 +152,18 @@ class BarKotController extends Controller
 
         // 2. By Item IDs Array
         if ($request->filled('item_ids') && is_array($request->item_ids)) {
-            OrderItems::where('restaurant_id', $restaurantId)
+            $items = OrderItems::where('restaurant_id', $restaurantId)
                 ->whereIn('id', $request->item_ids)
-                ->update([
-                    'order_status' => $newStatus,
-                    'is_new' => 0
-                ]);
+                ->get();
+
+            foreach ($items as $item) {
+                if ($newStatus === 'SERVED') {
+                    $item->deductBarStock();
+                }
+                $item->order_status = $newStatus;
+                $item->is_new = 0;
+                $item->save();
+            }
 
             return response()->json([
                 'success' => true,
@@ -163,6 +175,9 @@ class BarKotController extends Controller
         if ($request->filled('id')) {
             $item = OrderItems::where('restaurant_id', $restaurantId)->find($request->id);
             if ($item) {
+                if ($newStatus === 'SERVED') {
+                    $item->deductBarStock();
+                }
                 $item->order_status = $newStatus;
                 $item->is_new = 0;
                 $item->save();

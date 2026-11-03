@@ -94,6 +94,7 @@ class OrderManage extends Model
         $totalSgst = 0;
         $totalIgst = 0;
         $totalVat = 0;
+        $totalItemDiscount = 0;
 
         foreach ($items as $item) {
             $basePrice = floatval($item->price);

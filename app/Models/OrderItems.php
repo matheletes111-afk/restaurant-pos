@@ -31,6 +31,7 @@ class OrderItems extends Model
         'bar_variation_ml',
         'total_amount',
         'order_status',
+        'is_bar_stock_deducted',
         'is_new',
         'restaurant_id',
         'user_id',
@@ -52,6 +53,7 @@ class OrderItems extends Model
         'bar_variation_ml' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'quantity' => 'integer',
+        'is_bar_stock_deducted' => 'boolean',
         'is_new' => 'boolean',
         'addons' => 'array',
     ];
@@ -153,5 +155,91 @@ class OrderItems extends Model
         \Illuminate\Support\Facades\Cache::put($cacheKey, $nextSequence, Carbon::now()->endOfDay());
 
         return "KOT-{$todayDateStr}-" . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Deduct bar inventory (ML in SubCategory and linked Inventory total_qty) for this order item.
+     * Guaranteed to only run once per item via is_bar_stock_deducted flag.
+     */
+    public function deductBarStock()
+    {
+        if ($this->is_bar_stock_deducted) {
+            return false;
+        }
+
+        $subcatId = $this->subcategory_id;
+        if (!$subcatId) {
+            return false;
+        }
+
+        $barItem = SubCategory::with('category')->find($subcatId);
+        if (!$barItem) {
+            return false;
+        }
+
+        $isBar = !empty($this->bar_variation_id)
+            || floatval($this->vat_rate ?? 0) > 0
+            || ($barItem->food_type === 'BAR')
+            || ($barItem->category && $barItem->category->category_type === 'BAR');
+
+        if (!$isBar) {
+            return false;
+        }
+
+        // Determine ML volume per serving
+        $mlPerServing = floatval($this->bar_variation_ml ?? 0);
+        if ($mlPerServing <= 0 && !empty($this->bar_variation_id)) {
+            $variation = BarItemVariation::find($this->bar_variation_id);
+            if ($variation && floatval($variation->ml) > 0) {
+                $mlPerServing = floatval($variation->ml);
+            }
+        }
+        if ($mlPerServing <= 0 && floatval($barItem->bottle_size_ml ?? 0) > 0) {
+            $mlPerServing = floatval($barItem->bottle_size_ml);
+        }
+
+        if ($mlPerServing <= 0) {
+            return false;
+        }
+
+        $qty = max(1, intval($this->quantity ?? 1));
+        $totalMlToDeduct = $mlPerServing * $qty;
+        $restaurantId = $this->restaurant_id ?: $barItem->restaurant_id;
+
+        // Deduct from SubCategory current_stock_ml
+        $currentStockMl = floatval($barItem->current_stock_ml ?? 0);
+        $newStockMl = max(0, $currentStockMl - $totalMlToDeduct);
+        $barItem->current_stock_ml = $newStockMl;
+        $barItem->save();
+
+        // Also sync Product and Inventory table
+        $product = Product::where('restaurant_id', $restaurantId)
+            ->where('sub_category_id', $barItem->id)
+            ->first();
+
+        if ($product) {
+            $inventory = Inventory::firstOrCreate(
+                [
+                    'product_id' => $product->id,
+                    'restaurant_id' => $restaurantId,
+                ],
+                [
+                    'total_qty' => $newStockMl,
+                    'opening_qty' => $product->opening_qty ?? 0,
+                    'created_by' => 'System',
+                ]
+            );
+            $inventory->total_qty = $newStockMl;
+            $inventory->save();
+        } else {
+            Product::syncBarItems($restaurantId);
+        }
+
+        $this->is_bar_stock_deducted = 1;
+        $this->save();
+
+        \Log::info("Bar KOT Order Served: Deducted {$totalMlToDeduct} ML from [{$barItem->id}] {$barItem->name}. Remaining stock: {$newStockMl} ML.");
+
+        return true;
     }
 }

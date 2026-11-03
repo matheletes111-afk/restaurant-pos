@@ -436,6 +436,10 @@ class RapidBillController extends Controller
                 $orderItem->user_id = $user->id;
                 $orderItem->kot_no = $kotNo;
                 $orderItem->save();
+
+                if ($orderItem->order_status === 'SERVED') {
+                    $orderItem->deductBarStock();
+                }
             }
 
             // Record Payments (Split handling)

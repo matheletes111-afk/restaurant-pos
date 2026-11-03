@@ -663,6 +663,9 @@ class OrderManagementController extends Controller
                 $orderItem->user_id = auth()->user()->id;
                 $orderItem->kot_no = $kotNo;
                 $orderItem->save();
+                if ($orderItem->order_status === 'SERVED') {
+                    $orderItem->deductBarStock();
+                }
             }
 
             // Update table status if dine-in
@@ -872,7 +875,7 @@ class OrderManagementController extends Controller
 
                     $isDoneOrPaid = ($order->order_complete === 'DONE' || $order->payment_status === 'PAID');
                     
-                    OrderItems::create([
+                    $newItem = OrderItems::create([
                         'order_id' => $id,
                         'subcategory_id' => $isNumericSubcat ? intval($item['id']) : null,
                         'quantity' => $calc['quantity'],
@@ -898,6 +901,9 @@ class OrderManagementController extends Controller
                         'kot_no' => $kotNo,
                         'addons' => !empty($cleanAddons) ? $cleanAddons : null
                     ]);
+                    if ($newItem->order_status === 'SERVED') {
+                        $newItem->deductBarStock();
+                    }
                 }
             }
 
@@ -1028,7 +1034,7 @@ class OrderManagementController extends Controller
             // If order completed or paid: update restaurant items to DONE and bar items to SERVED
             if ($order->order_complete === 'DONE' || $order->payment_status === 'PAID') {
                 // 1. Bar items -> SERVED
-                OrderItems::where('order_id', $order->id)
+                $servedBarItems = OrderItems::where('order_id', $order->id)
                     ->where(function($q) {
                         $q->whereNotNull('bar_variation_id')
                           ->orWhere('vat_rate', '>', 0)
@@ -1036,7 +1042,12 @@ class OrderManagementController extends Controller
                               $sq->where('food_type', 'BAR');
                           });
                     })
-                    ->update(['order_status' => 'SERVED']);
+                    ->get();
+                foreach ($servedBarItems as $sItem) {
+                    $sItem->order_status = 'SERVED';
+                    $sItem->save();
+                    $sItem->deductBarStock();
+                }
 
                 // 2. Restaurant KOT items -> DONE
                 OrderItems::where('order_id', $order->id)
@@ -1396,7 +1407,7 @@ public function addPayment(Request $request, $order_id)
             $order->order_status = 'COMPLETED';
 
             // Mark Bar KOT items as SERVED and Restaurant Kitchen items as DONE
-            OrderItems::where('order_id', $order->id)
+            $servedBarItems = OrderItems::where('order_id', $order->id)
                 ->where(function($q) {
                     $q->whereNotNull('bar_variation_id')
                       ->orWhere('vat_rate', '>', 0)
@@ -1404,7 +1415,12 @@ public function addPayment(Request $request, $order_id)
                           $sq->where('food_type', 'BAR');
                       });
                 })
-                ->update(['order_status' => 'SERVED']);
+                ->get();
+            foreach ($servedBarItems as $sItem) {
+                $sItem->order_status = 'SERVED';
+                $sItem->save();
+                $sItem->deductBarStock();
+            }
 
             OrderItems::where('order_id', $order->id)
                 ->whereNull('bar_variation_id')
@@ -1583,7 +1599,7 @@ public function deletePayment($payment_id)
                 $order->order_status = 'COMPLETED';
 
                 // Mark Bar KOT items as SERVED and Restaurant Kitchen items as DONE
-                OrderItems::where('order_id', $order->id)
+                $servedBarItems = OrderItems::where('order_id', $order->id)
                     ->where(function($q) {
                         $q->whereNotNull('bar_variation_id')
                           ->orWhere('vat_rate', '>', 0)
@@ -1591,7 +1607,12 @@ public function deletePayment($payment_id)
                               $sq->where('food_type', 'BAR');
                           });
                     })
-                    ->update(['order_status' => 'SERVED']);
+                    ->get();
+                foreach ($servedBarItems as $sItem) {
+                    $sItem->order_status = 'SERVED';
+                    $sItem->save();
+                    $sItem->deductBarStock();
+                }
 
                 OrderItems::where('order_id', $order->id)
                     ->whereNull('bar_variation_id')
