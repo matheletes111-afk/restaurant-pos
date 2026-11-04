@@ -20,6 +20,10 @@ class FrontendController extends Controller
                   ->orWhere('is_default_free', 'Y')
                   ->orWhere('is_default_paid', 'Y');
             })
+            ->where(function($q) {
+                $q->whereNull('bar_management_checkbox')
+                  ->orWhere('bar_management_checkbox', '!=', 'Y');
+            })
             ->where('plan_status', 'A')
             ->where('is_delete', 'N')
             ->orderBy('sort_order', 'asc')
@@ -27,7 +31,11 @@ class FrontendController extends Controller
             ->get();
             
         if ($defaultPlans->isEmpty()) {
-            $defaultPlans = \App\Models\Plan::where('plan_status', 'A')
+            $defaultPlans = \App\Models\Plan::where(function($q) {
+                    $q->whereNull('bar_management_checkbox')
+                      ->orWhere('bar_management_checkbox', '!=', 'Y');
+                })
+                ->where('plan_status', 'A')
                 ->where('is_delete', 'N')
                 ->orderBy('sort_order', 'asc')
                 ->orderBy('id', 'desc')
@@ -35,6 +43,18 @@ class FrontendController extends Controller
         }
             
         return view('welcome', compact('defaultPlans'));
+    }
+
+    public function bar()
+    {
+        $defaultPlans = \App\Models\Plan::where('bar_management_checkbox', 'Y')
+            ->where('plan_status', 'A')
+            ->where('is_delete', 'N')
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return view('bar_welcome', compact('defaultPlans'));
     }
 
     public function terms()

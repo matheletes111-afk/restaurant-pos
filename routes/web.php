@@ -41,6 +41,20 @@ Route::post('forget-password-user/enter-new-password',[LoginController::class, '
 
 
 Route::get('/', [App\Http\Controllers\FrontendController::class, 'index'])->name('home');
+Route::get('/bar', [App\Http\Controllers\FrontendController::class, 'bar'])->name('bar.landing');
+Route::get('/0{num}.png', function ($num) {
+    $file = base_path("0{$num}.PNG");
+    if (!file_exists($file)) {
+        $file = base_path("0{$num}.png");
+    }
+    if (!file_exists($file)) {
+        $file = public_path("0{$num}.png");
+    }
+    if (file_exists($file)) {
+        return response()->file($file);
+    }
+    abort(404);
+})->where('num', '[1-3]');
 Route::post('/', function (Request $request) {
     if ($request->hasHeader('X-Razorpay-Signature') || $request->has('event')) {
         return app(\App\Http\Controllers\Admin\WebhookController::class)->handle($request);
@@ -452,6 +466,12 @@ Route::get('admin/temp-order/reject/{id}', [App\Http\Controllers\TempOrderAdminC
     Route::post('franchise-owners/update', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'update'])->name('admin.fso.update');
     Route::get('franchise-owners/delete/{id}', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'delete'])->name('admin.fso.delete');
     Route::post('franchise-owners/toggle-status/{id}', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'toggleStatus'])->name('admin.fso.toggle-status');
+    Route::get('franchise-owners/mapping/{userId}', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'getMappings'])->name('admin.fso.mapping.list');
+    Route::get('admin/franchise-owners/mapping/{userId}', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'getMappings']);
+    Route::post('franchise-owners/mapping/attach', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'attachMapping'])->name('admin.fso.mapping.attach');
+    Route::post('admin/franchise-owners/mapping/attach', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'attachMapping']);
+    Route::post('franchise-owners/mapping/detach', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'detachMapping'])->name('admin.fso.mapping.detach');
+    Route::post('admin/franchise-owners/mapping/detach', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'detachMapping']);
 
     Route::post('plans/update-order', [\App\Http\Controllers\PlanController::class, 'updateOrder'])->name('admin.plans.update-order');
     Route::resource('plans', \App\Http\Controllers\PlanController::class);

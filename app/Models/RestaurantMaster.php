@@ -105,6 +105,12 @@ class RestaurantMaster extends Model
         return $this->belongsTo(User::class, 'owner_id');
     }
 
+    public function franchiseOwners()
+    {
+        return $this->belongsToMany(User::class, 'franchise_restaurant_mappings', 'restaurant_id', 'user_id')
+            ->withTimestamps();
+    }
+
     public function subscriptions()
     {
         return $this->hasMany(Subscription::class, 'user_id');

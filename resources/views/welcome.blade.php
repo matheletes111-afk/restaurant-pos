@@ -26,6 +26,7 @@
             </a>
             <div class="nav-links">
                 <a href="#features">Features</a>
+                <a href="{{ route('bar.landing') }}" style="color: #ff6a00; font-weight: 700;"><i class="ph ph-martini"></i> Bar POS</a>
                 <a href="#pricing">Pricing</a>
                 <a href="#how-it-works">How It Works</a>
                 <a href="#platform-benefits">Benefits</a>
@@ -739,6 +740,8 @@
                                 <li><i class="ph-fill ph-check-circle"></i> Kitchen Panel</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Qr Code Ordering</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Customer Support</li>
+                                <li><i class="ph-fill ph-check-circle"></i> Installing & Training (Online)</li>
+                                <li><i class="ph-fill ph-check-circle"></i> Support 24 x 7 (Online)</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Staff Management</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Cash Drawer Management</li>
                                 @if(($plan->report_management_checkbox ?? 'Y') == 'Y')

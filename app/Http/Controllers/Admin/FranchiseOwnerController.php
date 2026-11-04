@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\RestaurantMaster;
+use App\Models\FranchiseRestaurantMapping;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 
@@ -28,6 +30,7 @@ class FranchiseOwnerController extends Controller
         $this->authorizeAdmin();
 
         $owners = User::where('role', 'FSO')
+            ->withCount('franchiseRestaurants')
             ->orderBy('id', 'desc')
             ->get();
 
@@ -47,7 +50,11 @@ class FranchiseOwnerController extends Controller
             'new_this_month' => $newThisMonth,
         ];
 
-        return view('admin.fso.index', compact('owners', 'summary'));
+        $allRestaurants = RestaurantMaster::where('status', '!=', 'D')
+            ->orderBy('name', 'asc')
+            ->get(['id', 'name', 'restaurant_id_unique', 'address', 'status']);
+
+        return view('admin.fso.index', compact('owners', 'summary', 'allRestaurants'));
     }
 
     /**
@@ -172,5 +179,128 @@ class FranchiseOwnerController extends Controller
 
         return redirect()->route('admin.fso.index')
             ->with('success', 'Status for "' . $owner->name . '" changed to ' . $statusText . '.');
+    }
+
+    /**
+     * Get mapped restaurants and available restaurants for a Franchise Owner
+     */
+    public function getMappings($userId)
+    {
+        $this->authorizeAdmin();
+
+        $owner = User::where('id', $userId)
+            ->where('role', 'FSO')
+            ->firstOrFail();
+
+        $mappings = FranchiseRestaurantMapping::where('user_id', $owner->id)
+            ->with('restaurant')
+            ->latest('id')
+            ->get()
+            ->map(function ($map) {
+                $rest = $map->restaurant;
+                return [
+                    'mapping_id' => $map->id,
+                    'restaurant_id' => $rest ? $rest->id : $map->restaurant_id,
+                    'name' => $rest ? $rest->name : 'Unknown Restaurant',
+                    'restaurant_id_unique' => $rest ? $rest->restaurant_id_unique : null,
+                    'address' => $rest ? $rest->address : null,
+                    'status' => $rest ? $rest->status : null,
+                    'mapped_at' => $map->created_at ? $map->created_at->format('d M Y, h:i A') : null,
+                ];
+            });
+
+        $mappedRestaurantIds = $mappings->pluck('restaurant_id')->filter()->toArray();
+
+        $availableRestaurants = RestaurantMaster::where('status', '!=', 'D')
+            ->whereNotIn('id', $mappedRestaurantIds)
+            ->orderBy('name', 'asc')
+            ->get(['id', 'name', 'restaurant_id_unique', 'address', 'status']);
+
+        return response()->json([
+            'success' => true,
+            'owner' => [
+                'id' => $owner->id,
+                'name' => $owner->name,
+                'email' => $owner->email,
+                'count' => $mappings->count(),
+            ],
+            'mapped' => $mappings,
+            'available' => $availableRestaurants,
+        ]);
+    }
+
+    /**
+     * Attach a restaurant to a Franchise Owner
+     */
+    public function attachMapping(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'restaurant_id' => 'required|exists:restaurant_master,id',
+        ]);
+
+        $owner = User::where('id', $request->user_id)
+            ->where('role', 'FSO')
+            ->firstOrFail();
+
+        $restaurant = RestaurantMaster::findOrFail($request->restaurant_id);
+
+        $existing = FranchiseRestaurantMapping::where('user_id', $owner->id)
+            ->where('restaurant_id', $restaurant->id)
+            ->first();
+
+        if ($existing) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Restaurant "' . $restaurant->name . '" is already mapped to this franchise owner.',
+            ], 422);
+        }
+
+        FranchiseRestaurantMapping::create([
+            'user_id' => $owner->id,
+            'restaurant_id' => $restaurant->id,
+        ]);
+
+        $totalMapped = FranchiseRestaurantMapping::where('user_id', $owner->id)->count();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Restaurant "' . $restaurant->name . '" successfully mapped to ' . $owner->name . '.',
+            'total_mapped' => $totalMapped,
+        ]);
+    }
+
+    /**
+     * Detach a restaurant from a Franchise Owner
+     */
+    public function detachMapping(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'restaurant_id' => 'required|exists:restaurant_master,id',
+        ]);
+
+        $owner = User::where('id', $request->user_id)
+            ->where('role', 'FSO')
+            ->firstOrFail();
+
+        $restaurant = RestaurantMaster::find($request->restaurant_id);
+        $restName = $restaurant ? $restaurant->name : 'Restaurant';
+
+        $deleted = FranchiseRestaurantMapping::where('user_id', $owner->id)
+            ->where('restaurant_id', $request->restaurant_id)
+            ->delete();
+
+        $totalMapped = FranchiseRestaurantMapping::where('user_id', $owner->id)->count();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Restaurant "' . $restName . '" detached successfully.',
+            'total_mapped' => $totalMapped,
+        ]);
     }
 }

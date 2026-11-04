@@ -235,4 +235,19 @@ class User extends Authenticatable implements JWTSubject
 
         return route('dashboard');
     }
+
+    public function franchiseRestaurants()
+    {
+        return $this->belongsToMany(
+            \App\Models\RestaurantMaster::class,
+            'franchise_restaurant_mappings',
+            'user_id',
+            'restaurant_id'
+        )->withTimestamps();
+    }
+
+    public function franchiseMappings()
+    {
+        return $this->hasMany(\App\Models\FranchiseRestaurantMapping::class, 'user_id');
+    }
 }

@@ -11,6 +11,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- DataTables CSS -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<!-- Select2 CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 <style>
   :root {
     --fso-primary: #ff5e14;
@@ -342,6 +344,53 @@
     color: var(--fso-primary);
   }
 
+  /* Select2 Styling in Modals */
+  .select2-container--default .select2-selection--single {
+    height: 42px !important;
+    padding: 6px 12px !important;
+    border: 1px solid var(--fso-border) !important;
+    border-radius: 10px !important;
+    background-color: #ffffff !important;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 28px !important;
+    color: var(--fso-slate) !important;
+    font-size: 0.88rem !important;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 40px !important;
+    right: 8px !important;
+  }
+  .select2-dropdown {
+    border: 1px solid var(--fso-border) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12) !important;
+    z-index: 1065 !important;
+  }
+  .select2-results__option--highlighted[aria-selected] {
+    background-color: var(--fso-primary) !important;
+    color: #ffffff !important;
+  }
+  .btn-map-action {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 18px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+    transition: all 0.2s ease;
+  }
+  .btn-map-action:hover {
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
+  }
+
   /* DataTables layout refinement */
   .dataTables_wrapper {
     padding: 16px 0;
@@ -474,9 +523,10 @@
                             <th>Contact Phone</th>
                             <th>Address</th>
                             <th class="text-center">Role</th>
+                            <th class="text-center">Mapped Restaurants</th>
                             <th class="text-center">Status</th>
                             <th>Created At</th>
-                            <th class="text-end" style="width: 130px;">Actions</th>
+                            <th class="text-end" style="width: 155px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -519,13 +569,23 @@
                                 </span>
                             </td>
                             <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-light border mapFsoBtn px-2 py-1"
+                                        style="border-radius: 20px; font-weight: 700; font-size: 0.78rem; white-space: nowrap;"
+                                        data-id="{{ $owner->id }}"
+                                        data-name="{{ $owner->name }}"
+                                        title="Click to Manage Mapped Restaurants">
+                                    <i class="fas fa-store text-success me-1"></i>
+                                    <span id="mappedCountBadge_{{ $owner->id }}">{{ $owner->franchise_restaurants_count ?? 0 }}</span> Mapped
+                                </button>
+                            </td>
+                            <td class="text-center">
                                 <form action="{{ route('admin.fso.toggle-status', $owner->id) }}" method="POST" class="d-inline">
                                     @csrf
                                     <button type="submit" class="border-0 bg-transparent p-0" title="Click to Toggle Status">
                                         @if($isActive)
-                                            <span class="badge-status-active"><i class="fas fa-check-circle"></i> Active</span>
+                                             <span class="badge-status-active"><i class="fas fa-check-circle"></i> Active</span>
                                         @else
-                                            <span class="badge-status-inactive"><i class="fas fa-ban"></i> Inactive</span>
+                                             <span class="badge-status-inactive"><i class="fas fa-ban"></i> Inactive</span>
                                         @endif
                                     </button>
                                 </form>
@@ -535,6 +595,13 @@
                             </td>
                             <td class="text-end">
                                 <div class="d-inline-flex gap-1">
+                                    <button type="button" class="btn btn-sm btn-outline-success mapFsoBtn"
+                                            style="border-radius: 8px;"
+                                            data-id="{{ $owner->id }}"
+                                            data-name="{{ $owner->name }}"
+                                            title="Map Restaurants">
+                                        <i class="fas fa-sitemap"></i>
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-outline-primary editFsoBtn"
                                             style="border-radius: 8px;"
                                             data-id="{{ $owner->id }}"
@@ -558,7 +625,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="9" class="text-center py-5 text-muted">
+                            <td colspan="10" class="text-center py-5 text-muted">
                                 <i class="fas fa-handshake fa-3x mb-3 text-secondary opacity-50"></i>
                                 <h6 class="fw-bold">No Franchise Sponsorship Owners Found</h6>
                                 <p class="mb-3 text-secondary">Click the button below to register your first Franchise Sponsorship Owner (Role: FSO).</p>
@@ -726,12 +793,110 @@
         </div>
     </div>
 </div>
+
+<!-- ========================================== -->
+<!-- 3. MAPPING RESTAURANTS MODAL -->
+<!-- ========================================== -->
+<div class="modal fade" id="mapRestaurantModal" tabindex="-1" aria-labelledby="mapRestaurantModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0" style="border-radius: 18px; overflow: hidden;">
+            <div class="modal-header d-flex justify-content-between align-items-center" style="background: #f8fafc; border-bottom: 1px solid var(--fso-border); padding: 18px 24px;">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(16, 185, 129, 0.12); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                        <i class="fas fa-sitemap"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0 fw-bold" id="mapRestaurantModalLabel" style="font-family: 'Outfit', sans-serif; color: var(--fso-dark);">
+                            Restaurant Mapping
+                        </h5>
+                        <small class="text-muted">Map restaurants for <strong id="mapModalOwnerTitle" class="text-primary">Owner</strong> (Role: FSO)</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <!-- Dropdown & Add Section -->
+                <div class="card border-0 mb-4" style="background: #f8fafc; border-radius: 14px; border: 1px dashed #cbd5e1 !important;">
+                    <div class="card-body p-3">
+                        <label class="fso-form-label mb-2">
+                            <i class="fas fa-search me-1 text-primary"></i> Search & Select Restaurant from Dropdown
+                        </label>
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-9 col-12">
+                                <select id="mapRestaurantSelect" class="form-select select2-restaurant" style="width: 100%;">
+                                    <option value="">-- Choose a restaurant to map --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 col-12">
+                                <button type="button" class="btn w-100 fw-bold text-white d-flex align-items-center justify-content-center gap-2" id="btnAddMapping" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; border-radius: 10px; padding: 9px 16px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
+                                    <i class="fas fa-plus-circle"></i> Add
+                                </button>
+                            </div>
+                        </div>
+                        <div id="mappingAlertBox" class="mt-2" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- Mapped Restaurants List -->
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="fw-bold mb-0 text-dark" style="font-family: 'Outfit', sans-serif;">
+                            <i class="fas fa-store text-primary me-2"></i> Currently Mapped Restaurants
+                        </h6>
+                        <span class="badge bg-primary rounded-pill px-3 py-1" id="mappedBadgeCount">0 Mapped</span>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="mappingLoading" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status" style="width: 2rem; height: 2rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted small mt-2 mb-0">Loading mapped restaurants...</p>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="mappingEmptyState" class="text-center py-4" style="display: none;">
+                        <div class="mb-2 text-muted opacity-50" style="font-size: 2.2rem;">
+                            <i class="fas fa-unlink"></i>
+                        </div>
+                        <h6 class="text-dark fw-bold mb-1">No Restaurants Mapped Yet</h6>
+                        <p class="text-muted small mb-0">Select an available restaurant from the dropdown above and click <strong>Add</strong> to map it.</p>
+                    </div>
+
+                    <!-- Table of Mapped Restaurants -->
+                    <div class="table-responsive" id="mappingTableContainer" style="display: none; max-height: 320px; overflow-y: auto;">
+                        <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+                            <thead class="table-light sticky-top" style="z-index: 1;">
+                                <tr>
+                                    <th style="width: 45px;">#</th>
+                                    <th>Restaurant Name</th>
+                                    <th>Code / ID</th>
+                                    <th>Location</th>
+                                    <th class="text-center" style="width: 100px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mappingTableBody">
+                                <!-- Populated dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light border-top-0 px-4 py-3" style="border-bottom-left-radius: 18px; border-bottom-right-radius: 18px;">
+                <button type="button" class="btn btn-secondary px-4 fw-semibold" style="border-radius: 10px;" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('script')
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 @include('includes.script')
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
   $(document).ready(function() {
       if ($('#fsoTable tbody tr').length > 0 && !$('#fsoTable tbody tr td[colspan]').length) {
@@ -768,6 +933,229 @@
           $('#editModalOwnerTitle').text(name);
 
           $('#editFsoModal').modal('show');
+      });
+
+      // =====================================
+      // MAPPING RESTAURANTS JAVASCRIPT LOGIC
+      // =====================================
+      let currentFsoId = null;
+      let currentFsoName = '';
+
+      function escapeHtml(text) {
+          if (!text) return '';
+          const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+          return String(text).replace(/[&<>"']/g, m => map[m]);
+      }
+
+      function initSelect2() {
+          if ($('#mapRestaurantSelect').hasClass('select2-hidden-accessible')) {
+              $('#mapRestaurantSelect').select2('destroy');
+          }
+          $('#mapRestaurantSelect').select2({
+              dropdownParent: $('#mapRestaurantModal'),
+              placeholder: '-- Search & choose a restaurant --',
+              allowClear: true,
+              width: '100%'
+          });
+      }
+
+      function showMappingAlert(type, message) {
+          const icon = type === 'success' ? 'fa-check-circle' : (type === 'danger' ? 'fa-exclamation-triangle' : 'fa-info-circle');
+          $('#mappingAlertBox').html(`
+              <div class="alert alert-${type} py-2 px-3 small mb-0 d-flex align-items-center gap-2" role="alert">
+                  <i class="fas ${icon}"></i>
+                  <div>${message}</div>
+              </div>
+          `).fadeIn();
+
+          setTimeout(() => {
+              $('#mappingAlertBox').fadeOut();
+          }, 4500);
+      }
+
+      function renderMappings(data) {
+          $('#mappingLoading').hide();
+
+          const count = data.mapped ? data.mapped.length : 0;
+          $('#mappedBadgeCount').text(`${count} Mapped`);
+          if (currentFsoId) {
+              $(`#mappedCountBadge_${currentFsoId}`).text(count);
+          }
+
+          // 1. Populate Dropdown with Available Restaurants
+          const select = $('#mapRestaurantSelect');
+          select.empty();
+          select.append('<option value="">-- Choose a restaurant to map --</option>');
+
+          if (data.available && data.available.length > 0) {
+              data.available.forEach(rest => {
+                  const codeStr = rest.restaurant_id_unique ? ` [${rest.restaurant_id_unique}]` : ` [#${rest.id}]`;
+                  const addrStr = rest.address ? ` - ${rest.address.substring(0, 30)}` : '';
+                  select.append(`<option value="${rest.id}">${escapeHtml(rest.name)}${codeStr}${addrStr}</option>`);
+              });
+          }
+          initSelect2();
+
+          // 2. Populate Mapped Table
+          const tbody = $('#mappingTableBody');
+          tbody.empty();
+
+          if (!data.mapped || data.mapped.length === 0) {
+              $('#mappingTableContainer').hide();
+              $('#mappingEmptyState').show();
+          } else {
+              $('#mappingEmptyState').hide();
+              data.mapped.forEach((item, idx) => {
+                  const codeBadge = item.restaurant_id_unique 
+                      ? `<span class="badge bg-light text-dark border font-monospace">${escapeHtml(item.restaurant_id_unique)}</span>`
+                      : `<span class="badge bg-light text-secondary border font-monospace">#${item.restaurant_id}</span>`;
+
+                  const row = `
+                      <tr>
+                          <td class="text-muted fw-bold">#${idx + 1}</td>
+                          <td>
+                              <strong class="text-dark d-block">${escapeHtml(item.name)}</strong>
+                              <small class="text-muted"><i class="fas fa-clock me-1 opacity-75"></i>${item.mapped_at || 'Recently'}</small>
+                          </td>
+                          <td>${codeBadge}</td>
+                          <td>
+                              <span class="text-muted small">${escapeHtml(item.address || '-')}</span>
+                          </td>
+                          <td class="text-center">
+                              <button type="button" class="btn btn-sm btn-outline-danger detachRestBtn py-1 px-2"
+                                      data-restaurant-id="${item.restaurant_id}"
+                                      data-restaurant-name="${escapeHtml(item.name)}"
+                                      style="border-radius: 8px; font-size: 0.8rem;"
+                                      title="Detach Restaurant">
+                                  <i class="fas fa-unlink me-1"></i> Detach
+                              </button>
+                          </td>
+                      </tr>
+                  `;
+                  tbody.append(row);
+              });
+              $('#mappingTableContainer').show();
+          }
+      }
+
+      function loadMappings(fsoId) {
+          $('#mappingLoading').show();
+          $('#mappingEmptyState').hide();
+          $('#mappingTableContainer').hide();
+          $('#mappingAlertBox').hide();
+
+          $.ajax({
+              url: "{{ url('admin/franchise-owners/mapping') }}/" + fsoId,
+              type: 'GET',
+              dataType: 'json',
+              success: function(res) {
+                  if (res.success) {
+                      renderMappings(res);
+                  } else {
+                      $('#mappingLoading').hide();
+                      showMappingAlert('danger', res.message || 'Unable to load mapped restaurants.');
+                  }
+              },
+              error: function(xhr) {
+                  $('#mappingLoading').hide();
+                  showMappingAlert('danger', 'Error connecting to server to load mappings.');
+              }
+          });
+      }
+
+      // Open Mapping Modal
+      $(document).on('click', '.mapFsoBtn', function() {
+          currentFsoId = $(this).data('id');
+          currentFsoName = $(this).data('name') || 'Owner';
+
+          $('#mapModalOwnerTitle').text(currentFsoName);
+          $('#mappingAlertBox').hide();
+          $('#mapRestaurantModal').modal('show');
+
+          loadMappings(currentFsoId);
+      });
+
+      // Add Restaurant Mapping (One by one)
+      $('#btnAddMapping').on('click', function() {
+          if (!currentFsoId) {
+              showMappingAlert('danger', 'No Franchise Owner selected.');
+              return;
+          }
+
+          const restaurantId = $('#mapRestaurantSelect').val();
+          if (!restaurantId) {
+              showMappingAlert('warning', 'Please select a restaurant from the dropdown first.');
+              return;
+          }
+
+          const btn = $(this);
+          const originalHtml = btn.html();
+          btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Adding...');
+
+          $.ajax({
+              url: "{{ route('admin.fso.mapping.attach') }}",
+              type: 'POST',
+              data: {
+                  user_id: currentFsoId,
+                  restaurant_id: restaurantId,
+                  _token: "{{ csrf_token() }}"
+              },
+              dataType: 'json',
+              success: function(res) {
+                  btn.prop('disabled', false).html(originalHtml);
+                  if (res.success) {
+                      showMappingAlert('success', res.message);
+                      loadMappings(currentFsoId);
+                  } else {
+                      showMappingAlert('danger', res.message || 'Failed to map restaurant.');
+                  }
+              },
+              error: function(xhr) {
+                  btn.prop('disabled', false).html(originalHtml);
+                  const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Error mapping restaurant.';
+                  showMappingAlert('danger', msg);
+              }
+          });
+      });
+
+      // Detach Restaurant Mapping
+      $(document).on('click', '.detachRestBtn', function() {
+          if (!currentFsoId) return;
+
+          const restaurantId = $(this).data('restaurant-id');
+          const restaurantName = $(this).data('restaurant-name') || 'this restaurant';
+
+          if (!confirm(`Are you sure you want to detach "${restaurantName}" from ${currentFsoName}?`)) {
+              return;
+          }
+
+          const btn = $(this);
+          btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+          $.ajax({
+              url: "{{ route('admin.fso.mapping.detach') }}",
+              type: 'POST',
+              data: {
+                  user_id: currentFsoId,
+                  restaurant_id: restaurantId,
+                  _token: "{{ csrf_token() }}"
+              },
+              dataType: 'json',
+              success: function(res) {
+                  if (res.success) {
+                      showMappingAlert('success', res.message);
+                      loadMappings(currentFsoId);
+                  } else {
+                      btn.prop('disabled', false).html('<i class="fas fa-unlink me-1"></i> Detach');
+                      showMappingAlert('danger', res.message || 'Failed to detach restaurant.');
+                  }
+              },
+              error: function(xhr) {
+                  btn.prop('disabled', false).html('<i class="fas fa-unlink me-1"></i> Detach');
+                  const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Error detaching restaurant.';
+                  showMappingAlert('danger', msg);
+              }
+          });
       });
   });
 

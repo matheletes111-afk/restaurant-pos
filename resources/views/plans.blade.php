@@ -518,6 +518,8 @@
                         <li><i class="fas fa-check-circle text-success"></i> Kitchen Panel</li>
                         <li><i class="fas fa-check-circle text-success"></i> Qr Code Ordering</li>
                         <li><i class="fas fa-check-circle text-success"></i> Customer Support</li>
+                        <li><i class="fas fa-check-circle text-success"></i> Installing & Training (Online)</li>
+                        <li><i class="fas fa-check-circle text-success"></i> Support 24 x 7 (Online)</li>
                         <li><i class="fas fa-check-circle text-success"></i> Staff Management</li>
                         <li><i class="fas fa-check-circle text-success"></i> Cash Drawer Management</li>
                         @if(($plan->report_management_checkbox ?? 'Y') == 'Y')

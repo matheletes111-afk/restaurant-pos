@@ -527,6 +527,283 @@
       font-weight: 700;
       cursor: pointer;
     }
+
+    /* ===================================================
+       RESPONSIVE & MOBILE DESIGN STYLES (< 992px & < 768px)
+       =================================================== */
+    @media (max-width: 991px) {
+      .bar-header-card {
+        padding: 18px 20px;
+      }
+      .bar-items-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 18px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .pc-content {
+        padding: 14px 12px !important;
+      }
+
+      /* Header Card Responsive */
+      .bar-header-card {
+        padding: 16px !important;
+        border-radius: var(--radius-md) !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 14px !important;
+        margin-bottom: 16px !important;
+      }
+
+      .header-left-cluster {
+        min-width: 100% !important;
+        gap: 12px !important;
+      }
+
+      .bar-header-icon {
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.15rem !important;
+        border-radius: 12px !important;
+      }
+
+      .bar-main-title {
+        font-size: 1.2rem !important;
+        line-height: 1.25 !important;
+      }
+
+      .bar-header-actions {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+      }
+
+      .bar-header-actions .btn-bar-primary {
+        grid-column: span 2 !important;
+        width: 100% !important;
+        order: -1 !important;
+        padding: 10px 16px !important;
+        font-size: 0.9rem !important;
+      }
+
+      .bar-header-actions .btn-bar-secondary {
+        width: 100% !important;
+        padding: 8px 10px !important;
+        font-size: 0.78rem !important;
+        text-align: center !important;
+        justify-content: center !important;
+      }
+
+      /* Category Filter Bar */
+      .category-filter-bar {
+        padding-bottom: 8px !important;
+        margin-bottom: 16px !important;
+        scrollbar-width: none !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+
+      .category-filter-bar::-webkit-scrollbar {
+        display: none !important;
+      }
+
+      .cat-filter-btn {
+        padding: 6px 13px !important;
+        font-size: 0.78rem !important;
+      }
+
+      /* KPI Cards Responsive */
+      .kpi-row {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        margin-bottom: 18px !important;
+      }
+
+      .kpi-card {
+        padding: 12px 14px !important;
+        gap: 10px !important;
+        border-radius: 12px !important;
+      }
+
+      .kpi-card:last-child {
+        grid-column: span 2 !important;
+      }
+
+      .kpi-icon {
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 1.05rem !important;
+        border-radius: 10px !important;
+      }
+
+      .kpi-val {
+        font-size: 1.22rem !important;
+      }
+
+      .kpi-label {
+        font-size: 0.7rem !important;
+      }
+
+      /* Quick Filter & Search Toolbar */
+      .bar-toolbar-container {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        margin-bottom: 16px !important;
+      }
+
+      .bar-toolbar-search {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 100% !important;
+        order: -1 !important;
+      }
+
+      .bar-toolbar-search .form-control {
+        font-size: 16px !important; /* Prevents auto-zoom in iOS Safari */
+      }
+
+      .bar-filter-chips-wrap {
+        width: 100% !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        padding-bottom: 6px !important;
+        scrollbar-width: none !important;
+        -webkit-overflow-scrolling: touch !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        flex-wrap: nowrap !important;
+      }
+
+      .bar-filter-chips-wrap::-webkit-scrollbar {
+        display: none !important;
+      }
+
+      .bar-filter-label {
+        display: none !important;
+      }
+
+      .status-filter-chip {
+        padding: 6px 12px !important;
+        font-size: 0.75rem !important;
+        flex-shrink: 0 !important;
+      }
+
+      /* Bar Item Cards Grid */
+      .bar-items-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+      }
+
+      .bar-item-card {
+        border-radius: var(--radius-md) !important;
+      }
+
+      .item-top-media {
+        height: 125px !important;
+      }
+
+      .item-card-body {
+        padding: 14px 16px !important;
+        gap: 12px !important;
+      }
+
+      .item-name-title {
+        font-size: 1.05rem !important;
+      }
+
+      .inventory-spec-box {
+        padding: 8px 12px !important;
+        gap: 6px !important;
+      }
+
+      .inv-spec-val {
+        font-size: 0.88rem !important;
+      }
+
+      .avail-switch-panel {
+        padding: 8px 12px !important;
+      }
+
+      .card-action-bar {
+        padding-top: 10px !important;
+        gap: 8px !important;
+      }
+
+      .btn-card-add-var {
+        padding: 9px 12px !important;
+        font-size: 0.82rem !important;
+      }
+
+      .btn-card-icon-action {
+        width: 38px !important;
+        height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        font-size: 0.9rem !important;
+      }
+
+      /* Modals Responsive */
+      .modal-dialog {
+        margin: 10px auto !important;
+        max-width: calc(100% - 20px) !important;
+      }
+
+      .modal-content {
+        border-radius: var(--radius-md) !important;
+      }
+
+      .modal-header {
+        padding: 14px 16px !important;
+      }
+
+      .modal-title {
+        font-size: 1.05rem !important;
+      }
+
+      .modal-body {
+        padding: 14px 16px !important;
+      }
+
+      .modal-footer {
+        padding: 12px 16px !important;
+      }
+
+      .form-control-custom {
+        font-size: 16px !important; /* Prevents auto-zoom in iOS Safari */
+        padding: 9px 12px !important;
+      }
+
+      .setVatPresetBtn, .setEditVatPresetBtn, .presetBtn {
+        padding: 4px 8px !important;
+        font-size: 0.72rem !important;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .pc-content {
+        padding: 10px 8px !important;
+      }
+      .bar-main-title {
+        font-size: 1.12rem !important;
+      }
+      .kpi-row {
+        grid-template-columns: 1fr !important;
+      }
+      .kpi-card:last-child {
+        grid-column: span 1 !important;
+      }
+      .bar-header-actions {
+        grid-template-columns: 1fr !important;
+      }
+      .bar-header-actions .btn-bar-primary {
+        grid-column: span 1 !important;
+      }
+    }
   </style>
 </head>
 
@@ -555,7 +832,7 @@
           </div>
         </div>
 
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div class="bar-header-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
           <a href="{{ route('bar.brand.index') }}" class="btn-bar-secondary">
             <i class="fa-solid fa-certificate"></i> Brand Master
           </a>
@@ -581,7 +858,7 @@
       </div>
 
       <!-- KPI Summary Cards -->
-      <div class="kpi-row" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+      <div class="kpi-row">
         <div class="kpi-card status-kpi-trigger" data-filter="all" style="cursor: pointer;" title="Show All Bar Items">
           <div class="kpi-icon purple"><i class="fa-solid fa-wine-bottle"></i></div>
           <div>
@@ -620,9 +897,9 @@
       </div>
 
       <!-- Quick Availability & Search Toolbar -->
-      <div class="d-flex align-items-center justify-content-between gap-2 mb-3 flex-wrap">
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-          <span class="small fw-bold text-muted me-1"><i class="fa-solid fa-filter me-1"></i> Quick Filter:</span>
+      <div class="bar-toolbar-container d-flex align-items-center justify-content-between gap-2 mb-3 flex-wrap">
+        <div class="bar-filter-chips-wrap d-flex align-items-center gap-2 flex-wrap">
+          <span class="small fw-bold text-muted me-1 bar-filter-label"><i class="fa-solid fa-filter me-1"></i> Quick Filter:</span>
           <button type="button" class="status-filter-chip active" data-filter="all">
             All Items (<span id="filterAllCount">{{ $items->count() }}</span>)
           </button>
@@ -633,7 +910,7 @@
             <span class="status-dot-pulse pulse-red me-1" style="width:7px; height:7px;"></span> Inactive / Unavailable (<span id="filterUnavailCount">{{ $items->where('status', '!=', 'A')->count() }}</span>)
           </button>
         </div>
-        <div style="min-width: 220px; max-width: 320px;" class="flex-grow-1">
+        <div class="bar-toolbar-search flex-grow-1" style="min-width: 220px; max-width: 320px;">
           <div class="input-group input-group-sm">
             <span class="input-group-text bg-white border-end-0" style="border-radius: 20px 0 0 20px; border-color: #cbd5e1;">
               <i class="fa-solid fa-magnifying-glass text-muted"></i>
@@ -772,12 +1049,12 @@
               </div>
 
               <!-- Card Actions -->
-              <div class="d-flex align-items-center gap-2 pt-2 border-top">
+              <div class="card-action-bar d-flex align-items-center gap-2 pt-2 border-top">
                 <a href="{{ route('bar.item.variations', $item->id) }}" class="btn-card-add-var">
                   <i class="fa-solid fa-sliders"></i> Variations ({{ $item->variations->count() }})
                 </a>
                 <button type="button" 
-                        class="btn btn-sm btn-outline-secondary editBarItemBtn" 
+                        class="btn btn-sm btn-outline-secondary editBarItemBtn btn-card-icon-action" 
                         data-id="{{ $item->id }}"
                         data-name="{{ $item->name }}"
                         data-category-id="{{ $item->category_id }}"
@@ -788,13 +1065,13 @@
                         data-vat="{{ floatval($item->vat_rate ?? 0) }}"
                         data-description="{{ $item->description }}"
                         data-status="{{ $normalizedStatus }}"
-                        style="border-radius: 8px; padding: 7px 11px;" title="Edit Item">
+                        style="border-radius: 8px;" title="Edit Item">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
                 <a href="{{ route('bar.item.delete', $item->id) }}" 
-                   class="btn btn-sm btn-outline-danger" 
+                   class="btn btn-sm btn-outline-danger btn-card-icon-action" 
                    onclick="return confirm('Are you sure you want to delete \'{{ addslashes($item->name) }}\'?')"
-                   style="border-radius: 8px; padding: 7px 11px;" title="Delete Item">
+                   style="border-radius: 8px;" title="Delete Item">
                   <i class="fa-solid fa-trash"></i>
                 </a>
               </div>
