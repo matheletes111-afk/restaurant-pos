@@ -26,7 +26,7 @@
             </a>
             <div class="nav-links">
                 <a href="#features">Features</a>
-                <a href="{{ route('bar.landing') }}" style="color: #ff6a00; font-weight: 700;"><i class="ph ph-martini"></i> Bar POS</a>
+                <a href="{{ url('/bar') }}" style="color: #ff6a00; font-weight: 700;"><i class="ph ph-martini"></i> Bar POS</a>
                 <a href="#pricing">Pricing</a>
                 <a href="#how-it-works">How It Works</a>
                 <a href="#platform-benefits">Benefits</a>

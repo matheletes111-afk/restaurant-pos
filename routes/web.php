@@ -42,6 +42,7 @@ Route::post('forget-password-user/enter-new-password',[LoginController::class, '
 
 Route::get('/', [App\Http\Controllers\FrontendController::class, 'index'])->name('home');
 Route::get('/bar', [App\Http\Controllers\FrontendController::class, 'bar'])->name('bar.landing');
+Route::get('/bar-landing', [App\Http\Controllers\FrontendController::class, 'bar'])->name('bar');
 Route::get('/0{num}.png', function ($num) {
     $file = base_path("0{$num}.PNG");
     if (!file_exists($file)) {
