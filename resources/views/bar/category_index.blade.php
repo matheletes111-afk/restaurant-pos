@@ -624,7 +624,7 @@
           <!-- Bulk Upload Button -->
           <button type="button" class="btn-bar-secondary" data-bs-toggle="modal" data-bs-target="#bulkUploadCategoryModal" title="Bulk Upload Bar Categories">
             <i class="fa-solid fa-file-excel text-success"></i>
-            <span>Bulk Categories</span>
+            <span>Bulk Upload Category</span>
           </button>
 
           <!-- Add Bar Category Action Button -->
@@ -887,16 +887,19 @@
 
           <div class="modal-pos-body">
             <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 14px;">
-              Upload an Excel (.xlsx, .xls) or CSV spreadsheet containing bar category names. All uploaded rows will be automatically marked with <strong>category_type = BAR</strong>.
+              Upload an Excel (.xlsx, .xls) or CSV spreadsheet with a single column header: <strong>Bar Category Name</strong>. All imported categories will be created under Bar Management (category_type: BAR).
             </p>
 
             <div class="alert alert-light border mb-3" style="border-radius: 12px; background: #faf5ff; border-color: #ddd6fe !important;">
               <div class="d-flex justify-content-between align-items-center">
-                <span style="font-size: 0.8rem; font-weight: 700; color: #6d28d9;">
-                  <i class="fa-solid fa-download me-1"></i> Download Pre-Formatted Template
-                </span>
+                <div>
+                  <div style="font-size: 0.82rem; font-weight: 700; color: #6d28d9;">
+                    <i class="fa-solid fa-file-excel me-1 text-success"></i> Excel Template (Bar Category Name)
+                  </div>
+                  <small class="text-muted" style="font-size: 0.72rem;">Pre-formatted with single "Bar Category Name" column</small>
+                </div>
                 <a href="{{ route('bar.category.template') }}" class="btn btn-sm btn-outline-primary" style="border-radius: 20px; font-weight: 700; font-size: 0.75rem;">
-                  Download .xlsx
+                  <i class="fa-solid fa-download me-1"></i> Download .xlsx
                 </a>
               </div>
             </div>
@@ -906,6 +909,9 @@
                 Select Spreadsheet <span class="text-danger">*</span>
               </label>
               <input type="file" name="bulk_file" class="form-control-custom" required accept=".xlsx,.xls,.csv">
+              <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">
+                Supported formats: .xlsx, .xls, .csv &bull; Max file size: 10MB
+              </small>
             </div>
           </div>
 

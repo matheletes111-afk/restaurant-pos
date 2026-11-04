@@ -413,6 +413,9 @@
                   <button type="button" class="btn-bar-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBrandModal">
                     <i class="fa-solid fa-plus"></i> Add Brand Now
                   </button>
+                  <button type="button" class="btn-bar-secondary btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#bulkUploadBrandModal">
+                    <i class="fa-solid fa-file-excel text-success"></i> Bulk Upload Brands
+                  </button>
                 </td>
               </tr>
               @endforelse
@@ -523,21 +526,27 @@
           </div>
           <div class="modal-body" style="padding: 20px 22px;">
             <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 14px;">
-              Upload an Excel (.xlsx, .xls) or CSV spreadsheet containing brand names and descriptions.
+              Upload an Excel (.xlsx, .xls) or CSV spreadsheet containing: <strong>Brand Name *</strong> and <strong>Description (Optional)</strong>.
             </p>
             <div class="alert alert-light border mb-3" style="border-radius: 12px; background: #faf5ff; border-color: #ddd6fe !important;">
               <div class="d-flex justify-content-between align-items-center">
-                <span style="font-size: 0.8rem; font-weight: 700; color: #6d28d9;">
-                  <i class="fa-solid fa-download me-1"></i> Pre-Formatted Template
-                </span>
+                <div>
+                  <div style="font-size: 0.82rem; font-weight: 700; color: #6d28d9;">
+                    <i class="fa-solid fa-file-excel me-1 text-success"></i> Excel Template (Brand Name * &amp; Description)
+                  </div>
+                  <small class="text-muted" style="font-size: 0.72rem;">Pre-formatted with "Brand Name *" and "Description (Optional)"</small>
+                </div>
                 <a href="{{ route('bar.brand.template') }}" class="btn btn-sm btn-outline-primary" style="border-radius: 20px; font-weight: 700; font-size: 0.75rem;">
-                  Download .xlsx
+                  <i class="fa-solid fa-download me-1"></i> Download .xlsx
                 </a>
               </div>
             </div>
             <div class="mb-2">
               <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">Select Spreadsheet <span class="text-danger">*</span></label>
               <input type="file" name="bulk_file" class="form-control-custom" required accept=".xlsx,.xls,.csv">
+              <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">
+                Supported formats: .xlsx, .xls, .csv &bull; Max file size: 10MB
+              </small>
             </div>
           </div>
           <div class="modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 14px 22px;">

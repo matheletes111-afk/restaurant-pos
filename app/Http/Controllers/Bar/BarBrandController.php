@@ -198,7 +198,7 @@ class BarBrandController extends Controller
                 $rawName = trim((string)($row[0] ?? ''));
                 $rawDesc = trim((string)($row[1] ?? ''));
 
-                if (!$headerSkipped && in_array(strtolower($rawName), ['brand name', 'brand', 'name', 'bar brand'])) {
+                if (!$headerSkipped && in_array(strtolower($rawName), ['brand name *', 'brand name', 'brand', 'name', 'bar brand', 'bar brand name'])) {
                     $headerSkipped = true;
                     continue;
                 }
@@ -215,7 +215,7 @@ class BarBrandController extends Controller
                 $brandsToInsert[$key] = [
                     'restaurant_id' => $restaurantId,
                     'name'          => $rawName,
-                    'description'   => $rawDesc ?: null,
+                    'description'   => $rawDesc !== '' ? $rawDesc : null,
                     'status'        => 'A',
                     'created_at'    => now(),
                     'updated_at'    => now(),
@@ -228,7 +228,7 @@ class BarBrandController extends Controller
 
             BarBrand::insert(array_values($brandsToInsert));
 
-            return redirect()->route('bar.brand.index')
+            return redirect()->back()
                 ->with('success', 'Successfully imported ' . count($brandsToInsert) . ' bar brands from Excel!');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Error reading Excel file: ' . $e->getMessage());
@@ -243,8 +243,9 @@ class BarBrandController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $sheet->setCellValue('A1', 'Brand Name');
-        $sheet->setCellValue('B1', 'Description');
+        // Exact headers requested: "Brand Name *" and "Description (Optional)"
+        $sheet->setCellValue('A1', 'Brand Name *');
+        $sheet->setCellValue('B1', 'Description (Optional)');
 
         $samples = [
             ['Johnnie Walker', 'Blended Scotch Whisky by Diageo'],
@@ -276,14 +277,14 @@ class BarBrandController extends Controller
         $sheet->getColumnDimension('A')->setWidth(30);
         $sheet->getColumnDimension('B')->setWidth(55);
 
-        $writer = new Xlsx($spreadsheet);
         $filename = "bar_brands_upload_template.xlsx";
 
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="' . $filename . '"');
-        header('Cache-Control: max-age=0');
-
-        $writer->save('php://output');
-        exit;
+        return response()->streamDownload(function() use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 }

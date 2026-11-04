@@ -250,19 +250,31 @@ Route::get('table-category-manage/delete/{id}', [App\Http\Controllers\TableCateg
 
 // Bar Management - Category Management (category_type = BAR)
 Route::get('bar/manage-category', [App\Http\Controllers\Bar\BarCategoryController::class, 'index'])->name('bar.category.index');
+Route::get('admin/bar/manage-category', [App\Http\Controllers\Bar\BarCategoryController::class, 'index']);
 Route::post('bar/manage-category/insert-category', [App\Http\Controllers\Bar\BarCategoryController::class, 'insert'])->name('bar.category.insert');
+Route::post('admin/bar/manage-category/insert-category', [App\Http\Controllers\Bar\BarCategoryController::class, 'insert']);
 Route::post('bar/manage-category/update-category', [App\Http\Controllers\Bar\BarCategoryController::class, 'update'])->name('bar.category.update');
+Route::post('admin/bar/manage-category/update-category', [App\Http\Controllers\Bar\BarCategoryController::class, 'update']);
 Route::get('bar/manage-category/delete-category/{id}', [App\Http\Controllers\Bar\BarCategoryController::class, 'delete'])->name('bar.category.delete');
+Route::get('admin/bar/manage-category/delete-category/{id}', [App\Http\Controllers\Bar\BarCategoryController::class, 'delete']);
 Route::post('bar/manage-category/bulk-upload', [App\Http\Controllers\Bar\BarCategoryController::class, 'bulkUploadCategory'])->name('bar.category.bulk.upload');
+Route::post('admin/bar/manage-category/bulk-upload', [App\Http\Controllers\Bar\BarCategoryController::class, 'bulkUploadCategory']);
 Route::get('bar/manage-category/bulk-upload-template', [App\Http\Controllers\Bar\BarCategoryController::class, 'downloadCategoryTemplate'])->name('bar.category.template');
+Route::get('admin/bar/manage-category/bulk-upload-template', [App\Http\Controllers\Bar\BarCategoryController::class, 'downloadCategoryTemplate']);
 
 // Bar Brand Management
 Route::get('bar/brands', [App\Http\Controllers\Bar\BarBrandController::class, 'index'])->name('bar.brand.index');
+Route::get('admin/bar/brands', [App\Http\Controllers\Bar\BarBrandController::class, 'index']);
 Route::post('bar/brands/store', [App\Http\Controllers\Bar\BarBrandController::class, 'store'])->name('bar.brand.store');
+Route::post('admin/bar/brands/store', [App\Http\Controllers\Bar\BarBrandController::class, 'store']);
 Route::post('bar/brands/update', [App\Http\Controllers\Bar\BarBrandController::class, 'update'])->name('bar.brand.update');
+Route::post('admin/bar/brands/update', [App\Http\Controllers\Bar\BarBrandController::class, 'update']);
 Route::get('bar/brands/delete/{id}', [App\Http\Controllers\Bar\BarBrandController::class, 'delete'])->name('bar.brand.delete');
+Route::get('admin/bar/brands/delete/{id}', [App\Http\Controllers\Bar\BarBrandController::class, 'delete']);
 Route::post('bar/brands/bulk-upload', [App\Http\Controllers\Bar\BarBrandController::class, 'bulkUpload'])->name('bar.brand.bulk.upload');
+Route::post('admin/bar/brands/bulk-upload', [App\Http\Controllers\Bar\BarBrandController::class, 'bulkUpload']);
 Route::get('bar/brands/bulk-upload-template', [App\Http\Controllers\Bar\BarBrandController::class, 'downloadTemplate'])->name('bar.brand.template');
+Route::get('admin/bar/brands/bulk-upload-template', [App\Http\Controllers\Bar\BarBrandController::class, 'downloadTemplate']);
 
 // Variation Inner Page & Modal CRUD (Inner page of Bar Item Management)
 Route::get('bar/items/{item_id}/variations', [App\Http\Controllers\Bar\BarVariationController::class, 'index'])->name('bar.item.variations');
@@ -271,6 +283,10 @@ Route::post('bar/items/variations/store', [App\Http\Controllers\Bar\BarItemContr
 Route::match(['get', 'post'], 'bar/items/variations/delete/{id}', [App\Http\Controllers\Bar\BarItemController::class, 'deleteVariation'])->name('bar.item.variations.delete');
 
 // Bar Item Management & CRUD
+Route::post('bar/items/bulk-upload', [App\Http\Controllers\Bar\BarItemController::class, 'bulkUpload'])->name('bar.item.bulk.upload');
+Route::post('admin/bar/items/bulk-upload', [App\Http\Controllers\Bar\BarItemController::class, 'bulkUpload']);
+Route::get('bar/items/bulk-upload-template', [App\Http\Controllers\Bar\BarItemController::class, 'downloadTemplate'])->name('bar.item.template');
+Route::get('admin/bar/items/bulk-upload-template', [App\Http\Controllers\Bar\BarItemController::class, 'downloadTemplate']);
 Route::post('bar/items/store', [App\Http\Controllers\Bar\BarItemController::class, 'store'])->name('bar.item.store');
 Route::post('bar/items/update', [App\Http\Controllers\Bar\BarItemController::class, 'update'])->name('bar.item.update');
 Route::match(['get', 'post'], 'bar/items/toggle-status/{id}', [App\Http\Controllers\Bar\BarItemController::class, 'toggleStatus'])->name('bar.item.toggle-status');

@@ -9,6 +9,9 @@ use App\Models\SubCategory;
 use App\Models\BarBrand;
 use App\Models\BarItemVariation;
 use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class BarItemController extends Controller
 {
@@ -408,5 +411,237 @@ class BarItemController extends Controller
             'success' => false,
             'message' => 'Variation not found.',
         ], 404);
+    }
+
+    /**
+     * Download Excel template for Bar Items bulk upload
+     * Cover image is intentionally excluded as requested.
+     */
+    public function downloadTemplate()
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Column Headers (Without Cover Image)
+        $sheet->setCellValue('A1', 'Product Name *');
+        $sheet->setCellValue('B1', 'Bar Category *');
+        $sheet->setCellValue('C1', 'Brand Name (Optional)');
+        $sheet->setCellValue('D1', 'Bottle Size in ml *');
+        $sheet->setCellValue('E1', 'Opening Bottle Qty');
+        $sheet->setCellValue('F1', 'Extra ML');
+        $sheet->setCellValue('G1', 'State VAT Rate (%)');
+        $sheet->setCellValue('H1', 'Description (Optional)');
+
+        $samples = [
+            ['Johnnie Walker Black Label 12 Yrs', 'Single Malt Whiskeys', 'Johnnie Walker', 750, 2, 0, 20, 'Premium blended Scotch whisky'],
+            ['Glenfiddich 12 Year Old', 'Single Malt Whiskeys', 'Glenfiddich', 750, 1, 150, 20, 'Signature single malt scotch with fresh pear notes'],
+            ['Grey Goose Original Vodka', 'Vodka & Gin', 'Grey Goose', 1000, 3, 0, 20, 'Distilled in France from French winter wheat'],
+            ['Bombay Sapphire London Dry Gin', 'Vodka & Gin', 'Bombay Sapphire', 750, 2, 60, 20, 'Vapour infused with 10 hand-selected botanicals'],
+            ['Corona Extra Beer', 'Beers & Draughts', 'Corona Extra', 330, 24, 0, 10, 'Crisp Mexican pale lager served with lime'],
+            ['Classic Smoked Old Fashioned', 'Cocktails & Mixology', '', 750, 1, 0, 20, 'Craft bourbon cocktail with aromatic bitters'],
+        ];
+
+        $r = 2;
+        foreach ($samples as $s) {
+            $sheet->setCellValue('A' . $r, $s[0]);
+            $sheet->setCellValue('B' . $r, $s[1]);
+            $sheet->setCellValue('C' . $r, $s[2]);
+            $sheet->setCellValue('D' . $r, $s[3]);
+            $sheet->setCellValue('E' . $r, $s[4]);
+            $sheet->setCellValue('F' . $r, $s[5]);
+            $sheet->setCellValue('G' . $r, $s[6]);
+            $sheet->setCellValue('H' . $r, $s[7]);
+            $r++;
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['argb' => 'FF8B5CF6'], // Bar Tone Purple
+            ],
+        ];
+
+        $sheet->getStyle('A1:H1')->applyFromArray($headerStyle);
+        $sheet->getColumnDimension('A')->setWidth(35);
+        $sheet->getColumnDimension('B')->setWidth(25);
+        $sheet->getColumnDimension('C')->setWidth(25);
+        $sheet->getColumnDimension('D')->setWidth(18);
+        $sheet->getColumnDimension('E')->setWidth(18);
+        $sheet->getColumnDimension('F')->setWidth(12);
+        $sheet->getColumnDimension('G')->setWidth(18);
+        $sheet->getColumnDimension('H')->setWidth(40);
+
+        $filename = "bar_items_upload_template.xlsx";
+
+        return response()->streamDownload(function() use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
+    }
+
+    /**
+     * Bulk upload Bar Items from Excel/CSV spreadsheet
+     * Automatically inserts Category and Brand if not found, and gets their IDs.
+     * Cover Image is intentionally skipped as requested.
+     */
+    public function bulkUpload(Request $request)
+    {
+        $request->validate([
+            'bulk_file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+        ], [
+            'bulk_file.required' => 'Please select an Excel or CSV file to upload.',
+            'bulk_file.mimes'    => 'File must be a valid spreadsheet (.xlsx, .xls, .csv).',
+            'bulk_file.max'      => 'File size cannot exceed 10MB.',
+        ]);
+
+        $restaurantId = auth()->user()->restaurant_id;
+        $restaurant = \App\Models\RestaurantMaster::find($restaurantId);
+        $defaultVatRate = floatval($restaurant->vat_percentage ?? 20);
+
+        try {
+            $file = $request->file('bulk_file');
+            $spreadsheet = IOFactory::load($file->getRealPath());
+            $worksheet = $spreadsheet->getActiveSheet();
+            $rows = $worksheet->toArray();
+
+            $headerSkipped = false;
+            $importedCount = 0;
+            $newCategoriesCount = 0;
+            $newBrandsCount = 0;
+
+            // Load existing categories and brands for this restaurant into memory caches
+            $categoriesCache = Category::where('restaurant_id', $restaurantId)
+                ->where('status', '!=', 'D')
+                ->where('category_type', 'BAR')
+                ->get()
+                ->keyBy(fn($c) => strtolower(trim($c->name)));
+
+            $brandsCache = BarBrand::where('restaurant_id', $restaurantId)
+                ->where('status', '!=', 'D')
+                ->get()
+                ->keyBy(fn($b) => strtolower(trim($b->name)));
+
+            \DB::beginTransaction();
+
+            foreach ($rows as $index => $row) {
+                if (empty(array_filter($row, fn($val) => !is_null($val) && trim((string)$val) !== ''))) {
+                    continue; // Skip empty row
+                }
+
+                $rawName       = trim((string)($row[0] ?? ''));
+                $rawCategory   = trim((string)($row[1] ?? ''));
+                $rawBrand      = trim((string)($row[2] ?? ''));
+                $rawBottleSize = trim((string)($row[3] ?? ''));
+                $rawBottleQty  = trim((string)($row[4] ?? ''));
+                $rawExtraMl    = trim((string)($row[5] ?? ''));
+                $rawVatRate    = trim((string)($row[6] ?? ''));
+                $rawDesc       = trim((string)($row[7] ?? ''));
+
+                // Detect and skip header row
+                if (!$headerSkipped && in_array(strtolower($rawName), [
+                    'product name *', 'product name', 'item name *', 'item name', 'name', 'product', 'item'
+                ])) {
+                    $headerSkipped = true;
+                    continue;
+                }
+
+                if ($rawName === '') {
+                    continue; // Product name is mandatory
+                }
+
+                // 1. Resolve Category (Auto-create if not found)
+                $catName = $rawCategory !== '' ? $rawCategory : 'Bar Beverages';
+                $catKey = strtolower($catName);
+                if (isset($categoriesCache[$catKey])) {
+                    $categoryId = $categoriesCache[$catKey]->id;
+                } else {
+                    $newCat = new Category();
+                    $newCat->name = $catName;
+                    $newCat->category_type = 'BAR';
+                    $newCat->user_id = auth()->id();
+                    $newCat->restaurant_id = $restaurantId;
+                    $newCat->status = 'A';
+                    $newCat->save();
+                    $newCat->slug = Str::slug($catName) . '-' . $newCat->id;
+                    $newCat->save();
+
+                    $categoryId = $newCat->id;
+                    $categoriesCache[$catKey] = $newCat;
+                    $newCategoriesCount++;
+                }
+
+                // 2. Resolve Brand (Auto-create if provided and not found)
+                $brandId = null;
+                if ($rawBrand !== '') {
+                    $brandKey = strtolower($rawBrand);
+                    if (isset($brandsCache[$brandKey])) {
+                        $brandId = $brandsCache[$brandKey]->id;
+                    } else {
+                        $newBrand = new BarBrand();
+                        $newBrand->name = $rawBrand;
+                        $newBrand->restaurant_id = $restaurantId;
+                        $newBrand->status = 'A';
+                        $newBrand->save();
+
+                        $brandId = $newBrand->id;
+                        $brandsCache[$brandKey] = $newBrand;
+                        $newBrandsCount++;
+                    }
+                }
+
+                // 3. Inventory calculation
+                $bottleSize = is_numeric($rawBottleSize) && floatval($rawBottleSize) > 0 
+                    ? floatval($rawBottleSize) 
+                    : 750;
+                
+                $bottleQty = is_numeric($rawBottleQty) ? floatval($rawBottleQty) : 1;
+                $extraMl   = is_numeric($rawExtraMl) ? floatval($rawExtraMl) : 0;
+                $openingMl = ($bottleSize * $bottleQty) + $extraMl;
+                $currentStockMl = $openingMl;
+
+                $vatRate = is_numeric($rawVatRate) ? floatval($rawVatRate) : $defaultVatRate;
+
+                // 4. Create Bar Item (SubCategory model)
+                $item = new SubCategory();
+                $item->name = $rawName;
+                $item->category_id = $categoryId;
+                $item->brand_id = $brandId;
+                $item->bottle_size_ml = $bottleSize;
+                $item->opening_qty = $openingMl;
+                $item->current_stock_ml = $currentStockMl;
+                $item->price = 0;
+                $item->vat_rate = $vatRate;
+                $item->gst_rate = 0.00; // As per Indian excise law, liquor items are subject to State VAT, not GST
+                $item->food_type = 'BAR';
+                $item->description = $rawDesc !== '' ? $rawDesc : null;
+                $item->restaurant_id = $restaurantId;
+                $item->user_id = auth()->id();
+                $item->status = 'A';
+                // Cover Image is intentionally skipped as requested
+                $item->save();
+
+                $importedCount++;
+            }
+
+            \DB::commit();
+
+            // Sync with Purchase Management products (unit = ML)
+            \App\Models\Product::syncBarItems($restaurantId);
+
+            $msg = "Successfully imported {$importedCount} bar items!";
+            if ($newCategoriesCount > 0 || $newBrandsCount > 0) {
+                $msg .= " (Auto-created {$newCategoriesCount} new categories and {$newBrandsCount} new brands).";
+            }
+
+            return redirect()->back()->with('success', $msg);
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return redirect()->back()->with('error', 'Error importing bar items spreadsheet: ' . $e->getMessage());
+        }
     }
 }

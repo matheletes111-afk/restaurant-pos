@@ -271,7 +271,8 @@ class BarCategoryController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $sheet->setCellValue('A1', 'Category Name');
+        // Exactly "Bar Category Name" as requested
+        $sheet->setCellValue('A1', 'Bar Category Name');
 
         // Sample Bar categories
         $sheet->setCellValue('A2', 'Cocktails & Mixology');
@@ -292,14 +293,14 @@ class BarCategoryController extends Controller
         $sheet->getStyle('A1')->applyFromArray($headerStyle);
         $sheet->getColumnDimension('A')->setAutoSize(true);
 
-        $writer = new Xlsx($spreadsheet);
         $filename = "bar_category_upload_template.xlsx";
 
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="' . $filename . '"');
-        header('Cache-Control: max-age=0');
-
-        $writer->save('php://output');
-        exit;
+        return response()->streamDownload(function() use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 }

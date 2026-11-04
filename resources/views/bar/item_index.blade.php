@@ -596,6 +596,10 @@
         justify-content: center !important;
       }
 
+      .bar-header-actions .btn-bar-secondary:last-of-type {
+        grid-column: span 2 !important;
+      }
+
       /* Category Filter Bar */
       .category-filter-bar {
         padding-bottom: 8px !important;
@@ -839,6 +843,9 @@
           <a href="{{ route('bar.category.index') }}" class="btn-bar-secondary">
             <i class="fa-solid fa-layer-group"></i> Bar Categories
           </a>
+          <button type="button" class="btn-bar-secondary" data-bs-toggle="modal" data-bs-target="#bulkUploadItemModal" title="Bulk Upload Bar Products">
+            <i class="fa-solid fa-file-excel text-success"></i> Bulk Excel Upload
+          </button>
           <button type="button" class="btn-bar-primary" data-bs-toggle="modal" data-bs-target="#addBarItemModal">
             <i class="fa-solid fa-plus"></i> Add Bar Item
           </button>
@@ -1084,9 +1091,14 @@
             <i class="fa-solid fa-wine-bottle fs-1 text-secondary opacity-50 mb-3 d-block"></i>
             <h5 class="fw-bold">No Bar Items Found</h5>
             <p class="text-muted small mb-3">Add your first liquor product with bottle size and opening stock.</p>
-            <button type="button" class="btn-bar-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBarItemModal">
-              <i class="fa-solid fa-plus"></i> Add Bar Item Now
-            </button>
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+              <button type="button" class="btn-bar-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBarItemModal">
+                <i class="fa-solid fa-plus"></i> Add Bar Item Now
+              </button>
+              <button type="button" class="btn-bar-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#bulkUploadItemModal">
+                <i class="fa-solid fa-file-excel text-success"></i> Bulk Upload Items
+              </button>
+            </div>
           </div>
         @endforelse
 
@@ -1102,6 +1114,70 @@
         @endif
       </div>
 
+    </div>
+  </div>
+
+
+  <!-- ===================================================
+       MODAL: BULK UPLOAD BAR PRODUCTS / ITEMS
+       =================================================== -->
+  <div class="modal fade" id="bulkUploadItemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form method="POST" action="{{ route('bar.item.bulk.upload') }}" enctype="multipart/form-data" style="width: 100%;">
+        @csrf
+        <div class="modal-content" style="border-radius: var(--radius-lg); overflow: hidden; border: none; box-shadow: 0 20px 40px rgba(0,0,0,0.15);">
+          
+          <div class="modal-header" style="background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 18px 22px;">
+            <h5 class="modal-title font-weight-bold" style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.15rem;">
+              <i class="fa-solid fa-file-excel text-success me-2"></i> Bulk Upload Bar Products
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body" style="padding: 20px 22px;">
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 12px;">
+              Upload an Excel (.xlsx, .xls) or CSV spreadsheet to quickly add multiple liquor items. If a category or brand is not found, the system will automatically create it.
+            </p>
+
+            <div class="small text-muted mb-3 p-2 bg-light rounded border" style="font-size: 0.76rem; line-height: 1.5;">
+              <strong>Supported Columns:</strong><br>
+              &bull; <strong>Product Name *</strong> &bull; <strong>Bar Category *</strong> &bull; <strong>Brand Name (Optional)</strong> &bull; <strong>Bottle Size in ml *</strong><br>
+              &bull; <strong>Opening Bottle Qty</strong> &bull; <strong>Extra ML</strong> &bull; <strong>State VAT Rate (%)</strong> &bull; <strong>Description (Optional)</strong><br>
+              <span class="text-success fw-bold"><i class="fa-solid fa-check"></i> Cover Image is skipped</span>
+            </div>
+
+            <div class="alert alert-light border mb-3" style="border-radius: 12px; background: #faf5ff; border-color: #ddd6fe !important;">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <div style="font-size: 0.82rem; font-weight: 700; color: #6d28d9;">
+                    <i class="fa-solid fa-file-excel me-1 text-success"></i> Excel Template (Auto Category &amp; Brand)
+                  </div>
+                  <small class="text-muted" style="font-size: 0.72rem;">Pre-formatted with product specs (Cover Image skipped)</small>
+                </div>
+                <a href="{{ route('bar.item.template') }}" class="btn btn-sm btn-outline-primary" style="border-radius: 20px; font-weight: 700; font-size: 0.75rem;">
+                  <i class="fa-solid fa-download me-1"></i> Download .xlsx
+                </a>
+              </div>
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">Select Spreadsheet <span class="text-danger">*</span></label>
+              <input type="file" name="bulk_file" class="form-control-custom" required accept=".xlsx,.xls,.csv">
+              <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">
+                Supported formats: .xlsx, .xls, .csv &bull; Max file size: 10MB
+              </small>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 14px 22px;">
+            <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn-bar-primary">
+              <i class="fa-solid fa-cloud-arrow-up me-1"></i> Upload &amp; Import
+            </button>
+          </div>
+
+        </div>
+      </form>
     </div>
   </div>
 
