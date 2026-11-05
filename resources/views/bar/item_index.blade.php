@@ -1005,7 +1005,12 @@
                   </div>
                 </div>
 
-                <h3 class="item-name-title" title="{{ $item->name }}">{{ $item->name }}</h3>
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                  <h3 class="item-name-title mb-0" title="{{ $item->name }}">{{ $item->name }}</h3>
+                  <span class="badge" style="background: #faf5ff; color: #7c3aed; font-weight: 800; font-size: 0.85rem; border: 1.5px solid #d8b4fe; padding: 4px 8px; border-radius: 6px; white-space: nowrap;" title="Full Bottle Price">
+                    ₹{{ number_format($item->price, 2) }}
+                  </span>
+                </div>
                 <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px; min-height: 1.3em;">
                   {{ $item->description ? Str::limit($item->description, 55) : 'No description provided' }}
                 </p>
@@ -1141,9 +1146,9 @@
 
             <div class="small text-muted mb-3 p-2 bg-light rounded border" style="font-size: 0.76rem; line-height: 1.5;">
               <strong>Supported Columns:</strong><br>
-              &bull; <strong>Product Name *</strong> &bull; <strong>Bar Category *</strong> &bull; <strong>Brand Name (Optional)</strong> &bull; <strong>Bottle Size in ml *</strong><br>
+              &bull; <strong>Product Name *</strong> &bull; <strong>Bar Category *</strong> &bull; <strong>Brand Name (Optional)</strong> &bull; <strong>Bottle Size in ml *</strong> &bull; <strong>Full Bottle Price *</strong><br>
               &bull; <strong>Opening Bottle Qty</strong> &bull; <strong>Extra ML</strong> &bull; <strong>State VAT Rate (%)</strong> &bull; <strong>Description (Optional)</strong><br>
-              <span class="text-success fw-bold"><i class="fa-solid fa-check"></i> Cover Image is skipped</span>
+              <span class="text-primary fw-bold"><i class="fa-solid fa-magic-wand-sparkles me-1"></i> Auto-creates "Full Bottle" serving variation</span> &bull; <span class="text-success fw-bold"><i class="fa-solid fa-check"></i> Cover Image is skipped</span>
             </div>
 
             <div class="alert alert-light border mb-3" style="border-radius: 12px; background: #faf5ff; border-color: #ddd6fe !important;">
@@ -1232,7 +1237,17 @@
                     <option value="{{ $brand->id }}">{{ $brand->name }}</option>
                   @endforeach
                 </select>
-                <input type="hidden" name="price" value="0">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">
+                  Full Bottle Price (₹) <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #f8fafc; font-weight: 700; font-size: 0.85rem; border-radius: 8px 0 0 8px;">₹</span>
+                  <input type="number" step="0.01" min="0" name="price" id="addBottlePrice" class="form-control-custom" required placeholder="e.g. 2500" style="border-radius: 0 8px 8px 0;">
+                </div>
+                <small class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-magic-wand-sparkles text-primary me-1"></i> Auto-creates "Full Bottle" serving variation</small>
               </div>
 
               <div class="col-md-6">
@@ -1373,7 +1388,17 @@
                     <option value="{{ $brand->id }}">{{ $brand->name }}</option>
                   @endforeach
                 </select>
-                <input type="hidden" name="price" id="editItemPrice" value="0">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">
+                  Full Bottle Price (₹) <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #f8fafc; font-weight: 700; font-size: 0.85rem; border-radius: 8px 0 0 8px;">₹</span>
+                  <input type="number" step="0.01" min="0" name="price" id="editItemPrice" class="form-control-custom" required placeholder="e.g. 2500" style="border-radius: 0 8px 8px 0;">
+                </div>
+                <small class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-arrows-rotate text-primary me-1"></i> Syncs "Full Bottle" serving variation</small>
               </div>
 
               <div class="col-md-6">

@@ -716,7 +716,10 @@ Route::prefix('restaurant/profile')->name('restaurant.profile.')->group(function
 
 });
 
-// Root alias for Bar Item Status Toggle (supports both /bar/items/toggle-status/{id} and /admin/bar/items/toggle-status/{id})
+// Root aliases for Bar Item Management (supports both /bar/items/... and /admin/bar/items/...)
+Route::post('bar/items/store', [App\Http\Controllers\Bar\BarItemController::class, 'store']);
+Route::post('bar/items/update', [App\Http\Controllers\Bar\BarItemController::class, 'update']);
+Route::get('bar/items/delete/{id}', [App\Http\Controllers\Bar\BarItemController::class, 'delete']);
 Route::match(['get', 'post'], 'bar/items/toggle-status/{id}', [App\Http\Controllers\Bar\BarItemController::class, 'toggleStatus']);
 
 });
