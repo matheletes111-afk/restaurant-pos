@@ -89,6 +89,9 @@ class BarItemController extends Controller
             'brand_id'           => 'nullable|exists:bar_brands,id',
             'bottle_size_ml'     => 'required|numeric|min:1',
             'price'              => 'required|numeric|min:0',
+            'price_30ml'         => 'nullable|numeric|min:0',
+            'price_60ml'         => 'nullable|numeric|min:0',
+            'price_90ml'         => 'nullable|numeric|min:0',
             'opening_bottle_qty' => 'nullable|numeric|min:0',
             'extra_ml'           => 'nullable|numeric|min:0',
             'opening_qty'        => 'nullable|numeric|min:0',
@@ -102,6 +105,9 @@ class BarItemController extends Controller
             'price.required'          => 'Please enter the full bottle price.',
             'price.numeric'           => 'Full bottle price must be a valid number.',
             'price.min'               => 'Full bottle price cannot be negative.',
+            'price_30ml.numeric'      => '30ml price must be a valid number.',
+            'price_60ml.numeric'      => '60ml price must be a valid number.',
+            'price_90ml.numeric'      => '90ml price must be a valid number.',
         ]);
 
         $restaurantId = auth()->user()->restaurant_id;
@@ -174,6 +180,44 @@ class BarItemController extends Controller
                 $bottleVar->save();
             }
 
+            // Automatically sync/create default peg variations (30ml, 60ml, 90ml) if prices are provided
+            $defaultPegs = [
+                ['name' => '30ml Peg', 'ml' => 30, 'price' => $request->price_30ml],
+                ['name' => '60ml Large', 'ml' => 60, 'price' => $request->price_60ml],
+                ['name' => '90ml Patiala', 'ml' => 90, 'price' => $request->price_90ml],
+            ];
+
+            foreach ($defaultPegs as $peg) {
+                if ($peg['price'] !== null && $peg['price'] !== '' && is_numeric($peg['price'])) {
+                    $pVal = floatval($peg['price']);
+                    $existingVar = BarItemVariation::where('sub_category_id', $item->id)
+                        ->where('restaurant_id', $restaurantId)
+                        ->where(function($q) use ($peg) {
+                            $q->where('ml', $peg['ml'])
+                              ->orWhere('name', $peg['name'])
+                              ->orWhere('name', 'LIKE', '%' . $peg['ml'] . 'ml%');
+                        })
+                        ->first();
+
+                    if ($existingVar) {
+                        $existingVar->name = $peg['name'];
+                        $existingVar->ml = $peg['ml'];
+                        $existingVar->price = $pVal;
+                        $existingVar->status = 'A';
+                        $existingVar->save();
+                    } else {
+                        $newVar = new BarItemVariation();
+                        $newVar->restaurant_id = $restaurantId;
+                        $newVar->sub_category_id = $item->id;
+                        $newVar->name = $peg['name'];
+                        $newVar->ml = $peg['ml'];
+                        $newVar->price = $pVal;
+                        $newVar->status = 'A';
+                        $newVar->save();
+                    }
+                }
+            }
+
             // Sync with Purchase Management products (unit = ML)
             \App\Models\Product::syncBarItems($restaurantId);
 
@@ -195,6 +239,9 @@ class BarItemController extends Controller
             'brand_id'           => 'nullable|exists:bar_brands,id',
             'bottle_size_ml'     => 'required|numeric|min:1',
             'price'              => 'required|numeric|min:0',
+            'price_30ml'         => 'nullable|numeric|min:0',
+            'price_60ml'         => 'nullable|numeric|min:0',
+            'price_90ml'         => 'nullable|numeric|min:0',
             'opening_bottle_qty' => 'nullable|numeric|min:0',
             'extra_ml'           => 'nullable|numeric|min:0',
             'opening_qty'        => 'nullable|numeric|min:0',
@@ -208,6 +255,9 @@ class BarItemController extends Controller
             'price.required'          => 'Please enter the full bottle price.',
             'price.numeric'           => 'Full bottle price must be a valid number.',
             'price.min'               => 'Full bottle price cannot be negative.',
+            'price_30ml.numeric'      => '30ml price must be a valid number.',
+            'price_60ml.numeric'      => '60ml price must be a valid number.',
+            'price_90ml.numeric'      => '90ml price must be a valid number.',
         ]);
 
         $restaurantId = auth()->user()->restaurant_id;
@@ -284,6 +334,44 @@ class BarItemController extends Controller
                 $bottleVar->price = floatval($request->price);
                 $bottleVar->status = 'A';
                 $bottleVar->save();
+            }
+
+            // Automatically sync/create default peg variations (30ml, 60ml, 90ml) if prices are provided
+            $defaultPegs = [
+                ['name' => '30ml Peg', 'ml' => 30, 'price' => $request->price_30ml],
+                ['name' => '60ml Large', 'ml' => 60, 'price' => $request->price_60ml],
+                ['name' => '90ml Patiala', 'ml' => 90, 'price' => $request->price_90ml],
+            ];
+
+            foreach ($defaultPegs as $peg) {
+                if ($peg['price'] !== null && $peg['price'] !== '' && is_numeric($peg['price'])) {
+                    $pVal = floatval($peg['price']);
+                    $existingVar = BarItemVariation::where('sub_category_id', $item->id)
+                        ->where('restaurant_id', $restaurantId)
+                        ->where(function($q) use ($peg) {
+                            $q->where('ml', $peg['ml'])
+                              ->orWhere('name', $peg['name'])
+                              ->orWhere('name', 'LIKE', '%' . $peg['ml'] . 'ml%');
+                        })
+                        ->first();
+
+                    if ($existingVar) {
+                        $existingVar->name = $peg['name'];
+                        $existingVar->ml = $peg['ml'];
+                        $existingVar->price = $pVal;
+                        $existingVar->status = 'A';
+                        $existingVar->save();
+                    } else {
+                        $newVar = new BarItemVariation();
+                        $newVar->restaurant_id = $restaurantId;
+                        $newVar->sub_category_id = $item->id;
+                        $newVar->name = $peg['name'];
+                        $newVar->ml = $peg['ml'];
+                        $newVar->price = $pVal;
+                        $newVar->status = 'A';
+                        $newVar->save();
+                    }
+                }
             }
 
             // Sync with Purchase Management products (unit = ML)
@@ -469,7 +557,7 @@ class BarItemController extends Controller
 
     /**
      * Download Excel template for Bar Items bulk upload
-     * Includes mandatory Full Bottle Price and automatic Full Bottle variation support.
+     * Includes mandatory Full Bottle Price and automatic Full Bottle & Peg (30ml, 60ml, 90ml) variation support.
      * Cover image is intentionally excluded as requested.
      */
     public function downloadTemplate()
@@ -484,18 +572,21 @@ class BarItemController extends Controller
         $sheet->setCellValue('C1', 'Brand Name (Optional)');
         $sheet->setCellValue('D1', 'Bottle Size in ml *');
         $sheet->setCellValue('E1', 'Full Bottle Price *');
-        $sheet->setCellValue('F1', 'Opening Bottle Qty');
-        $sheet->setCellValue('G1', 'Extra ML');
-        $sheet->setCellValue('H1', 'State VAT Rate (%)');
-        $sheet->setCellValue('I1', 'Description (Optional)');
+        $sheet->setCellValue('F1', '30ml Price (Optional)');
+        $sheet->setCellValue('G1', '60ml Price (Optional)');
+        $sheet->setCellValue('H1', '90ml Price (Optional)');
+        $sheet->setCellValue('I1', 'Opening Bottle Qty');
+        $sheet->setCellValue('J1', 'Extra ML');
+        $sheet->setCellValue('K1', 'State VAT Rate (%)');
+        $sheet->setCellValue('L1', 'Description (Optional)');
 
         $samples = [
-            ['Johnnie Walker Black Label 12 Yrs', 'Single Malt Whiskeys', 'Johnnie Walker', 750, 4200, 2, 0, 20, 'Premium blended Scotch whisky'],
-            ['Glenfiddich 12 Year Old', 'Single Malt Whiskeys', 'Glenfiddich', 750, 5600, 1, 150, 20, 'Signature single malt scotch with fresh pear notes'],
-            ['Grey Goose Original Vodka', 'Vodka & Gin', 'Grey Goose', 1000, 4800, 3, 0, 20, 'Distilled in France from French winter wheat'],
-            ['Bombay Sapphire London Dry Gin', 'Vodka & Gin', 'Bombay Sapphire', 750, 2900, 2, 60, 20, 'Vapour infused with 10 hand-selected botanicals'],
-            ['Corona Extra Beer', 'Beers & Draughts', 'Corona Extra', 330, 280, 24, 0, 10, 'Crisp Mexican pale lager served with lime'],
-            ['Classic Smoked Old Fashioned', 'Cocktails & Mixology', '', 750, 650, 1, 0, 20, 'Craft bourbon cocktail with aromatic bitters'],
+            ['Johnnie Walker Black Label 12 Yrs', 'Single Malt Whiskeys', 'Johnnie Walker', 750, 4200, 260, 500, 720, 2, 0, 20, 'Premium blended Scotch whisky'],
+            ['Glenfiddich 12 Year Old', 'Single Malt Whiskeys', 'Glenfiddich', 750, 5600, 320, 600, 880, 1, 150, 20, 'Signature single malt scotch with fresh pear notes'],
+            ['Grey Goose Original Vodka', 'Vodka & Gin', 'Grey Goose', 1000, 4800, 250, 480, 700, 3, 0, 20, 'Distilled in France from French winter wheat'],
+            ['Bombay Sapphire London Dry Gin', 'Vodka & Gin', 'Bombay Sapphire', 750, 2900, 180, 350, 500, 2, 60, 20, 'Vapour infused with 10 hand-selected botanicals'],
+            ['Corona Extra Beer', 'Beers & Draughts', 'Corona Extra', 330, 280, '', '', '', 24, 0, 10, 'Crisp Mexican pale lager served with lime'],
+            ['Classic Smoked Old Fashioned', 'Cocktails & Mixology', '', 750, 650, '', '', '', 1, 0, 20, 'Craft bourbon cocktail with aromatic bitters'],
         ];
 
         $r = 2;
@@ -509,6 +600,9 @@ class BarItemController extends Controller
             $sheet->setCellValue('G' . $r, $s[6]);
             $sheet->setCellValue('H' . $r, $s[7]);
             $sheet->setCellValue('I' . $r, $s[8]);
+            $sheet->setCellValue('J' . $r, $s[9]);
+            $sheet->setCellValue('K' . $r, $s[10]);
+            $sheet->setCellValue('L' . $r, $s[11]);
             $r++;
         }
 
@@ -520,16 +614,19 @@ class BarItemController extends Controller
             ],
         ];
 
-        $sheet->getStyle('A1:I1')->applyFromArray($headerStyle);
+        $sheet->getStyle('A1:L1')->applyFromArray($headerStyle);
         $sheet->getColumnDimension('A')->setWidth(35);
         $sheet->getColumnDimension('B')->setWidth(25);
         $sheet->getColumnDimension('C')->setWidth(25);
         $sheet->getColumnDimension('D')->setWidth(18);
         $sheet->getColumnDimension('E')->setWidth(20);
         $sheet->getColumnDimension('F')->setWidth(18);
-        $sheet->getColumnDimension('G')->setWidth(12);
+        $sheet->getColumnDimension('G')->setWidth(18);
         $sheet->getColumnDimension('H')->setWidth(18);
-        $sheet->getColumnDimension('I')->setWidth(40);
+        $sheet->getColumnDimension('I')->setWidth(18);
+        $sheet->getColumnDimension('J')->setWidth(12);
+        $sheet->getColumnDimension('K')->setWidth(18);
+        $sheet->getColumnDimension('L')->setWidth(40);
 
         $filename = "bar_items_upload_template.xlsx";
 
@@ -545,7 +642,7 @@ class BarItemController extends Controller
     /**
      * Bulk upload Bar Items from Excel/CSV spreadsheet
      * Automatically inserts Category and Brand if not found, and gets their IDs.
-     * Automatically creates "Full Bottle" serving variation with full bottle ml and price.
+     * Automatically creates "Full Bottle" and peg variations (30ml, 60ml, 90ml) if provided.
      * Cover Image is intentionally skipped as requested.
      */
     public function bulkUpload(Request $request)
@@ -573,17 +670,20 @@ class BarItemController extends Controller
             $newCategoriesCount = 0;
             $newBrandsCount = 0;
 
-            // Default column index mapping (supports both 9-column with price and 8-column legacy)
+            // Default column index mapping (supports 12-column with 30/60/90ml, 9-column with price, and 8-column legacy)
             $colMap = [
                 'name'        => 0,
                 'category'    => 1,
                 'brand'       => 2,
                 'bottle_size' => 3,
                 'price'       => 4,
-                'bottle_qty'  => 5,
-                'extra_ml'    => 6,
-                'vat_rate'    => 7,
-                'description' => 8,
+                'price_30'    => 5,
+                'price_60'    => 6,
+                'price_90'    => 7,
+                'bottle_qty'  => 8,
+                'extra_ml'    => 9,
+                'vat_rate'    => 10,
+                'description' => 11,
             ];
 
             // Load existing categories and brands for this restaurant into memory caches
@@ -612,8 +712,9 @@ class BarItemController extends Controller
                     'product name *', 'product name', 'item name *', 'item name', 'name', 'product', 'item'
                 ])) {
                     $headerSkipped = true;
-                    // Check if headers indicate custom positions or presence of price column
+                    // Check if headers indicate custom positions or presence of price/peg columns
                     $hasPriceHeader = false;
+                    $hasPegHeaders = false;
                     foreach ($row as $colIdx => $colVal) {
                         $c = strtolower(trim((string)$colVal));
                         if (str_contains($c, 'product') || str_contains($c, 'item name')) {
@@ -626,6 +727,15 @@ class BarItemController extends Controller
                             $colMap['bottle_size'] = $colIdx;
                         } elseif (str_contains($c, 'vat') || str_contains($c, 'tax')) {
                             $colMap['vat_rate'] = $colIdx;
+                        } elseif (str_contains($c, '30ml') || str_contains($c, '30 ml') || str_contains($c, '30 peg') || str_contains($c, 'peg 30')) {
+                            $colMap['price_30'] = $colIdx;
+                            $hasPegHeaders = true;
+                        } elseif (str_contains($c, '60ml') || str_contains($c, '60 ml') || str_contains($c, '60 large') || str_contains($c, 'large 60')) {
+                            $colMap['price_60'] = $colIdx;
+                            $hasPegHeaders = true;
+                        } elseif (str_contains($c, '90ml') || str_contains($c, '90 ml') || str_contains($c, '90 patiala') || str_contains($c, 'patiala 90')) {
+                            $colMap['price_90'] = $colIdx;
+                            $hasPegHeaders = true;
                         } elseif (str_contains($c, 'price') || str_contains($c, 'mrp') || str_contains($c, 'bottle price')) {
                             $colMap['price'] = $colIdx;
                             $hasPriceHeader = true;
@@ -638,13 +748,23 @@ class BarItemController extends Controller
                         }
                     }
 
-                    // If header row had no price header (legacy 8-column file), map columns without price
-                    if (!$hasPriceHeader && count(array_filter($row)) <= 8) {
-                        $colMap['price'] = null;
-                        $colMap['bottle_qty'] = 4;
-                        $colMap['extra_ml'] = 5;
-                        $colMap['vat_rate'] = 6;
-                        $colMap['description'] = 7;
+                    // If header row had no peg headers (legacy file), map columns accordingly
+                    if (!$hasPegHeaders) {
+                        $colMap['price_30'] = null;
+                        $colMap['price_60'] = null;
+                        $colMap['price_90'] = null;
+                        if ($hasPriceHeader) {
+                            $colMap['bottle_qty'] = 5;
+                            $colMap['extra_ml'] = 6;
+                            $colMap['vat_rate'] = 7;
+                            $colMap['description'] = 8;
+                        } else {
+                            $colMap['price'] = null;
+                            $colMap['bottle_qty'] = 4;
+                            $colMap['extra_ml'] = 5;
+                            $colMap['vat_rate'] = 6;
+                            $colMap['description'] = 7;
+                        }
                     }
                     continue;
                 }
@@ -653,7 +773,10 @@ class BarItemController extends Controller
                 $rawCategory   = trim((string)($row[$colMap['category']] ?? ''));
                 $rawBrand      = trim((string)($row[$colMap['brand']] ?? ''));
                 $rawBottleSize = trim((string)($row[$colMap['bottle_size']] ?? ''));
-                $rawPrice      = ($colMap['price'] !== null) ? trim((string)($row[$colMap['price']] ?? '')) : '';
+                $rawPrice      = ($colMap['price'] !== null && isset($row[$colMap['price']])) ? trim((string)$row[$colMap['price']]) : '';
+                $rawPrice30    = ($colMap['price_30'] !== null && isset($row[$colMap['price_30']])) ? trim((string)$row[$colMap['price_30']]) : '';
+                $rawPrice60    = ($colMap['price_60'] !== null && isset($row[$colMap['price_60']])) ? trim((string)$row[$colMap['price_60']]) : '';
+                $rawPrice90    = ($colMap['price_90'] !== null && isset($row[$colMap['price_90']])) ? trim((string)$row[$colMap['price_90']]) : '';
                 $rawBottleQty  = trim((string)($row[$colMap['bottle_qty']] ?? ''));
                 $rawExtraMl    = trim((string)($row[$colMap['extra_ml']] ?? ''));
                 $rawVatRate    = trim((string)($row[$colMap['vat_rate']] ?? ''));
@@ -745,6 +868,26 @@ class BarItemController extends Controller
                 $variation->status = 'A';
                 $variation->save();
 
+                // 6. Automatically create default peg variations (30ml, 60ml, 90ml) if prices are provided
+                $defaultPegs = [
+                    ['name' => '30ml Peg', 'ml' => 30, 'price' => $rawPrice30],
+                    ['name' => '60ml Large', 'ml' => 60, 'price' => $rawPrice60],
+                    ['name' => '90ml Patiala', 'ml' => 90, 'price' => $rawPrice90],
+                ];
+
+                foreach ($defaultPegs as $peg) {
+                    if ($peg['price'] !== '' && is_numeric($peg['price'])) {
+                        $pegVar = new BarItemVariation();
+                        $pegVar->restaurant_id = $restaurantId;
+                        $pegVar->sub_category_id = $item->id;
+                        $pegVar->name = $peg['name'];
+                        $pegVar->ml = $peg['ml'];
+                        $pegVar->price = floatval($peg['price']);
+                        $pegVar->status = 'A';
+                        $pegVar->save();
+                    }
+                }
+
                 $importedCount++;
             }
 
@@ -753,12 +896,18 @@ class BarItemController extends Controller
             // Sync with Purchase Management products (unit = ML)
             \App\Models\Product::syncBarItems($restaurantId);
 
-            $msg = "Successfully imported {$importedCount} bar items with Full Bottle variations!";
+            $msg = "Successfully imported {$importedCount} bar items with Full Bottle and Peg variations!";
             if ($newCategoriesCount > 0 || $newBrandsCount > 0) {
                 $msg .= " (Auto-created {$newCategoriesCount} new categories and {$newBrandsCount} new brands).";
             }
 
             return redirect()->back()->with('success', $msg);
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return redirect()->back()->with('error', 'Error importing bar items spreadsheet: ' . $e->getMessage());
+        }
+    }
 
         } catch (\Exception $e) {
             \DB::rollBack();

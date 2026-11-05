@@ -1065,6 +1065,11 @@
                 <a href="{{ route('bar.item.variations', $item->id) }}" class="btn-card-add-var">
                   <i class="fa-solid fa-sliders"></i> Variations ({{ $item->variations->count() }})
                 </a>
+                @php
+                  $v30 = $item->variations->firstWhere('ml', 30);
+                  $v60 = $item->variations->firstWhere('ml', 60);
+                  $v90 = $item->variations->firstWhere('ml', 90);
+                @endphp
                 <button type="button" 
                         class="btn btn-sm btn-outline-secondary editBarItemBtn btn-card-icon-action" 
                         data-id="{{ $item->id }}"
@@ -1074,6 +1079,9 @@
                         data-bottle-size="{{ $bottleSize }}"
                         data-opening-qty="{{ $openingQty }}"
                         data-price="{{ $item->price }}"
+                        data-price-30="{{ $v30 ? $v30->price : '' }}"
+                        data-price-60="{{ $v60 ? $v60->price : '' }}"
+                        data-price-90="{{ $v90 ? $v90->price : '' }}"
                         data-vat="{{ floatval($item->vat_rate ?? 0) }}"
                         data-description="{{ $item->description }}"
                         data-status="{{ $normalizedStatus }}"
@@ -1145,10 +1153,11 @@
             </p>
 
             <div class="small text-muted mb-3 p-2 bg-light rounded border" style="font-size: 0.76rem; line-height: 1.5;">
-              <strong>Supported Columns:</strong><br>
+              <strong>Supported Columns (12 Columns):</strong><br>
               &bull; <strong>Product Name *</strong> &bull; <strong>Bar Category *</strong> &bull; <strong>Brand Name (Optional)</strong> &bull; <strong>Bottle Size in ml *</strong> &bull; <strong>Full Bottle Price *</strong><br>
+              &bull; <strong>30ml Price (Optional)</strong> &bull; <strong>60ml Price (Optional)</strong> &bull; <strong>90ml Price (Optional)</strong><br>
               &bull; <strong>Opening Bottle Qty</strong> &bull; <strong>Extra ML</strong> &bull; <strong>State VAT Rate (%)</strong> &bull; <strong>Description (Optional)</strong><br>
-              <span class="text-primary fw-bold"><i class="fa-solid fa-magic-wand-sparkles me-1"></i> Auto-creates "Full Bottle" serving variation</span> &bull; <span class="text-success fw-bold"><i class="fa-solid fa-check"></i> Cover Image is skipped</span>
+              <span class="text-primary fw-bold"><i class="fa-solid fa-magic-wand-sparkles me-1"></i> Auto-creates Full Bottle, 30ml, 60ml &amp; 90ml serving variations</span> &bull; <span class="text-success fw-bold"><i class="fa-solid fa-check"></i> Cover Image is skipped</span>
             </div>
 
             <div class="alert alert-light border mb-3" style="border-radius: 12px; background: #faf5ff; border-color: #ddd6fe !important;">
@@ -1265,6 +1274,41 @@
                   <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 setVatPresetBtn" data-vat="14.5" style="font-size: 0.7rem; border-radius: 4px;">14.5%</button>
                   <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 setVatPresetBtn" data-vat="20" style="font-size: 0.7rem; border-radius: 4px; font-weight: 700;">20% (Std)</button>
                   <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 setVatPresetBtn" data-vat="25" style="font-size: 0.7rem; border-radius: 4px;">25%</button>
+                </div>
+              </div>
+
+              <!-- Default Peg Variations (30ml, 60ml, 90ml) -->
+              <div class="col-12">
+                <div class="p-3 rounded-3" style="background: #f8fafc; border: 1.5px solid #e2e8f0;">
+                  <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-1">
+                    <span class="fw-bold" style="font-size: 0.82rem; color: #1e293b;">
+                      <i class="fa-solid fa-martini-glass-citrus text-primary me-1"></i> Default Serving Variations <small class="text-muted fw-normal">(Optional &bull; Auto-added to Variations)</small>
+                    </span>
+                    <span class="badge bg-light text-primary border" style="font-size: 0.7rem;">Auto-creates 30ml / 60ml / 90ml</span>
+                  </div>
+                  <div class="row g-2">
+                    <div class="col-md-4">
+                      <label class="form-label mb-1" style="font-size: 0.78rem; font-weight: 700;">30ml Peg Price (₹)</label>
+                      <div class="input-group">
+                        <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #fff; font-weight: 700; font-size: 0.82rem; border-radius: 8px 0 0 8px;">₹</span>
+                        <input type="number" step="0.01" min="0" name="price_30ml" id="addPrice30" class="form-control-custom" placeholder="e.g. 250" style="border-radius: 0 8px 8px 0;">
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label mb-1" style="font-size: 0.78rem; font-weight: 700;">60ml Large Price (₹)</label>
+                      <div class="input-group">
+                        <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #fff; font-weight: 700; font-size: 0.82rem; border-radius: 8px 0 0 8px;">₹</span>
+                        <input type="number" step="0.01" min="0" name="price_60ml" id="addPrice60" class="form-control-custom" placeholder="e.g. 480" style="border-radius: 0 8px 8px 0;">
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label mb-1" style="font-size: 0.78rem; font-weight: 700;">90ml Patiala Price (₹)</label>
+                      <div class="input-group">
+                        <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #fff; font-weight: 700; font-size: 0.82rem; border-radius: 8px 0 0 8px;">₹</span>
+                        <input type="number" step="0.01" min="0" name="price_90ml" id="addPrice90" class="form-control-custom" placeholder="e.g. 700" style="border-radius: 0 8px 8px 0;">
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1416,6 +1460,41 @@
                   <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 setEditVatPresetBtn" data-vat="14.5" style="font-size: 0.7rem; border-radius: 4px;">14.5%</button>
                   <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 setEditVatPresetBtn" data-vat="20" style="font-size: 0.7rem; border-radius: 4px; font-weight: 700;">20%</button>
                   <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 setEditVatPresetBtn" data-vat="25" style="font-size: 0.7rem; border-radius: 4px;">25%</button>
+                </div>
+              </div>
+
+              <!-- Default Peg Variations (30ml, 60ml, 90ml) -->
+              <div class="col-12">
+                <div class="p-3 rounded-3" style="background: #f8fafc; border: 1.5px solid #e2e8f0;">
+                  <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-1">
+                    <span class="fw-bold" style="font-size: 0.82rem; color: #1e293b;">
+                      <i class="fa-solid fa-martini-glass-citrus text-primary me-1"></i> Default Serving Variations <small class="text-muted fw-normal">(Optional &bull; Syncs Variations)</small>
+                    </span>
+                    <span class="badge bg-light text-primary border" style="font-size: 0.7rem;">Syncs 30ml / 60ml / 90ml</span>
+                  </div>
+                  <div class="row g-2">
+                    <div class="col-md-4">
+                      <label class="form-label mb-1" style="font-size: 0.78rem; font-weight: 700;">30ml Peg Price (₹)</label>
+                      <div class="input-group">
+                        <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #fff; font-weight: 700; font-size: 0.82rem; border-radius: 8px 0 0 8px;">₹</span>
+                        <input type="number" step="0.01" min="0" name="price_30ml" id="editPrice30" class="form-control-custom" placeholder="e.g. 250" style="border-radius: 0 8px 8px 0;">
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label mb-1" style="font-size: 0.78rem; font-weight: 700;">60ml Large Price (₹)</label>
+                      <div class="input-group">
+                        <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #fff; font-weight: 700; font-size: 0.82rem; border-radius: 8px 0 0 8px;">₹</span>
+                        <input type="number" step="0.01" min="0" name="price_60ml" id="editPrice60" class="form-control-custom" placeholder="e.g. 480" style="border-radius: 0 8px 8px 0;">
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label mb-1" style="font-size: 0.78rem; font-weight: 700;">90ml Patiala Price (₹)</label>
+                      <div class="input-group">
+                        <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #fff; font-weight: 700; font-size: 0.82rem; border-radius: 8px 0 0 8px;">₹</span>
+                        <input type="number" step="0.01" min="0" name="price_90ml" id="editPrice90" class="form-control-custom" placeholder="e.g. 700" style="border-radius: 0 8px 8px 0;">
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1640,6 +1719,9 @@
         const size = parseFloat(btn.attr('data-bottle-size')) || 750;
         const qty = parseFloat(btn.attr('data-opening-qty')) || 0;
         const price = btn.attr('data-price');
+        const price30 = btn.attr('data-price-30') || '';
+        const price60 = btn.attr('data-price-60') || '';
+        const price90 = btn.attr('data-price-90') || '';
         const vat = btn.attr('data-vat') !== undefined ? btn.attr('data-vat') : 20;
         const desc = btn.attr('data-description') || '';
         const rawStatus = btn.attr('data-status') || 'A';
@@ -1657,6 +1739,9 @@
         $('#editExtraMl').val(extraMl);
         $('#editOpeningQty').val(qty);
         $('#editItemPrice').val(price);
+        $('#editPrice30').val(price30);
+        $('#editPrice60').val(price60);
+        $('#editPrice90').val(price90);
         $('#editItemVat').val(vat);
         $('#editItemDesc').val(desc);
         $('#editItemStatus').val(status);
