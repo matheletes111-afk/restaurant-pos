@@ -517,6 +517,7 @@
                         <li><i class="fas fa-check-circle text-success"></i> Order Management</li>
                         <li><i class="fas fa-check-circle text-success"></i> Kitchen Panel</li>
                         <li><i class="fas fa-check-circle text-success"></i> Qr Code Ordering</li>
+                        <li><i class="fas fa-check-circle text-success"></i> Invoice Whatsapp Sharing</li>
                         <li><i class="fas fa-check-circle text-success"></i> Customer Support</li>
                         <li><i class="fas fa-check-circle text-success"></i> Installing & Training (Online)</li>
                         <li><i class="fas fa-check-circle text-success"></i> Support 24 x 7 (Online)</li>

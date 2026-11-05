@@ -56,6 +56,7 @@ class BarLandingPageTest extends TestCase
         $response->assertSeeText('Unlimited Bar Items & Variations', false);
         $response->assertSeeText('Installing & Training (Online)', false);
         $response->assertSeeText('Support 24 x 7 (Online)', false);
+        $response->assertSeeText('Invoice Whatsapp Sharing', false);
 
         // Since only yearly exists in DB, Monthly Billing tab must NOT be shown
         $response->assertDontSeeText('Monthly Billing', false);
@@ -106,6 +107,7 @@ class BarLandingPageTest extends TestCase
         // Verify Training and Support in restaurant plans
         $response->assertSeeText('Installing & Training (Online)', false);
         $response->assertSeeText('Support 24 x 7 (Online)', false);
+        $response->assertSeeText('Invoice Whatsapp Sharing', false);
 
         // Verify Bar-enabled plans are EXCLUDED from the restaurant landing page
         $response->assertDontSeeText('BAR DEDICATED PLAN', false);

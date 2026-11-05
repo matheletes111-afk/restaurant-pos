@@ -677,6 +677,7 @@
                             <li><i class="ph-fill ph-check-circle"></i> Menu Availability Management</li>
                             <li><i class="ph-fill ph-check-circle"></i> Order Management (Dine-In, Takeaway)</li>
                             <li><i class="ph-fill ph-check-circle"></i> QR Code Ordering</li>
+                            <li><i class="ph-fill ph-check-circle"></i> Invoice Whatsapp Sharing</li>
                             <li><i class="ph-fill ph-check-circle"></i> Staff & Bartender Management</li>
                             <li><i class="ph-fill ph-check-circle"></i> Cash Drawer Management</li>
                             @if(($plan->report_management_checkbox ?? 'Y') == 'Y')

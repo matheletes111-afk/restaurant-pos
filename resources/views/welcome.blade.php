@@ -739,6 +739,7 @@
                                 <li><i class="ph-fill ph-check-circle"></i> Order Management</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Kitchen Panel</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Qr Code Ordering</li>
+                                <li><i class="ph-fill ph-check-circle"></i> Invoice Whatsapp Sharing</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Customer Support</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Installing & Training (Online)</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Support 24 x 7 (Online)</li>

@@ -554,6 +554,7 @@
                                         <li><i class="fas fa-check-circle text-success"></i> Order Management</li>
                                         <li><i class="fas fa-check-circle text-success"></i> Kitchen Panel</li>
                                         <li><i class="fas fa-check-circle text-success"></i> Qr Code Ordering</li>
+                                        <li><i class="fas fa-check-circle text-success"></i> Invoice Whatsapp Sharing</li>
                                         <li><i class="fas fa-check-circle text-success"></i> Customer Support</li>
                                         <li><i class="fas fa-check-circle text-success"></i> Staff Management</li>
                                         <li><i class="fas fa-check-circle text-success"></i> Cash Drawer Management</li>

@@ -170,6 +170,7 @@
                                         <li><i class="fas fa-folder"></i> {{ $plan->category_number == 0 ? 'Unlimited' : $plan->category_number }} Categories</li>
                                         <li><i class="fas fa-utensils"></i> {{ $plan->total_number_of_dishes == 0 ? 'Unlimited' : $plan->total_number_of_dishes }} Dishes</li>
                                         <li><i class="fas fa-table"></i> {{ $plan->total_number_of_table == 0 ? 'Unlimited' : $plan->total_number_of_table }} Tables</li>
+                                        <li><i class="fab fa-whatsapp text-success"></i> Invoice Whatsapp Sharing</li>
                                         <li><i class="fas fa-boxes"></i> Inventory {{ $plan->inventory_checkbox == 'Y' ? 'Enabled' : 'Disabled' }}</li>
                                         <li><i class="fas fa-chart-line"></i> Report Management {{ ($plan->report_management_checkbox ?? 'Y') == 'Y' ? 'Enabled' : 'Disabled' }}</li>
                                         <li><i class="fas fa-cocktail"></i> Bar Management {{ ($plan->bar_management_checkbox ?? 'N') == 'Y' ? 'Enabled' : 'Disabled' }}</li>
