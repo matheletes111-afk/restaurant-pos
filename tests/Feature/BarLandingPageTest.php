@@ -126,4 +126,30 @@ class BarLandingPageTest extends TestCase
         $this->get('/02.png')->assertStatus(200);
         $this->get('/03.png')->assertStatus(200);
     }
+
+    public function test_bar_welcome_navbar_and_footer_match_welcome_page()
+    {
+        $response = $this->get('/bar');
+        $response->assertStatus(200);
+
+        // Navbar elements from welcome.blade.php
+        $response->assertSee('class="navbar"', false);
+        $response->assertSee('<a href="#features">Features</a>', false);
+        $response->assertSee('Bar POS', false);
+        $response->assertSee('<a href="#pricing">Pricing</a>', false);
+        $response->assertSee('<a href="#how-it-works">How It Works</a>', false);
+        $response->assertSee('<a href="#platform-benefits">Benefits</a>', false);
+        $response->assertSee('<a href="#faq">FAQ</a>', false);
+        $response->assertSee(route('blog.index'), false);
+        $response->assertSee('Book A Demo', false);
+
+        // Footer elements from welcome.blade.php
+        $response->assertSee('class="footer"', false);
+        $response->assertSee('+91 7001769472', false);
+        $response->assertSee('info@billnbite.com', false);
+        $response->assertSee('Siliguri, India', false);
+        $response->assertSee(route('login'), false);
+        $response->assertSee('Restaurant Login', false);
+        $response->assertSee('© 2026 Bill & Bite. All rights reserved.', false);
+    }
 }

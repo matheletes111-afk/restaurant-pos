@@ -57,21 +57,21 @@
     <!-- Navbar -->
     <nav class="navbar">
         <div class="container nav-container">
-            <a href="{{ url('/bar') }}" class="logo">
+            <a href="{{ route('home') }}" class="logo">
                 <img src="{{ asset('logo.png') }}" alt="Bill&Bite Logo" style="height: 40px; width: auto;">
             </a>
             <div class="nav-links">
-                <a href="#bar-features">Bar Features</a>
-                <a href="#bar-facilities">Bar Facilities</a>
-                @if(isset($defaultPlans) && $defaultPlans->count() > 0)
+                <a href="#features">Features</a>
+                <a href="{{ url('/bar') }}" style="color: #ff6a00; font-weight: 700;"><i class="ph ph-martini"></i> Bar POS</a>
                 <a href="#pricing">Pricing</a>
-                @endif
-                <a href="#bar-benefits">Benefits</a>
+                <a href="#how-it-works">How It Works</a>
+                <a href="#platform-benefits">Benefits</a>
                 <a href="#faq">FAQ</a>
-                <a href="{{ route('home') }}" style="color: #64748b; font-weight: 600;"><i class="ph ph-fork-knife"></i> Restaurant POS</a>
+                <a href="{{ route('blog.index') }}">Blog</a>
             </div>
             <div class="nav-actions">
                 <a href="javascript:void(0)" class="btn-login open-enquiry-btn">Book A Demo</a>
+                {{-- <a href="#" class="btn btn-primary">Book a Demo</a> --}}
             </div>
         </div>
     </nav>
@@ -119,7 +119,8 @@
     </header>
 
     <!-- Bar Facilities & Core Features Section -->
-    <section class="features" id="bar-features">
+    <section class="features" id="features">
+        <span id="bar-features"></span>
         <div class="container">
             <div class="section-header text-center">
                 <span class="section-subtitle">DEDICATED BAR & RESTAURANT FACILITIES</span>
@@ -216,7 +217,8 @@
     </section>
 
     <!-- Smart POS Walkthrough for Bars Section -->
-    <section class="smart-pos" id="bar-facilities" style="padding: 80px 0; background-color: #fff;">
+    <section class="smart-pos" id="how-it-works" style="padding: 80px 0; background-color: #fff;">
+        <span id="bar-facilities"></span>
         <div class="container">
             <div class="section-header text-center" style="margin-bottom: 60px;">
                 <span class="section-subtitle" style="color: #ff6a00; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; font-size: 0.85rem;">SMART BAR FACILITIES</span>
@@ -705,7 +707,8 @@
     </section>
     @endif
 <!-- Why Choose Bill&Bite for Bars Section -->
-    <section class="benefits" id="bar-benefits" style="padding: 80px 0; background: #ffffff;">
+    <section class="benefits" id="platform-benefits" style="padding: 80px 0; background: #ffffff;">
+        <span id="bar-benefits"></span>
         <div class="container">
             <div class="section-header text-center" style="margin-bottom: 50px;">
                 <span class="section-subtitle">THE BILL&BITE ADVANTAGE</span>
@@ -907,10 +910,10 @@
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-brand">
-                    <a href="{{ url('/bar') }}" class="logo mb-4">
+                    <a href="{{ route('home') }}" class="logo mb-4">
                         <img src="{{ asset('logo.png') }}" alt="Bill&Bite Logo" style="height: 40px; width: auto;">
                     </a>
-                    <p>Bill & Bite is a complete restaurant and bar management system designed to simplify your operations and help your business grow.</p>
+                    <p>Bill & Bite is a complete restaurant management system designed to simplify your operations and help your business grow.</p>
                     <style>
                         .footer-brand .social-links {
                             display: flex;
@@ -986,12 +989,10 @@
                 <div class="footer-links">
                     <h4>Product</h4>
                     <ul>
-                        <li><a href="#bar-features">Bar Features</a></li>
-                        <li><a href="#bar-facilities">Bar Facilities</a></li>
-                        <li>@if(isset($defaultPlans) && $defaultPlans->count() > 0)
-                <a href="#pricing">Pricing</a>
-                @endif</li>
-                        <li><a href="{{ route('home') }}">Restaurant POS</a></li>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#pricing">Pricing</a></li>
+                        <li><a href="#how-it-works">How It Works</a></li>
+                        <li><a href="#testimonials">Testimonials</a></li>
                         <li><a href="#faq">FAQ</a></li>
                         <li><a href="javascript:void(0)" class="open-enquiry-btn">Enquiry Now</a></li>
                     </ul>
@@ -1002,20 +1003,21 @@
                         <li><a href="{{ route('about.us') }}">About Us</a></li>
                         <li><a href="{{ route('blog.index') }}">Blog</a></li>
                         <li><a href="{{ route('privacy.policy') }}">Privacy Policy</a></li>
-                        <li><a href="{{ route('terms.conditions') }}">Terms of Service</a></li>
+                        <li><a href="{{ route('terms.conditions') }}">Terms & Conditions</a></li>
+                        <li><a href="{{ route('login') }}">Restaurant Login</a></li>
                     </ul>
                 </div>
-                <div class="footer-links">
-                    <h4>Contact</h4>
+                <div class="footer-contact">
+                    <h4>Contact Us</h4>
                     <ul>
-                        <li><a href="tel:+918451911910">+91 84519 11910</a></li>
-                        <li><a href="mailto:support@billnbite.com">support@billnbite.com</a></li>
-                        <li><span>Kolkata, West Bengal, India</span></li>
+                        <li><i class="ph ph-phone"></i> +91 7001769472</li>
+                        <li><i class="ph ph-envelope-simple"></i> info@billnbite.com</li>
+                        <li><i class="ph ph-map-pin"></i> Siliguri, India</li>
                     </ul>
                 </div>
             </div>
-            <div class="footer-bottom text-center">
-                <p>&copy; {{ date('Y') }} Bill & Bite. All Rights Reserved.</p>
+            <div class="footer-bottom">
+                <p>© 2026 Bill & Bite. All rights reserved.</p>
             </div>
         </div>
     </footer>

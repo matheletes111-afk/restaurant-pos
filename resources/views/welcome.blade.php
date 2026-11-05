@@ -21,7 +21,7 @@
     <!-- Navbar -->
     <nav class="navbar">
         <div class="container nav-container">
-            <a href="#" class="logo">
+            <a href="{{ route('home') }}" class="logo">
                 <img src="{{ asset('logo.png') }}" alt="Bill&Bite Logo" style="height: 40px; width: auto;">
             </a>
             <div class="nav-links">
@@ -1062,7 +1062,7 @@
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-brand">
-                    <a href="#" class="logo mb-4">
+                    <a href="{{ route('home') }}" class="logo mb-4">
                         <img src="{{ asset('logo.png') }}" alt="Bill&Bite Logo" style="height: 40px; width: auto;">
                     </a>
                     <p>Bill & Bite is a complete restaurant management system designed to simplify your operations and help your business grow.</p>
