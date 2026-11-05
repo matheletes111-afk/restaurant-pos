@@ -908,10 +908,4 @@ class BarItemController extends Controller
             return redirect()->back()->with('error', 'Error importing bar items spreadsheet: ' . $e->getMessage());
         }
     }
-
-        } catch (\Exception $e) {
-            \DB::rollBack();
-            return redirect()->back()->with('error', 'Error importing bar items spreadsheet: ' . $e->getMessage());
-        }
-    }
 }
