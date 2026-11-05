@@ -1252,10 +1252,7 @@
                 <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">
                   Full Bottle Price (₹) <span class="text-danger">*</span>
                 </label>
-                <div class="input-group">
-                  <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #f8fafc; font-weight: 700; font-size: 0.85rem; border-radius: 8px 0 0 8px;">₹</span>
-                  <input type="number" step="0.01" min="0" name="price" id="addBottlePrice" class="form-control-custom" required placeholder="e.g. 2500" style="border-radius: 0 8px 8px 0;">
-                </div>
+                <input type="number" step="0.01" min="0" name="price" id="addBottlePrice" class="form-control-custom" required placeholder="e.g. 2500">
                 <small class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-magic-wand-sparkles text-primary me-1"></i> Auto-creates "Full Bottle" serving variation</small>
               </div>
 
@@ -1263,10 +1260,7 @@
                 <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">
                   State VAT Rate (%) <small class="text-muted fw-normal">(GST-Exempt in India)</small>
                 </label>
-                <div class="input-group">
-                  <input type="number" step="0.01" min="0" max="100" name="vat_rate" id="addVatRate" class="form-control-custom" value="{{ floatval($defaultVatRate ?: 20) }}" placeholder="e.g. 20">
-                  <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-left: none; background: #f8fafc; font-weight: 700; font-size: 0.85rem; border-radius: 0 8px 8px 0;">%</span>
-                </div>
+                <input type="number" step="0.01" min="0" max="100" name="vat_rate" id="addVatRate" class="form-control-custom" value="{{ floatval($defaultVatRate ?: 20) }}" placeholder="e.g. 20">
                 <div class="d-flex gap-1 mt-1 flex-wrap">
                   <span class="small text-muted" style="font-size: 0.7rem;">Presets:</span>
                   <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 setVatPresetBtn" data-vat="0" style="font-size: 0.7rem; border-radius: 4px;">0% (Exempt)</button>
@@ -1289,24 +1283,15 @@
                   <div class="row g-2">
                     <div class="col-md-4">
                       <label class="form-label mb-1" style="font-size: 0.78rem; font-weight: 700;">30ml Peg Price (₹)</label>
-                      <div class="input-group">
-                        <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #fff; font-weight: 700; font-size: 0.82rem; border-radius: 8px 0 0 8px;">₹</span>
-                        <input type="number" step="0.01" min="0" name="price_30ml" id="addPrice30" class="form-control-custom" placeholder="e.g. 250" style="border-radius: 0 8px 8px 0;">
-                      </div>
+                      <input type="number" step="0.01" min="0" name="price_30ml" id="addPrice30" class="form-control-custom" placeholder="e.g. 250">
                     </div>
                     <div class="col-md-4">
                       <label class="form-label mb-1" style="font-size: 0.78rem; font-weight: 700;">60ml Large Price (₹)</label>
-                      <div class="input-group">
-                        <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #fff; font-weight: 700; font-size: 0.82rem; border-radius: 8px 0 0 8px;">₹</span>
-                        <input type="number" step="0.01" min="0" name="price_60ml" id="addPrice60" class="form-control-custom" placeholder="e.g. 480" style="border-radius: 0 8px 8px 0;">
-                      </div>
+                      <input type="number" step="0.01" min="0" name="price_60ml" id="addPrice60" class="form-control-custom" placeholder="e.g. 480">
                     </div>
                     <div class="col-md-4">
                       <label class="form-label mb-1" style="font-size: 0.78rem; font-weight: 700;">90ml Patiala Price (₹)</label>
-                      <div class="input-group">
-                        <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #fff; font-weight: 700; font-size: 0.82rem; border-radius: 8px 0 0 8px;">₹</span>
-                        <input type="number" step="0.01" min="0" name="price_90ml" id="addPrice90" class="form-control-custom" placeholder="e.g. 700" style="border-radius: 0 8px 8px 0;">
-                      </div>
+                      <input type="number" step="0.01" min="0" name="price_90ml" id="addPrice90" class="form-control-custom" placeholder="e.g. 700">
                     </div>
                   </div>
                 </div>
@@ -1438,10 +1423,7 @@
                 <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">
                   Full Bottle Price (₹) <span class="text-danger">*</span>
                 </label>
-                <div class="input-group">
-                  <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #f8fafc; font-weight: 700; font-size: 0.85rem; border-radius: 8px 0 0 8px;">₹</span>
-                  <input type="number" step="0.01" min="0" name="price" id="editItemPrice" class="form-control-custom" required placeholder="e.g. 2500" style="border-radius: 0 8px 8px 0;">
-                </div>
+                <input type="number" step="0.01" min="0" name="price" id="editItemPrice" class="form-control-custom" required placeholder="e.g. 2500">
                 <small class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-arrows-rotate text-primary me-1"></i> Syncs "Full Bottle" serving variation</small>
               </div>
 
@@ -1449,10 +1431,7 @@
                 <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700;">
                   State VAT Rate (%) <small class="text-muted fw-normal">(GST-Exempt in India)</small>
                 </label>
-                <div class="input-group">
-                  <input type="number" step="0.01" min="0" max="100" name="vat_rate" id="editItemVat" class="form-control-custom" placeholder="e.g. 20">
-                  <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-left: none; background: #f8fafc; font-weight: 700; font-size: 0.85rem; border-radius: 0 8px 8px 0;">%</span>
-                </div>
+                <input type="number" step="0.01" min="0" max="100" name="vat_rate" id="editItemVat" class="form-control-custom" placeholder="e.g. 20">
                 <div class="d-flex gap-1 mt-1 flex-wrap">
                   <span class="small text-muted" style="font-size: 0.7rem;">Presets:</span>
                   <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 setEditVatPresetBtn" data-vat="0" style="font-size: 0.7rem; border-radius: 4px;">0%</button>
@@ -1475,24 +1454,15 @@
                   <div class="row g-2">
                     <div class="col-md-4">
                       <label class="form-label mb-1" style="font-size: 0.78rem; font-weight: 700;">30ml Peg Price (₹)</label>
-                      <div class="input-group">
-                        <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #fff; font-weight: 700; font-size: 0.82rem; border-radius: 8px 0 0 8px;">₹</span>
-                        <input type="number" step="0.01" min="0" name="price_30ml" id="editPrice30" class="form-control-custom" placeholder="e.g. 250" style="border-radius: 0 8px 8px 0;">
-                      </div>
+                      <input type="number" step="0.01" min="0" name="price_30ml" id="editPrice30" class="form-control-custom" placeholder="e.g. 250">
                     </div>
                     <div class="col-md-4">
                       <label class="form-label mb-1" style="font-size: 0.78rem; font-weight: 700;">60ml Large Price (₹)</label>
-                      <div class="input-group">
-                        <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #fff; font-weight: 700; font-size: 0.82rem; border-radius: 8px 0 0 8px;">₹</span>
-                        <input type="number" step="0.01" min="0" name="price_60ml" id="editPrice60" class="form-control-custom" placeholder="e.g. 480" style="border-radius: 0 8px 8px 0;">
-                      </div>
+                      <input type="number" step="0.01" min="0" name="price_60ml" id="editPrice60" class="form-control-custom" placeholder="e.g. 480">
                     </div>
                     <div class="col-md-4">
                       <label class="form-label mb-1" style="font-size: 0.78rem; font-weight: 700;">90ml Patiala Price (₹)</label>
-                      <div class="input-group">
-                        <span class="input-group-text" style="border: 1.5px solid #cbd5e1; border-right: none; background: #fff; font-weight: 700; font-size: 0.82rem; border-radius: 8px 0 0 8px;">₹</span>
-                        <input type="number" step="0.01" min="0" name="price_90ml" id="editPrice90" class="form-control-custom" placeholder="e.g. 700" style="border-radius: 0 8px 8px 0;">
-                      </div>
+                      <input type="number" step="0.01" min="0" name="price_90ml" id="editPrice90" class="form-control-custom" placeholder="e.g. 700">
                     </div>
                   </div>
                 </div>
