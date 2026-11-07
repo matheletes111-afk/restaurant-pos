@@ -107,6 +107,22 @@ class CheckMenuPermission
                         }
                     }
                 }
+
+                // If plan disables Bar Management, block bar routes
+                if ($plan && (!isset($plan->bar_management_checkbox) || $plan->bar_management_checkbox !== 'Y')) {
+                    $barPatterns = [
+                        'bar/manage-category', 'bar.category', 'bar/brands', 'bar.brand', 'bar/items', 'bar.item',
+                        'bar/variations', 'bar.variation', 'bar/kot-counter', 'bar.kot', 'admin/bar/'
+                    ];
+                    $routeName = $request->route() ? $request->route()->getName() : '';
+                    $path = $request->path();
+                    foreach ($barPatterns as $bp) {
+                        if (($routeName && (str_starts_with($routeName, $bp) || str_contains($routeName, $bp))) || str_contains($path, $bp)) {
+                            return redirect()->route('dashboard')
+                                ->with('error', 'Bar Management is not enabled in your current subscription plan.');
+                        }
+                    }
+                }
             }
         }
 
@@ -168,6 +184,7 @@ class CheckMenuPermission
         $mappings = [
             'master_report' => ['admin/reports/master', 'reports.master', 'admin.reports.master', 'master-report'],
             'menu_master' => ['manage-menu-category', 'manage.category'],
+            'bar_management' => ['bar/manage-category', 'bar.category', 'bar/brands', 'bar.brand', 'bar/items', 'bar.item'],
             'dish_addon_master' => ['dish-addons', 'addon.index', 'addon.store', 'addon.edit', 'addon.update', 'addon.destroy', 'addon.toggle.status', 'addon.template.download', 'addon.bulk.upload'],
             'menu_availability' => ['menu-availability', 'menu.availability'],
             'table_master' => ['table-manage', 'table.manage', 'table-category-manage', 'table.category.manage', 'table.category'],
@@ -205,6 +222,7 @@ class CheckMenuPermission
 
                     if (!$user->hasPermission($permission, $action) 
                         && !($permission === 'dish_addon_master' && $user->hasPermission('menu_master', $action))
+                        && !($permission === 'bar_management' && $user->hasPermission('menu_master', $action))
                         && !($permission === 'rapid_bill' && $user->hasPermission('order_master', $action))
                     ) {
                         abort(403, 'Unauthorized access to this menu/module.');

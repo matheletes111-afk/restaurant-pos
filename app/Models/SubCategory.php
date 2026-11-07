@@ -24,6 +24,20 @@ class SubCategory extends Model
                     ->withTimestamps();
     }
 
+    // 🔗 Belongs to a Bar Brand
+    public function brand()
+    {
+        return $this->belongsTo(BarBrand::class, 'brand_id');
+    }
+
+    // 🔗 Has Many Bar Item Variations (Pegs, Pours, Sizes)
+    public function variations()
+    {
+        return $this->hasMany(BarItemVariation::class, 'sub_category_id')
+                    ->where('status', '!=', 'D')
+                    ->orderBy('ml', 'asc');
+    }
+
     // Accessor for discount attribute
     public function getDiscountAttribute()
     {

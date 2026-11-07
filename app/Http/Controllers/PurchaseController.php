@@ -16,7 +16,7 @@ use Carbon\Carbon;
 class PurchaseController extends Controller
 {
 
-            /**
+    /**
      * Constructor - Check inventory permission for all methods
      */
     public function __construct()
@@ -58,7 +58,6 @@ class PurchaseController extends Controller
         });
     }
 
-    
     public function index(Request $request)
     {
         $restaurantId = auth()->user()->restaurant_id;
@@ -166,18 +165,35 @@ class PurchaseController extends Controller
 
     public function create()
     {
-        $suppliers = Supplier::where('restaurant_id', auth()->user()->restaurant_id)
+        $restaurantId = auth()->user()->restaurant_id;
+        $isBarEnabled = auth()->check() ? auth()->user()->hasBarAccess() : false;
+
+        $mlUnit = null;
+        if ($isBarEnabled) {
+            // Sync Bar Items into Products with ML unit so they appear in the Purchase dropdown
+            $mlUnit = Product::syncBarItems($restaurantId);
+
+            $products = Product::with(['unit', 'barItem.brand', 'barItem.category'])
+                ->where('restaurant_id', $restaurantId)
+                ->where('status', 'A')
+                ->orderBy('product_name')
+                ->get();
+        } else {
+            // Hide bar items if bar management is disabled in the plan
+            $products = Product::with('unit')
+                ->where('restaurant_id', $restaurantId)
+                ->whereNull('sub_category_id')
+                ->where('status', 'A')
+                ->orderBy('product_name')
+                ->get();
+        }
+
+        $suppliers = Supplier::where('restaurant_id', $restaurantId)
             ->where('status', 'A')
             ->orderBy('supplier_name')
             ->get();
         
-        $products = Product::with('unit')
-            ->where('restaurant_id', auth()->user()->restaurant_id)
-            ->where('status', 'A')
-            ->orderBy('product_name')
-            ->get();
-        
-        return view('purchases.create', compact('suppliers', 'products'));
+        return view('purchases.create', compact('suppliers', 'products', 'mlUnit', 'isBarEnabled'));
     }
 
     public function store(Request $request)
@@ -206,6 +222,9 @@ class PurchaseController extends Controller
 
         DB::beginTransaction();
         try {
+            $restaurantId = auth()->user()->restaurant_id;
+            $mlUnit = Product::ensureMlUnit($restaurantId);
+
             // Handle file upload
             $billAttachmentPath = null;
             if ($request->hasFile('bill_attachment')) {
@@ -223,27 +242,34 @@ class PurchaseController extends Controller
             $purchase->total_amount = $request->bill_amount; // Same as bill amount
             $purchase->remarks = $request->remarks;
             $purchase->bill_attachment = $billAttachmentPath;
-            $purchase->restaurant_id = auth()->user()->restaurant_id;
+            $purchase->restaurant_id = $restaurantId;
             $purchase->user_id = auth()->user()->id;
             $purchase->status = 'COMPLETED';
             $purchase->save();
 
             $totalItems = 0;
 
-            // Create purchase items and update inventory
+            // Create purchase items and update inventory (including Bar Inventory in ML when bar item is selected)
             foreach ($request->items as $item) {
                 $product = Product::find($item['product_id']);
-                
+                $isBarItem = $product && !empty($product->sub_category_id);
+
+                if ($isBarItem && $product->unit_id != $mlUnit->id) {
+                    $product->unit_id = $mlUnit->id;
+                    $product->save();
+                }
+
                 $purchaseItem = new PurchaseItem();
                 $purchaseItem->purchase_id = $purchase->id;
                 $purchaseItem->product_id = $item['product_id'];
-                $purchaseItem->unit_id = $product->unit_id;
+                $purchaseItem->sub_category_id = $isBarItem ? $product->sub_category_id : null;
+                $purchaseItem->unit_id = $isBarItem ? $mlUnit->id : $product->unit_id;
                 $purchaseItem->quantity = $item['quantity'];
                 $purchaseItem->price = $item['price'];
-                $purchaseItem->restaurant_id = auth()->user()->restaurant_id;
+                $purchaseItem->restaurant_id = $restaurantId;
                 $purchaseItem->save();
 
-                // Update inventory - ADD quantity
+                // Update inventory - ADD quantity (adds ML directly to sub_category.current_stock_ml if Bar Item)
                 Inventory::updateStock($item['product_id'], $item['quantity'], 'add');
 
                 $totalItems++;
@@ -264,23 +290,40 @@ class PurchaseController extends Controller
 
     public function edit($id)
     {
-        $purchase = Purchase::with(['items.product', 'supplier'])
+        $restaurantId = auth()->user()->restaurant_id;
+        $isBarEnabled = auth()->check() ? auth()->user()->hasBarAccess() : false;
+
+        $mlUnit = null;
+        if ($isBarEnabled) {
+            // Sync Bar Items into Products with ML unit so they appear in the Purchase dropdown
+            $mlUnit = Product::syncBarItems($restaurantId);
+
+            $products = Product::with(['unit', 'barItem.brand', 'barItem.category'])
+                ->where('restaurant_id', $restaurantId)
+                ->where('status', 'A')
+                ->orderBy('product_name')
+                ->get();
+        } else {
+            // Hide bar items if bar management is disabled in the plan
+            $products = Product::with('unit')
+                ->where('restaurant_id', $restaurantId)
+                ->whereNull('sub_category_id')
+                ->where('status', 'A')
+                ->orderBy('product_name')
+                ->get();
+        }
+
+        $purchase = Purchase::with(['items.product.barItem', 'items.unit', 'supplier'])
             ->where('id', $id)
-            ->where('restaurant_id', auth()->user()->restaurant_id)
+            ->where('restaurant_id', $restaurantId)
             ->firstOrFail();
         
-        $suppliers = Supplier::where('restaurant_id', auth()->user()->restaurant_id)
+        $suppliers = Supplier::where('restaurant_id', $restaurantId)
             ->where('status', 'A')
             ->orderBy('supplier_name')
             ->get();
         
-        $products = Product::with('unit')
-            ->where('restaurant_id', auth()->user()->restaurant_id)
-            ->where('status', 'A')
-            ->orderBy('product_name')
-            ->get();
-        
-        return view('purchases.edit', compact('purchase', 'suppliers', 'products'));
+        return view('purchases.edit', compact('purchase', 'suppliers', 'products', 'mlUnit', 'isBarEnabled'));
     }
 
     public function update(Request $request)
@@ -301,13 +344,16 @@ class PurchaseController extends Controller
 
         DB::beginTransaction();
         try {
+            $restaurantId = auth()->user()->restaurant_id;
+            $mlUnit = Product::ensureMlUnit($restaurantId);
+
             $purchase = Purchase::where('id', $request->id)
-                ->where('restaurant_id', auth()->user()->restaurant_id)
+                ->where('restaurant_id', $restaurantId)
                 ->firstOrFail();
 
             // Check for duplicate invoice number (excluding current purchase)
             $existingInvoice = Purchase::where('invoice_no', $request->invoice_no)
-                ->where('restaurant_id', auth()->user()->restaurant_id)
+                ->where('restaurant_id', $restaurantId)
                 ->where('id', '!=', $request->id)
                 ->first();
             
@@ -328,7 +374,7 @@ class PurchaseController extends Controller
                 $purchase->bill_attachment = $billAttachmentPath;
             }
 
-            // First, reverse inventory for old items (DECREASE quantity)
+            // First, reverse inventory for old items (DECREASE quantity from Bar Inventory / general Inventory)
             foreach ($purchase->items as $oldItem) {
                 Inventory::updateStock($oldItem->product_id, $oldItem->quantity, 'subtract');
             }
@@ -350,17 +396,24 @@ class PurchaseController extends Controller
             // Create new purchase items and update inventory (ADD quantity)
             foreach ($request->items as $item) {
                 $product = Product::find($item['product_id']);
-                
+                $isBarItem = $product && !empty($product->sub_category_id);
+
+                if ($isBarItem && $product->unit_id != $mlUnit->id) {
+                    $product->unit_id = $mlUnit->id;
+                    $product->save();
+                }
+
                 $purchaseItem = new PurchaseItem();
                 $purchaseItem->purchase_id = $purchase->id;
                 $purchaseItem->product_id = $item['product_id'];
-                $purchaseItem->unit_id = $product->unit_id;
+                $purchaseItem->sub_category_id = $isBarItem ? $product->sub_category_id : null;
+                $purchaseItem->unit_id = $isBarItem ? $mlUnit->id : $product->unit_id;
                 $purchaseItem->quantity = $item['quantity'];
                 $purchaseItem->price = $item['price'];
-                $purchaseItem->restaurant_id = auth()->user()->restaurant_id;
+                $purchaseItem->restaurant_id = $restaurantId;
                 $purchaseItem->save();
 
-                // Update inventory - ADD quantity
+                // Update inventory - ADD quantity (adds ML directly to sub_category.current_stock_ml if Bar Item)
                 Inventory::updateStock($item['product_id'], $item['quantity'], 'add');
 
                 $totalItems++;
@@ -381,7 +434,7 @@ class PurchaseController extends Controller
 
     public function show($id)
     {
-        $purchase = Purchase::with(['items.product.unit', 'supplier', 'user'])
+        $purchase = Purchase::with(['items.product.unit', 'items.product.barItem', 'items.unit', 'supplier', 'user'])
             ->where('id', $id)
             ->where('restaurant_id', auth()->user()->restaurant_id)
             ->firstOrFail();
@@ -419,15 +472,30 @@ class PurchaseController extends Controller
 
     public function getProduct($id)
     {
-        $product = Product::with('unit')
+        $restaurantId = auth()->user()->restaurant_id;
+        $product = Product::with(['unit', 'barItem'])
             ->where('id', $id)
-            ->where('restaurant_id', auth()->user()->restaurant_id)
-            ->first(['id', 'product_name', 'unit_id']);
+            ->where('restaurant_id', $restaurantId)
+            ->first(['id', 'product_name', 'unit_id', 'sub_category_id']);
         
         if ($product) {
+            $isBarItem = !empty($product->sub_category_id);
+            if ($isBarItem) {
+                $mlUnit = Product::ensureMlUnit($restaurantId);
+                if ($product->unit_id != $mlUnit->id) {
+                    $product->unit_id = $mlUnit->id;
+                    $product->save();
+                    $product->load('unit');
+                }
+            }
+
             return response()->json([
                 'success' => true,
-                'product' => $product
+                'product' => $product,
+                'is_bar_item' => $isBarItem,
+                'unit_name' => $isBarItem ? 'ML' : ($product->unit->name ?? 'N/A'),
+                'bottle_size_ml' => $isBarItem ? (float) ($product->barItem->bottle_size_ml ?? 750) : null,
+                'current_stock_ml' => $isBarItem ? (float) ($product->barItem->current_stock_ml ?? 0) : null,
             ]);
         }
         
@@ -436,8 +504,20 @@ class PurchaseController extends Controller
 
     public function checkStock($productId)
     {
+        $product = Product::with(['unit', 'barItem'])
+            ->where('id', $productId)
+            ->where('restaurant_id', auth()->user()->restaurant_id)
+            ->first();
+
         $stock = Inventory::getStock($productId);
-        return response()->json(['stock' => $stock]);
+        $isBarItem = $product && !empty($product->sub_category_id);
+
+        return response()->json([
+            'stock' => $stock,
+            'is_bar_item' => $isBarItem,
+            'unit_name' => $isBarItem ? 'ML' : ($product->unit->name ?? ''),
+            'bottle_size_ml' => $isBarItem ? (float) ($product->barItem->bottle_size_ml ?? 750) : null,
+        ]);
     }
 
     public function stockReport()

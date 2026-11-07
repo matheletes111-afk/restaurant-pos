@@ -27,6 +27,7 @@ protected $fillable = [
     'inventory_checkbox',
     'multi_outlet_checkbox',
     'report_management_checkbox',
+    'bar_management_checkbox',
     'total_number_of_outlets',
     'is_default_free',
     'is_default_paid',
@@ -51,6 +52,11 @@ protected $fillable = [
     public function isReportManagementEnabled(): bool
     {
         return ($this->report_management_checkbox !== 'N');
+    }
+
+    public function isBarManagementEnabled(): bool
+    {
+        return ($this->bar_management_checkbox === 'Y');
     }
 
     public function getMaxOutlets(): int

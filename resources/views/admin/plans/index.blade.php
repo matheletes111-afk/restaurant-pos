@@ -222,6 +222,7 @@
                       <th>Duration</th>
                       <th>Multi-Outlet</th>
                       <th>Report Mgmt</th>
+                      <th>Bar Mgmt</th>
                       <th>Default Plan</th>
                       <th>Active Plan (Toggle)</th>
                       <th>Razorpay ID</th>
@@ -292,6 +293,18 @@
                           </span>
                         @else
                           <span class="badge bg-danger text-white" style="font-size: 0.75rem; border-radius: 12px; padding: 4px 8px;">
+                            <i class="fas fa-times me-1"></i> Disabled
+                          </span>
+                        @endif
+                      </td>
+
+                      <td>
+                        @if(($plan->bar_management_checkbox ?? 'N') == 'Y')
+                          <span class="badge bg-success text-white" style="font-size: 0.75rem; border-radius: 12px; padding: 4px 8px;">
+                            <i class="fas fa-check me-1"></i> Enabled
+                          </span>
+                        @else
+                          <span class="badge bg-secondary text-white" style="font-size: 0.75rem; border-radius: 12px; padding: 4px 8px;">
                             <i class="fas fa-times me-1"></i> Disabled
                           </span>
                         @endif

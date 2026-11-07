@@ -231,7 +231,6 @@
 
         container.innerHTML = html;
     }
-    }
 
     // Fetch Notifications from Server
     async function fetchQrNotifications() {

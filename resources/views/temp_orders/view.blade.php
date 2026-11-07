@@ -161,12 +161,12 @@
               <thead>
                 <tr>
                   <th style="width: 40px;">#</th>
-                  <th>Food Item</th>
+                  <th>Food / Bar Item</th>
                   <th class="text-center">Qty</th>
                   <th>Unit Price</th>
                   <th>Discount</th>
                   <th>Taxable</th>
-                  <th>GST</th>
+                  <th>GST / VAT</th>
                   <th>Item Total</th>
                   <th class="text-end">Action</th>
                 </tr>
@@ -189,8 +189,10 @@
                   }
                   $lineTaxable = floatval($i->taxable_amount > 0 ? $i->taxable_amount : ($isAddon ? ($discountedPrice * $itemQty) : (($discountedPrice * $itemQty) + $addonsCost)));
                   $gstRate = floatval($i->gst_rate ?? 0);
-                  $lineGst = floatval($i->gst_amount > 0 ? $i->gst_amount : (($lineTaxable * $gstRate) / 100));
-                  $itemTotal = floatval($i->total_amount > 0 ? $i->total_amount : ($lineTaxable + $lineGst));
+                  $vatRate = floatval($i->vat_rate ?? 0);
+                  $lineVat = floatval($i->vat_amount > 0 ? $i->vat_amount : (($lineTaxable * $vatRate) / 100));
+                  $lineGst = $vatRate > 0 ? 0 : floatval($i->gst_amount > 0 ? $i->gst_amount : (($lineTaxable * $gstRate) / 100));
+                  $itemTotal = floatval($i->total_amount > 0 ? $i->total_amount : ($vatRate > 0 ? ($lineTaxable + $lineVat) : ($lineTaxable + $lineGst)));
                   $foodType = strtoupper($i->menuItem->food_type ?? 'VEG');
                   $itemDiscountAmount = ($basePrice * $itemDiscount / 100) * $itemQty;
                 @endphp
@@ -199,6 +201,11 @@
                   <td>
                     <div>
                       <strong style="color: #0f172a; font-size: 0.92rem;">{{ $i->menuItem->name ?? 'Dish Item' }}</strong>
+                      @if(!empty($i->bar_variation_name) || !empty($i->bar_variation_ml))
+                        <span class="badge" style="background: linear-gradient(135deg, #1e293b, #334155); color: #f8fafc; font-size: 0.72rem; padding: 2px 7px; border-radius: 6px; font-weight: 600; letter-spacing: 0.3px; border: 1px solid rgba(255,255,255,0.15); display: inline-flex; align-items: center; gap: 4px;">
+                          <i class="fa-solid fa-wine-glass-empty text-warning"></i> {{ $i->bar_variation_name ?: ($i->bar_variation_ml . ' ml') }}
+                        </span>
+                      @endif
                       @if($hasAddons)
                         <div class="mt-1 d-flex flex-wrap gap-1">
                           @foreach($i->addons_list as $addon)
@@ -215,9 +222,15 @@
                         </div>
                       @endif
                       <div class="mt-1">
-                        <span class="pos-bill-type-tag {{ $foodType == 'VEG' ? 'gst' : 'nongst' }}" style="font-size: 0.65rem; padding: 1px 6px;">
-                          <i class="fa-solid fa-circle me-1" style="font-size: 0.45rem; color: {{ $foodType == 'VEG' ? '#10b981' : '#ef4444' }};"></i> {{ $foodType }}
-                        </span>
+                        @if($vatRate > 0 || $foodType === 'BAR')
+                          <span class="pos-bill-type-tag" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; font-size: 0.65rem; padding: 1px 6px;">
+                            <i class="fa-solid fa-wine-bottle me-1" style="font-size: 0.55rem;"></i> BAR / LIQUOR
+                          </span>
+                        @else
+                          <span class="pos-bill-type-tag {{ $foodType == 'VEG' ? 'gst' : 'nongst' }}" style="font-size: 0.65rem; padding: 1px 6px;">
+                            <i class="fa-solid fa-circle me-1" style="font-size: 0.45rem; color: {{ $foodType == 'VEG' ? '#10b981' : '#ef4444' }};"></i> {{ $foodType }}
+                          </span>
+                        @endif
                         @if($itemDiscount > 0)
                           <span class="badge bg-success text-white ms-1" style="font-size: 0.65rem;">{{ $itemDiscount }}% OFF</span>
                         @endif
@@ -246,7 +259,9 @@
                   </td>
                   <td>₹{{ number_format($lineTaxable, 2) }}</td>
                   <td>
-                    @if($isGstBill)
+                    @if($vatRate > 0)
+                      <span class="text-info fw-bold">₹{{ number_format($lineVat, 2) }}</span> <small class="text-muted">(VAT {{ $vatRate }}%)</small>
+                    @elseif($isGstBill)
                       ₹{{ number_format($lineGst, 2) }} <small class="text-muted">({{ $gstRate }}%)</small>
                     @else
                       <span class="text-muted">-</span>
@@ -285,6 +300,7 @@
               $computedSubtotal = 0;
               $computedTaxable = 0;
               $computedGst = 0;
+              $computedVat = 0;
               $computedItemDiscount = 0;
 
               foreach($order->items as $item) {
@@ -303,11 +319,14 @@
                 $lTax = floatval($item->taxable_amount > 0 ? $item->taxable_amount : ($isAdd ? ($dPrice * $qty) : (($dPrice * $qty) + $aCost)));
                 $lOrig = $isAdd ? ($bPrice * $qty) : (($bPrice * $qty) + $aCost);
                 $gRate = floatval($item->gst_rate ?? 0);
-                $lGst = floatval($item->gst_amount > 0 ? $item->gst_amount : (($lTax * $gRate) / 100));
+                $vRate = floatval($item->vat_rate ?? 0);
+                $lVat = floatval($item->vat_amount > 0 ? $item->vat_amount : (($lTax * $vRate) / 100));
+                $lGst = $vRate > 0 ? 0 : floatval($item->gst_amount > 0 ? $item->gst_amount : (($lTax * $gRate) / 100));
 
                 $computedSubtotal += $lOrig;
                 $computedTaxable += $lTax;
                 $computedGst += $lGst;
+                $computedVat += $lVat;
                 $computedItemDiscount += ($bPrice * $iDisc / 100) * $qty;
               }
 
@@ -315,11 +334,12 @@
               $displayItemDiscount = floatval($computedItemDiscount > 0 ? $computedItemDiscount : $order->discount);
               $displayTaxable = floatval($order->taxable_amount > 0 ? $order->taxable_amount : $computedTaxable);
               $displayGst = floatval($order->gst_amount > 0 ? $order->gst_amount : $computedGst);
+              $displayVat = floatval($order->vat_amount > 0 ? $order->vat_amount : $computedVat);
               
               $orderDiscPercent = floatval($order->discount_percentage ?? 0);
               $orderDiscAmt = $orderDiscPercent > 0 ? (($displayTaxable * $orderDiscPercent) / 100) : 0;
               
-              $grandTotal = floatval($order->grand_total > 0 ? $order->grand_total : ($displayTaxable - $orderDiscAmt + $displayGst));
+              $grandTotal = floatval($order->grand_total > 0 ? $order->grand_total : ($displayTaxable - $orderDiscAmt + $displayGst + $displayVat));
               $finalAmount = round($grandTotal);
               $roundOff = $finalAmount - $grandTotal;
             @endphp
@@ -341,10 +361,17 @@
               <span>₹{{ number_format($displayTaxable, 2) }}</span>
             </div>
 
-            @if($isGstBill)
+            @if($isGstBill && $displayGst > 0)
             <div class="pos-summary-row">
               <span>GST ({{ $order->restaurant_gst_percentage ?? 0 }}%)</span>
               <span>₹{{ number_format($displayGst, 2) }}</span>
+            </div>
+            @endif
+
+            @if($displayVat > 0)
+            <div class="pos-summary-row" style="color: #0284c7; font-weight: 600;">
+              <span><i class="fa-solid fa-wine-glass-empty me-1"></i> State VAT (Liquor)</span>
+              <span>₹{{ number_format($displayVat, 2) }}</span>
             </div>
             @endif
 

@@ -50,8 +50,10 @@ class RestaurantProfileController extends Controller
             'address' => 'required|string',
             'pincode' => 'required|string|max:10',
             'gstin' => 'nullable|string|max:50',
+            'vatin' => 'nullable|string|max:50',
             'fssai_number' => 'nullable|string|max:50',
             'gst_percentage' => 'nullable|numeric|min:0|max:100',
+            'vat_percentage' => 'nullable|numeric|min:0|max:100',
             'upi_id' => 'nullable|string|max:100',
             'qr_code_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp,svg,gif|max:3072'
@@ -122,8 +124,10 @@ class RestaurantProfileController extends Controller
             $restaurant->address = $request->address;
             $restaurant->pincode = $request->pincode;
             $restaurant->gstin = $request->gstin;
+            $restaurant->vatin = $request->vatin ? trim($request->vatin) : null;
             $restaurant->fssai_number = $request->fssai_number;
             $restaurant->gst_percentage = $request->gst_percentage ?? 0;
+            $restaurant->vat_percentage = $request->vat_percentage ?? 0;
             $restaurant->upi_id = $request->upi_id;
             $restaurant->save();
             

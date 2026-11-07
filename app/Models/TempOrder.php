@@ -19,6 +19,7 @@ class TempOrder extends Model
         'cgst_amount',
         'sgst_amount',
         'igst_amount',
+        'vat_amount',
         'discount',
         'discount_percentage',
         'grand_total',

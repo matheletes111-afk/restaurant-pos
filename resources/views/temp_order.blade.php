@@ -2048,6 +2048,325 @@
       visibility: visible;
       transform: translateX(-50%) translateY(0);
     }
+
+    /* =======================================================
+       FOOD VS BAR DIGITAL MENU TOGGLE STRIP
+       ======================================================= */
+    .pos-menu-main-toggle {
+      display: flex;
+      align-items: center;
+      background: #f1f5f9;
+      padding: 6px;
+      border-radius: var(--radius-full);
+      gap: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #e2e8f0;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);
+    }
+
+    .menu-main-tab {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 20px;
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-full);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .menu-main-tab:hover {
+      color: #0f172a;
+    }
+
+    .menu-main-tab.active {
+      background: #ffffff;
+      color: var(--primary);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    }
+
+    .menu-main-tab.bar-tab.active {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #f59e0b;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.25);
+    }
+
+    .menu-main-tab.bar-tab.active .menu-main-count {
+      background: rgba(245, 158, 11, 0.25);
+      color: #fbbf24;
+    }
+
+    .menu-main-count {
+      display: inline-block;
+      font-size: 0.76rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      background: #e2e8f0;
+      color: #475569;
+      transition: all 0.2s;
+    }
+
+    .menu-main-tab.active .menu-main-count {
+      background: rgba(255, 94, 20, 0.12);
+      color: var(--primary);
+    }
+
+    /* Bar Item Luxury Cards */
+    .bar-food-card {
+      background: #ffffff;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .bar-food-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+      border-color: #fde68a;
+    }
+
+    .bar-media-frame {
+      position: relative;
+      height: 190px;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .bar-media-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    .bar-food-card:hover .bar-media-frame img {
+      transform: scale(1.05);
+    }
+
+    .bar-brand-ribbon {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #f1f5f9;
+      backdrop-filter: blur(8px);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      z-index: 2;
+    }
+
+    .bar-vat-ribbon {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(2, 132, 199, 0.9);
+      color: #ffffff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: var(--radius-full);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      z-index: 2;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+    }
+
+    .bar-card-body {
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+
+    .bar-cat-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #d97706;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .bar-item-title {
+      font-size: 1.08rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 6px 0;
+      line-height: 1.3;
+    }
+
+    .bar-variations-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 14px;
+    }
+
+    .bar-peg-pill {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 2px 7px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .btn-choose-peg {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #ffffff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: var(--radius-full);
+      font-weight: 700;
+      font-size: 0.88rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: auto;
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
+      transition: all 0.2s ease;
+      text-decoration: none !important;
+    }
+
+    .btn-choose-peg:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(217, 119, 6, 0.35);
+      color: #ffffff;
+    }
+
+    /* Multi-variation Peg selection bottom sheet modal */
+    .bar-modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 1080;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    @media (min-width: 768px) {
+      .bar-modal-overlay {
+        align-items: center;
+        padding: 24px;
+      }
+    }
+
+    .bar-modal-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      border-radius: 24px 24px 0 0;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      animation: slideUpCustModal 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @media (min-width: 768px) {
+      .bar-modal-card {
+        border-radius: 24px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+      }
+    }
+
+    .bar-modal-header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      padding: 20px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #ffffff;
+    }
+
+    .bar-var-card-multi {
+      padding: 12px 14px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 2px solid #e2e8f0;
+      background: #ffffff;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .bar-var-card-multi.is-selected {
+      border-color: #f59e0b;
+      background: #fffcf8;
+    }
+
+    .bar-var-check-badge {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid #cbd5e1;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: #ffffff;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .btn-bar-var-step {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #0f172a;
+      font-weight: 800;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-bar-var-step:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
   </style>
 </head>
 <body>
@@ -2326,6 +2645,22 @@
     <input type="hidden" id="gst_percentage" value="{{ $restaurant_details->gst_percentage ?? 0 }}">
   </div>
 
+  <!-- Digital Menu Type Switcher (Food vs Bar) -->
+  @if(isset($bar_items) && $bar_items->count() > 0)
+    <div class="pos-menu-main-toggle">
+      <button type="button" class="menu-main-tab active" id="btnFoodMenuTab" onclick="switchDigitalMenuType('food')">
+        <i class="fas fa-utensils"></i>
+        <span>Food Menu</span>
+        <span class="menu-main-count">{{ $totalDishesCount }}</span>
+      </button>
+      <button type="button" class="menu-main-tab bar-tab" id="btnBarMenuTab" onclick="switchDigitalMenuType('bar')">
+        <i class="fas fa-wine-glass-alt text-warning"></i>
+        <span>Bar &amp; Drinks</span>
+        <span class="menu-main-count">{{ $bar_items->count() }}</span>
+      </button>
+    </div>
+  @endif
+
   <!-- Search & Dietary Filters -->
   <div class="menu-controls-wrapper">
     <div class="search-box-pill">
@@ -2334,7 +2669,7 @@
       <button type="button" class="search-clear-btn" id="clearSearchBtn"><i class="fas fa-times"></i></button>
     </div>
 
-    <div class="dietary-filters-group">
+    <div class="dietary-filters-group" id="foodDietaryFiltersGroup">
       <button type="button" class="diet-btn active" data-type="" title="Show all items">
         <i class="fas fa-utensils"></i> All
       </button>
@@ -2347,8 +2682,8 @@
     </div>
   </div>
 
-  <!-- Category Filter Bar -->
-  <div class="category-nav-bar">
+  <!-- Category Filter Bar (Food Menu) -->
+  <div class="category-nav-bar" id="foodCategoryNav">
     <div class="category-pills-scroll" role="tablist">
       <!-- ALL Categories Tab (Default Active) -->
       <button type="button" class="cat-pill-tab active" data-category="all">
@@ -2375,6 +2710,29 @@
       @endif
     </div>
   </div>
+
+  <!-- Category Filter Bar (Bar Menu) -->
+  @if(isset($bar_items) && $bar_items->count() > 0)
+    <div class="category-nav-bar" id="barCategoryNav" style="display: none;">
+      <div class="category-pills-scroll" role="tablist">
+        <!-- ALL Bar Items Tab (Default Active) -->
+        <button type="button" class="cat-pill-tab bar-cat-pill active" data-bar-category="all">
+          <i class="fas fa-wine-bottle text-warning"></i> All Drinks
+          <span class="cat-count-pill">{{ $bar_items->count() }}</span>
+        </button>
+
+        <!-- Individual Bar Category Tabs -->
+        @foreach($bar_categories as $bCat)
+          @if($bCat->subcategories->count() > 0)
+            <button type="button" class="cat-pill-tab bar-cat-pill" data-bar-category="{{ $bCat->id }}">
+              <i class="fas fa-cocktail text-warning me-1"></i> {{ $bCat->name }}
+              <span class="cat-count-pill">{{ $bCat->subcategories->count() }}</span>
+            </button>
+          @endif
+        @endforeach
+      </div>
+    </div>
+  @endif
 
   <!-- Menu Dishes Container -->
   <div class="menu-dishes-container" id="menuDishesContainer">
@@ -2577,6 +2935,119 @@
     </div>
   </div>
 
+  <!-- Bar & Drinks Menu Section -->
+  <div class="menu-dishes-container" id="barMenuSection" style="display: none;">
+    @if(isset($bar_items) && $bar_items->count() > 0)
+      @foreach($bar_categories as $bCat)
+        @if($bCat->subcategories->count() > 0)
+          <div class="category-group-block bar-group-block mb-4" data-bar-category-id="{{ $bCat->id }}">
+            <div class="category-section-divider">
+              <div class="category-section-title" style="color: #0f172a;">
+                <i class="fas fa-wine-glass-alt text-warning me-2"></i> {{ $bCat->name }}
+              </div>
+              <span class="category-item-count">{{ $bCat->subcategories->count() }} drinks</span>
+            </div>
+
+            <div class="food-grid">
+              @foreach($bCat->subcategories as $bItem)
+                @php
+                  $bBrand = $bItem->brand ? $bItem->brand->name : '';
+                  $bVat = floatval($bItem->vat_rate > 0 ? $bItem->vat_rate : ($bCat->vat_rate ?? 20));
+                  $bVariations = $bItem->variations ? $bItem->variations->where('status', '!=', 'D')->sortBy('ml')->values() : collect([]);
+                  $hasVariations = $bVariations->count() > 0;
+                  $minPrice = $hasVariations ? $bVariations->min('price') : $bItem->price;
+
+                  $barItemData = [
+                    'id' => $bItem->id,
+                    'name' => $bItem->name,
+                    'price' => floatval($bItem->price),
+                    'vat_rate' => $bVat,
+                    'brand' => ['name' => $bBrand],
+                    'category' => ['name' => $bCat->name],
+                    'variations' => $bVariations->map(function($v) {
+                      return [
+                        'id' => $v->id,
+                        'name' => $v->name,
+                        'ml' => $v->ml,
+                        'price' => floatval($v->price),
+                      ];
+                    })->values()->toArray()
+                  ];
+                @endphp
+                <div class="food-card-wrapper bar-card-wrapper" data-bar-id="{{ $bItem->id }}" data-bar-category-id="{{ $bCat->id }}" data-bar-name="{{ strtolower($bItem->name) }} {{ strtolower($bBrand) }}">
+                  <div class="bar-food-card">
+                    <div class="bar-media-frame">
+                      @if($bItem->image)
+                        <img src="{{ URL::to('storage/category') }}/{{ $bItem->image }}" alt="{{ $bItem->name }}" onerror="this.src='https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=500&h=350&fit=crop';">
+                      @else
+                        <img src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=500&h=350&fit=crop" alt="{{ $bItem->name }}">
+                      @endif
+
+                      @if($bBrand)
+                        <div class="bar-brand-ribbon">
+                          <i class="fas fa-certificate text-warning"></i> {{ $bBrand }}
+                        </div>
+                      @endif
+
+                      <div class="bar-vat-ribbon">
+                        <i class="fas fa-shield-alt"></i> State VAT {{ $bVat }}%
+                      </div>
+                    </div>
+
+                    <div class="bar-card-body">
+                      <div class="bar-cat-badge">
+                        <i class="fas fa-cocktail"></i> {{ $bCat->name }}
+                      </div>
+                      <h3 class="bar-item-title">{{ $bItem->name }}</h3>
+
+                      @if($hasVariations)
+                        <div class="bar-variations-preview">
+                          @foreach($bVariations as $v)
+                            <span class="bar-peg-pill">{{ $v->name ?: ($v->ml . 'ml') }}</span>
+                          @endforeach
+                        </div>
+                      @endif
+
+                      <div class="d-flex align-items-center justify-content-between mb-3" style="margin-top: auto;">
+                        <div>
+                          @if($hasVariations)
+                            <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Starts from</span><br>
+                            <span style="font-size: 1.15rem; font-weight: 800; color: #0f172a;">₹{{ number_format($minPrice, 2) }}</span>
+                          @else
+                            <span style="font-size: 1.15rem; font-weight: 800; color: #0f172a;">₹{{ number_format($bItem->price, 2) }}</span>
+                          @endif
+                        </div>
+                        <span style="font-size: 0.75rem; color: #0284c7; font-weight: 700;">
+                          +{{ $bVat }}% VAT
+                        </span>
+                      </div>
+
+                      <button type="button" class="btn-choose-peg open-bar-variation-btn" data-item='@json($barItemData)'>
+                        <i class="fas fa-wine-glass-alt"></i>
+                        <span>Choose Peg / Pour Size</span>
+                        <i class="fas fa-chevron-right ms-auto"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              @endforeach
+            </div>
+          </div>
+        @endif
+      @endforeach
+    @else
+      <div class="text-center py-5">
+        <p class="text-muted">No liquor or bar items currently listed.</p>
+      </div>
+    @endif
+
+    <div class="no-results-state" id="noBarResultsState" style="display: none;">
+      <i class="fas fa-wine-glass-alt fa-3x text-muted mb-3"></i>
+      <h5>No Matching Drinks Found</h5>
+      <p class="text-muted">Try adjusting your drink search or category tab.</p>
+    </div>
+  </div>
+
   <!-- Order Summary Tray Section -->
   <div class="order-summary-card" id="orderSummaryCard">
     <div class="card-heading-clean">
@@ -2665,14 +3136,12 @@
         <table class="tray-table">
           <thead>
             <tr>
-              <th>Dish</th>
+              <th>Food / Drink Item</th>
               <th style="text-align: center;">Quantity</th>
               <th>Unit Price</th>
               <th>Discount</th>
               <th>Taxable</th>
-              @if($restaurant_details->gstin)
-                <th>GST</th>
-              @endif
+              <th>GST / VAT</th>
               <th>Total</th>
               <th></th>
             </tr>
@@ -2685,10 +3154,10 @@
         <div class="empty-tray-icon"><i class="fas fa-shopping-basket"></i></div>
         @if(isset($activeOrder) && $activeOrder)
           <h5>Your New Item Tray is Empty</h5>
-          <p>Browse our menu above and click <strong>Add +</strong> on any dish to add more items to your table order.</p>
+          <p>Browse our menu above and click <strong>Add +</strong> on any dish or drink to add more items to your table order.</p>
         @else
           <h5>Your Tray is Empty</h5>
-          <p>Explore our delicious menu above and click <strong>Add +</strong> on any dish to begin your order.</p>
+          <p>Explore our delicious menu above and click <strong>Add +</strong> on any dish or drink to begin your order.</p>
         @endif
       </div>
     </div>
@@ -2714,11 +3183,15 @@
         <span>₹<span id="taxable_amount">0.00</span></span>
       </div>
       @if($restaurant_details->gstin)
-        <div class="tray-calc-row">
+        <div class="tray-calc-row" id="gst_calc_row">
           <span>GST ({{ $restaurant_details->gst_percentage ?? 0 }}%)</span>
           <span>₹<span id="gst_amount">0.00</span></span>
         </div>
       @endif
+      <div class="tray-calc-row" id="vat_calc_row" style="display: none; color: #0284c7; font-weight: 600;">
+        <span><i class="fas fa-wine-glass-alt me-1"></i> State VAT (Liquor)</span>
+        <span>₹<span id="vat_amount">0.00</span></span>
+      </div>
       <div class="tray-calc-row" style="font-weight: 700; color: var(--text-main);">
         <span>@if(isset($activeOrder) && $activeOrder) New Items Total @else Grand Total @endif</span>
         <span style="font-size: 1.15rem;">₹<span id="final_total">0.00</span></span>
@@ -2781,6 +3254,62 @@
   </div>
 </div>
 
+<!-- Bar Peg / Pour Size Multi-Variation Modal -->
+<div class="bar-modal-overlay" id="barVariationModalBackdrop" style="display: none;">
+  <div class="bar-modal-card">
+    <div class="bar-modal-header">
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+          <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); font-size: 0.72rem;" id="barModalCategory">Liquor</span>
+          <span class="badge" style="background: #0284c7; color: #ffffff; font-size: 0.72rem;" id="barModalVatTag">State VAT 20%</span>
+        </div>
+        <h4 style="font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 800; margin: 0;" id="barModalDrinkName">Select Variations</h4>
+        <div style="font-size: 0.8rem; color: #94a3b8;" id="barModalBrandName">Brand</div>
+      </div>
+      <button type="button" class="btn-close-addon-modal text-white" id="closeBarVariationModalBtn" style="color: #ffffff !important; font-size: 1.5rem; line-height: 1; background: none; border: none; cursor: pointer;">&times;</button>
+    </div>
+
+    <div style="padding: 20px; overflow-y: auto; max-height: calc(85vh - 180px);">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <label style="font-size: 0.78rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Choose Peg / Pour Sizes &amp; Quantities:</label>
+        <span style="font-size: 0.75rem; color: #d97706; font-weight: 700;"><i class="fas fa-layer-group me-1"></i> Add multiple pegs</span>
+      </div>
+
+      <div class="d-flex flex-column gap-2 mb-3" id="barVariationsList">
+        <!-- Rendered dynamically via JS with steppers -->
+      </div>
+
+      <!-- Live Calculation Breakdown Box -->
+      <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 14px; padding: 14px 16px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.84rem; color: #64748b; margin-bottom: 5px;">
+          <span>Total Selected Drinks:</span>
+          <strong style="color: #0f172a;"><span id="barModalTotalQty">0</span> pour(s)</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.84rem; color: #64748b; margin-bottom: 5px;">
+          <span>Base Taxable Amount:</span>
+          <strong style="color: #0f172a; font-family: monospace;">₹<span id="barModalTaxableAmt">0.00</span></strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.84rem; color: #64748b; margin-bottom: 6px;">
+          <span>State VAT (<span id="barModalVatRate">0</span>%):</span>
+          <strong style="color: #0284c7; font-family: monospace;">+ ₹<span id="barModalVatAmt">0.00</span></strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 1rem; font-weight: 800; padding-top: 8px; border-top: 1px solid #fef3c7; color: #0f172a;">
+          <span>Total Amount (Incl. VAT):</span>
+          <span style="color: #d97706; font-size: 1.15rem; font-family: monospace;">₹<span id="barModalLineTotal">0.00</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding: 16px 20px; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; background: #ffffff;">
+      <button type="button" class="btn btn-light" id="cancelBarVariationBtn" style="border-radius: var(--radius-full); font-weight: 700; padding: 10px 18px; border: 1px solid #cbd5e1;">Cancel</button>
+      <button type="button" class="btn-choose-peg" id="confirmBarVariationBtn" style="margin-top: 0; flex: 1;">
+        <i class="fas fa-plus-circle"></i>
+        <span id="confirmBarBtnText">Add Variations to Tray</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Floating Bottom Sticky Bar -->
 <div class="floating-checkout-bar" id="floatingBar">
   <div class="floating-summary-info">
@@ -2833,6 +3362,7 @@ function calculateItemDetails(item) {
     let basePrice = item.base_price !== undefined ? parseFloat(item.base_price) : parseFloat(item.price || 0);
     let qty = parseInt(item.qty) || 1;
     let discount = parseFloat(item.discount) || 0;
+    let vatRate = parseFloat(item.vat_rate || 0);
     let addonsCost = 0;
     if (!isAddon && item.addons && Array.isArray(item.addons)) {
         addonsCost = item.addons.reduce((sum, a) => sum + ((parseFloat(a.price) || 0) * (parseInt(a.qty || a.quantity) || 1)), 0);
@@ -2841,8 +3371,16 @@ function calculateItemDetails(item) {
     let taxableAmount = isAddon ? (discountedPrice * qty) : ((discountedPrice * qty) + addonsCost);
     let originalSubtotal = isAddon ? (basePrice * qty) : ((basePrice * qty) + addonsCost);
     let discountAmount = (basePrice * discount / 100) * qty;
-    let gstAmount = isGstRegistered ? (taxableAmount * gstPercentage) / 100 : 0;
-    let totalAmount = taxableAmount + gstAmount;
+
+    let vatAmount = 0;
+    let gstAmount = 0;
+    if (vatRate > 0) {
+        vatAmount = (taxableAmount * vatRate) / 100;
+        gstAmount = 0;
+    } else {
+        gstAmount = isGstRegistered ? (taxableAmount * gstPercentage) / 100 : 0;
+    }
+    let totalAmount = taxableAmount + gstAmount + vatAmount;
 
     return {
         basePrice: basePrice,
@@ -2850,6 +3388,8 @@ function calculateItemDetails(item) {
         taxableAmount: taxableAmount,
         originalSubtotal: originalSubtotal,
         gstAmount: gstAmount,
+        vatAmount: vatAmount,
+        vatRate: vatRate,
         totalAmount: totalAmount,
         discountAmount: discountAmount,
         addonsCost: addonsCost
@@ -3236,22 +3776,38 @@ function updateEmptyState() {
 function refreshTable() {
     let tbody = $('#orderItemsBody');
     tbody.html('');
-    let originalSubtotal = 0, totalTaxable = 0, totalGst = 0, totalDiscount = 0;
+    let originalSubtotal = 0, totalTaxable = 0, totalGst = 0, totalVat = 0, totalDiscount = 0;
 
     cart.forEach((item, i) => {
         let details = calculateItemDetails(item);
         originalSubtotal += details.originalSubtotal;
         totalTaxable    += details.taxableAmount;
         totalGst        += details.gstAmount;
+        totalVat        += details.vatAmount;
         totalDiscount   += details.discountAmount;
 
         let isAddon = item.is_addon || String(item.id).startsWith('addon_');
         let addonsHtml = '';
 
+        let barBadge = '';
+        if (item.bar_variation_name || item.bar_variation_ml) {
+            barBadge = `<span class="badge" style="background: linear-gradient(135deg, #1e293b, #334155); color: #f8fafc; font-size: 0.72rem; padding: 2px 7px; border-radius: 6px; font-weight: 600; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-wine-glass-alt text-warning"></i> ${escapeHtml(item.bar_variation_name || (item.bar_variation_ml + ' ml'))}</span>`;
+        }
+
+        let taxCell = '';
+        if (details.vatRate > 0) {
+            taxCell = `<td style="color:#0284c7;font-weight:600;">₹${details.vatAmount.toFixed(2)} <small style="font-size:0.72rem;">(VAT ${details.vatRate}%)</small></td>`;
+        } else if (isGstRegistered) {
+            taxCell = `<td>₹${details.gstAmount.toFixed(2)}</td>`;
+        } else {
+            taxCell = `<td style="color:var(--text-light);font-size:0.78rem;">—</td>`;
+        }
+
         let row = `
             <tr>
                 <td>
                     <span class="tray-item-title">${escapeHtml(item.name)}</span>
+                    ${barBadge}
                     ${addonsHtml}
                 </td>
                 <td style="text-align:center;">
@@ -3268,13 +3824,9 @@ function refreshTable() {
                 <td style="color:var(--veg-color);font-weight:600;">
                     ${item.discount > 0 ? `− ₹${details.discountAmount.toFixed(2)}` : '<span style="color:var(--text-light)">—</span>'}
                 </td>
-                <td>₹${details.taxableAmount.toFixed(2)}</td>`;
-
-        if (isGstRegistered) {
-            row += `<td>₹${details.gstAmount.toFixed(2)}</td>`;
-        }
-
-        row += `<td style="font-weight:700;color:var(--text-main);">₹${details.totalAmount.toFixed(2)}</td>
+                <td>₹${details.taxableAmount.toFixed(2)}</td>
+                ${taxCell}
+                <td style="font-weight:700;color:var(--text-main);">₹${details.totalAmount.toFixed(2)}</td>
                 <td>
                     <button type="button" class="tray-del-btn removeItem" data-index="${i}" title="Remove Item">
                         <i class="fas fa-trash-alt"></i>
@@ -3284,11 +3836,17 @@ function refreshTable() {
         tbody.append(row);
     });
 
-    let grandTotal = totalTaxable + totalGst;
+    let grandTotal = totalTaxable + totalGst + totalVat;
     $('#original_subtotal').text(originalSubtotal.toFixed(2));
     $('#item_discount').text(totalDiscount.toFixed(2));
     $('#taxable_amount').text(totalTaxable.toFixed(2));
     if (isGstRegistered) $('#gst_amount').text(totalGst.toFixed(2));
+    if (totalVat > 0) {
+        $('#vat_calc_row').show();
+        $('#vat_amount').text(totalVat.toFixed(2));
+    } else {
+        $('#vat_calc_row').hide();
+    }
     $('#final_total').text(grandTotal.toFixed(2));
 
     if (hasActiveOrder) {
@@ -3544,17 +4102,43 @@ $(document).on('click', '.removeItem', function(e) {
 
 /* Live Filter & Search Logic */
 let selectedCategory = 'all';
+let selectedBarCategory = 'all';
+window.currentMenuType = 'food';
+
+function switchDigitalMenuType(type) {
+    window.currentMenuType = type;
+    if (type === 'bar') {
+        $('#btnFoodMenuTab').removeClass('active');
+        $('#btnBarMenuTab').addClass('active');
+        $('#foodCategoryNav').hide();
+        $('#barCategoryNav').show();
+        $('#menuDishesContainer').hide();
+        $('#barMenuSection').show();
+        $('#foodDietaryFiltersGroup').hide();
+        $('#searchBox').attr('placeholder', 'Search drinks, whisky, vodka, beer...').val('');
+    } else {
+        $('#btnBarMenuTab').removeClass('active');
+        $('#btnFoodMenuTab').addClass('active');
+        $('#barCategoryNav').hide();
+        $('#foodCategoryNav').show();
+        $('#barMenuSection').hide();
+        $('#menuDishesContainer').show();
+        $('#foodDietaryFiltersGroup').show();
+        $('#searchBox').attr('placeholder', 'Search dishes, drinks, desserts...').val('');
+    }
+    applyFilters();
+}
 
 function updateCategoryCounts() {
     let activeDiet = ($('.diet-btn.active').attr('data-type') !== undefined ? $('.diet-btn.active').attr('data-type') : ($('.diet-btn.active').data('type') || '')).toLowerCase().trim();
     let searchVal = ($('#searchBox').val() || '').toLowerCase().trim();
 
     let totalAllCount = 0;
-    $('.category-group-block').each(function() {
+    $('.category-group-block:not(.bar-group-block)').each(function() {
         let catId = String($(this).attr('data-category-id') || $(this).data('category-id') || '');
         let countInCat = 0;
 
-        $(this).find('.food-card-wrapper').each(function() {
+        $(this).find('.food-card-wrapper:not(.bar-card-wrapper)').each(function() {
             let name = String($(this).attr('data-name') || '').toLowerCase();
             let desc = String($(this).attr('data-desc') || '').toLowerCase();
             let rawFoodType = String($(this).attr('data-type') || '').toLowerCase().trim();
@@ -3578,8 +4162,6 @@ function updateCategoryCounts() {
 
 function applyFilters() {
     let searchVal = ($('#searchBox').val() || '').toLowerCase().trim();
-    let $activeDietBtn = $('.diet-btn.active');
-    let activeType = ($activeDietBtn.attr('data-type') !== undefined ? $activeDietBtn.attr('data-type') : ($activeDietBtn.data('type') || '')).toLowerCase().trim();
 
     // Toggle clear search button
     if (searchVal.length > 0) {
@@ -3589,9 +4171,45 @@ function applyFilters() {
     }
 
     let isSearching = searchVal.length > 0;
+
+    if (window.currentMenuType === 'bar') {
+        let totalVisibleBar = 0;
+        $('.bar-group-block').each(function() {
+            let catId = String($(this).attr('data-bar-category-id') || '');
+            let catMatch = isSearching || (selectedBarCategory === 'all') || (catId === String(selectedBarCategory));
+
+            if (!catMatch) {
+                $(this).hide();
+                return;
+            }
+
+            let visibleInBlock = 0;
+            $(this).find('.bar-card-wrapper').each(function() {
+                let name = String($(this).attr('data-bar-name') || '').toLowerCase();
+                let matches = (searchVal === '') || name.includes(searchVal);
+
+                if (matches) {
+                    $(this).show();
+                    visibleInBlock++;
+                    totalVisibleBar++;
+                } else {
+                    $(this).hide();
+                }
+            });
+
+            $(this).toggle(visibleInBlock > 0);
+        });
+
+        $('#noBarResultsState').toggle(totalVisibleBar === 0);
+        return;
+    }
+
+    // Food filtering
+    let $activeDietBtn = $('.diet-btn.active');
+    let activeType = ($activeDietBtn.attr('data-type') !== undefined ? $activeDietBtn.attr('data-type') : ($activeDietBtn.data('type') || '')).toLowerCase().trim();
     let totalVisible = 0;
 
-    $('.category-group-block').each(function() {
+    $('.category-group-block:not(.bar-group-block)').each(function() {
         let catId = String($(this).attr('data-category-id') || $(this).data('category-id') || '');
 
         let catMatch = isSearching || (selectedCategory === 'all') || (catId === String(selectedCategory));
@@ -3603,7 +4221,7 @@ function applyFilters() {
 
         let visibleInBlock = 0;
 
-        $(this).find('.food-card-wrapper').each(function() {
+        $(this).find('.food-card-wrapper:not(.bar-card-wrapper)').each(function() {
             let name = String($(this).attr('data-name') || '').toLowerCase();
             let desc = String($(this).attr('data-desc') || '').toLowerCase();
             let rawFoodType = String($(this).attr('data-type') || '').toLowerCase().trim();
@@ -3631,10 +4249,10 @@ function applyFilters() {
     updateCategoryCounts();
 }
 
-// 1. Click Category Pill
-$(document).on('click', '.cat-pill-tab', function(e) {
+// 1. Click Food Category Pill
+$(document).on('click', '.cat-pill-tab:not(.bar-cat-pill)', function(e) {
     e.preventDefault();
-    $('.cat-pill-tab').removeClass('active');
+    $('.cat-pill-tab:not(.bar-cat-pill)').removeClass('active');
     $(this).addClass('active');
 
     selectedCategory = $(this).attr('data-category') || 'all';
@@ -3650,6 +4268,277 @@ $(document).on('click', '.cat-pill-tab', function(e) {
             }, 250);
         }
     }
+});
+
+// 1b. Click Bar Category Pill
+$(document).on('click', '.bar-cat-pill', function(e) {
+    e.preventDefault();
+    $('.bar-cat-pill').removeClass('active');
+    $(this).addClass('active');
+
+    selectedBarCategory = $(this).attr('data-bar-category') || 'all';
+
+    applyFilters();
+
+    if (selectedBarCategory !== 'all') {
+        let $targetBlock = $(`.bar-group-block[data-bar-category-id="${selectedBarCategory}"]`);
+        if ($targetBlock.length > 0) {
+            $('html, body').animate({
+                scrollTop: $targetBlock.offset().top - 120
+            }, 250);
+        }
+    }
+});
+
+// Bar Peg / Pour Multi-Variation Modal Functions
+let currentBarItem = null;
+let barVariationsState = {}; // { [varId]: { id, name, ml, price, qty } }
+
+function openBarVariationModal(itemData) {
+    currentBarItem = itemData;
+    barVariationsState = {};
+
+    $('#barModalDrinkName').text(itemData.name);
+    let brandName = (itemData.brand && itemData.brand.name) ? itemData.brand.name : 'Selected Brand';
+    $('#barModalBrandName').text(brandName);
+    let catName = (itemData.category && itemData.category.name) ? itemData.category.name : 'Liquor';
+    $('#barModalCategory').text(catName);
+
+    let vatRate = parseFloat(itemData.vat_rate || 0);
+    $('#barModalVatTag').text(`State VAT ${vatRate}%`);
+    $('#barModalVatRate').text(vatRate);
+
+    let variations = (itemData.variations && Array.isArray(itemData.variations)) ? itemData.variations.slice() : [];
+    variations.sort((a, b) => (parseFloat(a.ml) || 0) - (parseFloat(b.ml) || 0));
+
+    let container = $('#barVariationsList');
+    container.empty();
+
+    if (variations.length === 0) {
+        let basePrice = parseFloat(itemData.price || 0);
+        let vatAmt = (basePrice * vatRate) / 100;
+        barVariationsState['base'] = {
+            id: 'base',
+            name: 'Standard Pour / Bottle',
+            ml: null,
+            price: basePrice,
+            qty: 1
+        };
+
+        container.html(`
+            <div class="bar-var-card-multi is-selected" data-var-id="base" data-price="${basePrice}">
+                <div class="d-flex align-items-center gap-2 flex-grow-1">
+                    <div class="bar-var-check-badge" style="border-color: #f59e0b; background: #f59e0b;">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div>
+                        <strong class="text-dark fs-6">Standard Pour / Bottle</strong>
+                        <div class="small text-muted font-monospace">₹${basePrice.toFixed(2)} + ₹${vatAmt.toFixed(2)} VAT (${vatRate}%)</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    <button type="button" class="btn-bar-var-step btn-dec btn-bar-var-step-dec" data-var-id="base">−</button>
+                    <span class="fw-bold font-monospace fs-6 bar-var-qty-val" data-var-id="base" style="min-width: 26px; text-align: center; color: #d97706;">1</span>
+                    <button type="button" class="btn-bar-var-step btn-inc btn-bar-var-step-inc" data-var-id="base">+</button>
+                </div>
+            </div>
+        `);
+    } else {
+        variations.forEach((v, vIdx) => {
+            let vPrice = parseFloat(v.price || 0);
+            let vatAmt = (vPrice * vatRate) / 100;
+            let defaultQty = (vIdx === 0) ? 1 : 0;
+            barVariationsState[v.id] = {
+                id: v.id,
+                name: v.name,
+                ml: v.ml || '',
+                price: vPrice,
+                qty: defaultQty
+            };
+
+            let isSelected = defaultQty > 0;
+            let rowHtml = `
+                <div class="bar-var-card-multi ${isSelected ? 'is-selected' : ''}" data-var-id="${v.id}" data-price="${vPrice}">
+                    <div class="d-flex align-items-center gap-2 flex-grow-1">
+                        <div class="bar-var-check-badge" style="border-color: ${isSelected ? '#f59e0b' : '#cbd5e1'}; background: ${isSelected ? '#f59e0b' : '#ffffff'};">
+                            ${isSelected ? '<i class="fas fa-check"></i>' : ''}
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-1">
+                                <strong class="text-dark fs-6">${escapeHtml(v.name)}</strong>
+                                ${v.ml ? `<span class="badge bg-light text-dark border ms-1 font-monospace" style="font-size: 0.72rem;">${v.ml} ml</span>` : ''}
+                            </div>
+                            <div class="small text-muted font-monospace">
+                                ₹${vPrice.toFixed(2)} + ₹${vatAmt.toFixed(2)} VAT (${vatRate}%)
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        <button type="button" class="btn-bar-var-step btn-dec btn-bar-var-step-dec" data-var-id="${v.id}">−</button>
+                        <span class="fw-bold font-monospace fs-6 bar-var-qty-val" data-var-id="${v.id}" style="min-width: 26px; text-align: center; color: ${isSelected ? '#d97706' : '#64748b'};">${defaultQty}</span>
+                        <button type="button" class="btn-bar-var-step btn-inc btn-bar-var-step-inc" data-var-id="${v.id}">+</button>
+                    </div>
+                </div>
+            `;
+            container.append(rowHtml);
+        });
+    }
+
+    updateBarModalCalculations();
+    $('#barVariationModalBackdrop').fadeIn(150);
+}
+
+function updateVarRowUI(varId) {
+    let v = barVariationsState[varId];
+    if (!v) return;
+    let qty = parseInt(v.qty) || 0;
+    let card = $(`.bar-var-card-multi[data-var-id="${varId}"]`);
+    card.find('.bar-var-qty-val').text(qty).css('color', qty > 0 ? '#d97706' : '#64748b');
+
+    if (qty > 0) {
+        card.addClass('is-selected');
+        card.find('.bar-var-check-badge').css({'border-color': '#f59e0b', 'background': '#f59e0b'}).html('<i class="fas fa-check"></i>');
+    } else {
+        card.removeClass('is-selected');
+        card.find('.bar-var-check-badge').css({'border-color': '#cbd5e1', 'background': '#ffffff'}).empty();
+    }
+}
+
+function updateBarModalCalculations() {
+    if (!currentBarItem) return;
+    let vatRate = parseFloat(currentBarItem.vat_rate || 0);
+
+    let totalQty = 0;
+    let totalTaxable = 0;
+
+    Object.keys(barVariationsState).forEach(varId => {
+        let v = barVariationsState[varId];
+        let q = parseInt(v.qty) || 0;
+        if (q > 0) {
+            totalQty += q;
+            totalTaxable += (v.price * q);
+        }
+    });
+
+    let totalVat = (totalTaxable * vatRate) / 100;
+    let grandTotal = totalTaxable + totalVat;
+
+    $('#barModalTotalQty').text(totalQty);
+    $('#barModalTaxableAmt').text(totalTaxable.toFixed(2));
+    $('#barModalVatAmt').text(totalVat.toFixed(2));
+    $('#barModalLineTotal').text(grandTotal.toFixed(2));
+
+    if (totalQty > 0) {
+        $('#confirmBarBtnText').html(`Add ${totalQty} Drink${totalQty > 1 ? 's' : ''} to Tray (₹${grandTotal.toFixed(2)})`);
+        $('#confirmBarVariationBtn').prop('disabled', false).css({'opacity': '1'});
+    } else {
+        $('#confirmBarBtnText').text('Select Pegs to Add');
+        $('#confirmBarVariationBtn').prop('disabled', false).css({'opacity': '0.75'});
+    }
+}
+
+function closeBarVariationModal() {
+    $('#barVariationModalBackdrop').fadeOut(120);
+    currentBarItem = null;
+    barVariationsState = {};
+}
+
+// Open modal on click
+$(document).on('click', '.open-bar-variation-btn', function(e) {
+    e.preventDefault();
+    let rawItem = $(this).attr('data-item') || $(this).data('item');
+    let itemData = (typeof rawItem === 'string') ? JSON.parse(rawItem) : rawItem;
+    openBarVariationModal(itemData);
+});
+
+$(document).on('click', '#closeBarVariationModalBtn, #cancelBarVariationBtn', function() {
+    closeBarVariationModal();
+});
+
+// Step Increment
+$(document).on('click', '.btn-bar-var-step-inc', function(e) {
+    e.stopPropagation();
+    let varId = String($(this).data('var-id'));
+    if (barVariationsState[varId]) {
+        barVariationsState[varId].qty = (parseInt(barVariationsState[varId].qty) || 0) + 1;
+        updateVarRowUI(varId);
+        updateBarModalCalculations();
+    }
+});
+
+// Step Decrement
+$(document).on('click', '.btn-bar-var-step-dec', function(e) {
+    e.stopPropagation();
+    let varId = String($(this).data('var-id'));
+    if (barVariationsState[varId]) {
+        let currentQ = parseInt(barVariationsState[varId].qty) || 0;
+        barVariationsState[varId].qty = Math.max(0, currentQ - 1);
+        updateVarRowUI(varId);
+        updateBarModalCalculations();
+    }
+});
+
+// Row Click
+$(document).on('click', '.bar-var-card-multi', function(e) {
+    if ($(e.target).closest('.btn-bar-var-step').length) return;
+    let varId = String($(this).data('var-id'));
+    if (barVariationsState[varId]) {
+        let currentQ = parseInt(barVariationsState[varId].qty) || 0;
+        if (currentQ === 0) {
+            barVariationsState[varId].qty = 1;
+        } else if (Object.keys(barVariationsState).length > 1 && currentQ === 1 && $(e.target).closest('.bar-var-check-badge').length) {
+            barVariationsState[varId].qty = 0;
+        }
+        updateVarRowUI(varId);
+        updateBarModalCalculations();
+    }
+});
+
+// Confirm Adding Variations to Cart
+$('#confirmBarVariationBtn').on('click', function() {
+    if (!currentBarItem) return;
+    let vatRate = parseFloat(currentBarItem.vat_rate || 0);
+    let addedCount = 0;
+
+    Object.keys(barVariationsState).forEach(varId => {
+        let v = barVariationsState[varId];
+        let q = parseInt(v.qty) || 0;
+        if (q > 0) {
+            let varKey = (v.id !== 'base' && v.id) ? v.id : null;
+            let displayItemName = currentBarItem.name + (v.name ? ` (${v.name})` : (v.ml ? ` (${v.ml}ml)` : ''));
+
+            // Look for existing item in cart matching same product ID and same variation ID
+            let existing = cart.find(i => String(i.id) === String(currentBarItem.id) && String(i.bar_variation_id) === String(varKey));
+            if (existing) {
+                existing.qty += q;
+            } else {
+                cart.push({
+                    id: currentBarItem.id,
+                    name: displayItemName,
+                    price: v.price,
+                    base_price: v.price,
+                    qty: q,
+                    discount: 0,
+                    vat_rate: vatRate,
+                    bar_variation_id: varKey,
+                    bar_variation_name: v.name || null,
+                    bar_variation_ml: v.ml || null,
+                    is_addon: false,
+                    addons: []
+                });
+            }
+            addedCount += q;
+        }
+    });
+
+    if (addedCount === 0) {
+        alert('Please select quantity for at least one peg or bottle size.');
+        return;
+    }
+
+    refreshTable();
+    closeBarVariationModal();
+    showTempToast(`Added ${addedCount} drink(s) to your tray!`, true);
 });
 
 // 2. Click Dietary Filter (All Items / Veg / Non-Veg)
@@ -3788,7 +4677,11 @@ $(document).on('click', '#placeOrderBtn', function() {
         qty: item.qty,
         item_discount: item.discount || 0,
         is_addon: item.is_addon || false,
-        addons: item.addons || []
+        addons: item.addons || [],
+        bar_variation_id: item.bar_variation_id || null,
+        bar_variation_name: item.bar_variation_name || null,
+        bar_variation_ml: item.bar_variation_ml || null,
+        vat_rate: item.vat_rate || 0
     }));
 
     let $btn = $(this);

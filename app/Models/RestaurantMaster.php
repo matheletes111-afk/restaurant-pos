@@ -19,8 +19,10 @@ class RestaurantMaster extends Model
         'address',
         'pincode',
         'gstin',
+        'vatin',
         'fssai_number',
         'gst_percentage',
+        'vat_percentage',
         'owner_id',
         'status',
         'created_by',
@@ -30,7 +32,8 @@ class RestaurantMaster extends Model
     ];
     
     protected $casts = [
-        'gst_percentage' => 'decimal:2'
+        'gst_percentage' => 'decimal:2',
+        'vat_percentage' => 'decimal:2'
     ];
 
     /**
@@ -102,6 +105,12 @@ class RestaurantMaster extends Model
         return $this->belongsTo(User::class, 'owner_id');
     }
 
+    public function franchiseOwners()
+    {
+        return $this->belongsToMany(User::class, 'franchise_restaurant_mappings', 'restaurant_id', 'user_id')
+            ->withTimestamps();
+    }
+
     public function subscriptions()
     {
         return $this->hasMany(Subscription::class, 'user_id');
@@ -137,6 +146,19 @@ class RestaurantMaster extends Model
     /**
      * Check if the restaurant has an active, existing logo file.
      */
+    public function hasBarAccess(): bool
+    {
+        $sub = $this->active_subscription 
+            ?? $this->subscriptions()
+                ->whereIn('status', ['active', 'completed'])
+                ->whereDate('end_date', '>=', now())
+                ->with('plan')
+                ->latest('id')
+                ->first();
+
+        return (bool) ($sub && $sub->plan && $sub->plan->bar_management_checkbox === 'Y');
+    }
+
     public function hasLogo(): bool
     {
         if (empty($this->logo)) {

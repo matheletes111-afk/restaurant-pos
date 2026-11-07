@@ -162,6 +162,29 @@
             color: #ffffff !important;
         }
 
+        .btn-inv-dispatch {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff !important;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(2, 132, 199, 0.3);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-inv-dispatch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(2, 132, 199, 0.42);
+            color: #ffffff !important;
+        }
+
         .btn-inv-back {
             background: #ffffff;
             color: var(--inv-slate) !important;
@@ -968,6 +991,9 @@
                     <button type="button" class="btn-inv-whatsapp" id="showWhatsappModalBtn">
                         <i class="fa-brands fa-whatsapp"></i> Share Bill WhatsApp
                     </button>
+                    <button type="button" class="btn-inv-dispatch" id="showDispatchModalBtn" title="Notify customer that order is ready for dispatch">
+                        <i class="fa-solid fa-truck-fast"></i> Notify Dispatch
+                    </button>
                     <a href="{{ route('order.public.download', ['id' => $order->id, 'download' => 1]) }}" class="btn-inv-slate" target="_blank" title="Direct PDF Download">
                         <i class="fa-solid fa-file-arrow-down text-warning"></i> Download PDF
                     </a>
@@ -1014,6 +1040,9 @@
                                         @endif
                                         @if(!empty($order->restaurant->gstin))
                                             <strong>GSTIN:</strong> {{ $order->restaurant->gstin }} |
+                                        @endif
+                                        @if(!empty($order->restaurant->vatin))
+                                            <strong>VATIN:</strong> {{ $order->restaurant->vatin }} |
                                         @endif
                                         @if(!empty($order->restaurant->fssai_number))
                                             <strong>FSSAI:</strong> {{ $order->restaurant->fssai_number }}
@@ -1116,18 +1145,43 @@
                     </div>
                 </div>
 
-                {{-- Itemized Ordered Dishes Table --}}
+                {{-- Itemized Ordered Dishes & Bar Table --}}
                 @if($order->orderItems && count($order->orderItems) > 0)
+                @php
+                    $foodOrderItems = $order->orderItems->filter(function($item) {
+                        $isBar = !empty($item->bar_variation_id) 
+                            || floatval($item->vat_rate ?? 0) > 0 
+                            || (isset($item->subcategory) && strtoupper($item->subcategory->food_type ?? '') === 'BAR');
+                        return !$isBar;
+                    });
+
+                    $barOrderItems = $order->orderItems->filter(function($item) {
+                        $isBar = !empty($item->bar_variation_id) 
+                            || floatval($item->vat_rate ?? 0) > 0 
+                            || (isset($item->subcategory) && strtoupper($item->subcategory->food_type ?? '') === 'BAR');
+                        return $isBar;
+                    });
+
+                    $invOriginalSubtotal = 0;
+                    $invTaxableTotal = 0;
+                    $invFoodTaxableTotal = 0;
+                    $invBarTaxableTotal = 0;
+                    $invGstTotal = 0;
+                    $invVatTotal = 0;
+                    $invItemDiscountTotal = 0;
+                @endphp
                 <div class="inv-section-wrap">
+                    {{-- 1. Food Items Section (if any) --}}
+                    @if($foodOrderItems->count() > 0)
                     <div class="inv-section-title">
                         <div class="title-text">
                             <i class="fa-solid fa-bowl-food text-primary"></i>
-                            <span>Ordered Items Summary</span>
+                            <span>Food &amp; Kitchen Items</span>
                         </div>
-                        <span class="badge bg-light text-dark border">{{ count($order->orderItems) }} Items</span>
+                        <span class="badge bg-light text-dark border">{{ $foodOrderItems->count() }} Items</span>
                     </div>
 
-                    <div class="table-responsive">
+                    <div class="table-responsive mb-4">
                         <table class="inv-table">
                             <thead>
                                 <tr>
@@ -1142,13 +1196,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @php
-                                    $invOriginalSubtotal = 0;
-                                    $invTaxableTotal = 0;
-                                    $invGstTotal = 0;
-                                    $invItemDiscountTotal = 0;
-                                @endphp
-                                @foreach($order->orderItems as $idx => $item)
+                                @foreach($foodOrderItems->values() as $idx => $item)
                                 @php
                                     $addons = $item->addons_list ?? [];
                                     $isAddonItem = empty($item->subcategory_id);
@@ -1173,9 +1221,9 @@
 
                                     $invOriginalSubtotal += $lineOriginal;
                                     $invTaxableTotal += $lineTaxable;
+                                    $invFoodTaxableTotal += $lineTaxable;
                                     $invGstTotal += $lineGst;
                                     $invItemDiscountTotal += ($itemPrice * $itemDiscount / 100) * $itemQty;
-                                    $basePrice = $item->subcategory->price ?? $item->price;
                                 @endphp
                                 <tr>
                                     <td>{{ $idx + 1 }}</td>
@@ -1193,7 +1241,7 @@
                                                     <div class="inv-item-addons-box">
                                                         <div class="inv-addons-header">
                                                             <i class="fa-solid fa-puzzle-piece"></i> Mapped Add-ons ({{ count($addons) }})
-                                                        </div>v>
+                                                        </div>
                                                         <div class="inv-addons-list">
                                                             @foreach($addons as $a)
                                                                 @php
@@ -1231,16 +1279,116 @@
                             </tbody>
                         </table>
                     </div>
+                    @endif
 
-                    {{-- Calculation Breakdown Box --}}
+                    {{-- 2. Bar & Liquor Items Section (separately after food items) --}}
+                    @if($barOrderItems->count() > 0)
+                    <div class="inv-section-title {{ $foodOrderItems->count() > 0 ? 'mt-4 pt-3' : '' }}" style="{{ $foodOrderItems->count() > 0 ? 'border-top: 2px dashed #e2e8f0;' : '' }}">
+                        <div class="title-text">
+                            <i class="fa-solid fa-wine-glass text-warning me-2"></i>
+                            <span class="text-dark">Bar &amp; Liquor Items</span>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-2 px-2 py-1" style="font-size: 0.72rem; font-weight: 700;">
+                                <i class="fa-solid fa-shield-halved me-1"></i> State VAT Applicable
+                            </span>
+                        </div>
+                        <span class="badge bg-light text-dark border">{{ $barOrderItems->count() }} Drinks</span>
+                    </div>
+
+                    <div class="table-responsive mb-3">
+                        <table class="inv-table">
+                            <thead>
+                                <tr>
+                                    <th width="40">#</th>
+                                    <th>Liquor &amp; Drink Description</th>
+                                    <th>Peg / Pour Size (ML)</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-center">Disc %</th>
+                                    <th class="text-end">Taxable Val</th>
+                                    <th class="text-end">State VAT</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($barOrderItems->values() as $bIdx => $bItem)
+                                @php
+                                    $bPrice = (float)$bItem->price;
+                                    $bQty = (int)$bItem->quantity;
+                                    $bDiscount = (float)($bItem->item_discount_percentage ?? 0);
+                                    $bDiscountedPrice = (float)($bItem->discounted_price ?? ($bPrice - ($bPrice * $bDiscount / 100)));
+                                    
+                                    $lineOriginal = $bPrice * $bQty;
+                                    $lineTaxable = $bItem->taxable_amount ?? ($bDiscountedPrice * $bQty);
+                                    $bVatRate = floatval($bItem->vat_rate ?? 0);
+                                    $lineVat = $bItem->vat_amount ?? (($lineTaxable * $bVatRate) / 100);
+                                    $lineTotal = $bItem->total_amount ?? ($lineTaxable + $lineVat);
+
+                                    $invOriginalSubtotal += $lineOriginal;
+                                    $invTaxableTotal += $lineTaxable;
+                                    $invBarTaxableTotal += $lineTaxable;
+                                    $invVatTotal += $lineVat;
+                                    $invItemDiscountTotal += ($bPrice * $bDiscount / 100) * $bQty;
+
+                                    $varName = $bItem->bar_variation_name;
+                                    $varMl = !empty($bItem->bar_variation_ml) ? floatval($bItem->bar_variation_ml) : null;
+                                @endphp
+                                <tr>
+                                    <td>{{ $bIdx + 1 }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-warning-subtle text-dark border border-warning me-2" style="font-size: 0.72rem; padding: 3px 6px;">
+                                                <i class="fa-solid fa-wine-bottle text-warning"></i> BAR
+                                            </span>
+                                            <div>
+                                                <strong class="text-dark">{{ $bItem->subcategory->name ?? 'Liquor Item' }}</strong>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-1 flex-wrap">
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size: 0.76rem; font-weight: 700;">
+                                                <i class="fa-solid fa-glass-water me-1"></i>{{ $varName ?: 'Standard' }}
+                                            </span>
+                                            @if($varMl)
+                                                <span class="badge bg-dark text-white font-monospace px-2 py-1" style="font-size: 0.76rem; font-weight: 800;">
+                                                    <i class="fa-solid fa-wine-glass text-warning me-1"></i>{{ $varMl }} ml
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="text-end">₹{{ number_format($bPrice, 2) }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-light text-dark border px-2 py-1">{{ $bQty }}</span>
+                                    </td>
+                                    <td class="text-center text-muted small">
+                                        {{ $bDiscount > 0 ? $bDiscount . '%' : '-' }}
+                                    </td>
+                                    <td class="text-end">₹{{ number_format($lineTaxable, 2) }}</td>
+                                    <td class="text-end text-success fw-semibold">
+                                        ₹{{ number_format($lineVat, 2) }}
+                                        @if($bVatRate > 0)
+                                            <span class="text-muted small d-block" style="font-size: 0.7rem;">({{ $bVatRate }}% VAT)</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-end fw-bold text-dark">₹{{ number_format($lineTotal, 2) }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    @endif
+
+                    {{-- Calculation Breakdown & Statutory Tax Cards --}}
                     @php
                         $displaySubtotal = ($order->total_amount > 0 && abs($order->total_amount - $invOriginalSubtotal) < 0.01) ? $order->total_amount : $invOriginalSubtotal;
                         $displayTaxable = ($order->taxable_amount > 0 && abs($order->taxable_amount - $invTaxableTotal) < 0.01) ? $order->taxable_amount : $invTaxableTotal;
                         $displayGst = ($order->gst_amount > 0 && abs($order->gst_amount - $invGstTotal) < 0.01) ? $order->gst_amount : $invGstTotal;
-                        $displayDiscount = $order->discount ?? (($displayTaxable + $displayGst) * ($order->discount_percentage ?? 0) / 100);
-                        $displayGrandTotal = $order->grand_total ?? ($displayTaxable + $displayGst - $displayDiscount);
+                        $displayVat = ($order->vat_amount > 0) ? (float)$order->vat_amount : (float)$invVatTotal;
+                        $displayDiscount = $order->discount ?? (($displayTaxable + $displayGst + $displayVat) * ($order->discount_percentage ?? 0) / 100);
+                        $displayGrandTotal = $order->grand_total ?? ($displayTaxable + $displayGst + $displayVat - $displayDiscount);
                     @endphp
                     <div class="inv-calc-container">
+                        {{-- Financial Calculation Box --}}
                         <div class="inv-calc-box">
                             <div class="inv-calc-row">
                                 <span class="text-muted">Item Subtotal:</span>
@@ -1270,6 +1418,13 @@
                             <div class="inv-calc-row text-primary">
                                 <span>GST ({{ $order->restaurant_gst_percentage ?? 0 }}%):</span>
                                 <span class="fw-semibold">+ ₹{{ number_format($displayGst, 2) }}</span>
+                            </div>
+                            @endif
+
+                            @if($displayVat > 0)
+                            <div class="inv-calc-row" style="color: #047857;">
+                                <span><i class="fa-solid fa-wine-glass me-1"></i> State VAT (Liquor):</span>
+                                <span class="fw-semibold">+ ₹{{ number_format($displayVat, 2) }}</span>
                             </div>
                             @endif
 
@@ -1515,7 +1670,7 @@
 <div class="modal fade" id="shareWhatsappModal" tabindex="-1" aria-labelledby="shareWhatsappModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-content-premium">
-            <div class="modal-header modal-header-premium" style="background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%); border-bottom-color: #25D366;">
+            <div class="modal-header modal-header-premium" id="whatsappModalHeader" style="background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%); border-bottom-color: #25D366;">
                 <h5 class="modal-title" id="shareWhatsappModalLabel">
                     <i class="fa-brands fa-whatsapp text-success fs-4"></i> Share Bill on WhatsApp
                 </h5>
@@ -1557,12 +1712,12 @@
                 {{-- 3. Message Preview --}}
                 <div class="mb-2">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <label class="pm-label mb-0">WhatsApp Message Preview</label>
+                        <label class="pm-label mb-0" id="whatsappMsgPreviewLabel">WhatsApp Message Preview</label>
                         <button type="button" class="btn btn-link p-0 text-decoration-none small text-success fw-bold" id="btnCopyWhatsappMsg">
                             <i class="fa-solid fa-copy me-1"></i> Copy Text
                         </button>
                     </div>
-                    <textarea id="whatsappMsgPreview" class="pm-input-control font-monospace small" rows="8" readonly style="background: #f8fafc; resize: none; font-size: 0.8rem; line-height: 1.45;"></textarea>
+                    <textarea id="whatsappMsgPreview" class="pm-input-control font-monospace small" rows="8" style="background: #f8fafc; resize: none; font-size: 0.8rem; line-height: 1.45;"></textarea>
                 </div>
             </div>
 
@@ -1666,9 +1821,34 @@ function generateWhatsappMessage() {
     return msg;
 }
 
+function generateDispatchMessage() {
+    let restaurantName = "{{ $order->restaurant->name ?? config('app.name', 'Restaurant') }}";
+    let customerName = "{{ $order->customer_name ?: 'Valued Guest' }}";
+    let billNo = "{{ $order->order_id ?? $order->id }}";
+    let orderDate = "{{ $order->created_at->format('d M Y, h:i A') }}";
+    let orderType = "{{ $order->order_type == 'DINE_IN' ? 'Dine In (' . (@$order->table->name ?? 'Table') . ')' : 'Takeaway / Delivery' }}";
+    let grandTotal = "{{ number_format($order->grand_total, 2) }}";
+    let downloadUrl = "{{ route('order.public.download', $order->id) }}";
+
+    let msg = `🛵 *${restaurantName} - Order Dispatch Update*\n`;
+    msg += `--------------------------------\n`;
+    msg += `Hello *${customerName}*,\n\n`;
+    msg += `Your bill no *${billNo}* is now ready for dispatch! 🚀📦\n\n`;
+    msg += `📋 *Order Summary:*\n`;
+    msg += `• *Bill No:* ${billNo}\n`;
+    msg += `• *Date:* ${orderDate}\n`;
+    msg += `• *Order Type:* ${orderType}\n`;
+    msg += `• *Total Amount:* ₹${grandTotal}\n`;
+    msg += `--------------------------------\n`;
+    msg += `📄 *Download Invoice PDF:*\n${downloadUrl}\n\n`;
+    msg += `🙏 Thank you for choosing *${restaurantName}*! If you have any questions, feel free to reply. Enjoy your meal! ✨`;
+
+    return msg;
+}
+
 let autoPrintTimer = null;
 
-function openWhatsappModal() {
+function openWhatsappModal(mode = 'bill') {
     // Cancel any pending print triggers and clean background print iframes
     if (autoPrintTimer) {
         clearTimeout(autoPrintTimer);
@@ -1676,7 +1856,23 @@ function openWhatsappModal() {
     }
     $('#pdfFrame').remove();
 
-    let msg = generateWhatsappMessage();
+    let msg = '';
+    if (mode === 'dispatch') {
+        $('#whatsappModalHeader')
+            .css('background', 'linear-gradient(135deg, #0c4a6e 0%, #0284c7 60%, #0369a1 100%)')
+            .css('border-bottom-color', '#38bdf8');
+        $('#shareWhatsappModalLabel').html('<i class="fa-solid fa-truck-fast text-info fs-4"></i> Notify Order Dispatch via WhatsApp');
+        $('#whatsappMsgPreviewLabel').text('Dispatch Notification Message Preview');
+        msg = generateDispatchMessage();
+    } else {
+        $('#whatsappModalHeader')
+            .css('background', 'linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%)')
+            .css('border-bottom-color', '#25D366');
+        $('#shareWhatsappModalLabel').html('<i class="fa-brands fa-whatsapp text-success fs-4"></i> Share Bill on WhatsApp');
+        $('#whatsappMsgPreviewLabel').text('WhatsApp Message Preview');
+        msg = generateWhatsappMessage();
+    }
+
     $('#whatsappMsgPreview').val(msg);
 
     const modalEl = document.getElementById('shareWhatsappModal');
@@ -1814,9 +2010,14 @@ $(document).ready(function() {
         openModal(); 
     });
 
-    // Show WhatsApp Modal Button
+    // Show WhatsApp Modal Button (Bill Share)
     $('#showWhatsappModalBtn').click(function() {
-        openWhatsappModal();
+        openWhatsappModal('bill');
+    });
+
+    // Notify Dispatch Button
+    $('#showDispatchModalBtn').click(function() {
+        openWhatsappModal('dispatch');
     });
 
     // Copy Invoice Link

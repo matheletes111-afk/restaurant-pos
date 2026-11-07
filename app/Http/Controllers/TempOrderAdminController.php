@@ -98,14 +98,27 @@ public function deleteItem($id)
             $isAddon = empty($remItem->subcategory_id);
             $lineOrig = $isAddon ? ($basePrice * $qty) : (($basePrice * $qty) + $remAddonsCost);
             $lineTax = $isAddon ? ($discPrice * $qty) : (($discPrice * $qty) + $remAddonsCost);
-            $gstRate = floatval($remItem->gst_rate ?? 0);
-            $lineGst = ($lineTax * $gstRate) / 100;
-            $lineCgst = ($lineTax * ($gstRate / 2)) / 100;
-            $lineSgst = ($lineTax * ($gstRate / 2)) / 100;
-
-            $lineTotal = $lineTax + $lineGst;
+            $vatRate = floatval($remItem->vat_rate ?? 0);
+            $lineVat = 0;
+            if ($vatRate > 0) {
+                $gstRate = 0;
+                $lineGst = 0;
+                $lineCgst = 0;
+                $lineSgst = 0;
+                $lineVat = ($lineTax * $vatRate) / 100;
+                $lineTotal = $lineTax + $lineVat;
+            } else {
+                $gstRate = floatval($remItem->gst_rate ?? 0);
+                $lineGst = ($lineTax * $gstRate) / 100;
+                $lineCgst = ($lineTax * ($gstRate / 2)) / 100;
+                $lineSgst = ($lineTax * ($gstRate / 2)) / 100;
+                $lineTotal = $lineTax + $lineGst;
+            }
 
             $remItem->taxable_amount = $lineTax;
+            $remItem->vat_rate = $vatRate;
+            $remItem->vat_amount = $lineVat;
+            $remItem->gst_rate = $gstRate;
             $remItem->gst_amount = $lineGst;
             $remItem->cgst_amount = $lineCgst;
             $remItem->sgst_amount = $lineSgst;
@@ -118,6 +131,7 @@ public function deleteItem($id)
             $gst += $lineGst;
             $cgst += $lineCgst;
             $sgst += $lineSgst;
+            $vat = ($vat ?? 0) + $lineVat;
             $discount += ($basePrice * $itemDisc / 100) * $qty;
         }
         $order->total_amount = $subtotal;
@@ -126,8 +140,9 @@ public function deleteItem($id)
         $order->cgst_amount = $cgst;
         $order->sgst_amount = $sgst;
         $order->igst_amount = 0;
+        $order->vat_amount = $vat ?? 0;
         $order->discount = $discount;
-        $order->grand_total = $taxable + $gst;
+        $order->grand_total = $taxable + $gst + ($vat ?? 0);
         $order->save();
     }
 
@@ -173,6 +188,7 @@ public function approveOrder($id)
         $calculatedGst = 0;
         $calculatedCgst = 0;
         $calculatedSgst = 0;
+        $calculatedVat = 0;
         $calculatedDiscount = 0;
 
         // Pre-calculate accurate totals from items
@@ -183,6 +199,7 @@ public function approveOrder($id)
             $itemDiscount = floatval($item->item_discount_percentage ?? 0);
             $discountedPrice = floatval($item->discounted_price ?: ($basePrice - ($basePrice * $itemDiscount / 100)));
             $gstRate = floatval($item->gst_rate ?? 0);
+            $vatRate = floatval($item->vat_rate ?? 0);
 
             // Read stored item amounts
             $taxableAmount = floatval($item->taxable_amount);
@@ -190,6 +207,7 @@ public function approveOrder($id)
             $gstAmount = floatval($item->gst_amount);
             $cgstAmount = floatval($item->cgst_amount);
             $sgstAmount = floatval($item->sgst_amount);
+            $vatAmount = floatval($item->vat_amount);
 
             if ($totalAmount <= 0) {
                 $addonsList = $item->addons_list ?? [];
@@ -202,10 +220,20 @@ public function approveOrder($id)
                 }
                 $lineOrig = $isAddon ? ($basePrice * $quantity) : (($basePrice * $quantity) + $addonsCost);
                 $taxableAmount = $isAddon ? ($discountedPrice * $quantity) : (($discountedPrice * $quantity) + $addonsCost);
-                $gstAmount = ($taxableAmount * $gstRate) / 100;
-                $cgstAmount = ($taxableAmount * ($gstRate / 2)) / 100;
-                $sgstAmount = ($taxableAmount * ($gstRate / 2)) / 100;
-                $totalAmount = $taxableAmount + $gstAmount;
+                if ($vatRate > 0) {
+                    $gstRate = 0;
+                    $gstAmount = 0;
+                    $cgstAmount = 0;
+                    $sgstAmount = 0;
+                    $vatAmount = ($taxableAmount * $vatRate) / 100;
+                    $totalAmount = $taxableAmount + $vatAmount;
+                } else {
+                    $gstAmount = ($taxableAmount * $gstRate) / 100;
+                    $cgstAmount = ($taxableAmount * ($gstRate / 2)) / 100;
+                    $sgstAmount = ($taxableAmount * ($gstRate / 2)) / 100;
+                    $vatAmount = 0;
+                    $totalAmount = $taxableAmount + $gstAmount;
+                }
                 $lineOrigSubtotal = $lineOrig;
             } else {
                 $lineOrigSubtotal = $taxableAmount + (($basePrice * $itemDiscount / 100) * $quantity);
@@ -216,6 +244,7 @@ public function approveOrder($id)
             $calculatedGst += $gstAmount;
             $calculatedCgst += $cgstAmount;
             $calculatedSgst += $sgstAmount;
+            $calculatedVat += $vatAmount;
             $calculatedDiscount += ($basePrice * $itemDiscount / 100) * $quantity;
 
             $processedItems[] = [
@@ -230,14 +259,20 @@ public function approveOrder($id)
                 'cgst_amount' => $cgstAmount,
                 'sgst_amount' => $sgstAmount,
                 'igst_amount' => 0,
+                'vat_rate' => $vatRate,
+                'vat_amount' => $vatAmount,
+                'bar_variation_id' => $item->bar_variation_id ?? null,
+                'bar_variation_name' => $item->bar_variation_name ?? null,
+                'bar_variation_ml' => $item->bar_variation_ml ?? null,
                 'total_amount' => $totalAmount,
             ];
         }
 
-        $orderGrandTotal = floatval($tempOrder->grand_total ?: ($calculatedTaxable + $calculatedGst));
+        $orderGrandTotal = floatval($tempOrder->grand_total ?: ($calculatedTaxable + $calculatedGst + $calculatedVat));
         $orderTotalAmount = floatval($tempOrder->total_amount ?: $calculatedSubtotal);
         $orderTaxableAmount = floatval($tempOrder->taxable_amount ?: $calculatedTaxable);
         $orderGstAmount = floatval($tempOrder->gst_amount ?: $calculatedGst);
+        $orderVatAmount = floatval($tempOrder->vat_amount ?: $calculatedVat);
         $orderDiscount = floatval($tempOrder->discount ?: $calculatedDiscount);
 
         // Create main order with all fields (using NEW order number)
@@ -253,6 +288,7 @@ public function approveOrder($id)
         $order->cgst_amount = $calculatedCgst;
         $order->sgst_amount = $calculatedSgst;
         $order->igst_amount = 0;
+        $order->vat_amount = $orderVatAmount;
         $order->discount = $orderDiscount;
         $order->discount_percentage = $tempOrder->discount_percentage;
         $order->grand_total = $orderGrandTotal;
@@ -288,6 +324,11 @@ public function approveOrder($id)
             $orderItem->cgst_amount = $p['cgst_amount'];
             $orderItem->sgst_amount = $p['sgst_amount'];
             $orderItem->igst_amount = $p['igst_amount'];
+            $orderItem->vat_rate = $p['vat_rate'] ?? 0;
+            $orderItem->vat_amount = $p['vat_amount'] ?? 0;
+            $orderItem->bar_variation_id = $p['bar_variation_id'] ?? null;
+            $orderItem->bar_variation_name = $p['bar_variation_name'] ?? null;
+            $orderItem->bar_variation_ml = $p['bar_variation_ml'] ?? null;
             $orderItem->total_amount = $p['total_amount'];
             $orderItem->order_status = 'PENDING';
             $orderItem->is_new = 0;

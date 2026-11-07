@@ -26,6 +26,7 @@ class User extends Authenticatable implements JWTSubject
         'role_type',
         'restaurant_id',
         'phone',
+        'address',
         'status',
         'permissions',
     ];
@@ -69,6 +70,11 @@ class User extends Authenticatable implements JWTSubject
 
         // Automatic inheritance: Users with order_master permission automatically get rapid_bill access
         if ($menuKey === 'rapid_bill' && (in_array('order_master', $perms) || in_array('order_master.' . $action, $perms) || in_array('order_master.view', $perms))) {
+            return true;
+        }
+
+        // Automatic inheritance: Users with menu_master permission automatically get bar_management access
+        if ($menuKey === 'bar_management' && (in_array('bar_management', $perms) || in_array('menu_master', $perms) || in_array('bar_management.' . $action, $perms) || in_array('menu_master.' . $action, $perms))) {
             return true;
         }
 
@@ -153,6 +159,30 @@ class User extends Authenticatable implements JWTSubject
         return collect([$mainRest])->merge($outlets);
     }
 
+    public function hasBarAccess(): bool
+    {
+        if ($this->role === 'SA') {
+            return true;
+        }
+
+        $subRestId = $this->getSubscriptionRestaurantId();
+        if (!$subRestId) {
+            return false;
+        }
+
+        $activeSub = \App\Models\Subscription::where('user_id', $subRestId)
+            ->whereIn('status', ['active', 'completed'])
+            ->with('plan')
+            ->latest('id')
+            ->first();
+
+        if ($activeSub && $activeSub->plan) {
+            return ($activeSub->plan->bar_management_checkbox === 'Y');
+        }
+
+        return false;
+    }
+
     public function hasMultiOutletAccess(): bool
     {
         $subRestId = $this->getSubscriptionRestaurantId();
@@ -204,5 +234,20 @@ class User extends Authenticatable implements JWTSubject
         }
 
         return route('dashboard');
+    }
+
+    public function franchiseRestaurants()
+    {
+        return $this->belongsToMany(
+            \App\Models\RestaurantMaster::class,
+            'franchise_restaurant_mappings',
+            'user_id',
+            'restaurant_id'
+        )->withTimestamps();
+    }
+
+    public function franchiseMappings()
+    {
+        return $this->hasMany(\App\Models\FranchiseRestaurantMapping::class, 'user_id');
     }
 }

@@ -498,6 +498,18 @@
             border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
+        .item-status-pill.status-served {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+
+        .item-status-pill.status-ready {
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid rgba(14, 165, 233, 0.35);
+        }
+
         @keyframes pulseSubtle {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.75; }
@@ -892,6 +904,11 @@
                                 <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 4px;">
                                     <span class="item-qty-badge">{{ $qty }}x</span>
                                     <strong style="color: var(--text-main); font-size: 0.94rem;">{{ $itemName }}</strong>
+                                    @if(!empty($itm->bar_variation_name) || !empty($itm->bar_variation_ml))
+                                        <span class="badge" style="background: linear-gradient(135deg, #1e293b, #334155); color: #f8fafc; font-size: 0.72rem; padding: 2px 7px; border-radius: 6px; font-weight: 600; letter-spacing: 0.3px; border: 1px solid rgba(255,255,255,0.15); display: inline-flex; align-items: center; gap: 4px;">
+                                            <i class="fas fa-wine-glass-alt text-warning"></i> {{ $itm->bar_variation_name ?: ($itm->bar_variation_ml . ' ml') }}
+                                        </span>
+                                    @endif
                                     @if(!empty($kotNo))
                                         <span class="kot-badge" id="kotBadge_{{ $itm->id }}"><i class="fas fa-receipt"></i> {{ $kotNo }}</span>
                                     @endif
@@ -913,11 +930,18 @@
                                     </div>
                                 @endif
                                 <div style="display: flex; align-items: center; gap: 8px;">
+                                    @php
+                                        $isBarItem = !empty($itm->bar_variation_id) || floatval($itm->vat_rate ?? 0) > 0 || (isset($itm->subcategory) && strtoupper($itm->subcategory->food_type ?? '') === 'BAR');
+                                    @endphp
                                     <span class="item-status-pill status-{{ strtolower($itemStatus) }}" id="itemStatusBadge_{{ $itm->id }}">
-                                        @if($itemStatus === 'COOKING')
-                                            <i class="fas fa-fire-burner"></i> Cooking
-                                        @elseif($itemStatus === 'DONE')
-                                            <i class="fas fa-check-circle"></i> Cooked
+                                        @if($itemStatus === 'SERVED')
+                                            <i class="fas {{ $isBarItem ? 'fa-wine-glass-alt' : 'fa-check-double' }}"></i> Served
+                                        @elseif($itemStatus === 'DONE' || $itemStatus === 'COOKED' || $itemStatus === 'COMPLETED')
+                                            <i class="fas fa-check-circle"></i> {{ $isBarItem ? 'Served' : 'Cooked' }}
+                                        @elseif($itemStatus === 'READY')
+                                            <i class="fas fa-bell"></i> Ready
+                                        @elseif($itemStatus === 'COOKING' || $itemStatus === 'PREPARING' || $itemStatus === 'POURING')
+                                            <i class="fas {{ $isBarItem ? 'fa-cocktail' : 'fa-fire-burner' }}"></i> {{ $isBarItem ? 'Preparing' : 'Cooking' }}
                                         @else
                                             <i class="fas fa-hourglass-half"></i> Pending
                                         @endif
@@ -963,6 +987,12 @@
                         <div class="total-item-row">
                             <span>GST</span>
                             <span>₹{{ number_format($gstAmount, 2) }}</span>
+                        </div>
+                    @endif
+                    @if(isset($vatAmount) && $vatAmount > 0)
+                        <div class="total-item-row" style="color: #0284c7;">
+                            <span><i class="fas fa-wine-glass-alt me-1"></i> State VAT (Liquor)</span>
+                            <span style="font-weight: 700;">₹{{ number_format($vatAmount, 2) }}</span>
                         </div>
                     @endif
                     <div class="total-item-row grand-row">
@@ -1169,12 +1199,22 @@
                             }
 
                             if (badge) {
-                                const statusLower = itm.order_status.toLowerCase();
+                                const statusUpper = (itm.order_status || '').toUpperCase();
+                                const statusLower = statusUpper.toLowerCase();
+                                const isBar = itm.bar_variation_name || itm.bar_variation_ml || itm.is_bar;
                                 badge.className = 'item-status-pill status-' + statusLower;
-                                if (itm.order_status === 'COOKING') {
-                                    badge.innerHTML = '<i class="fas fa-fire-burner"></i> Cooking';
-                                } else if (itm.order_status === 'DONE') {
-                                    badge.innerHTML = '<i class="fas fa-check-circle"></i> Cooked';
+                                if (statusUpper === 'SERVED') {
+                                    const icon = isBar ? 'fa-wine-glass-alt' : 'fa-check-double';
+                                    badge.innerHTML = '<i class="fas ' + icon + '"></i> Served';
+                                } else if (statusUpper === 'DONE' || statusUpper === 'COOKED' || statusUpper === 'COMPLETED') {
+                                    const label = isBar ? 'Served' : 'Cooked';
+                                    badge.innerHTML = '<i class="fas fa-check-circle"></i> ' + label;
+                                } else if (statusUpper === 'READY') {
+                                    badge.innerHTML = '<i class="fas fa-bell"></i> Ready';
+                                } else if (statusUpper === 'COOKING' || statusUpper === 'PREPARING' || statusUpper === 'POURING') {
+                                    const icon = isBar ? 'fa-cocktail' : 'fa-fire-burner';
+                                    const label = isBar ? 'Preparing' : 'Cooking';
+                                    badge.innerHTML = '<i class="fas ' + icon + '"></i> ' + label;
                                 } else {
                                     badge.innerHTML = '<i class="fas fa-hourglass-half"></i> Pending';
                                 }

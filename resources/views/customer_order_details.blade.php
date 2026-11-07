@@ -524,6 +524,18 @@
             border: 1px solid var(--status-done-border);
         }
 
+        .dish-status-tag.status-served {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+
+        .dish-status-tag.status-ready {
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid rgba(14, 165, 233, 0.35);
+        }
+
         /* Action Buttons */
         .btn-cancel-pending {
             background: #ffffff;
@@ -894,7 +906,14 @@
                         <div class="dish-info-col">
                             <div class="dish-title-row">
                                 <span class="dish-qty-chip">{{ $itm->quantity }}x</span>
-                                <span class="dish-name-text">{{ $itmName }}</span>
+                                <span class="dish-name-text">
+                                    {{ $itmName }}
+                                    @if(!empty($itm->bar_variation_name) || !empty($itm->bar_variation_ml))
+                                        <span class="badge" style="background: linear-gradient(135deg, #1e293b, #334155); color: #f8fafc; font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; font-weight: 600; margin-left: 6px; letter-spacing: 0.3px; border: 1px solid rgba(255,255,255,0.15); display: inline-flex; align-items: center; gap: 4px;">
+                                            <i class="fas fa-wine-glass-alt text-warning"></i> {{ $itm->bar_variation_name ?: ($itm->bar_variation_ml . ' ml') }}
+                                        </span>
+                                    @endif
+                                </span>
                             </div>
                             @if(!empty($itm->addons_list) && count($itm->addons_list) > 0 && !$isStandaloneAddon)
                                 <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
@@ -919,13 +938,24 @@
                         <div class="dish-right-col">
                             <!-- Kitchen Status Badge -->
                             <div id="dishStatusWrap_{{ $itm->id }}">
-                                @if($itmStatus === 'COOKING')
-                                    <span class="dish-status-tag status-cooking" id="statusBadge_{{ $itm->id }}">
-                                        <i class="fas fa-fire-burner"></i> Cooking
+                                @php
+                                    $isBarItem = !empty($itm->bar_variation_id) || floatval($itm->vat_rate ?? 0) > 0 || (isset($itm->subcategory) && strtoupper($itm->subcategory->food_type ?? '') === 'BAR');
+                                @endphp
+                                @if($itmStatus === 'SERVED')
+                                    <span class="dish-status-tag status-served" id="statusBadge_{{ $itm->id }}">
+                                        <i class="fas {{ $isBarItem ? 'fa-wine-glass-alt' : 'fa-check-double' }}"></i> Served
                                     </span>
-                                @elseif($itmStatus === 'DONE')
+                                @elseif($itmStatus === 'DONE' || $itmStatus === 'COOKED' || $itmStatus === 'COMPLETED')
                                     <span class="dish-status-tag status-done" id="statusBadge_{{ $itm->id }}">
-                                        <i class="fas fa-check-circle"></i> Cooked
+                                        <i class="fas fa-check-circle"></i> {{ $isBarItem ? 'Served' : 'Cooked' }}
+                                    </span>
+                                @elseif($itmStatus === 'READY')
+                                    <span class="dish-status-tag status-ready" id="statusBadge_{{ $itm->id }}">
+                                        <i class="fas fa-bell"></i> Ready
+                                    </span>
+                                @elseif($itmStatus === 'COOKING' || $itmStatus === 'PREPARING' || $itmStatus === 'POURING')
+                                    <span class="dish-status-tag status-cooking" id="statusBadge_{{ $itm->id }}">
+                                        <i class="fas {{ $isBarItem ? 'fa-cocktail' : 'fa-fire-burner' }}"></i> {{ $isBarItem ? 'Preparing' : 'Cooking' }}
                                     </span>
                                 @else
                                     <span class="dish-status-tag status-pending" id="statusBadge_{{ $itm->id }}">
@@ -981,6 +1011,13 @@
             <div class="bill-calc-row">
                 <span>GST (CGST + SGST)</span>
                 <span>₹{{ number_format($gstAmount, 2) }}</span>
+            </div>
+        @endif
+
+        @if(isset($vatAmount) && $vatAmount > 0)
+            <div class="bill-calc-row" style="color: #0284c7;">
+                <span><i class="fas fa-wine-glass-alt me-1"></i> State VAT (Liquor)</span>
+                <span style="font-weight: 700;">₹{{ number_format($vatAmount, 2) }}</span>
             </div>
         @endif
 
@@ -1138,17 +1175,29 @@
                         const actionWrap = document.getElementById('dishActionWrap_' + itm.id);
 
                         if (badgeWrap) {
-                            if (itm.order_status === 'COOKING') {
-                                badgeWrap.innerHTML = '<span class="dish-status-tag status-cooking" id="statusBadge_' + itm.id + '"><i class="fas fa-fire-burner"></i> Cooking</span>';
-                            } else if (itm.order_status === 'DONE') {
-                                badgeWrap.innerHTML = '<span class="dish-status-tag status-done" id="statusBadge_' + itm.id + '"><i class="fas fa-check-circle"></i> Cooked</span>';
+                            const statusUpper = (itm.order_status || '').toUpperCase();
+                            const isBar = itm.bar_variation_name || itm.bar_variation_ml || itm.is_bar;
+
+                            if (statusUpper === 'SERVED') {
+                                const iconClass = isBar ? 'fa-wine-glass-alt' : 'fa-check-double';
+                                badgeWrap.innerHTML = '<span class="dish-status-tag status-served" id="statusBadge_' + itm.id + '"><i class="fas ' + iconClass + '"></i> Served</span>';
+                            } else if (statusUpper === 'DONE' || statusUpper === 'COOKED' || statusUpper === 'COMPLETED') {
+                                const label = isBar ? 'Served' : 'Cooked';
+                                badgeWrap.innerHTML = '<span class="dish-status-tag status-done" id="statusBadge_' + itm.id + '"><i class="fas fa-check-circle"></i> ' + label + '</span>';
+                            } else if (statusUpper === 'READY') {
+                                badgeWrap.innerHTML = '<span class="dish-status-tag status-ready" id="statusBadge_' + itm.id + '"><i class="fas fa-bell"></i> Ready</span>';
+                            } else if (statusUpper === 'COOKING' || statusUpper === 'PREPARING' || statusUpper === 'POURING') {
+                                const iconClass = isBar ? 'fa-cocktail' : 'fa-fire-burner';
+                                const label = isBar ? 'Preparing' : 'Cooking';
+                                badgeWrap.innerHTML = '<span class="dish-status-tag status-cooking" id="statusBadge_' + itm.id + '"><i class="fas ' + iconClass + '"></i> ' + label + '</span>';
                             } else {
                                 badgeWrap.innerHTML = '<span class="dish-status-tag status-pending" id="statusBadge_' + itm.id + '"><i class="fas fa-hourglass-half"></i> Pending</span>';
                             }
                         }
 
                         if (actionWrap) {
-                            if (itm.order_status === 'PENDING') {
+                            const statusUpper = (itm.order_status || '').toUpperCase();
+                            if (statusUpper === 'PENDING') {
                                 actionWrap.innerHTML = '<button type="button" class="btn-cancel-pending" onclick="cancelPendingDish(' + itm.id + ')"><i class="fas fa-trash-alt"></i> Cancel</button>';
                             } else {
                                 actionWrap.innerHTML = '<span class="badge-locked-state" title="Kitchen is actively preparing this dish and it cannot be cancelled."><i class="fas fa-lock"></i> Locked</span>';

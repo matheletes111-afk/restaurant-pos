@@ -21,11 +21,12 @@
     <!-- Navbar -->
     <nav class="navbar">
         <div class="container nav-container">
-            <a href="#" class="logo">
+            <a href="{{ route('home') }}" class="logo">
                 <img src="{{ asset('logo.png') }}" alt="Bill&Bite Logo" style="height: 40px; width: auto;">
             </a>
             <div class="nav-links">
                 <a href="#features">Features</a>
+                <a href="{{ url('/bar') }}" style="color: #ff6a00; font-weight: 700;"><i class="ph ph-martini"></i> Bar POS</a>
                 <a href="#pricing">Pricing</a>
                 <a href="#how-it-works">How It Works</a>
                 <a href="#platform-benefits">Benefits</a>
@@ -738,7 +739,10 @@
                                 <li><i class="ph-fill ph-check-circle"></i> Order Management</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Kitchen Panel</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Qr Code Ordering</li>
+                                <li><i class="ph-fill ph-check-circle"></i> Invoice Whatsapp Sharing</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Customer Support</li>
+                                <li><i class="ph-fill ph-check-circle"></i> Installing & Training (Online)</li>
+                                <li><i class="ph-fill ph-check-circle"></i> Support 24 x 7 (Online)</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Staff Management</li>
                                 <li><i class="ph-fill ph-check-circle"></i> Cash Drawer Management</li>
                                 @if(($plan->report_management_checkbox ?? 'Y') == 'Y')
@@ -1059,7 +1063,7 @@
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-brand">
-                    <a href="#" class="logo mb-4">
+                    <a href="{{ route('home') }}" class="logo mb-4">
                         <img src="{{ asset('logo.png') }}" alt="Bill&Bite Logo" style="height: 40px; width: auto;">
                     </a>
                     <p>Bill & Bite is a complete restaurant management system designed to simplify your operations and help your business grow.</p>

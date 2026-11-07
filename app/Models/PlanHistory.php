@@ -23,6 +23,7 @@ class PlanHistory extends Model
         'inventory_checkbox',
         'multi_outlet_checkbox',
         'report_management_checkbox',
+        'bar_management_checkbox',
         'total_number_of_outlets',
         'is_default_free',
         'is_default_paid'

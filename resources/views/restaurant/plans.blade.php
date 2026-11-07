@@ -554,6 +554,7 @@
                                         <li><i class="fas fa-check-circle text-success"></i> Order Management</li>
                                         <li><i class="fas fa-check-circle text-success"></i> Kitchen Panel</li>
                                         <li><i class="fas fa-check-circle text-success"></i> Qr Code Ordering</li>
+                                        <li><i class="fas fa-check-circle text-success"></i> Invoice Whatsapp Sharing</li>
                                         <li><i class="fas fa-check-circle text-success"></i> Customer Support</li>
                                         <li><i class="fas fa-check-circle text-success"></i> Staff Management</li>
                                         <li><i class="fas fa-check-circle text-success"></i> Cash Drawer Management</li>
@@ -561,6 +562,12 @@
                                             <li><i class="fas fa-check-circle text-success"></i> Report Management</li>
                                         @else
                                             <li><i class="fas fa-times-circle text-danger"></i> Report Management</li>
+                                        @endif
+
+                                        @if(($plan->bar_management_checkbox ?? 'N') == 'Y')
+                                            <li><i class="fas fa-check-circle text-success"></i> Bar Management</li>
+                                        @else
+                                            <li><i class="fas fa-times-circle text-danger"></i> Bar Management</li>
                                         @endif
 
                                         @if($plan->inventory_checkbox == 'Y')
