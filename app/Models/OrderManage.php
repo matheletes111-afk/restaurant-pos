@@ -14,7 +14,6 @@ class OrderManage extends Model
     protected $fillable = [
         'customer_name',
         'customer_phone',
-        'customer_email',
         'table_id',
         'order_type',
         'discount',

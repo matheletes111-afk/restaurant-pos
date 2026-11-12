@@ -109,7 +109,6 @@ class RestaurantCustomerListTest extends TestCase
         // Check Customer A is listed
         $response->assertSeeText('Ananya Sharma');
         $response->assertSeeText('9988776655');
-        $response->assertSeeText('ananya@example.com');
         // Check orders combined for Customer A (total spent 1300)
         $response->assertSeeText('1,300.00');
 
@@ -169,12 +168,6 @@ class RestaurantCustomerListTest extends TestCase
         $resPhone->assertStatus(200);
         $resPhone->assertSeeText('Sneha Patel');
         $resPhone->assertDontSeeText('Vikramaditya Roy');
-
-        // Search by email domain "testdomain"
-        $resEmail = $this->actingAs($user)->get('/customers?keyword=testdomain');
-        $resEmail->assertStatus(200);
-        $resEmail->assertSeeText('sneha@testdomain.com');
-        $resEmail->assertDontSeeText('Vikramaditya Roy');
     }
 
     public function test_excel_export_downloads_spreadsheet()

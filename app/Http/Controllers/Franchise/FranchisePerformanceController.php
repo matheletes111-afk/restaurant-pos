@@ -890,7 +890,7 @@ class FranchisePerformanceController extends Controller
             ->whereNotNull('customer_name')
             ->where('customer_name', '!=', '')
             ->whereRaw("LOWER(TRIM(customer_name)) NOT LIKE '%walk%in%'")
-            ->select('id', 'customer_name', 'customer_phone', 'customer_email', 'grand_total', 'created_at')
+            ->select('id', 'customer_name', 'customer_phone', 'grand_total', 'created_at')
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -901,7 +901,7 @@ class FranchisePerformanceController extends Controller
             $name = trim($order->customer_name);
             $rawPhone = trim($order->customer_phone ?? '');
             $cleanPhone = preg_replace('/[^0-9]/', '', $rawPhone);
-            $email = trim($order->customer_email ?? '');
+            $email = '';
             $orderTotal = (float) ($order->grand_total ?? 0);
             $orderDate = $order->created_at ? Carbon::parse($order->created_at) : null;
 

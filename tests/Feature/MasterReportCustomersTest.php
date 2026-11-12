@@ -75,7 +75,6 @@ class MasterReportCustomersTest extends TestCase
             'restaurant_id' => $restaurant->id,
             'customer_name' => 'Rohit Sharma',
             'customer_phone' => '9876543210',
-            'customer_email' => 'rohit@example.com',
             'total_amount' => 1200,
             'grand_total' => 1200,
             'amount_paid' => 1200,
@@ -88,7 +87,6 @@ class MasterReportCustomersTest extends TestCase
             'restaurant_id' => $restaurant->id,
             'customer_name' => 'Rohit Sharma',
             'customer_phone' => '9876543210',
-            'customer_email' => null,
             'total_amount' => 1500,
             'grand_total' => 1500,
             'amount_paid' => 1500,
@@ -101,7 +99,6 @@ class MasterReportCustomersTest extends TestCase
             'restaurant_id' => $restaurant->id,
             'customer_name' => 'Walk-in Customer',
             'customer_phone' => null,
-            'customer_email' => null,
             'total_amount' => 350,
             'grand_total' => 350,
             'amount_paid' => 350,
@@ -114,7 +111,6 @@ class MasterReportCustomersTest extends TestCase
             'restaurant_id' => $restaurant->id,
             'customer_name' => 'Suman Roy',
             'customer_phone' => null,
-            'customer_email' => null,
             'total_amount' => 450,
             'grand_total' => 450,
             'amount_paid' => 450,
@@ -128,7 +124,6 @@ class MasterReportCustomersTest extends TestCase
         // Deduplication: Rohit Sharma should only appear once in customer list (1 row)
         $response->assertSee('Rohit Sharma');
         $this->assertEquals(1, substr_count($response->getContent(), 'href="tel:9876543210"'));
-        $this->assertEquals(1, substr_count($response->getContent(), 'href="mailto:rohit@example.com"'));
 
         // Suman Roy without phone/email shows "Not Found"
         $response->assertSee('Suman Roy');

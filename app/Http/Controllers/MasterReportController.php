@@ -645,7 +645,6 @@ class MasterReportController extends Controller
                 'id',
                 'customer_name',
                 'customer_phone',
-                'customer_email',
                 'grand_total',
                 'amount_paid',
                 'created_at'
@@ -662,7 +661,7 @@ class MasterReportController extends Controller
             $hasPhone = strlen($cleanPhone) >= 6;
 
             $name = trim($order->customer_name ?? '');
-            $email = trim($order->customer_email ?? '');
+            $email = '';
             $orderTotal = floatval($order->amount_paid ?: $order->grand_total);
             $orderDate = $order->created_at ? Carbon::parse($order->created_at) : null;
 
