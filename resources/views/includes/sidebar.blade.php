@@ -220,7 +220,7 @@
     <div class="navbar-content">
       <ul class="pc-navbar">
 
-        @if(auth()->user()->role != "RES")
+        @if(auth()->user()->role == "SA")
         {{-- ==================== ADMIN ROUTES ==================== --}}
         @php
           $saUser = auth()->user();
@@ -315,6 +315,20 @@
         </li>
         @endif
         {{-- ==================== END ADMIN ROUTES ==================== --}}
+        @elseif(auth()->user()->role == "FSO")
+        {{-- ==================== FRANCHISE SPONSORSHIP OWNER ROUTES ==================== --}}
+        <li class="pc-item">
+          <a href="{{ route('franchise.dashboard') }}" class="pc-link @if(Request::is('*franchise-owners-dashboard*') || Request::is('*franchise-dashboard*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-chart-line"></i></span>
+            <span class="pc-mtext">Franchise Dashboard</span>
+          </a>
+        </li>
+        <li class="pc-item">
+          <a href="{{ route('franchise.performance.index') }}" class="pc-link @if(Request::is('*franchise/performance*') || Request::is('*franchise-performance*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-tachometer-alt"></i></span>
+            <span class="pc-mtext">Performance</span>
+          </a>
+        </li>
         @endif
 
 
@@ -471,6 +485,16 @@
           <a href="{{route('order.management.dashboard')}}" class="pc-link @if((Request::is('*order-management*') || Request::is('*order-management-dashboard*') || Request::is('admin/order*') || Request::is('order/*')) && !Request::is('*rapid-bill*')) active_class @endif">
             <span class="pc-micon"><i class="fas fa-receipt"></i></span>
             <span class="pc-mtext">Order Master</span>
+          </a>
+        </li>
+        @endif
+
+        {{-- Customer List --}}
+        @if(auth()->user()->role == 'RES' || auth()->user()->hasPermission('order_master') || auth()->user()->hasPermission('customer_list'))
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{ route('restaurant.customers.index') }}" class="pc-link @if(Request::is('*customer-list*') || Request::is('*customers*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-users"></i></span>
+            <span class="pc-mtext">Customer List</span>
           </a>
         </li>
         @endif
@@ -878,7 +902,7 @@
           <div class="d-flex align-items-center justify-content-between">
             <div class="flex-grow-1 me-2 text-truncate">
               <h6 class="mb-0 text-truncate fw-bold">@if(auth()->user()->role=="RES"){{ optional(auth()->user()->restaurant)->name ?? auth()->user()->name }}@else{{ auth()->user()->name }}@endif</h6>
-              <small class="text-muted" style="font-size: 0.75rem;">{{ auth()->user()->role == 'RES' ? 'Restaurant Admin' : 'Admin' }}</small>
+              <small class="text-muted" style="font-size: 0.75rem;">{{ auth()->user()->role == 'RES' ? 'Restaurant Admin' : (auth()->user()->role == 'FSO' ? 'Franchise Owner' : 'Super Admin') }}</small>
             </div>
             <a href="{{ route('logout') }}" class="pc-head-link bg-transparent p-1" title="Logout">
               <i class="ti ti-power text-danger fs-5"></i>

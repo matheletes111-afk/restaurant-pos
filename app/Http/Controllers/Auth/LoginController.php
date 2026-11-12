@@ -166,6 +166,10 @@ class LoginController extends Controller
         if ($user->role == "SA") {
             return redirect()->route('admin.dashboard');
         }
+
+        if ($user->role == "FSO") {
+            return redirect()->route('franchise.dashboard');
+        }
         
         $subRestaurantId = method_exists($user, 'getSubscriptionRestaurantId') ? $user->getSubscriptionRestaurantId() : $user->restaurant_id;
         $active = DB::table('subscriptions')

@@ -468,11 +468,14 @@
                     color: #ffffff;
                 }
                 .plans-wrapper {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    align-items: stretch;
                     gap: 30px;
                     max-width: 1100px;
                     margin: 0 auto;
+                    width: 100%;
                 }
                 .plan-card {
                     background: white;
@@ -484,6 +487,10 @@
                     position: relative;
                     transition: all 0.3s ease;
                     animation: fadeInPlan 0.4s ease forwards;
+                    flex: 1 1 340px;
+                    max-width: 440px;
+                    width: 100%;
+                    box-sizing: border-box;
                 }
                 @keyframes fadeInPlan {
                     from { opacity: 0; transform: translateY(12px); }
@@ -528,19 +535,37 @@
                 }
                 .plan-price {
                     display: flex;
-                    align-items: baseline;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 4px;
+                    margin-bottom: 12px;
+                }
+                .cross-price-box {
+                    display: inline-flex;
+                    align-items: center;
                     justify-content: center;
                     gap: 8px;
-                }
-                .active-price {
-                    font-size: 2.5rem;
-                    font-weight: 800;
-                    color: #0f172a;
+                    margin-bottom: 2px;
                 }
                 .cross-price {
                     font-size: 1.25rem;
+                    font-weight: 600;
                     color: #94a3b8;
                     text-decoration: line-through;
+                    line-height: 1.2;
+                }
+                .main-price-box {
+                    display: flex;
+                    align-items: baseline;
+                    justify-content: center;
+                }
+                .active-price {
+                    font-size: 2.75rem;
+                    font-weight: 800;
+                    color: #0f172a;
+                    line-height: 1.1;
+                    letter-spacing: -0.5px;
                 }
                 .plan-duration {
                     font-size: 0.88rem;
@@ -611,6 +636,89 @@
                     color: white;
                     box-shadow: 0 6px 18px rgba(255, 106, 0, 0.25);
                 }
+
+                @media (max-width: 991px) {
+                    .pricing {
+                        padding: 60px 0 !important;
+                    }
+                    .plans-wrapper {
+                        gap: 25px;
+                    }
+                    .plan-card {
+                        padding: 32px 26px;
+                    }
+                }
+
+                @media (max-width: 768px) {
+                    .pricing {
+                        padding: 50px 0 !important;
+                    }
+                    .section-header h2 {
+                        font-size: 1.85rem !important;
+                    }
+                    .section-header p {
+                        font-size: 0.95rem;
+                    }
+                    .plans-wrapper {
+                        gap: 20px;
+                        padding: 0 12px;
+                    }
+                    .plan-card {
+                        padding: 28px 20px;
+                        max-width: 100%;
+                        border-radius: 16px;
+                    }
+                    .active-price {
+                        font-size: 2.25rem;
+                    }
+                    .cross-price {
+                        font-size: 1.1rem;
+                    }
+                    .plan-name {
+                        font-size: 1.25rem;
+                    }
+                    .plan-features-list li {
+                        font-size: 0.88rem;
+                        gap: 8px;
+                    }
+                    .pricing-tab-btn {
+                        padding: 8px 18px;
+                        font-size: 0.88rem;
+                    }
+                }
+
+                @media (max-width: 480px) {
+                    .pricing {
+                        padding: 40px 0 !important;
+                    }
+                    .plan-card {
+                        padding: 24px 15px;
+                    }
+                    .active-price {
+                        font-size: 1.95rem;
+                    }
+                    .cross-price {
+                        font-size: 1rem;
+                    }
+                    .default-badge {
+                        font-size: 0.7rem;
+                        padding: 4px 12px;
+                        top: -12px;
+                    }
+                    .pricing-toggle-container {
+                        width: 100%;
+                        max-width: 320px;
+                        justify-content: center;
+                    }
+                    .pricing-tab-btn {
+                        padding: 8px 12px;
+                        font-size: 0.8rem;
+                    }
+                    .btn-plan {
+                        padding: 12px 16px;
+                        font-size: 0.9rem;
+                    }
+                }
             </style>
  
             <div class="plans-wrapper" id="welcomePlansContainer">
@@ -629,20 +737,26 @@
                         @endif
                         <div class="plan-header">
                             <h3 class="plan-name">{{ $plan->name }}</h3>
-                            <div class="plan-price" style="margin-bottom: 10px;">
+                            <div class="plan-price">
                                 @if($plan->price == 0)
-                                    <span class="active-price">FREE</span>
+                                    <div class="main-price-box">
+                                        <span class="active-price">FREE</span>
+                                    </div>
                                 @else
                                     @if($plan->cross_price)
-                                        <span class="cross-price">
-                                            @if(is_numeric($plan->cross_price))
-                                                ₹{{ number_format($plan->cross_price, 2) }}
-                                            @else
-                                                {{ $plan->cross_price }}
-                                            @endif
-                                        </span>
+                                        <div class="cross-price-box">
+                                            <span class="cross-price">
+                                                @if(is_numeric($plan->cross_price))
+                                                    ₹{{ number_format($plan->cross_price, 2) }}
+                                                @else
+                                                    {{ $plan->cross_price }}
+                                                @endif
+                                            </span>
+                                        </div>
                                     @endif
-                                    <span class="active-price">₹{{ number_format($plan->price, 2) }}</span>
+                                    <div class="main-price-box">
+                                        <span class="active-price">₹{{ number_format($plan->price, 2) }}</span>
+                                    </div>
                                 @endif
                             </div>
                             <div class="plan-duration">

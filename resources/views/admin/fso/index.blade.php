@@ -807,9 +807,9 @@
                     </div>
                     <div>
                         <h5 class="modal-title mb-0 fw-bold" id="mapRestaurantModalLabel" style="font-family: 'Outfit', sans-serif; color: var(--fso-dark);">
-                            Restaurant Mapping
+                            Parent Restaurant Mapping
                         </h5>
-                        <small class="text-muted">Map restaurants for <strong id="mapModalOwnerTitle" class="text-primary">Owner</strong> (Role: FSO)</small>
+                        <small class="text-muted">Map parent restaurants for <strong id="mapModalOwnerTitle" class="text-primary">Owner</strong> (Role: FSO)</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -820,12 +820,12 @@
                 <div class="card border-0 mb-4" style="background: #f8fafc; border-radius: 14px; border: 1px dashed #cbd5e1 !important;">
                     <div class="card-body p-3">
                         <label class="fso-form-label mb-2">
-                            <i class="fas fa-search me-1 text-primary"></i> Search & Select Restaurant from Dropdown
+                            <i class="fas fa-search me-1 text-primary"></i> Search & Select Parent Restaurant from Dropdown
                         </label>
                         <div class="row g-2 align-items-center">
                             <div class="col-md-9 col-12">
                                 <select id="mapRestaurantSelect" class="form-select select2-restaurant" style="width: 100%;">
-                                    <option value="">-- Choose a restaurant to map --</option>
+                                    <option value="">-- Choose a parent restaurant to map --</option>
                                 </select>
                             </div>
                             <div class="col-md-3 col-12">
@@ -842,7 +842,7 @@
                 <div>
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <h6 class="fw-bold mb-0 text-dark" style="font-family: 'Outfit', sans-serif;">
-                            <i class="fas fa-store text-primary me-2"></i> Currently Mapped Restaurants
+                            <i class="fas fa-store text-primary me-2"></i> Currently Mapped Parent Restaurants
                         </h6>
                         <span class="badge bg-primary rounded-pill px-3 py-1" id="mappedBadgeCount">0 Mapped</span>
                     </div>
@@ -860,8 +860,8 @@
                         <div class="mb-2 text-muted opacity-50" style="font-size: 2.2rem;">
                             <i class="fas fa-unlink"></i>
                         </div>
-                        <h6 class="text-dark fw-bold mb-1">No Restaurants Mapped Yet</h6>
-                        <p class="text-muted small mb-0">Select an available restaurant from the dropdown above and click <strong>Add</strong> to map it.</p>
+                        <h6 class="text-dark fw-bold mb-1">No Parent Restaurants Mapped Yet</h6>
+                        <p class="text-muted small mb-0">Select an available parent restaurant from the dropdown above and click <strong>Add</strong> to map it.</p>
                     </div>
 
                     <!-- Table of Mapped Restaurants -->
@@ -953,7 +953,7 @@
           }
           $('#mapRestaurantSelect').select2({
               dropdownParent: $('#mapRestaurantModal'),
-              placeholder: '-- Search & choose a restaurant --',
+              placeholder: '-- Search & choose a parent restaurant --',
               allowClear: true,
               width: '100%'
           });
@@ -982,10 +982,10 @@
               $(`#mappedCountBadge_${currentFsoId}`).text(count);
           }
 
-          // 1. Populate Dropdown with Available Restaurants
+          // 1. Populate Dropdown with Available Parent Restaurants
           const select = $('#mapRestaurantSelect');
           select.empty();
-          select.append('<option value="">-- Choose a restaurant to map --</option>');
+          select.append('<option value="">-- Choose a parent restaurant to map --</option>');
 
           if (data.available && data.available.length > 0) {
               data.available.forEach(rest => {

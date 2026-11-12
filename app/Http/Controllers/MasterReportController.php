@@ -17,6 +17,11 @@ use App\Models\RestaurantMaster;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class MasterReportController extends Controller
 {
@@ -621,5 +626,266 @@ class MasterReportController extends Controller
             'totalExpensesAmount',
             'grossMargin'
         ));
+    }
+
+    /**
+     * Helper to get deduplicated customer list from orders table.
+     */
+    protected function getAggregatedCustomers($restaurantId, $keyword = null)
+    {
+        $query = DB::table('orders')
+            ->where('restaurant_id', $restaurantId)
+            ->whereNotNull('customer_name')
+            ->whereRaw("TRIM(customer_name) != ''")
+            ->whereRaw("LOWER(TRIM(customer_name)) NOT LIKE '%walk%in%'")
+            ->whereRaw("LOWER(TRIM(customer_name)) NOT IN ('walk in', 'walk-in', 'walkin', 'walk-in customer', 'walk in customer', 'walk in guest', 'walk-in guest', 'guest')")
+            ->whereNull('deleted_at');
+
+        $orders = $query->select(
+                'id',
+                'customer_name',
+                'customer_phone',
+                'customer_email',
+                'grand_total',
+                'amount_paid',
+                'created_at'
+            )
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $customersByPhone = [];
+        $customersWithoutPhone = [];
+
+        foreach ($orders as $order) {
+            $rawPhone = trim($order->customer_phone ?? '');
+            $cleanPhone = preg_replace('/[^0-9]/', '', $rawPhone);
+            $hasPhone = strlen($cleanPhone) >= 6;
+
+            $name = trim($order->customer_name ?? '');
+            $email = trim($order->customer_email ?? '');
+            $orderTotal = floatval($order->amount_paid ?: $order->grand_total);
+            $orderDate = $order->created_at ? Carbon::parse($order->created_at) : null;
+
+            if ($hasPhone) {
+                if (!isset($customersByPhone[$cleanPhone])) {
+                    $customersByPhone[$cleanPhone] = (object) [
+                        'name' => $name,
+                        'phone' => $rawPhone ?: $cleanPhone,
+                        'clean_phone' => $cleanPhone,
+                        'email' => $email ?: null,
+                        'total_orders' => 0,
+                        'total_spent' => 0.0,
+                        'last_order_date' => $orderDate,
+                    ];
+                }
+
+                $customersByPhone[$cleanPhone]->total_orders++;
+                $customersByPhone[$cleanPhone]->total_spent += $orderTotal;
+
+                if (empty($customersByPhone[$cleanPhone]->email) && !empty($email)) {
+                    $customersByPhone[$cleanPhone]->email = $email;
+                }
+
+                if (strlen($name) > strlen($customersByPhone[$cleanPhone]->name)) {
+                    $customersByPhone[$cleanPhone]->name = $name;
+                }
+
+                if ($orderDate && (!$customersByPhone[$cleanPhone]->last_order_date || $orderDate->gt($customersByPhone[$cleanPhone]->last_order_date))) {
+                    $customersByPhone[$cleanPhone]->last_order_date = $orderDate;
+                }
+            } else {
+                $normName = strtolower($name);
+                if (!isset($customersWithoutPhone[$normName])) {
+                    $customersWithoutPhone[$normName] = (object) [
+                        'name' => $name,
+                        'phone' => null,
+                        'clean_phone' => null,
+                        'email' => $email ?: null,
+                        'total_orders' => 0,
+                        'total_spent' => 0.0,
+                        'last_order_date' => $orderDate,
+                    ];
+                }
+
+                $customersWithoutPhone[$normName]->total_orders++;
+                $customersWithoutPhone[$normName]->total_spent += $orderTotal;
+
+                if (empty($customersWithoutPhone[$normName]->email) && !empty($email)) {
+                    $customersWithoutPhone[$normName]->email = $email;
+                }
+
+                if ($orderDate && (!$customersWithoutPhone[$normName]->last_order_date || $orderDate->gt($customersWithoutPhone[$normName]->last_order_date))) {
+                    $customersWithoutPhone[$normName]->last_order_date = $orderDate;
+                }
+            }
+        }
+
+        $all = collect(array_merge(array_values($customersByPhone), array_values($customersWithoutPhone)));
+
+        if (!empty($keyword)) {
+            $kw = strtolower(trim($keyword));
+            $all = $all->filter(function ($c) use ($kw) {
+                return (strpos(strtolower($c->name ?? ''), $kw) !== false)
+                    || (strpos(strtolower($c->phone ?? ''), $kw) !== false)
+                    || (strpos(strtolower($c->email ?? ''), $kw) !== false);
+            });
+        }
+
+        return $all->sortByDesc(function ($c) {
+            return $c->last_order_date ? $c->last_order_date->timestamp : 0;
+        })->values();
+    }
+
+    /**
+     * TAB 8: Customers Report in Master Report
+     */
+    public function customers(Request $request)
+    {
+        $context = $this->resolveOutletContext($request);
+        $restaurantId = $context['targetRestaurantId'];
+        $restaurant = $context['targetRestaurant'];
+
+        $keyword = $request->input('keyword', $request->input('search'));
+        $customers = $this->getAggregatedCustomers($restaurantId, $keyword);
+
+        $totalCustomersCount = $customers->count();
+        $customersWithPhone = $customers->whereNotNull('phone')->count();
+        $customersWithEmail = $customers->whereNotNull('email')->count();
+        $totalCustomerSpent = $customers->sum('total_spent');
+        $repeatCustomersCount = $customers->where('total_orders', '>', 1)->count();
+
+        return view('report.master.customers', compact(
+            'context',
+            'restaurant',
+            'customers',
+            'keyword',
+            'totalCustomersCount',
+            'customersWithPhone',
+            'customersWithEmail',
+            'totalCustomerSpent',
+            'repeatCustomersCount'
+        ));
+    }
+
+    /**
+     * Export Customers in Master Report to Excel (.xlsx)
+     */
+    public function exportCustomers(Request $request)
+    {
+        $context = $this->resolveOutletContext($request);
+        $restaurantId = $context['targetRestaurantId'];
+        $restaurant = $context['targetRestaurant'];
+
+        $keyword = $request->input('keyword', $request->input('search'));
+        $customers = $this->getAggregatedCustomers($restaurantId, $keyword);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Master Customer Report');
+
+        $restaurantName = $restaurant ? $restaurant->name : 'Restaurant';
+        $sheet->setCellValue('A1', strtoupper($restaurantName) . ' - MASTER CUSTOMER REPORT');
+        $sheet->mergeCells('A1:G1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FFFFFFFF'));
+        $sheet->getStyle('A1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF0F172A');
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getRowDimension(1)->setRowHeight(32);
+
+        $subtitle = 'Generated on ' . Carbon::now()->format('d M Y, h:i A') . ' | Unique Customers: ' . $customers->count();
+        if (!empty($keyword)) {
+            $subtitle .= ' | Keyword: "' . $keyword . '"';
+        }
+        $sheet->setCellValue('A2', $subtitle);
+        $sheet->mergeCells('A2:G2');
+        $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(10)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF64748B'));
+        $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getRowDimension(2)->setRowHeight(20);
+
+        $headers = [
+            'A3' => '#',
+            'B3' => 'Customer Name',
+            'C3' => 'Mobile Number',
+            'D3' => 'Email Address',
+            'E3' => 'Total Orders',
+            'F3' => 'Total Spent (₹)',
+            'G3' => 'Last Order Date'
+        ];
+
+        foreach ($headers as $cell => $text) {
+            $sheet->setCellValue($cell, $text);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF4F46E5']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FFE2E8F0']]]
+        ];
+        $sheet->getStyle('A3:G3')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(3)->setRowHeight(26);
+
+        $row = 4;
+        $sno = 1;
+
+        foreach ($customers as $c) {
+            $sheet->setCellValue('A' . $row, $sno++);
+            $sheet->setCellValue('B' . $row, $c->name ?: 'Not Found');
+            $sheet->setCellValueExplicit('C' . $row, !empty($c->phone) ? $c->phone : 'Not Found', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('D' . $row, !empty($c->email) ? $c->email : 'Not Found');
+            $sheet->setCellValue('E' . $row, $c->total_orders);
+            $sheet->setCellValue('F' . $row, round($c->total_spent, 2));
+            $sheet->setCellValue('G' . $row, $c->last_order_date ? $c->last_order_date->format('d M Y, h:i A') : 'Not Found');
+
+            $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('C' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('E' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('F' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle('G' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+            if ($row % 2 == 0) {
+                $sheet->getStyle('A' . $row . ':G' . $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF8FAFC');
+            }
+            $sheet->getStyle('A' . $row . ':G' . $row)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FFE2E8F0');
+            $row++;
+        }
+
+        if ($customers->count() > 0) {
+            $sheet->setCellValue('A' . $row, 'TOTAL');
+            $sheet->mergeCells('A' . $row . ':D' . $row);
+            $sheet->setCellValue('E' . $row, $customers->sum('total_orders'));
+            $sheet->setCellValue('F' . $row, round($customers->sum('total_spent'), 2));
+            $sheet->setCellValue('G' . $row, $customers->count() . ' Unique Customers');
+
+            $totalStyle = [
+                'font' => ['bold' => true, 'color' => ['argb' => 'FF0F172A'], 'size' => 11],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFE0E7FF']],
+                'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
+                'borders' => [
+                    'top' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FF4F46E5']],
+                    'bottom' => ['borderStyle' => Border::BORDER_DOUBLE, 'color' => ['argb' => 'FF4F46E5']]
+                ]
+            ];
+            $sheet->getStyle('A' . $row . ':G' . $row)->applyFromArray($totalStyle);
+            $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle('E' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('F' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle('G' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getRowDimension($row)->setRowHeight(24);
+        }
+
+        foreach (range('A', 'G') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $cleanSlug = preg_replace('/[^A-Za-z0-9_-]/', '_', $restaurantName);
+        $filename = "Master_Customers_" . $cleanSlug . "_" . Carbon::now()->format('Ymd_His') . ".xlsx";
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 }

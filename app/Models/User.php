@@ -214,6 +214,10 @@ class User extends Authenticatable implements JWTSubject
             return route('admin.dashboard');
         }
 
+        if ($this->role === 'FSO') {
+            return route('franchise.dashboard');
+        }
+
         $subRestaurantId = $this->getSubscriptionRestaurantId();
         if (!empty($subRestaurantId)) {
             $active = \Illuminate\Support\Facades\DB::table('subscriptions')

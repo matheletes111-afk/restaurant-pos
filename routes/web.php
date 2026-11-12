@@ -490,6 +490,12 @@ Route::get('admin/temp-order/reject/{id}', [App\Http\Controllers\TempOrderAdminC
     Route::post('franchise-owners/mapping/detach', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'detachMapping'])->name('admin.fso.mapping.detach');
     Route::post('admin/franchise-owners/mapping/detach', [\App\Http\Controllers\Admin\FranchiseOwnerController::class, 'detachMapping']);
 
+    // Franchise Sponsorship Owner Dashboard (Admin prefix alias)
+    Route::get('franchise-owners-dashboard', [\App\Http\Controllers\Franchise\FranchiseDashboardController::class, 'index'])
+        ->middleware('auth');
+    Route::get('franchise-dashboard', [\App\Http\Controllers\Franchise\FranchiseDashboardController::class, 'index'])
+        ->middleware('auth');
+
     Route::post('plans/update-order', [\App\Http\Controllers\PlanController::class, 'updateOrder'])->name('admin.plans.update-order');
     Route::resource('plans', \App\Http\Controllers\PlanController::class);
     Route::get('plans/{id}/history', [\App\Http\Controllers\PlanController::class, 'history'])->name('admin.plans.history');
@@ -602,6 +608,8 @@ Route::get('admin/temp-order/reject/{id}', [App\Http\Controllers\TempOrderAdminC
         Route::get('/stock', [\App\Http\Controllers\MasterReportController::class, 'stock'])->name('stock');
         Route::get('/expenses', [\App\Http\Controllers\MasterReportController::class, 'expenses'])->name('expenses');
         Route::get('/analytics', [\App\Http\Controllers\MasterReportController::class, 'analytics'])->name('analytics');
+        Route::get('/customers', [\App\Http\Controllers\MasterReportController::class, 'customers'])->name('customers');
+        Route::get('/customers/export', [\App\Http\Controllers\MasterReportController::class, 'exportCustomers'])->name('customers.export');
     });
     Route::get('/master-report', function() {
         return redirect()->route('admin.reports.master.overview');
@@ -731,4 +739,48 @@ Route::get('/expense', function() {
 Route::get('/cash-drawer', function() {
     return redirect()->route('cash.drawer.index');
 });
+
+// Franchise Sponsorship Owner Dashboard (Root route)
+Route::get('/franchise-owners-dashboard', [\App\Http\Controllers\Franchise\FranchiseDashboardController::class, 'index'])
+    ->name('franchise.dashboard')
+    ->middleware('auth');
+Route::get('/franchise-dashboard', [\App\Http\Controllers\Franchise\FranchiseDashboardController::class, 'index'])
+    ->middleware('auth');
+
+// Franchise Performance Tracking Routes (Dedicated separate pages)
+Route::prefix('franchise/performance')->name('franchise.performance.')->middleware('auth')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Franchise\FranchisePerformanceController::class, 'index'])->name('index');
+    Route::get('/parent/{parentId}', [\App\Http\Controllers\Franchise\FranchisePerformanceController::class, 'branches'])->name('parent');
+
+    // Dedicated Master Report Pages for Performance Tracking
+    Route::get('/report/{restaurantId}', [\App\Http\Controllers\Franchise\FranchisePerformanceController::class, 'reportOverview'])->name('report');
+    Route::get('/report/{restaurantId}', [\App\Http\Controllers\Franchise\FranchisePerformanceController::class, 'reportDashboard'])->name('report');
+    Route::prefix('report/{restaurantId}')->name('report.')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\Franchise\FranchisePerformanceController::class, 'reportDashboard'])->name('dashboard');
+        Route::get('/overview', [\App\Http\Controllers\Franchise\FranchisePerformanceController::class, 'reportOverview'])->name('overview');
+        Route::get('/orders', [\App\Http\Controllers\Franchise\FranchisePerformanceController::class, 'reportOrders'])->name('orders');
+        Route::get('/order-items', [\App\Http\Controllers\Franchise\FranchisePerformanceController::class, 'reportOrderItems'])->name('order-items');
+        Route::get('/purchases', [\App\Http\Controllers\Franchise\FranchisePerformanceController::class, 'reportPurchases'])->name('purchases');
+        Route::get('/stock', [\App\Http\Controllers\Franchise\FranchisePerformanceController::class, 'reportStock'])->name('stock');
+        Route::get('/expenses', [\App\Http\Controllers\Franchise\FranchisePerformanceController::class, 'reportExpenses'])->name('expenses');
+        Route::get('/analytics', [\App\Http\Controllers\Franchise\FranchisePerformanceController::class, 'reportAnalytics'])->name('analytics');
+        Route::get('/customers', [\App\Http\Controllers\Franchise\FranchisePerformanceController::class, 'reportCustomers'])->name('customers');
+        Route::get('/customers/export', [\App\Http\Controllers\Franchise\FranchisePerformanceController::class, 'exportCustomers'])->name('customers.export');
+    });
+});
+Route::get('/franchise-performance', function() {
+    return redirect()->route('franchise.performance.index');
+})->middleware('auth');
+
+// Restaurant Customer List Routes (Root routes)
+Route::prefix('customers')->name('restaurant.customers.')->middleware('auth')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Restaurant\CustomerController::class, 'index'])->name('index');
+    Route::get('/export', [\App\Http\Controllers\Restaurant\CustomerController::class, 'export'])->name('export');
+});
+Route::get('/customer-list', function() {
+    return redirect()->route('restaurant.customers.index');
+})->name('restaurant.customer-list')->middleware('auth');
+Route::get('/admin/customers', function() {
+    return redirect()->route('restaurant.customers.index');
+})->middleware('auth');
 

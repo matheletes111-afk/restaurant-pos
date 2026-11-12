@@ -113,5 +113,90 @@ class FranchiseOwnerMappingTest extends TestCase
             'restaurant_id' => $rest2->id
         ]);
     }
+
+    public function test_mapping_only_shows_parent_restaurants_and_excludes_sub_restaurants()
+    {
+        // 1. Create Admin user
+        $admin = new User();
+        $admin->id = 88882;
+        $admin->role = 'SA';
+        $admin->restaurant_id = null;
+        $this->actingAs($admin);
+
+        // 2. Create FSO Owner
+        $fso = User::create([
+            'name' => 'FSO Parent Only Test Owner',
+            'email' => 'fso_parent_' . uniqid() . '@example.com',
+            'phone' => '9876543211',
+            'password' => bcrypt('password123'),
+            'role' => 'FSO',
+            'status' => 'A'
+        ]);
+
+        // 3. Create Parent Restaurant (parent_id = null)
+        $parentRest = RestaurantMaster::create([
+            'name' => 'The Grand Parent Restaurant ' . uniqid(),
+            'restaurant_id_unique' => 'REST-PARENT-01',
+            'parent_id' => null,
+            'address' => '100 Main HQ Street',
+            'status' => 'A'
+        ]);
+
+        // 4. Create Sub-Restaurant / Outlet (parent_id = $parentRest->id)
+        $subRest = RestaurantMaster::create([
+            'name' => 'Sub Branch of Grand Parent ' . uniqid(),
+            'restaurant_id_unique' => 'REST-SUB-01',
+            'parent_id' => $parentRest->id,
+            'address' => '101 Sub Branch Road',
+            'status' => 'A'
+        ]);
+
+        // 5. Query mapping list
+        $response = $this->getJson(route('admin.fso.mapping.list', $fso->id));
+        $response->assertStatus(200);
+
+        $availableIds = collect($response->json('available'))->pluck('id')->toArray();
+
+        // Assert parent restaurant is in available list
+        $this->assertContains($parentRest->id, $availableIds);
+
+        // Assert sub-restaurant is EXCLUDED from available list
+        $this->assertNotContains($subRest->id, $availableIds);
+
+        // 6. Attempting to attach sub-restaurant must be rejected with 422
+        $attachSubResponse = $this->postJson(route('admin.fso.mapping.attach'), [
+            'user_id' => $fso->id,
+            'restaurant_id' => $subRest->id
+        ]);
+        $attachSubResponse->assertStatus(422);
+        $attachSubResponse->assertJson([
+            'success' => false,
+            'message' => 'Only parent restaurants can be mapped. Sub-restaurants or branch outlets of a parent cannot be mapped to franchise owners.'
+        ]);
+
+        // 7. Attaching parent restaurant must succeed
+        $attachParentResponse = $this->postJson(route('admin.fso.mapping.attach'), [
+            'user_id' => $fso->id,
+            'restaurant_id' => $parentRest->id
+        ]);
+        $attachParentResponse->assertStatus(200);
+        $attachParentResponse->assertJson([
+            'success' => true,
+            'total_mapped' => 1
+        ]);
+
+        // 8. Verify mapped list contains only parent restaurant
+        $updatedList = $this->getJson(route('admin.fso.mapping.list', $fso->id));
+        $updatedList->assertStatus(200);
+
+        $mappedIds = collect($updatedList->json('mapped'))->pluck('restaurant_id')->toArray();
+        $this->assertContains($parentRest->id, $mappedIds);
+        $this->assertNotContains($subRest->id, $mappedIds);
+        $this->assertEquals(1, $updatedList->json('owner.count'));
+
+        // 9. Verify main index page loads with correct count
+        $indexResponse = $this->get('/admin/franchise-owners');
+        $indexResponse->assertStatus(200);
+    }
 }
 

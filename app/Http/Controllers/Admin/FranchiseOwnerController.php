@@ -30,7 +30,12 @@ class FranchiseOwnerController extends Controller
         $this->authorizeAdmin();
 
         $owners = User::where('role', 'FSO')
-            ->withCount('franchiseRestaurants')
+            ->withCount(['franchiseRestaurants' => function ($q) {
+                $q->where(function ($sub) {
+                    $sub->whereNull('restaurant_master.parent_id')
+                        ->orWhere('restaurant_master.parent_id', 0);
+                })->where('restaurant_master.status', '!=', 'D');
+            }])
             ->orderBy('id', 'desc')
             ->get();
 
@@ -50,7 +55,11 @@ class FranchiseOwnerController extends Controller
             'new_this_month' => $newThisMonth,
         ];
 
+        // Only show parent restaurants (exclude sub-restaurants/outlets)
         $allRestaurants = RestaurantMaster::where('status', '!=', 'D')
+            ->where(function ($q) {
+                $q->whereNull('parent_id')->orWhere('parent_id', 0);
+            })
             ->orderBy('name', 'asc')
             ->get(['id', 'name', 'restaurant_id_unique', 'address', 'status']);
 
@@ -182,7 +191,7 @@ class FranchiseOwnerController extends Controller
     }
 
     /**
-     * Get mapped restaurants and available restaurants for a Franchise Owner
+     * Get mapped restaurants and available restaurants for a Franchise Owner (Parent restaurants only)
      */
     public function getMappings($userId)
     {
@@ -192,7 +201,13 @@ class FranchiseOwnerController extends Controller
             ->where('role', 'FSO')
             ->firstOrFail();
 
+        // Only show parent restaurants in mapping list (exclude sub-restaurants/outlets)
         $mappings = FranchiseRestaurantMapping::where('user_id', $owner->id)
+            ->whereHas('restaurant', function ($q) {
+                $q->where(function ($sub) {
+                    $sub->whereNull('parent_id')->orWhere('parent_id', 0);
+                })->where('status', '!=', 'D');
+            })
             ->with('restaurant')
             ->latest('id')
             ->get()
@@ -211,7 +226,11 @@ class FranchiseOwnerController extends Controller
 
         $mappedRestaurantIds = $mappings->pluck('restaurant_id')->filter()->toArray();
 
+        // Only show parent restaurants in available dropdown (exclude sub-restaurants/outlets)
         $availableRestaurants = RestaurantMaster::where('status', '!=', 'D')
+            ->where(function ($q) {
+                $q->whereNull('parent_id')->orWhere('parent_id', 0);
+            })
             ->whereNotIn('id', $mappedRestaurantIds)
             ->orderBy('name', 'asc')
             ->get(['id', 'name', 'restaurant_id_unique', 'address', 'status']);
@@ -230,7 +249,7 @@ class FranchiseOwnerController extends Controller
     }
 
     /**
-     * Attach a restaurant to a Franchise Owner
+     * Attach a restaurant to a Franchise Owner (Parent restaurants only)
      */
     public function attachMapping(Request $request)
     {
@@ -246,6 +265,14 @@ class FranchiseOwnerController extends Controller
             ->firstOrFail();
 
         $restaurant = RestaurantMaster::findOrFail($request->restaurant_id);
+
+        // Validation: reject sub-restaurants/outlets
+        if (!empty($restaurant->parent_id) && $restaurant->parent_id > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only parent restaurants can be mapped. Sub-restaurants or branch outlets of a parent cannot be mapped to franchise owners.',
+            ], 422);
+        }
 
         $existing = FranchiseRestaurantMapping::where('user_id', $owner->id)
             ->where('restaurant_id', $restaurant->id)
@@ -263,7 +290,13 @@ class FranchiseOwnerController extends Controller
             'restaurant_id' => $restaurant->id,
         ]);
 
-        $totalMapped = FranchiseRestaurantMapping::where('user_id', $owner->id)->count();
+        $totalMapped = FranchiseRestaurantMapping::where('user_id', $owner->id)
+            ->whereHas('restaurant', function ($q) {
+                $q->where(function ($sub) {
+                    $sub->whereNull('parent_id')->orWhere('parent_id', 0);
+                })->where('status', '!=', 'D');
+            })
+            ->count();
 
         return response()->json([
             'success' => true,
@@ -295,7 +328,13 @@ class FranchiseOwnerController extends Controller
             ->where('restaurant_id', $request->restaurant_id)
             ->delete();
 
-        $totalMapped = FranchiseRestaurantMapping::where('user_id', $owner->id)->count();
+        $totalMapped = FranchiseRestaurantMapping::where('user_id', $owner->id)
+            ->whereHas('restaurant', function ($q) {
+                $q->where(function ($sub) {
+                    $sub->whereNull('parent_id')->orWhere('parent_id', 0);
+                })->where('status', '!=', 'D');
+            })
+            ->count();
 
         return response()->json([
             'success' => true,
