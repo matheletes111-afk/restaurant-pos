@@ -570,6 +570,12 @@
                                             <li><i class="fas fa-times-circle text-danger"></i> Bar Management</li>
                                         @endif
 
+                                        @if(($plan->multi_outlet_checkbox ?? 'N') == 'Y')
+                                            <li><i class="fas fa-check-circle text-success"></i> Multiple Restaurant Support ({{ ($plan->total_number_of_outlets ?? 0) == 0 ? 'Unlimited' : 'Up to ' . number_format($plan->total_number_of_outlets) . ' ' . ($plan->total_number_of_outlets == 1 ? 'Restaurant' : 'Restaurants') }})</li>
+                                        @else
+                                            <li><i class="fas fa-times-circle text-danger"></i> Multiple Restaurant Support</li>
+                                        @endif
+
                                         @if($plan->inventory_checkbox == 'Y')
                                             <li><i class="fas fa-check-circle text-success"></i> Manage Product</li>
                                             <li><i class="fas fa-check-circle text-success"></i> Manage Purchase</li>
