@@ -13,9 +13,13 @@ class Plan extends Model
     protected $fillable = [
         'plan_parent_id',
         'name',
+        'plan_type',
         'price',
         'label_name',
         'cross_price',
+        'gst_percentage',
+        'taxable_amount',
+        'gst_amount',
         'country_id',
         'currency',
         'billing_cycle',
@@ -41,9 +45,17 @@ class Plan extends Model
 
     protected $casts = [
         'price' => 'decimal:2',
+        'gst_percentage' => 'decimal:2',
+        'taxable_amount' => 'decimal:2',
+        'gst_amount' => 'decimal:2',
         'end_date' => 'datetime',
         'total_number_of_outlets' => 'integer',
     ];
+
+    public function isInternational(): bool
+    {
+        return ($this->plan_type === 'INTERNATIONAL');
+    }
 
     public function isMultiOutletEnabled(): bool
     {

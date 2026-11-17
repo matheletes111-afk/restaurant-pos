@@ -75,7 +75,8 @@ class Dashboard extends Controller
             ->count();
 
         // HOT DISHES
-        $hotDaily = OrderItems::select('subcategory_id', DB::raw('SUM(quantity) as total'))
+        $hotDaily = OrderItems::whereHas('order')
+            ->select('subcategory_id', DB::raw('SUM(quantity) as total'))
             ->whereDate('created_at', $today)
             ->where('restaurant_id', $restaurantId)
             ->groupBy('subcategory_id')
@@ -84,7 +85,8 @@ class Dashboard extends Controller
             ->take(5)
             ->get();
 
-        $hotMonthly = OrderItems::select('subcategory_id', DB::raw('SUM(quantity) as total'))
+        $hotMonthly = OrderItems::whereHas('order')
+            ->select('subcategory_id', DB::raw('SUM(quantity) as total'))
             ->whereYear('created_at', $today->year)
             ->whereMonth('created_at', $today->month)
             ->where('restaurant_id', $restaurantId)
@@ -94,7 +96,8 @@ class Dashboard extends Controller
             ->take(5)
             ->get();
 
-        $hotYearly = OrderItems::select('subcategory_id', DB::raw('SUM(quantity) as total'))
+        $hotYearly = OrderItems::whereHas('order')
+            ->select('subcategory_id', DB::raw('SUM(quantity) as total'))
             ->whereYear('created_at', $today->year)
             ->where('restaurant_id', $restaurantId)
             ->groupBy('subcategory_id')
@@ -138,7 +141,8 @@ class Dashboard extends Controller
         $restaurantId = auth()->user()->restaurant_id;
         $today = Carbon::today();
 
-        $query = OrderItems::select('subcategory_id', DB::raw('SUM(quantity) as total'))
+        $query = OrderItems::whereHas('order')
+            ->select('subcategory_id', DB::raw('SUM(quantity) as total'))
             ->where('restaurant_id', $restaurantId)
             ->groupBy('subcategory_id')
             ->with('subcategory')
@@ -168,7 +172,8 @@ class Dashboard extends Controller
             $m = $now->copy()->subMonths($i);
             $labels[] = $m->format("M Y");
 
-            $count = OrderItems::where("subcategory_id", $id)
+            $count = OrderItems::whereHas('order')
+                ->where("subcategory_id", $id)
                 ->where("restaurant_id", $restaurantId)
                 ->whereYear("created_at", $m->year)
                 ->whereMonth("created_at", $m->month)

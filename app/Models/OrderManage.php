@@ -31,6 +31,8 @@ class OrderManage extends Model
         'payment_status',
         'payment_method',
         'remarks',
+        'cancel_reason',
+        'cancelled_by',
         'order_status',
         'user_id',
         'restaurant_id',
@@ -58,6 +60,11 @@ class OrderManage extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function cancelledBy()
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     public function items()

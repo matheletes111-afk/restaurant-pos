@@ -520,19 +520,30 @@
                                          @if($plan->price == 0)
                                              <span class="active-price" style="color: var(--success);">FREE</span>
                                          @else
-                                             @if($plan->cross_price)
+                                             @php
+    $rpCurr = strtoupper($plan->currency ?? 'INR');
+    $rpSym = ($rpCurr === 'USD') ? '$' : (($rpCurr === 'EUR') ? '€' : (($rpCurr === 'GBP') ? '£' : '₹'));
+@endphp
+@if($plan->cross_price)
                                                  <span class="cross-price">
                                                      @if(is_numeric($plan->cross_price))
-                                                         ₹{{ number_format($plan->cross_price, 2) }}
+                                                         {{ $rpSym ?? '₹' }}{{ number_format($plan->cross_price, 2) }}
                                                      @else
                                                          {{ $plan->cross_price }}
                                                      @endif
                                                  </span>
                                              @endif
                                              <span class="active-price">
-                                                 ₹{{ number_format($plan->price, 2) }}
+                                                 {{ $rpSym ?? '₹' }}{{ number_format($plan->price, 2) }}
                                                  <small>/ {{ ucfirst($plan->billing_cycle) }}</small>
                                              </span>
+                                             <div class="text-muted small" style="font-size: 0.75rem; margin-top: 3px;">
+                                                 @if(($plan->plan_type ?? 'DOMESTIC') === 'INTERNATIONAL')
+                                                     <span class="badge bg-dark text-white"><i class="fas fa-globe me-1"></i>International (No GST)</span>
+                                                 @else
+                                                     <span class="text-muted"><i class="fas fa-check-circle me-1"></i>Incl. 18% GST</span>
+                                                 @endif
+                                             </div>
                                          @endif
                                      </div>
                                     <div class="plan-duration">

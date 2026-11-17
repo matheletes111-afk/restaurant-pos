@@ -440,6 +440,58 @@ Route::prefix('restaurant-staff')->group(function () {
         ->name('restaurant.staff.permissions');
     Route::post('/permissions/{id}', [RestaurantStaffController::class, 'updatePermissions'])
         ->name('restaurant.staff.update-permissions');
+    Route::get('/operations/{id}', [RestaurantStaffController::class, 'operations'])
+        ->name('restaurant.staff.operations');
+    Route::get('/salary/{id}', [RestaurantStaffController::class, 'salaryPage'])
+        ->name('restaurant.staff.salary');
+    Route::get('/leave-policy/{id}', [RestaurantStaffController::class, 'leavePolicyPage'])
+        ->name('restaurant.staff.leave-policy');
+    Route::get('/documents/{id}', [RestaurantStaffController::class, 'documentsPage'])
+        ->name('restaurant.staff.documents');
+    Route::get('/calendar/{id}', [RestaurantStaffController::class, 'calendarPage'])
+        ->name('restaurant.staff.calendar');
+    Route::get('/calendar/{id}/export', [RestaurantStaffController::class, 'exportCalendar'])
+        ->name('restaurant.staff.calendar.export');
+    Route::get('/salary-data/{id}', [RestaurantStaffController::class, 'getSalary'])
+        ->name('restaurant.staff.get-salary');
+    Route::post('/salary/save', [RestaurantStaffController::class, 'saveSalary'])
+        ->name('restaurant.staff.save-salary');
+    Route::post('/leave-policy/save', [RestaurantStaffController::class, 'saveLeavePolicy'])
+        ->name('restaurant.staff.save-leave-policy');
+    Route::post('/documents/upload', [RestaurantStaffController::class, 'uploadDocument'])
+        ->name('restaurant.staff.upload-document');
+    Route::get('/documents/{document_id}/download', [RestaurantStaffController::class, 'downloadDocument'])
+        ->name('restaurant.staff.download-document');
+    Route::get('/documents/{document_id}/delete', [RestaurantStaffController::class, 'deleteDocument'])
+        ->name('restaurant.staff.delete-document');
+});
+
+// Staff Attendance Management
+Route::prefix('attendance')->group(function () {
+    Route::get('/', [\App\Http\Controllers\StaffAttendanceController::class, 'index'])
+        ->name('restaurant.attendance.index');
+    Route::post('/store', [\App\Http\Controllers\StaffAttendanceController::class, 'store'])
+        ->name('restaurant.attendance.store');
+    Route::post('/update/{attendance_id}', [\App\Http\Controllers\StaffAttendanceController::class, 'update'])
+        ->name('restaurant.attendance.update');
+    Route::get('/delete/{attendance_id}', [\App\Http\Controllers\StaffAttendanceController::class, 'destroy'])
+        ->name('restaurant.attendance.delete');
+    Route::get('/export', [\App\Http\Controllers\StaffAttendanceController::class, 'export'])
+        ->name('restaurant.attendance.export');
+});
+
+// Staff Leave Management
+Route::prefix('leave-management')->group(function () {
+    Route::get('/', [\App\Http\Controllers\StaffLeaveController::class, 'index'])
+        ->name('restaurant.leaves.index');
+    Route::post('/store', [\App\Http\Controllers\StaffLeaveController::class, 'store'])
+        ->name('restaurant.leaves.store');
+    Route::post('/cancel/{leave_id}', [\App\Http\Controllers\StaffLeaveController::class, 'cancel'])
+        ->name('restaurant.leaves.cancel');
+    Route::get('/quota/{user_id}', [\App\Http\Controllers\StaffLeaveController::class, 'getStaffQuota'])
+        ->name('restaurant.leaves.quota');
+    Route::get('/export', [\App\Http\Controllers\StaffLeaveController::class, 'export'])
+        ->name('restaurant.leaves.export');
 });
 
 // Restaurant Outlets / Branches Management
@@ -619,6 +671,7 @@ Route::get('admin/temp-order/reject/{id}', [App\Http\Controllers\TempOrderAdminC
     Route::get('report-top-analysis', [App\Http\Controllers\ReportController::class, 'topAnalysisReport'])->name('order.report.top.analysis');
     Route::get('report-order-analysis', [App\Http\Controllers\ReportController::class, 'orderAnalysisReport'])->name('order.report.analysis');
     Route::get('report-order-management', [App\Http\Controllers\ReportController::class, 'orderManagementReport'])->name('order.report.management');
+    Route::post('report-order-management/delete', [App\Http\Controllers\ReportController::class, 'deleteOrderWithReason'])->name('order.report.management.delete');
     Route::post('report-order-management/send-otp', [App\Http\Controllers\ReportController::class, 'sendOrderDeleteOtp'])->name('order.report.management.send-otp');
     Route::post('report-order-management/verify-delete', [App\Http\Controllers\ReportController::class, 'verifyAndDeleteOrder'])->name('order.report.management.verify-delete');
     Route::get('item-gst-summary', [App\Http\Controllers\ReportController::class, 'itemGstSummary'])->name('report.item.gst.summary');

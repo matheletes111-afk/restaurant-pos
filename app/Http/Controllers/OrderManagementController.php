@@ -1129,7 +1129,7 @@ class OrderManagementController extends Controller
  */
 public function invoicePage($order_id)
 {
-    $order = OrderManage::with(['orderItems.subcategory.addons', 'table', 'restaurant'])->findOrFail($order_id);
+    $order = OrderManage::withTrashed()->with(['orderItems.subcategory.addons', 'table', 'restaurant'])->findOrFail($order_id);
     
     // Get all payments for this order
     $payments = OrderToPayment::where('order_id', $order_id)
@@ -1147,7 +1147,7 @@ public function invoicePage($order_id)
  */
 public function publicInvoice($order_id)
 {
-    $order = OrderManage::with(['orderItems.subcategory.addons', 'table', 'restaurant'])->findOrFail($order_id);
+    $order = OrderManage::withTrashed()->with(['orderItems.subcategory.addons', 'table', 'restaurant'])->findOrFail($order_id);
     
     $payments = OrderToPayment::where('order_id', $order_id)
         ->orderBy('created_at', 'desc')
@@ -1165,7 +1165,7 @@ public function publicInvoice($order_id)
  */
 public function publicDownloadInvoice($order_id)
 {
-    $order = OrderManage::with(['orderItems.subcategory.addons', 'table', 'restaurant'])->findOrFail($order_id);
+    $order = OrderManage::withTrashed()->with(['orderItems.subcategory.addons', 'table', 'restaurant'])->findOrFail($order_id);
     $data = $this->prepareReceiptData($order);
 
     $itemCount = count($order->orderItems ?? []);

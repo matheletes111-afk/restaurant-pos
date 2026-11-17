@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Tests\TestCase;
 use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 use App\Models\RestaurantMaster;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -38,7 +39,27 @@ class RestaurantPlansMultiOutletTest extends TestCase
 
     public function test_restaurant_plans_displays_multiple_restaurant_support_and_count()
     {
-        [, $user] = $this->setupRestaurantAndUser();
+        [$restaurant, $user] = $this->setupRestaurantAndUser();
+
+        $activeSubPlan = Plan::create([
+            'name' => 'ACTIVE STARTER ' . uniqid(),
+            'price' => 100.00,
+            'duration_days' => 30,
+            'billing_cycle' => 'monthly',
+            'is_default_plan' => 'N',
+            'plan_status' => 'A',
+            'is_delete' => 'N',
+        ]);
+
+        Subscription::create([
+            'user_id' => $restaurant->id,
+            'plan_id' => $activeSubPlan->id,
+            'status' => 'active',
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addDays(29),
+            'amount' => 100.00,
+            'currency' => 'INR',
+        ]);
 
         $limitedPlan = Plan::create([
             'name' => 'MULTI 5 PLAN ' . uniqid(),

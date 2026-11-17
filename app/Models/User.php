@@ -56,6 +56,31 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasOne('App\Models\RestaurantMaster','id','restaurant_id');
     }
 
+    public function salary()
+    {
+        return $this->hasOne(StaffSalary::class, 'user_id');
+    }
+
+    public function leavePolicies()
+    {
+        return $this->hasMany(StaffLeavePolicy::class, 'user_id');
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(StaffDocument::class, 'user_id');
+    }
+
+    public function attendances()
+    {
+        return $this->hasMany(StaffAttendance::class, 'user_id');
+    }
+
+    public function leaves()
+    {
+        return $this->hasMany(StaffLeave::class, 'user_id');
+    }
+
     public function hasPermission($menuKey, $action = 'view')
     {
         // Restaurant ADMIN and Super Admin have all access by default

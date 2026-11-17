@@ -551,6 +551,18 @@
             <span class="pc-mtext">Staff</span>
           </a>
         </li>
+        <!-- <li class="pc-item {{ $disabledClass }}">
+          <a href="{{route('restaurant.attendance.index')}}" class="pc-link @if(Request::is('*attendance*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-user-clock"></i></span>
+            <span class="pc-mtext">Attendance</span>
+          </a>
+        </li>
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{route('restaurant.leaves.index')}}" class="pc-link @if(Request::is('*leave-management*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-calendar-minus"></i></span>
+            <span class="pc-mtext">Leave Management</span>
+          </a>
+        </li> -->
         @endif
 
         @if(auth()->user()->hasPermission('cash_drawer'))

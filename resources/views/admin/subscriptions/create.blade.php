@@ -354,6 +354,20 @@
                                                 <span class="detail-value">{{ $plan->name }}</span>
                                             </div>
                                         </div>
+
+                                        <div class="detail-item">
+                                            <div class="detail-icon"><i class="fas fa-globe-asia"></i></div>
+                                            <div class="detail-text">
+                                                <span class="detail-label">Plan Market Type</span>
+                                                <span class="detail-value">
+                                                    @if(($plan->plan_type ?? 'DOMESTIC') === 'INTERNATIONAL')
+                                                        <span class="badge bg-dark text-white"><i class="fas fa-globe me-1"></i> International (No GST)</span>
+                                                    @else
+                                                        <span class="badge bg-info text-dark"><i class="fas fa-flag me-1"></i> Domestic (Incl. 18% GST)</span>
+                                                    @endif
+                                                </span>
+                                            </div>
+                                        </div>
                                         
                                         <div class="detail-item">
                                             <div class="detail-icon"><i class="fas fa-tag"></i></div>
@@ -363,7 +377,11 @@
                                                     @if($plan->price == 0)
                                                         FREE
                                                     @else
-                                                        ₹{{ number_format($plan->price, 2) }} {{ $plan->currency }}
+                                                        @php
+    $cCurr = strtoupper($plan->currency ?? 'INR');
+    $cSym = ($cCurr === 'USD') ? '$' : (($cCurr === 'EUR') ? '€' : (($cCurr === 'GBP') ? '£' : '₹'));
+@endphp
+{{ $cSym }}{{ number_format($plan->price, 2) }} {{ $cCurr }}
                                                     @endif
                                                 </span>
                                             </div>

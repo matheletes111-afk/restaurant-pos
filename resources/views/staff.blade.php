@@ -35,6 +35,10 @@
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2">
+                <a href="{{ route('restaurant.attendance.index') }}" class="btn-staff-secondary" style="border-color: #cbd5e1; text-decoration: none;">
+                    <i class="fas fa-user-clock text-primary me-1"></i>
+                    <span>Daily Attendance</span>
+                </a>
                 @if(auth()->user()->hasPermission('staff', 'add'))
                 <button type="button" class="btn-staff-primary" data-bs-toggle="modal" data-bs-target="#addModal">
                     <i class="fas fa-user-plus"></i>
@@ -201,6 +205,21 @@
                                     @endif
                                     <span>{{ $value->role_type }}</span>
                                 </span>
+                                @if($value->salary)
+                                    <div class="mt-1" id="staffSalaryBadge_{{ $value->id }}">
+                                        @if($value->salary->employment_type === 'hourly')
+                                            <span class="badge bg-light text-secondary border small" title="Hourly Compensation" style="font-weight: 500;">
+                                                <i class="fas fa-clock text-warning me-1"></i>₹{{ number_format($value->salary->hourly_wage, 2) }}/hr
+                                            </span>
+                                        @else
+                                            <span class="badge bg-light text-secondary border small" title="Permanent Monthly Salary" style="font-weight: 500;">
+                                                <i class="fas fa-user-check text-success me-1"></i>₹{{ number_format($value->salary->monthly_salary, 2) }}/mo
+                                            </span>
+                                        @endif
+                                    </div>
+                                @else
+                                    <div class="mt-1" id="staffSalaryBadge_{{ $value->id }}"></div>
+                                @endif
                             </td>
                             <td>
                                 @if(auth()->user()->hasPermission('staff', 'edit'))
@@ -235,6 +254,14 @@
                                         <i class="fas fa-pen"></i>
                                     </button>
                                     @endif
+
+                                    <!-- @if(auth()->user()->hasPermission('staff', 'edit') || auth()->user()->role_type === 'ADMIN')
+                                    <a href="{{ route('restaurant.staff.operations', $value->id) }}"
+                                       class="staff-btn-action btn-operation"
+                                       title="Operation Type (Salary Management)">
+                                        <i class="fas fa-sliders-h"></i>
+                                    </a>
+                                    @endif -->
 
                                     @if(auth()->user()->role_type === 'ADMIN')
                                     <a href="{{ route('restaurant.staff.permissions', $value->id) }}"
@@ -332,6 +359,17 @@
                         <span class="staff-role-badge {{ $roleClass }}">
                             <span>{{ $value->role_type }}</span>
                         </span>
+                        @if($value->salary)
+                            @if($value->salary->employment_type === 'hourly')
+                                <span class="badge bg-light text-secondary border small" title="Hourly Compensation">
+                                    <i class="fas fa-clock text-warning me-1"></i>₹{{ number_format($value->salary->hourly_wage, 2) }}/hr
+                                </span>
+                            @else
+                                <span class="badge bg-light text-secondary border small" title="Permanent Monthly Salary">
+                                    <i class="fas fa-user-check text-success me-1"></i>₹{{ number_format($value->salary->monthly_salary, 2) }}/mo
+                                </span>
+                            @endif
+                        @endif
                         @if(isset($availableOutlets) && $availableOutlets->count() > 1 && $value->restaurant)
                         <span class="staff-outlet-badge">
                             <i class="fas fa-store text-primary"></i>
@@ -356,6 +394,13 @@
                             data-status="{{ $value->status }}">
                         <i class="fas fa-pen me-1"></i> Edit
                     </button>
+                    @endif
+
+                    @if(auth()->user()->hasPermission('staff', 'edit') || auth()->user()->role_type === 'ADMIN')
+                    <a href="{{ route('restaurant.staff.operations', $value->id) }}"
+                       class="btn btn-sm btn-outline-teal rounded-pill px-3">
+                        <i class="fas fa-sliders-h me-1"></i> Operations
+                    </a>
                     @endif
 
                     @if(auth()->user()->role_type === 'ADMIN')
