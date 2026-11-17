@@ -398,5 +398,11 @@ class PlanDomesticInternationalTest extends TestCase
 
         $this->assertStringContainsString('"USD"', $paymentView);
         $this->assertStringContainsString('USD', $paymentView);
+
+        // Check admin/subscriptions index page renders properly with USD symbol and badge
+        $indexResponse = $this->get(route('admin.subscriptions.index'));
+        $indexResponse->assertStatus(200);
+        $indexResponse->assertSee('$49.00');
+        $indexResponse->assertSee('USD');
     }
 }
