@@ -640,8 +640,16 @@
 $(document).ready(function() {
     let currentDeleteOrderId = null;
 
-    // Initialize DataTable if table exists
-    if ($('#ordersTable').length && !$.fn.DataTable.isDataTable('#ordersTable')) {
+    // Suppress intrusive DataTables alert popups
+    if ($.fn.dataTable) {
+        $.fn.dataTable.ext.errMode = 'none';
+    }
+
+    // Initialize DataTable only when table has actual data rows (not the empty state with colspan)
+    const hasColspanEmpty = $('#ordersTable tbody tr td[colspan]').length > 0;
+    const hasRows = $('#ordersTable tbody tr').length > 0;
+
+    if ($('#ordersTable').length && hasRows && !hasColspanEmpty && !$.fn.DataTable.isDataTable('#ordersTable')) {
         $('#ordersTable').DataTable({
             paging: false,
             info: false,

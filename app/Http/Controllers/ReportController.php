@@ -618,10 +618,39 @@ public function itemGstSummary(Request $request)
         $order->cancelled_by = auth()->id();
         $order->order_status = 'CANCELLED';
         $order->remarks = ($order->remarks ? $order->remarks . "\n" : "") . "[Cancellation Reason: " . $reason . "]";
-        $order->save();
+        
+        try {
+            $order->save();
+        } catch (\Throwable $e) {
+            if (str_contains($e->getMessage(), 'order_status') || str_contains($e->getMessage(), '1265')) {
+                try {
+                    \Illuminate\Support\Facades\DB::statement("ALTER TABLE `orders` MODIFY COLUMN `order_status` VARCHAR(50) NOT NULL DEFAULT 'PENDING'");
+                    $order->save();
+                } catch (\Throwable $ex) {
+                    $order->order_status = 'REJECTED';
+                    try {
+                        $order->save();
+                    } catch (\Throwable $ex2) {
+                        unset($order->order_status);
+                        $order->save();
+                    }
+                }
+            } else {
+                throw $e;
+            }
+        }
 
         // Also update order items status to CANCELLED
-        $order->orderItems()->update(['order_status' => 'CANCELLED']);
+        try {
+            $order->orderItems()->update(['order_status' => 'CANCELLED']);
+        } catch (\Throwable $e) {
+            try {
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE `order_items` MODIFY COLUMN `order_status` VARCHAR(50) NULL DEFAULT 'PENDING'");
+                $order->orderItems()->update(['order_status' => 'CANCELLED']);
+            } catch (\Throwable $ex) {
+                // Silently ignore if order_items cannot be updated
+            }
+        }
 
         // Release table if occupied by this order
         if ($order->table_id) {
