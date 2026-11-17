@@ -48,10 +48,9 @@
             <div class="card-body">
               @include('includes.message')
 
-              <div class="alert alert-info mb-4">
+              <div class="alert alert-info mb-4" id="gst_info_note">
                 <i class="fas fa-info-circle me-2"></i>
-                <strong>Note:</strong> The price you enter should be <strong>INCLUDING GST (18%)</strong>. 
-                The taxable amount and GST amount will be calculated automatically.
+                <span id="gst_info_text"><strong>Domestic Plan:</strong> The price you enter should be <strong>INCLUDING GST (18%)</strong>. The taxable amount and GST amount will be calculated automatically.</span>
               </div>
 
               <form method="POST" action="{{ route('plans.store') }}">
@@ -68,15 +67,30 @@
 
                   <div class="col-md-6">
                     <div class="form-group">
-                      <label for="price">Price (Including GST 18%) *</label>
-                      <input type="number" class="form-control" id="price" name="price"
-                             step="0.01" min="0" value="{{ old('price') }}" required>
-                      <small class="text-muted">Enter the final price customer pays (GST 18% included)</small>
+                      <label for="plan_type">Plan Market Type *</label>
+                      <select class="form-control" id="plan_type" name="plan_type" required>
+                        <option value="DOMESTIC" {{ old('plan_type', 'DOMESTIC') === 'DOMESTIC' ? 'selected' : '' }}>
+                          Domestic Plan (GST 18% Applicable)
+                        </option>
+                        <option value="INTERNATIONAL" {{ old('plan_type') === 'INTERNATIONAL' ? 'selected' : '' }}>
+                          International Plan (No GST / 0%)
+                        </option>
+                      </select>
+                      <small class="text-muted">Domestic plans include 18% GST. International plans have NO GST applicable.</small>
                     </div>
                   </div>
                 </div>
 
                 <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="price" id="price_label">Price (Including GST 18%) *</label>
+                      <input type="number" class="form-control" id="price" name="price"
+                             step="0.01" min="0" value="{{ old('price') }}" required>
+                      <small class="text-muted" id="price_help">Enter the final price customer pays (GST 18% included)</small>
+                    </div>
+                  </div>
+
                   <div class="col-md-6">
                     <div class="form-group">
                       <label for="label_name">Label Name</label>
@@ -85,8 +99,10 @@
                       <small class="text-muted">e.g. Popular Choice, Recommended, Best Value</small>
                     </div>
                   </div>
+                </div>
 
-                  <div class="col-md-6">
+                <div class="row">
+                  <div class="col-md-12">
                     <div class="form-group">
                       <label for="cross_price">Cross Price</label>
                       <input type="text" class="form-control" id="cross_price" name="cross_price" value="{{ old('cross_price') }}">
@@ -99,7 +115,7 @@
                 <div class="row">
                   <div class="col-md-4">
                     <div class="form-group">
-                      <label>GST Percentage</label>
+                      <label id="gst_percentage_label">GST Percentage</label>
                       <input type="text" class="form-control" id="gst_percentage_display" 
                              value="18%" readonly disabled style="background-color: #f8f9fa;">
                       <input type="hidden" name="gst_percentage" id="gst_percentage" value="18">
@@ -114,7 +130,7 @@
                   </div>
                   <div class="col-md-4">
                     <div class="form-group">
-                      <label>GST Amount (18%)</label>
+                      <label id="gst_amount_label">GST Amount (18%)</label>
                       <input type="text" class="form-control" id="gst_amount_display" 
                              readonly disabled style="background-color: #fff3e0; color: #e65100; font-weight: bold;">
                     </div>
@@ -327,43 +343,59 @@
         $('#duration_days').val(days);
       });
 
-      // Calculate GST breakdown when price changes
+      // Calculate GST breakdown when price or plan type changes
       function calculateGST() {
+        var planType = $('#plan_type').val();
         var price = parseFloat($('#price').val()) || 0;
+        
+        if (planType === 'INTERNATIONAL') {
+          $('#price_label').html('Price (No GST / Zero Tax) *');
+          $('#price_help').text('Enter price (No GST applicable for international plans)');
+          $('#gst_info_text').html('<strong>International Plan:</strong> <strong>No GST</strong> is applicable (0% tax rate). Taxable amount equals the full price.');
+          $('#gst_percentage_display').val('0% (No GST)');
+          $('#gst_percentage').val('0');
+          $('#gst_amount_label').text('GST Amount (0%)');
+          $('#taxable_amount_display').val('₹' + price.toFixed(2));
+          $('#gst_amount_display').val('₹0.00');
+          
+          if ($('#taxable_amount_hidden').length === 0) {
+            $('<input>').attr({ type: 'hidden', name: 'taxable_amount', id: 'taxable_amount_hidden', value: price.toFixed(2) }).appendTo('form');
+            $('<input>').attr({ type: 'hidden', name: 'gst_amount', id: 'gst_amount_hidden', value: '0.00' }).appendTo('form');
+          } else {
+            $('#taxable_amount_hidden').val(price.toFixed(2));
+            $('#gst_amount_hidden').val('0.00');
+          }
+          $('#price').removeClass('is-invalid');
+          $('#price_error').remove();
+          return;
+        }
+
+        // DOMESTIC PLAN
+        $('#price_label').html('Price (Including GST 18%) *');
+        $('#price_help').text('Enter the final price customer pays (GST 18% included)');
+        $('#gst_info_text').html('<strong>Domestic Plan:</strong> The price you enter should be <strong>INCLUDING GST (18%)</strong>. The taxable amount and GST amount will be calculated automatically.');
+        $('#gst_percentage_display').val('18%');
+        $('#gst_percentage').val('18');
+        $('#gst_amount_label').text('GST Amount (18%)');
+
         var gstPercentage = 18; // Fixed GST rate
         var taxableAmount = price / (1 + (gstPercentage / 100));
         var gstAmount = price - taxableAmount;
         
-        // Format to 2 decimal places
         taxableAmount = taxableAmount.toFixed(2);
         gstAmount = gstAmount.toFixed(2);
         
-        // Update display fields
         $('#taxable_amount_display').val('₹' + taxableAmount);
         $('#gst_amount_display').val('₹' + gstAmount);
         
-        // Store in hidden fields (if needed for form submission)
-        // Add hidden input fields if you want to send these to backend
         if ($('#taxable_amount_hidden').length === 0) {
-          $('<input>').attr({
-            type: 'hidden',
-            name: 'taxable_amount',
-            id: 'taxable_amount_hidden',
-            value: taxableAmount
-          }).appendTo('form');
-          
-          $('<input>').attr({
-            type: 'hidden',
-            name: 'gst_amount',
-            id: 'gst_amount_hidden',
-            value: gstAmount
-          }).appendTo('form');
+          $('<input>').attr({ type: 'hidden', name: 'taxable_amount', id: 'taxable_amount_hidden', value: taxableAmount }).appendTo('form');
+          $('<input>').attr({ type: 'hidden', name: 'gst_amount', id: 'gst_amount_hidden', value: gstAmount }).appendTo('form');
         } else {
           $('#taxable_amount_hidden').val(taxableAmount);
           $('#gst_amount_hidden').val(gstAmount);
         }
         
-        // Show warning if price is less than GST
         if (price > 0 && price < (gstAmount * 2)) {
           $('#price').addClass('is-invalid');
           $('#price_error').remove();
@@ -373,6 +405,10 @@
           $('#price_error').remove();
         }
       }
+
+      $('#plan_type').on('change', function() {
+        calculateGST();
+      });
       
       // Trigger calculation on price change
       $('#price').on('input change', function() {

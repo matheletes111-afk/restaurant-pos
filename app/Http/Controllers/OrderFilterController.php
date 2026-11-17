@@ -38,7 +38,7 @@ public function orderDetails($order_id)
 {
     $restaurantId = auth()->user()->restaurant_id;
 
-    $order = OrderManage::with([
+    $order = OrderManage::withTrashed()->with([
         'items.subcategory',
         'table',
         'user'

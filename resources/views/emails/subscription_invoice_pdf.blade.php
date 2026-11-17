@@ -163,15 +163,16 @@
                     <th>Description</th>
                     <th class="text-right">Billing Cycle</th>
                     <th class="text-right">Period</th>
-                    <th class="text-right">Amount</th>
+                    <th class="text-right">Amount ({{ strtoupper($plan->currency ?? ($payment->currency ?? 'INR')) }})</th>
                 </tr>
             </thead>
             <tbody>
                 @php
+                    $isInternational = ($plan && $plan->plan_type === 'INTERNATIONAL') || ($payment && (float)$payment->gst_percentage == 0);
                     $amountPaid = $payment->amount ?? $plan->price;
-                    $gstPercentage = $plan->gst_percentage ?? 18;
-                    $taxableAmount = $plan->taxable_amount ?? ($amountPaid / (1 + ($gstPercentage / 100)));
-                    $gstAmount = $amountPaid - $taxableAmount;
+                    $gstPercentage = $isInternational ? 0 : ($payment->gst_percentage ?? $plan->gst_percentage ?? 18);
+                    $taxableAmount = $isInternational ? $amountPaid : ($plan->taxable_amount ?? ($amountPaid / (1 + ($gstPercentage / 100))));
+                    $gstAmount = $isInternational ? 0 : ($amountPaid - $taxableAmount);
                 @endphp
                 <tr>
                     <td>
@@ -193,12 +194,17 @@
                 </tr>
                 <tr class="total-row">
                     <td colspan="2"></td>
-                    <td class="text-right" style="color: #555;">GST ({{ $gstPercentage }}%):</td>
-                    <td class="text-right">{{ number_format($gstAmount, 2) }}</td>
+                    @if($isInternational || $gstPercentage == 0)
+                        <td class="text-right" style="color: #555;">GST (0% - International):</td>
+                        <td class="text-right">0.00</td>
+                    @else
+                        <td class="text-right" style="color: #555;">GST ({{ $gstPercentage }}%):</td>
+                        <td class="text-right">{{ number_format($gstAmount, 2) }}</td>
+                    @endif
                 </tr>
                 <tr class="total-row" style="border-top: 1px solid #ddd;">
                     <td colspan="2"></td>
-                    <td class="text-right" style="color: #ff6a00; font-size: 15px;">Total Paid:</td>
+                    <td class="text-right" style="color: #ff6a00; font-size: 15px;">Total Paid ({{ strtoupper($plan->currency ?? ($payment->currency ?? 'INR')) }}):</td>
                     <td class="text-right" style="color: #ff6a00; font-size: 15px;">{{ number_format($amountPaid, 2) }}</td>
                 </tr>
             </tbody>

@@ -10,39 +10,52 @@ class Plan extends Model
 {
     use HasFactory, SoftDeletes;
 
-protected $fillable = [
-    'plan_parent_id',
-    'name',
-    'price',
-    'label_name',
-    'cross_price',
-    'country_id',
-    'currency',
-    'billing_cycle',
-    'duration_days',
-    'description',
-    'category_number',
-    'total_number_of_dishes',
-    'total_number_of_table',
-    'inventory_checkbox',
-    'multi_outlet_checkbox',
-    'report_management_checkbox',
-    'bar_management_checkbox',
-    'total_number_of_outlets',
-    'is_default_free',
-    'is_default_paid',
-    'razorpay_plan_id',
-    'is_delete',
-    'end_date',
-    'plan_status',
-    'sort_order'
-];
+    protected $fillable = [
+        'plan_parent_id',
+        'name',
+        'plan_type',
+        'price',
+        'label_name',
+        'cross_price',
+        'gst_percentage',
+        'taxable_amount',
+        'gst_amount',
+        'country_id',
+        'currency',
+        'billing_cycle',
+        'duration_days',
+        'description',
+        'category_number',
+        'total_number_of_dishes',
+        'total_number_of_table',
+        'inventory_checkbox',
+        'multi_outlet_checkbox',
+        'report_management_checkbox',
+        'bar_management_checkbox',
+        'total_number_of_outlets',
+        'is_default_free',
+        'is_default_paid',
+        'is_default_plan',
+        'razorpay_plan_id',
+        'is_delete',
+        'end_date',
+        'plan_status',
+        'sort_order'
+    ];
 
     protected $casts = [
         'price' => 'decimal:2',
+        'gst_percentage' => 'decimal:2',
+        'taxable_amount' => 'decimal:2',
+        'gst_amount' => 'decimal:2',
         'end_date' => 'datetime',
         'total_number_of_outlets' => 'integer',
     ];
+
+    public function isInternational(): bool
+    {
+        return ($this->plan_type === 'INTERNATIONAL');
+    }
 
     public function isMultiOutletEnabled(): bool
     {

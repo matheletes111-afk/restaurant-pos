@@ -34,6 +34,10 @@ class RedirectIfAuthenticated
                         return redirect()->route('admin.dashboard');
                     }
 
+                    if (isset($user->role) && $user->role === 'FSO') {
+                        return redirect()->route('franchise.dashboard');
+                    }
+
                     $subRestId = method_exists($user, 'getSubscriptionRestaurantId') ? $user->getSubscriptionRestaurantId() : $user->restaurant_id;
                     if (!empty($subRestId)) {
                         $active = DB::table('subscriptions')

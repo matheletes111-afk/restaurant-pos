@@ -45,6 +45,53 @@
     border-color: var(--rpt-primary) !important;
     color: var(--rpt-primary) !important;
   }
+  .rpt-custom-tabs {
+    background: #ffffff;
+    padding: 6px;
+    border-radius: 30px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+    border: 1px solid #e2e8f0;
+    display: inline-flex;
+    gap: 6px;
+  }
+  .rpt-custom-tabs .nav-link {
+    border-radius: 20px;
+    padding: 8px 22px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #64748b;
+    transition: all 0.25s ease;
+    border: none;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+  }
+  .rpt-custom-tabs .nav-link:hover:not(.active) {
+    color: #0f172a;
+    background: #f1f5f9;
+  }
+  .rpt-custom-tabs .nav-link.active.tab-active-orders {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+  .rpt-custom-tabs .nav-link.active.tab-cancel-orders {
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  }
+  .rpt-badge-cancelled {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
 </style>
 @endsection
 
@@ -78,6 +125,7 @@
         {{-- 2. Filter Form --}}
         <div class="rpt-filter-card">
             <form method="GET" action="{{ route('order.report.management') }}" class="row g-3 align-items-end">
+                <input type="hidden" name="tab" value="{{ $tab }}">
                 <div class="col-md-3 col-sm-6">
                     <label class="rpt-filter-label">From Date</label>
                     <input type="date" name="from_date" value="{{ $fromDate->format('Y-m-d') }}" class="rpt-filter-control">
@@ -209,18 +257,70 @@
             </div>
         </div>
 
-        {{-- 4. Orders Datatable Card --}}
+        {{-- 4. Navigation Tabs: Active Orders vs Cancel Order --}}
+        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+            <div class="rpt-custom-tabs">
+                <a class="nav-link tab-active-orders {{ $tab !== 'cancelled' ? 'active' : '' }}" 
+                   href="{{ route('order.report.management', array_merge(request()->query(), ['tab' => 'active'])) }}">
+                    <i class="fas fa-file-invoice me-2"></i> Active Orders
+                    <span class="badge {{ $tab !== 'cancelled' ? 'bg-light text-primary' : 'bg-secondary text-white' }} ms-2" style="font-size: 0.75rem;">
+                        {{ $activeOrdersCount }}
+                    </span>
+                </a>
+                <a class="nav-link tab-cancel-orders {{ $tab === 'cancelled' ? 'active' : '' }}" 
+                   href="{{ route('order.report.management', array_merge(request()->query(), ['tab' => 'cancelled'])) }}">
+                    <i class="fas fa-ban me-2"></i> Cancel Order
+                    <span class="badge {{ $tab === 'cancelled' ? 'bg-light text-danger' : 'bg-secondary text-white' }} ms-2" style="font-size: 0.75rem;">
+                        {{ $cancelledOrdersCount }}
+                    </span>
+                </a>
+            </div>
+
+            @if($tab === 'cancelled')
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-danger text-white px-3 py-2" style="border-radius: 12px; font-size: 0.82rem;">
+                        <i class="fas fa-ban me-1"></i> {{ $cancelledOrdersCount }} Cancelled Invoices (₹{{ number_format($summary['cancelled_total_amount'] ?? 0, 2) }})
+                    </span>
+                </div>
+            @else
+                <div class="d-flex align-items-center gap-2 text-muted small">
+                    <i class="fas fa-shield-alt text-primary"></i> Live audit &bull; Cancelled orders are excluded from financial counters
+                </div>
+            @endif
+        </div>
+
+        {{-- 5. Orders Datatable Card --}}
         <div class="rpt-card">
             <div class="rpt-card-header">
                 <h5 class="rpt-card-title">
-                    <i class="fas fa-list-alt text-primary"></i> Detailed Orders Audit
+                    @if($tab === 'cancelled')
+                        <i class="fas fa-ban text-danger"></i> Cancelled Invoices Ledger
+                    @else
+                        <i class="fas fa-list-alt text-primary"></i> Detailed Orders Audit
+                    @endif
                 </h5>
-                <span class="text-muted small fw-bold">Displaying {{ $orders->count() }} records</span>
+                <span class="text-muted small fw-bold">Displaying {{ $orders->count() }} records (Total: {{ $tab === 'cancelled' ? $cancelledOrdersCount : $activeOrdersCount }})</span>
             </div>
 
             <div class="table-responsive">
                 <table id="ordersTable" class="rpt-table table-hover">
                     <thead>
+                        @if($tab === 'cancelled')
+                        <tr>
+                            <th class="text-center" style="width: 50px;">#</th>
+                            <th class="text-center" style="width: 100px;">Actions</th>
+                            <th>Order UID</th>
+                            <th>Customer Info</th>
+                            <th>Service Type</th>
+                            <th class="text-end">Subtotal</th>
+                            <th class="text-end">Grand Total</th>
+                            <th class="text-center">Status</th>
+                            <th>Cancellation Reason</th>
+                            <th>Cancelled By</th>
+                            <th>Cancelled Date</th>
+                            <th>Order Date</th>
+                        </tr>
+                        @else
                         <tr>
                             <th class="text-center" style="width: 50px;">#</th>
                             <th class="text-center">Actions</th>
@@ -238,151 +338,243 @@
                             <th class="text-center">Status</th>
                             <th>Timestamp</th>
                         </tr>
+                        @endif
                     </thead>
                     <tbody>
-                        @forelse($orders as $key => $order)
-                        @php
-                            $balance = round($order->grand_total, 2) - ($order->amount_paid ?? 0);
-                            $isFullyPaid = $balance <= 0;
-                            $isGstBill = ($order->is_gst_bill ?? 'NO') == 'YES';
-                            $gstPercentage = $order->restaurant_gst_percentage ?? 0;
-                            
-                            $totalItemDiscount = 0;
-                            if($order->orderItems) {
-                                foreach ($order->orderItems as $item) {
-                                    $itemDiscPercent = floatval($item->item_discount_percentage ?? 0);
-                                    $qty = intval($item->quantity ?? 1);
-                                    $basePrice = floatval($item->price ?? 0);
-                                    if ($itemDiscPercent > 0) {
-                                        $totalItemDiscount += ($basePrice * $itemDiscPercent / 100) * $qty;
-                                    } elseif (!empty($item->discounted_price) && $item->discounted_price < $basePrice) {
-                                        $totalItemDiscount += ($basePrice - floatval($item->discounted_price)) * $qty;
+                        @if($tab === 'cancelled')
+                            @forelse($orders as $key => $order)
+                            <tr>
+                                <td class="text-center text-muted fw-bold">
+                                    {{ method_exists($orders, 'currentPage') ? ($orders->currentPage() - 1) * $orders->perPage() + $key + 1 : $key + 1 }}
+                                </td>
+                                <td>
+                                    <div class="rpt-actions justify-content-center">
+                                        <a href="{{ route('order.invoice', $order->id) }}" 
+                                           class="rpt-btn-action btn-print" 
+                                           title="View / Print Tax Invoice"
+                                           target="_blank">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                        <a href="{{ route('order.report.order.details', $order->id) }}" 
+                                           class="rpt-btn-action btn-view" 
+                                           title="View Order Breakdown">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-danger text-decoration-line-through" style="font-family: 'Outfit', sans-serif;">
+                                        #{{ $order->order_id }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong class="text-dark">{{ $order->customer_name ?? 'Walk-in Guest' }}</strong>
+                                        @if($order->customer_phone)
+                                        <div class="text-muted small">
+                                            <i class="fas fa-phone-alt me-1 text-secondary"></i> {{ $order->customer_phone }}
+                                        </div>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td>
+                                    @if($order->order_type == 'DINE_IN')
+                                        <span class="rpt-badge badge-dinein">
+                                            <i class="fas fa-chair"></i> Dine-in
+                                        </span>
+                                        @if($order->table)
+                                            <div class="text-muted small mt-1">{{ $order->table->name }}</div>
+                                        @endif
+                                    @else
+                                        <span class="rpt-badge badge-takeaway">
+                                            <i class="fas fa-shopping-bag"></i> Takeaway
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="text-end fw-semibold">₹{{ number_format($order->total_amount ?? 0, 2) }}</td>
+                                <td class="text-end">
+                                    <strong style="font-family: 'Outfit', sans-serif; font-size: 1rem; color: #dc2626;">
+                                        ₹{{ number_format($order->grand_total, 2) }}
+                                    </strong>
+                                </td>
+                                <td class="text-center">
+                                    <span class="rpt-badge-cancelled">
+                                        <i class="fas fa-ban"></i> CANCELLED
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="text-danger fw-semibold" style="max-width: 250px; word-wrap: break-word;">
+                                        {{ $order->cancel_reason ?: 'No reason specified' }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="fas fa-user-shield me-1 text-secondary"></i> {{ $order->cancelledBy->name ?? 'Admin' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="text-danger fw-semibold small">{{ $order->deleted_at ? $order->deleted_at->format('d M Y') : '-' }}</div>
+                                    <small class="text-muted">{{ $order->deleted_at ? $order->deleted_at->format('h:i A') : '' }}</small>
+                                </td>
+                                <td>
+                                    <div class="text-dark fw-semibold small">{{ $order->created_at->format('d M Y') }}</div>
+                                    <small class="text-muted">{{ $order->created_at->format('h:i A') }}</small>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="12" class="text-center py-5 text-muted">
+                                    <i class="fas fa-ban fa-3x mb-3 text-secondary opacity-50"></i>
+                                    <h6 class="fw-bold">No Cancelled Orders Found</h6>
+                                    <p class="small text-muted mb-0">No deleted or cancelled orders match the selected date or filter criteria.</p>
+                                </td>
+                            </tr>
+                            @endforelse
+                        @else
+                            @forelse($orders as $key => $order)
+                            @php
+                                $balance = round($order->grand_total, 2) - ($order->amount_paid ?? 0);
+                                $isFullyPaid = $balance <= 0;
+                                $isGstBill = ($order->is_gst_bill ?? 'NO') == 'YES';
+                                $gstPercentage = $order->restaurant_gst_percentage ?? 0;
+                                
+                                $totalItemDiscount = 0;
+                                if($order->orderItems) {
+                                    foreach ($order->orderItems as $item) {
+                                        $itemDiscPercent = floatval($item->item_discount_percentage ?? 0);
+                                        $qty = intval($item->quantity ?? 1);
+                                        $basePrice = floatval($item->price ?? 0);
+                                        if ($itemDiscPercent > 0) {
+                                            $totalItemDiscount += ($basePrice * $itemDiscPercent / 100) * $qty;
+                                        } elseif (!empty($item->discounted_price) && $item->discounted_price < $basePrice) {
+                                            $totalItemDiscount += ($basePrice - floatval($item->discounted_price)) * $qty;
+                                        }
                                     }
                                 }
-                            }
-                            $orderDiscountAmount = floatval($order->discount ?? 0);
-                            $totalDiscount = $totalItemDiscount + $orderDiscountAmount;
-                        @endphp
-                        <tr>
-                            <td class="text-center text-muted fw-bold">
-                                {{ method_exists($orders, 'currentPage') ? ($orders->currentPage() - 1) * $orders->perPage() + $key + 1 : $key + 1 }}
-                            </td>
-                            <td>
-                                <div class="rpt-actions justify-content-center">
-                                    <a href="{{ route('order.invoice', $order->id) }}" 
-                                       class="rpt-btn-action btn-print" 
-                                       title="View / Print Tax Invoice"
-                                       target="_blank">
-                                        <i class="fas fa-print"></i>
-                                    </a>
-                                    <a href="{{ route('order.report.order.details', $order->id) }}" 
-                                       class="rpt-btn-action btn-view" 
-                                       title="View Order Breakdown">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <button type="button" 
-                                            class="rpt-btn-action btn-del btn-delete-order" 
-                                            data-order-id="{{ $order->id }}"
-                                            data-order-uid="{{ $order->order_id }}"
-                                            title="Delete Order (Requires OTP)">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="fw-bold" style="font-family: 'Outfit', sans-serif; color: var(--rpt-primary);">
-                                    #{{ $order->order_id }}
-                                </span>
-                            </td>
-                            <td>
-                                <div>
-                                    <strong class="text-dark">{{ $order->customer_name ?? 'Walk-in Guest' }}</strong>
-                                    @if($order->customer_phone)
-                                    <div class="text-muted small">
-                                        <i class="fas fa-phone-alt me-1 text-secondary"></i> {{ $order->customer_phone }}
+                                $orderDiscountAmount = floatval($order->discount ?? 0);
+                                $totalDiscount = $totalItemDiscount + $orderDiscountAmount;
+                            @endphp
+                            <tr>
+                                <td class="text-center text-muted fw-bold">
+                                    {{ method_exists($orders, 'currentPage') ? ($orders->currentPage() - 1) * $orders->perPage() + $key + 1 : $key + 1 }}
+                                </td>
+                                <td>
+                                    <div class="rpt-actions justify-content-center">
+                                        <a href="{{ route('order.invoice', $order->id) }}" 
+                                           class="rpt-btn-action btn-print" 
+                                           title="View / Print Tax Invoice"
+                                           target="_blank">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                        <a href="{{ route('order.report.order.details', $order->id) }}" 
+                                           class="rpt-btn-action btn-view" 
+                                           title="View Order Breakdown">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="rpt-btn-action btn-del btn-delete-order" 
+                                                data-order-id="{{ $order->id }}"
+                                                data-order-uid="{{ $order->order_id }}"
+                                                title="Delete Order">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
                                     </div>
+                                </td>
+                                <td>
+                                    <span class="fw-bold" style="font-family: 'Outfit', sans-serif; color: var(--rpt-primary);">
+                                        #{{ $order->order_id }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong class="text-dark">{{ $order->customer_name ?? 'Walk-in Guest' }}</strong>
+                                        @if($order->customer_phone)
+                                        <div class="text-muted small">
+                                            <i class="fas fa-phone-alt me-1 text-secondary"></i> {{ $order->customer_phone }}
+                                        </div>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td>
+                                    @if($order->order_type == 'DINE_IN')
+                                        <span class="rpt-badge badge-dinein">
+                                            <i class="fas fa-chair"></i> Dine-in
+                                        </span>
+                                        @if($order->table)
+                                            <div class="text-muted small mt-1">{{ $order->table->name }}</div>
+                                        @endif
+                                    @else
+                                        <span class="rpt-badge badge-takeaway">
+                                            <i class="fas fa-shopping-bag"></i> Takeaway
+                                        </span>
                                     @endif
-                                </div>
-                            </td>
-                            <td>
-                                @if($order->order_type == 'DINE_IN')
-                                    <span class="rpt-badge badge-dinein">
-                                        <i class="fas fa-chair"></i> Dine-in
-                                    </span>
-                                    @if($order->table)
-                                        <div class="text-muted small mt-1">{{ $order->table->name }}</div>
+                                </td>
+                                <td class="text-end fw-semibold">₹{{ number_format($order->total_amount ?? 0, 2) }}</td>
+                                <td class="text-end {{ $totalDiscount > 0 ? 'text-danger' : 'text-muted' }} fw-semibold">
+                                    {{ $totalDiscount > 0 ? '- ₹' . number_format($totalDiscount, 2) : '₹0.00' }}
+                                </td>
+                                <td class="text-end fw-semibold">₹{{ number_format($order->taxable_amount ?? 0, 2) }}</td>
+                                <td class="text-end">
+                                    @if($isGstBill)
+                                        <span class="fw-bold text-dark">₹{{ number_format($order->gst_amount ?? 0, 2) }}</span>
+                                        <div class="text-muted small">({{ $gstPercentage }}%)</div>
+                                    @else
+                                        <span class="text-muted">-</span>
                                     @endif
-                                @else
-                                    <span class="rpt-badge badge-takeaway">
-                                        <i class="fas fa-shopping-bag"></i> Takeaway
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="text-end fw-semibold">₹{{ number_format($order->total_amount ?? 0, 2) }}</td>
-                            <td class="text-end {{ $totalDiscount > 0 ? 'text-danger' : 'text-muted' }} fw-semibold">
-                                {{ $totalDiscount > 0 ? '- ₹' . number_format($totalDiscount, 2) : '₹0.00' }}
-                            </td>
-                            <td class="text-end fw-semibold">₹{{ number_format($order->taxable_amount ?? 0, 2) }}</td>
-                            <td class="text-end">
-                                @if($isGstBill)
-                                    <span class="fw-bold text-dark">₹{{ number_format($order->gst_amount ?? 0, 2) }}</span>
-                                    <div class="text-muted small">({{ $gstPercentage }}%)</div>
-                                @else
-                                    <span class="text-muted">-</span>
-                                @endif
-                            </td>
-                            <td class="text-end">
-                                <strong style="font-family: 'Outfit', sans-serif; font-size: 1rem; color: var(--rpt-dark);">
-                                    ₹{{ number_format($order->grand_total, 2) }}
-                                </strong>
-                            </td>
-                            <td class="text-end text-success fw-bold">
-                                ₹{{ number_format($order->amount_paid ?? 0, 2) }}
-                            </td>
-                            <td class="text-end">
-                                @if($isFullyPaid)
-                                    <span class="text-success fw-bold">₹0.00</span>
-                                @else
-                                    <span class="text-danger fw-bold">₹{{ number_format($balance, 2) }}</span>
-                                    <div class="text-danger small"><i class="fas fa-exclamation-circle"></i> Due</div>
-                                @endif
-                            </td>
-                            <td class="text-center">
-                                @if($isGstBill)
-                                    <span class="rpt-badge badge-gst">
-                                        <i class="fas fa-file-invoice"></i> GST
-                                    </span>
-                                @else
-                                    <span class="rpt-badge badge-nongst">Non-GST</span>
-                                @endif
-                            </td>
-                            <td class="text-center">
-                                @if($order->payment_status == 'PAID')
-                                    <span class="rpt-badge badge-paid">
-                                        <i class="fas fa-check-circle"></i> Paid
-                                    </span>
-                                @elseif($order->payment_status == 'PENDING')
-                                    <span class="rpt-badge badge-pending">
-                                        <i class="fas fa-clock"></i> Pending
-                                    </span>
-                                @else
-                                    <span class="badge bg-secondary">{{ $order->payment_status }}</span>
-                                @endif
-                            </td>
-                            <td>
-                                <div class="text-dark fw-semibold small">{{ $order->created_at->format('d M Y') }}</div>
-                                <small class="text-muted">{{ $order->created_at->format('h:i A') }}</small>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="15" class="text-center py-5 text-muted">
-                                <i class="fas fa-file-invoice fa-3x mb-3 text-secondary opacity-50"></i>
-                                <h6 class="fw-bold">No Orders Found</h6>
-                                <p class="small text-muted mb-0">No transaction records match the selected date or filter criteria.</p>
-                            </td>
-                        </tr>
-                        @endforelse
+                                </td>
+                                <td class="text-end">
+                                    <strong style="font-family: 'Outfit', sans-serif; font-size: 1rem; color: var(--rpt-dark);">
+                                        ₹{{ number_format($order->grand_total, 2) }}
+                                    </strong>
+                                </td>
+                                <td class="text-end text-success fw-bold">
+                                    ₹{{ number_format($order->amount_paid ?? 0, 2) }}
+                                </td>
+                                <td class="text-end">
+                                    @if($isFullyPaid)
+                                        <span class="text-success fw-bold">₹0.00</span>
+                                    @else
+                                        <span class="text-danger fw-bold">₹{{ number_format($balance, 2) }}</span>
+                                        <div class="text-danger small"><i class="fas fa-exclamation-circle"></i> Due</div>
+                                    @endif
+                                </td>
+                                <td class="text-center">
+                                    @if($isGstBill)
+                                        <span class="rpt-badge badge-gst">
+                                            <i class="fas fa-file-invoice"></i> GST
+                                        </span>
+                                    @else
+                                        <span class="rpt-badge badge-nongst">Non-GST</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">
+                                    @if($order->payment_status == 'PAID')
+                                        <span class="rpt-badge badge-paid">
+                                            <i class="fas fa-check-circle"></i> Paid
+                                        </span>
+                                    @elseif($order->payment_status == 'PENDING')
+                                        <span class="rpt-badge badge-pending">
+                                            <i class="fas fa-clock"></i> Pending
+                                        </span>
+                                    @else
+                                        <span class="badge bg-secondary">{{ $order->payment_status }}</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <div class="text-dark fw-semibold small">{{ $order->created_at->format('d M Y') }}</div>
+                                    <small class="text-muted">{{ $order->created_at->format('h:i A') }}</small>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="15" class="text-center py-5 text-muted">
+                                    <i class="fas fa-file-invoice fa-3x mb-3 text-secondary opacity-50"></i>
+                                    <h6 class="fw-bold">No Orders Found</h6>
+                                    <p class="small text-muted mb-0">No transaction records match the selected date or filter criteria.</p>
+                                </td>
+                            </tr>
+                            @endforelse
+                        @endif
                     </tbody>
                 </table>
             </div>
@@ -399,57 +591,34 @@
 </div>
 </div>
 
-{{-- Delete Order Modal (OTP verification) --}}
+{{-- Delete Order Modal (Reason confirmation - No OTP) --}}
 <div class="modal fade" id="deleteOrderModal" tabindex="-1" aria-labelledby="deleteOrderModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rpt-modal-content" style="border-radius: var(--rpt-radius-lg); border: none; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);">
             <div class="modal-header p-4 border-bottom">
                 <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2" id="deleteOrderModalLabel" style="font-family: 'Outfit', sans-serif;">
-                    <i class="fas fa-exclamation-triangle"></i> Delete Order
+                    <i class="fas fa-trash-alt"></i> Cancel / Delete Order
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                {{-- Step 1: Reason / Remarks --}}
-                <div id="deleteStepRemarks">
-                    <div class="alert alert-warning border-0 p-3 mb-3 d-flex align-items-start gap-2" style="border-radius: 12px; font-size: 0.88rem;">
-                        <i class="fas fa-info-circle text-warning mt-1"></i>
-                        <div>
-                            Are you sure you want to delete order <strong id="deleteOrderUIDDisplay"></strong>? This will soft-delete the transaction and require OTP confirmation.
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="rpt-filter-label">Reason / Remarks <span class="text-danger">*</span></label>
-                        <textarea class="rpt-filter-control" id="deleteRemarks" rows="3" placeholder="Enter reason for deletion..." required></textarea>
-                        <div class="text-danger small mt-1 fw-bold" id="deleteRemarksFeedback" style="display: none;">Reason is required.</div>
-                    </div>
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold" id="btnSendDeleteOTP">
-                            Send Verification OTP
-                        </button>
+                <div class="alert alert-warning border-0 p-3 mb-3 d-flex align-items-start gap-2" style="border-radius: 12px; font-size: 0.88rem;">
+                    <i class="fas fa-exclamation-triangle text-warning mt-1"></i>
+                    <div>
+                        Are you sure you want to delete order <strong id="deleteOrderUIDDisplay"></strong>?
+                        <div class="small text-muted mt-1">This will soft delete the invoice, deduct it from report &amp; dashboard counters, and move it to the <strong>Cancel Order</strong> tab.</div>
                     </div>
                 </div>
-
-                {{-- Step 2: OTP Verification --}}
-                <div id="deleteStepOTP" style="display: none;">
-                    <div class="alert alert-info border-0 p-3 mb-3 d-flex align-items-start gap-2" style="border-radius: 12px; font-size: 0.88rem;">
-                        <i class="fas fa-envelope text-info mt-1"></i>
-                        <div>
-                            A 6-digit verification OTP has been sent to the Restaurant Administrator's registered email address.
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="rpt-filter-label text-center d-block">Enter Verification OTP <span class="text-danger">*</span></label>
-                        <input type="text" class="rpt-filter-control text-center fw-bold fs-3" id="deleteOTP" maxlength="6" placeholder="000000" style="letter-spacing: 6px;">
-                        <div class="text-danger small text-center mt-1 fw-bold" id="deleteOTPFeedback" style="display: none;">Invalid OTP entered.</div>
-                    </div>
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-light rounded-pill px-3" id="btnBackToRemarks">Back</button>
-                        <button type="button" class="btn btn-success rounded-pill px-4 fw-bold" id="btnVerifyAndDelete">
-                            Verify &amp; Delete Order
-                        </button>
-                    </div>
+                <div class="mb-3">
+                    <label class="rpt-filter-label">Reason for Cancellation / Deletion <span class="text-danger">*</span></label>
+                    <textarea class="rpt-filter-control" id="deleteReason" rows="3" placeholder="Enter reason (e.g. Customer cancelled order, Duplicate punch, Test order, Wrong table bill)..." required></textarea>
+                    <div class="text-danger small mt-1 fw-bold" id="deleteReasonFeedback" style="display: none;">Reason is required.</div>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold" id="btnConfirmDeleteOrder">
+                        <i class="fas fa-trash-alt me-1"></i> Confirm Delete
+                    </button>
                 </div>
             </div>
         </div>
@@ -459,6 +628,7 @@
 @endsection
 
 @section('script')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 @include('includes.script')
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
@@ -470,110 +640,84 @@
 $(document).ready(function() {
     let currentDeleteOrderId = null;
 
+    // Initialize DataTable if table exists
+    if ($('#ordersTable').length && !$.fn.DataTable.isDataTable('#ordersTable')) {
+        $('#ordersTable').DataTable({
+            paging: false,
+            info: false,
+            searching: true,
+            ordering: true,
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    text: '<i class="fas fa-file-excel me-1 text-success"></i> Export Excel',
+                    className: 'btn-export'
+                },
+                {
+                    extend: 'print',
+                    text: '<i class="fas fa-print me-1 text-primary"></i> Print Table',
+                    className: 'btn-print'
+                }
+            ]
+        });
+    }
+
     // Handle delete button click
     $(document).on('click', '.btn-delete-order', function(e) {
         e.preventDefault();
         currentDeleteOrderId = $(this).data('order-id');
         let orderUID = $(this).data('order-uid');
 
-        $('#deleteOrderUIDDisplay').text(orderUID);
-        $('#deleteRemarks').val('');
-        $('#deleteOTP').val('');
-        $('#deleteRemarksFeedback').hide();
-        $('#deleteOTPFeedback').hide();
-        
-        $('#deleteStepRemarks').show();
-        $('#deleteStepOTP').hide();
+        $('#deleteOrderUIDDisplay').text('#' + orderUID);
+        $('#deleteReason').val('');
+        $('#deleteReasonFeedback').hide();
 
         const deleteModal = new bootstrap.Modal(document.getElementById('deleteOrderModal'));
         deleteModal.show();
     });
 
-    // Send OTP
-    $('#btnSendDeleteOTP').on('click', function() {
-        let remarks = $('#deleteRemarks').val().trim();
-        if (!remarks) {
-            $('#deleteRemarksFeedback').text('Reason is required.').show();
+    // Confirm Delete
+    $('#btnConfirmDeleteOrder').on('click', function() {
+        let reason = $('#deleteReason').val().trim();
+        if (!reason) {
+            $('#deleteReasonFeedback').text('Reason is required.').show();
+            $('#deleteReason').focus();
             return;
         }
-        $('#deleteRemarksFeedback').hide();
+        $('#deleteReasonFeedback').hide();
 
         let btn = $(this);
-        btn.prop('disabled', true).text('Sending OTP...');
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Deleting...');
 
         $.ajax({
-            url: "{{ route('order.report.management.send-otp') }}",
+            url: "{{ route('order.report.management.delete') }}",
             method: "POST",
             data: {
                 _token: "{{ csrf_token() }}",
                 order_id: currentDeleteOrderId,
-                remarks: remarks
+                cancel_reason: reason
             },
             success: function(response) {
-                btn.prop('disabled', false).text('Send Verification OTP');
-                if (response.success) {
-                    $('#deleteStepRemarks').hide();
-                    $('#deleteStepOTP').show();
-                } else {
-                    alert(response.message || 'An error occurred.');
-                }
-            },
-            error: function(xhr) {
-                btn.prop('disabled', false).text('Send Verification OTP');
-                let msg = 'An error occurred while sending OTP.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    msg = xhr.responseJSON.message;
-                }
-                alert(msg);
-            }
-        });
-    });
-
-    // Back to remarks
-    $('#btnBackToRemarks').on('click', function() {
-        $('#deleteStepOTP').hide();
-        $('#deleteStepRemarks').show();
-    });
-
-    // Verify OTP and Soft Delete
-    $('#btnVerifyAndDelete').on('click', function() {
-        let otp = $('#deleteOTP').val().trim();
-        if (!otp || otp.length !== 6) {
-            $('#deleteOTPFeedback').text('Please enter a 6-digit OTP.').show();
-            return;
-        }
-        $('#deleteOTPFeedback').hide();
-
-        let btn = $(this);
-        btn.prop('disabled', true).text('Verifying...');
-
-        $.ajax({
-            url: "{{ route('order.report.management.verify-delete') }}",
-            method: "POST",
-            data: {
-                _token: "{{ csrf_token() }}",
-                order_id: currentDeleteOrderId,
-                otp: otp
-            },
-            success: function(response) {
-                btn.prop('disabled', false).text('Verify & Delete Order');
+                btn.prop('disabled', false).html('<i class="fas fa-trash-alt me-1"></i> Confirm Delete');
                 if (response.success) {
                     const modalEl = document.getElementById('deleteOrderModal');
                     const modalInstance = bootstrap.Modal.getInstance(modalEl);
                     if (modalInstance) modalInstance.hide();
-                    alert('Order deleted successfully.');
+                    
+                    alert(response.message || 'Order cancelled successfully.');
                     window.location.reload();
                 } else {
-                    $('#deleteOTPFeedback').text(response.message || 'Verification failed.').show();
+                    $('#deleteReasonFeedback').text(response.message || 'An error occurred.').show();
                 }
             },
             error: function(xhr) {
-                btn.prop('disabled', false).text('Verify & Delete Order');
-                let msg = 'Verification failed.';
+                btn.prop('disabled', false).html('<i class="fas fa-trash-alt me-1"></i> Confirm Delete');
+                let msg = 'An error occurred while deleting the order.';
                 if (xhr.responseJSON && xhr.responseJSON.message) {
                     msg = xhr.responseJSON.message;
                 }
-                $('#deleteOTPFeedback').text(msg).show();
+                $('#deleteReasonFeedback').text(msg).show();
             }
         });
     });

@@ -520,19 +520,30 @@
                                          @if($plan->price == 0)
                                              <span class="active-price" style="color: var(--success);">FREE</span>
                                          @else
-                                             @if($plan->cross_price)
+                                             @php
+    $rpCurr = strtoupper($plan->currency ?? 'INR');
+    $rpSym = ($rpCurr === 'USD') ? '$' : (($rpCurr === 'EUR') ? '€' : (($rpCurr === 'GBP') ? '£' : '₹'));
+@endphp
+@if($plan->cross_price)
                                                  <span class="cross-price">
                                                      @if(is_numeric($plan->cross_price))
-                                                         ₹{{ number_format($plan->cross_price, 2) }}
+                                                         {{ $rpSym ?? '₹' }}{{ number_format($plan->cross_price, 2) }}
                                                      @else
                                                          {{ $plan->cross_price }}
                                                      @endif
                                                  </span>
                                              @endif
                                              <span class="active-price">
-                                                 ₹{{ number_format($plan->price, 2) }}
+                                                 {{ $rpSym ?? '₹' }}{{ number_format($plan->price, 2) }}
                                                  <small>/ {{ ucfirst($plan->billing_cycle) }}</small>
                                              </span>
+                                             <div class="text-muted small" style="font-size: 0.75rem; margin-top: 3px;">
+                                                 @if(($plan->plan_type ?? 'DOMESTIC') === 'INTERNATIONAL')
+                                                     <span class="badge bg-dark text-white"><i class="fas fa-globe me-1"></i>International (No GST)</span>
+                                                 @else
+                                                     <span class="text-muted"><i class="fas fa-check-circle me-1"></i>Incl. 18% GST</span>
+                                                 @endif
+                                             </div>
                                          @endif
                                      </div>
                                     <div class="plan-duration">
@@ -568,6 +579,12 @@
                                             <li><i class="fas fa-check-circle text-success"></i> Bar Management</li>
                                         @else
                                             <li><i class="fas fa-times-circle text-danger"></i> Bar Management</li>
+                                        @endif
+
+                                        @if(($plan->multi_outlet_checkbox ?? 'N') == 'Y')
+                                            <li><i class="fas fa-check-circle text-success"></i> Multiple Restaurant Support ({{ ($plan->total_number_of_outlets ?? 0) == 0 ? 'Unlimited' : 'Up to ' . number_format($plan->total_number_of_outlets) . ' ' . ($plan->total_number_of_outlets == 1 ? 'Restaurant' : 'Restaurants') }})</li>
+                                        @else
+                                            <li><i class="fas fa-times-circle text-danger"></i> Multiple Restaurant Support</li>
                                         @endif
 
                                         @if($plan->inventory_checkbox == 'Y')

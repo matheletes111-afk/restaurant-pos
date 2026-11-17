@@ -251,6 +251,11 @@
                       </td>
                       <td>
                         <strong class="text-dark" style="font-size: 0.94rem;">{{ $plan->name }}</strong>
+                        @if(($plan->plan_type ?? 'DOMESTIC') === 'INTERNATIONAL')
+                          <span class="badge bg-dark text-white ms-1" style="font-size: 0.65rem;" title="International Plan - No GST"><i class="fas fa-globe me-1"></i>International</span>
+                        @else
+                          <span class="badge bg-info text-dark ms-1" style="font-size: 0.65rem;" title="Domestic Plan - 18% GST Applicable"><i class="fas fa-flag me-1"></i>Domestic</span>
+                        @endif
                         @if($plan->label_name)
                           <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">{{ $plan->label_name }}</span>
                         @endif
@@ -260,7 +265,11 @@
                           <span class="badge bg-success px-2 py-1" style="font-size: 0.75rem;">FREE</span>
                         @else
                           <span class="fw-bold text-dark" style="font-family: 'Outfit', sans-serif; font-size: 1.05rem;">
-                            ₹{{ number_format($plan->price, 2) }}
+                            @php
+  $piCurr = strtoupper($plan->currency ?? 'INR');
+  $piSym = ($piCurr === 'USD') ? '$' : (($piCurr === 'EUR') ? '€' : (($piCurr === 'GBP') ? '£' : '₹'));
+@endphp
+{{ $piSym }}{{ number_format($plan->price, 2) }} <small class="text-muted fw-normal" style="font-size: 0.72rem;">{{ $piCurr }}</small>
                           </span>
                         @endif
                       </td>

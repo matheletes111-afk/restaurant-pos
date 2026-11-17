@@ -586,6 +586,11 @@
        class="mr-tab-pill {{ $currentRoute === 'admin.reports.master.analytics' ? 'active' : '' }}">
         <i class="fas fa-brain"></i> BI Analytics
     </a>
+
+    <a href="{{ route('admin.reports.master.customers', $outletParam) }}" 
+       class="mr-tab-pill {{ $currentRoute === 'admin.reports.master.customers' ? 'active' : '' }}">
+        <i class="fas fa-users"></i> Customers
+    </a>
 </div>
 
 {{-- SheetJS Library for client-side Excel XLSX generation --}}

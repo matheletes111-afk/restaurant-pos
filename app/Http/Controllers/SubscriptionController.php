@@ -121,7 +121,7 @@ class SubscriptionController extends Controller
             $payment->razorpay_order_id = null;
             $payment->razorpay_signature = null;
             $payment->amount = 0;
-            $payment->currency = 'INR';
+            $payment->currency = $currency ?? strtoupper($plan->currency ?? 'INR');
             $payment->status = 'success';
             $payment->description = "Free Plan Subscription: {$plan->name}";
             $payment->razorpay_response = null;
@@ -199,13 +199,14 @@ class SubscriptionController extends Controller
                 
                 // Full price for new plan
                 $payableAmount = max(0, $plan->price - $refundAmount);
+                $currency = strtoupper($plan->currency ?? 'INR');
 
                 if ($isOneTime) {
                     // One-time payment for 365 days: AutoPay OFF (standard Razorpay Order)
                     $razorpayOrder = $this->razorpay->order->create([
                         'receipt' => 'sub_ord_' . substr(uniqid(), -6) . '_' . $user->restaurant_id,
                         'amount' => max((int)round($payableAmount * 100), 100),
-                        'currency' => 'INR',
+                        'currency' => strtoupper($plan->currency ?? session('currency') ?? 'INR'),
                         'notes' => [
                             'user_id' => (string)$user->restaurant_id,
                             'plan_id' => (string)$plan->id,
@@ -244,13 +245,14 @@ class SubscriptionController extends Controller
             } else {
                 // New subscription
                 $payableAmount = $plan->price;
+                $currency = strtoupper($plan->currency ?? 'INR');
 
                 if ($isOneTime) {
                     // One-time payment for 365 days: AutoPay OFF (standard Razorpay Order)
                     $razorpayOrder = $this->razorpay->order->create([
                         'receipt' => 'sub_ord_' . substr(uniqid(), -6) . '_' . $user->restaurant_id,
                         'amount' => max((int)round($payableAmount * 100), 100),
-                        'currency' => 'INR',
+                        'currency' => strtoupper($plan->currency ?? session('currency') ?? 'INR'),
                         'notes' => [
                             'user_id' => (string)$user->restaurant_id,
                             'plan_id' => (string)$plan->id,
@@ -288,8 +290,8 @@ class SubscriptionController extends Controller
             $payment->plan_id = $plan->id;
             $payment->razorpay_order_id = $orderId;
             $payment->amount = $payableAmount;
-            $payment->gst_percentage = '18';
-            $payment->currency = 'INR';
+            $payment->gst_percentage = ($plan->plan_type === 'INTERNATIONAL') ? '0' : ($plan->gst_percentage !== null ? (string)$plan->gst_percentage : '18');
+            $payment->currency = $currency ?? strtoupper($plan->currency ?? 'INR');
             $payment->status = 'pending';
             $payment->description = $isOneTime
                 ? (isset($existingSubscription) ? 'Upgrade to 365 Days Plan (AutoPay OFF)' : '365 Days Plan (AutoPay OFF)')
@@ -304,6 +306,7 @@ class SubscriptionController extends Controller
                 'plan_id' => $plan->id,
                 'user_id' => $user->restaurant_id,
                 'payable_amount' => $payableAmount,
+                'currency' => $currency ?? strtoupper($plan->currency ?? 'INR'),
                 'existing_subscription_id' => $existingSubscription->id ?? null,
                 'refund_amount' => $refundAmount,
                 'credit_amount' => $refundAmount
@@ -318,6 +321,7 @@ class SubscriptionController extends Controller
                 'plan' => $plan,
                 'user' => $owner,
                 'payable_amount' => $payableAmount,
+                'currency' => $currency ?? strtoupper($plan->currency ?? 'INR'),
                 'is_upgrade' => isset($existingSubscription),
                 'existing_subscription' => $existingSubscription ?? null,
                 'refund_amount' => $refundAmount
@@ -417,8 +421,8 @@ class SubscriptionController extends Controller
             $payment->plan_id = $plan->id;
             $payment->razorpay_order_id = $newRzpSub->id;
             $payment->amount = $plan->price;
-            $payment->gst_percentage = '18';
-            $payment->currency = 'INR';
+            $payment->gst_percentage = ($plan->plan_type === 'INTERNATIONAL') ? '0' : ($plan->gst_percentage !== null ? (string)$plan->gst_percentage : '18');
+            $payment->currency = $currency ?? strtoupper($plan->currency ?? 'INR');
             $payment->status = 'pending';
             $payment->description = "Update Payment Method / Bank for {$plan->name}";
             $payment->save();
@@ -608,7 +612,7 @@ class SubscriptionController extends Controller
                     'razorpay_signature' => $request->razorpay_signature,
                     'razorpay_response' => json_encode($request->all()),
                     'amount' => session('payable_amount') ?? $plan->price,
-                    'currency' => 'INR',
+                    'currency' => strtoupper($plan->currency ?? session('currency') ?? 'INR'),
                     'status' => 'success',
                     'description' => $isOneTime 
                         ? '365 Days Plan Subscription: ' . $plan->name . ' (AutoPay OFF)' 
@@ -1078,6 +1082,10 @@ class SubscriptionController extends Controller
             $plan = $subscription->plan;
             $payment = $subscription->payments->first();
             $methodDetails = $this->getPaymentMethodDetails($payment);
+            $planCurrency = strtoupper($plan->currency ?? 'INR');
+            $currSymbol = ($planCurrency === 'USD') ? '$' : (($planCurrency === 'EUR') ? '€' : (($planCurrency === 'GBP') ? '£' : '₹'));
+            $paymentCurrency = strtoupper($payment->currency ?? $planCurrency);
+            $pCurrSym = ($paymentCurrency === 'USD') ? '$' : (($paymentCurrency === 'EUR') ? '€' : (($paymentCurrency === 'GBP') ? '£' : '₹'));
 
             $formattedData = [
                 'id' => $subscription->id,
@@ -1097,8 +1105,9 @@ class SubscriptionController extends Controller
                     'name' => $plan->name,
                     'label_name' => $plan->label_name,
                     'price' => (float)$plan->price,
-                    'formatted_price' => $plan->price == 0 ? 'FREE' : '₹' . number_format($plan->price, 2),
-                    'cross_price' => $plan->cross_price ? (is_numeric($plan->cross_price) ? '₹' . number_format($plan->cross_price, 2) : $plan->cross_price) : null,
+                    'currency' => strtoupper($plan->currency ?? 'INR'),
+                    'formatted_price' => $plan->price == 0 ? 'FREE' : $currSymbol . number_format($plan->price, 2),
+                    'cross_price' => $plan->cross_price ? (is_numeric($plan->cross_price) ? $currSymbol . number_format($plan->cross_price, 2) : $plan->cross_price) : null,
                     'billing_cycle' => ucfirst($plan->billing_cycle ?? 'monthly'),
                     'duration_days' => $plan->duration_days ?? 30,
                     'description' => $plan->description ?? 'No description provided for this plan.',
@@ -1109,13 +1118,15 @@ class SubscriptionController extends Controller
                     'table_number' => (int)$plan->total_number_of_table,
                     'table_display' => $plan->total_number_of_table == 0 ? 'Unlimited' : number_format($plan->total_number_of_table) . ' Tables',
                     'inventory_enabled' => ($plan->inventory_checkbox === 'Y'),
-                    'gst_percentage' => $plan->gst_percentage ?? 18,
+                    'plan_type' => $plan->plan_type ?? 'DOMESTIC',
+                    'gst_percentage' => ($plan->plan_type === 'INTERNATIONAL') ? 0 : ($plan->gst_percentage ?? 18),
                 ] : null,
 
                 'payment' => [
                     'id' => $payment ? $payment->id : null,
                     'amount' => $payment ? (float)$payment->amount : ($plan ? (float)$plan->price : 0),
-                    'formatted_amount' => $payment ? '₹' . number_format($payment->amount, 2) : ($plan && $plan->price == 0 ? 'FREE' : 'N/A'),
+                    'currency' => strtoupper($payment->currency ?? $plan->currency ?? 'INR'),
+                    'formatted_amount' => $payment ? $pCurrSym . number_format($payment->amount, 2) : ($plan && $plan->price == 0 ? 'FREE' : 'N/A'),
                     'status' => $payment ? ucfirst($payment->status) : ($subscription->status == 'active' ? 'Success' : ucfirst($subscription->status)),
                     'payment_method' => $methodDetails['full_title'],
                     'method_type' => $methodDetails['type'],
@@ -1128,8 +1139,9 @@ class SubscriptionController extends Controller
                     'razorpay_order_id' => ($payment && $payment->razorpay_order_id) ? $payment->razorpay_order_id : ($subscription->razorpay_subscription_id ?: 'N/A'),
                     'payment_date' => ($payment && $payment->created_at) ? $payment->created_at->format('d M Y, h:i A') : ($subscription->start_date ? $subscription->start_date->format('d M Y, h:i A') : 'N/A'),
                     'description' => $payment ? $payment->description : 'Subscription: ' . ($plan->name ?? 'Plan'),
-                    'gst_percentage' => $payment ? ($payment->gst_percentage ?? '18') : '18',
+                    'gst_percentage' => $payment ? ($payment->gst_percentage ?? (($plan && $plan->plan_type === 'INTERNATIONAL') ? '0' : '18')) : (($plan && $plan->plan_type === 'INTERNATIONAL') ? '0' : '18'),
                     'refund_amount' => $payment ? (float)$payment->refund_amount : (float)($subscription->refund_amount ?? 0),
+                    'formatted_refund_amount' => $pCurrSym . number_format($payment ? (float)$payment->refund_amount : (float)($subscription->refund_amount ?? 0), 2),
                 ],
 
                 'restaurant' => $subscription->restaurant_details ? [

@@ -562,6 +562,17 @@ body {
   transform: translateY(-1px);
 }
 
+.staff-btn-action.btn-operation {
+  background: #f0fdfa;
+  color: #0d9488;
+  border-color: #99f6e4;
+}
+.staff-btn-action.btn-operation:hover {
+  background: #0d9488;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
 .staff-btn-action.btn-shield {
   background: #fffbeb;
   color: #d97706;
@@ -925,4 +936,204 @@ body {
 
 .staff-switch input:checked + .staff-slider:before {
   transform: translateX(16px);
+}
+
+/* ==========================================================================
+   6. OPERATION TYPE & SALARY MANAGEMENT MODAL STYLES
+   ========================================================================== */
+.btn-outline-teal {
+  color: #0d9488;
+  border-color: #0d9488;
+  background-color: transparent;
+}
+.btn-outline-teal:hover {
+  color: #ffffff;
+  background-color: #0d9488;
+  border-color: #0d9488;
+}
+
+.staff-op-tabs {
+  border-bottom: 2px solid #e2e8f0;
+  gap: 8px;
+}
+.staff-op-tabs .nav-link {
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.92rem;
+  padding: 10px 18px;
+  background: transparent;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.2s ease;
+}
+.staff-op-tabs .nav-link:hover {
+  color: #0d9488;
+  background: #f0fdfa;
+}
+.staff-op-tabs .nav-link.active {
+  color: #0d9488;
+  background: #f0fdfa;
+  border-bottom-color: #0d9488;
+}
+
+/* Employment Type Selection Cards */
+.employment-type-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 576px) {
+  .employment-type-container {
+    grid-template-columns: 1fr;
+  }
+}
+.employment-card {
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  background: #ffffff;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  position: relative;
+}
+.employment-card:hover {
+  border-color: #99f6e4;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.08);
+}
+.employment-card.selected {
+  border-color: #0d9488;
+  background: #f0fdfa;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.12);
+}
+.employment-card .emp-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.employment-card.permanent .emp-icon {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+.employment-card.hourly .emp-icon {
+  background: #fffbeb;
+  color: #d97706;
+}
+.employment-card.selected.permanent .emp-icon {
+  background: #4f46e5;
+  color: #ffffff;
+}
+.employment-card.selected.hourly .emp-icon {
+  background: #d97706;
+  color: #ffffff;
+}
+.employment-card .emp-info h6 {
+  font-weight: 700;
+  margin-bottom: 2px;
+  color: #0f172a;
+}
+.employment-card .emp-info p {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.3;
+}
+.employment-card .emp-check {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  font-size: 0.65rem;
+  transition: all 0.2s ease;
+}
+.employment-card.selected .emp-check {
+  border-color: #0d9488;
+  background: #0d9488;
+  color: #ffffff;
+}
+
+/* Deductions Grid */
+.deductions-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px;
+}
+.deduction-item-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: border-color 0.2s ease;
+}
+.deduction-item-card:focus-within {
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+.deduction-item-card label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+.deduction-item-card .deduct-val-preview {
+  font-size: 0.72rem;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* Salary Summary Breakdown Card */
+.salary-breakdown-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #ffffff;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+}
+.salary-breakdown-card .breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 0.88rem;
+  color: #cbd5e1;
+}
+.salary-breakdown-card .breakdown-row.total-deduct {
+  color: #fca5a5;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+.salary-breakdown-card .breakdown-net {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 4px;
+}
+.salary-breakdown-card .breakdown-net .net-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+.salary-breakdown-card .breakdown-net .net-amount {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #34d399;
 }

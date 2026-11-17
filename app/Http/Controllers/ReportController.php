@@ -10,6 +10,7 @@ use App\Models\SubCategory;
 use App\Models\OrderManage;
 use App\Models\OrderItems;
 use App\Models\RestaurantMaster;
+use App\Models\CashDrawerTransaction;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -69,6 +70,7 @@ public function topAnalysisReport(Request $request)
         )
         ->join('sub_category', 'order_items.subcategory_id', '=', 'sub_category.id')
         ->join('orders', 'order_items.order_id', '=', 'orders.id')
+        ->whereNull('orders.deleted_at')
         ->where('order_items.restaurant_id', $restaurantId) // Specify order_items.restaurant_id
         ->whereBetween('order_items.created_at', [$fromDate, $toDate])
         ->groupBy('sub_category.name', 'sub_category.food_type')
@@ -107,11 +109,13 @@ public function topAnalysisReport(Request $request)
             ->avg('grand_total') ?: 0, 2),
         
         'total_dishes_sold' => OrderItems::join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->whereNull('orders.deleted_at')
             ->where('order_items.restaurant_id', $restaurantId) // SPECIFY table
             ->whereBetween('order_items.created_at', [$fromDate, $toDate])
             ->sum('order_items.quantity'),
         
         'unique_dishes' => OrderItems::join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->whereNull('orders.deleted_at')
             ->where('order_items.restaurant_id', $restaurantId) // SPECIFY table
             ->whereBetween('order_items.created_at', [$fromDate, $toDate])
             ->distinct('order_items.subcategory_id')
@@ -145,6 +149,7 @@ public function orderAnalysisReport(Request $request)
             DB::raw('SUM(amount_paid) as total_amount')
         )
         ->where('restaurant_id', $restaurantId)
+        ->whereNull('deleted_at')
         ->whereBetween('created_at', [$fromDate, $toDate])
         ->whereIn('payment_status', ['PAID', 'MISCORDER'])
         ->groupBy('order_type')
@@ -155,6 +160,7 @@ public function orderAnalysisReport(Request $request)
     $paymentMethods = DB::table('orders')
         ->select('payment_method')
         ->where('restaurant_id', $restaurantId)
+        ->whereNull('deleted_at')
         ->whereBetween('created_at', [$fromDate, $toDate])
         ->whereIn('payment_status', ['PAID', 'MISCORDER'])
         ->whereNotNull('payment_method')
@@ -171,6 +177,7 @@ public function orderAnalysisReport(Request $request)
             DB::raw('SUM(amount_paid) as total_amount')
         )
         ->where('restaurant_id', $restaurantId)
+        ->whereNull('deleted_at')
         ->whereBetween('created_at', [$fromDate, $toDate])
         ->whereIn('payment_status', ['PAID', 'MISCORDER'])
         ->whereNotNull('payment_method')
@@ -186,6 +193,7 @@ public function orderAnalysisReport(Request $request)
             DB::raw('SUM(amount_paid) as total_amount')
         )
         ->where('restaurant_id', $restaurantId)
+        ->whereNull('deleted_at')
         ->whereBetween('created_at', [$fromDate, $toDate])
         ->whereIn('payment_status', ['PAID', 'MISCORDER'])
         ->groupBy('payment_status')
@@ -201,6 +209,7 @@ public function orderAnalysisReport(Request $request)
         )
         ->join('sub_category', 'order_items.subcategory_id', '=', 'sub_category.id')
         ->join('orders', 'order_items.order_id', '=', 'orders.id')
+        ->whereNull('orders.deleted_at')
         ->where('order_items.restaurant_id', $restaurantId)
         ->whereBetween('order_items.created_at', [$fromDate, $toDate])
         ->whereIn('orders.payment_status', ['PAID', 'MISCORDER'])
@@ -212,6 +221,7 @@ public function orderAnalysisReport(Request $request)
     // 5. TOTAL AMOUNT (amount_paid)
     $totalAmount = DB::table('orders')
         ->where('restaurant_id', $restaurantId)
+        ->whereNull('deleted_at')
         ->whereBetween('created_at', [$fromDate, $toDate])
         ->whereIn('payment_status', ['PAID', 'MISCORDER'])
         ->sum('amount_paid');
@@ -224,6 +234,7 @@ public function orderAnalysisReport(Request $request)
             DB::raw('SUM(amount_paid) as total_amount')
         )
         ->where('restaurant_id', $restaurantId)
+        ->whereNull('deleted_at')
         ->whereBetween('created_at', [$fromDate, $toDate])
         ->whereIn('payment_status', ['PAID', 'MISCORDER'])
         ->groupBy(DB::raw('DATE(created_at)'))
@@ -238,6 +249,7 @@ public function orderAnalysisReport(Request $request)
             DB::raw('SUM(amount_paid) as total_amount')
         )
         ->where('restaurant_id', $restaurantId)
+        ->whereNull('deleted_at')
         ->whereBetween('created_at', [$fromDate, $toDate])
         ->whereIn('payment_status', ['PAID', 'MISCORDER'])
         ->groupBy(DB::raw('DATE(created_at)'))
@@ -251,6 +263,7 @@ public function orderAnalysisReport(Request $request)
             DB::raw('COUNT(*) as order_count')
         )
         ->where('restaurant_id', $restaurantId)
+        ->whereNull('deleted_at')
         ->whereBetween('created_at', [$fromDate, $toDate])
         ->whereIn('payment_status', ['PAID', 'MISCORDER'])
         ->groupBy(DB::raw('HOUR(created_at)'))
@@ -260,6 +273,7 @@ public function orderAnalysisReport(Request $request)
     // 9. AVERAGE ORDER VALUE
     $avgOrderValue = DB::table('orders')
         ->where('restaurant_id', $restaurantId)
+        ->whereNull('deleted_at')
         ->whereBetween('created_at', [$fromDate, $toDate])
         ->whereIn('payment_status', ['PAID', 'MISCORDER'])
         ->avg('amount_paid') ?: 0;
@@ -267,6 +281,7 @@ public function orderAnalysisReport(Request $request)
     // 10. TOTAL ORDERS COUNT
     $totalOrders = DB::table('orders')
         ->where('restaurant_id', $restaurantId)
+        ->whereNull('deleted_at')
         ->whereBetween('created_at', [$fromDate, $toDate])
         ->whereIn('payment_status', ['PAID', 'MISCORDER'])
         ->count();
@@ -295,32 +310,49 @@ public function orderManagementReport(Request $request)
     $toDate = $request->to_date ? Carbon::parse($request->to_date)->endOfDay() : Carbon::now()->endOfDay();
     $orderType = $request->order_type;
     $paymentStatus = $request->payment_status;
+    $tab = $request->get('tab', 'active'); // 'active' or 'cancelled'
 
     $restaurantId = auth()->user()->restaurant_id;
 
-    // Base query
-    $query = OrderManage::with(['table', 'orderItems'])
+    // Active orders query (soft-deleted orders are automatically excluded)
+    $activeQuery = OrderManage::with(['table', 'orderItems'])
+        ->where('restaurant_id', $restaurantId)
+        ->whereBetween('created_at', [$fromDate, $toDate]);
+
+    // Cancelled orders query (only soft-deleted orders)
+    $cancelledQuery = OrderManage::onlyTrashed()
+        ->with(['table', 'orderItems', 'cancelledBy'])
         ->where('restaurant_id', $restaurantId)
         ->whereBetween('created_at', [$fromDate, $toDate]);
 
     // Apply filters
     if ($orderType && $orderType != 'all') {
-        $query->where('order_type', $orderType);
+        $activeQuery->where('order_type', $orderType);
+        $cancelledQuery->where('order_type', $orderType);
     }
 
     if ($paymentStatus && $paymentStatus != 'all') {
-        $query->where('payment_status', $paymentStatus);
+        $activeQuery->where('payment_status', $paymentStatus);
+        $cancelledQuery->where('payment_status', $paymentStatus);
     }
 
-    // Get orders with pagination
-    $orders = $query->orderBy('created_at', 'desc')->paginate(50);
+    // Counts for tabs
+    $activeOrdersCount = (clone $activeQuery)->count();
+    $cancelledOrdersCount = (clone $cancelledQuery)->count();
 
-    // Calculate summary statistics
-    $summaryQuery = clone $query;
+    // Get orders with pagination depending on active tab
+    if ($tab === 'cancelled') {
+        $orders = $cancelledQuery->orderBy('deleted_at', 'desc')->paginate(50)->withQueryString();
+    } else {
+        $orders = $activeQuery->orderBy('created_at', 'desc')->paginate(50)->withQueryString();
+    }
+
+    // Calculate summary statistics on ACTIVE orders (ensuring cancelled orders are excluded)
+    $summaryQuery = clone $activeQuery;
     $allOrders = $summaryQuery->get();
     
     $summary = [
-        'total_orders' => $orders->total(),
+        'total_orders' => $activeOrdersCount,
         'total_revenue' => $allOrders->sum('grand_total'),
         'total_collected' => $allOrders->sum('amount_paid'),
         'pending_amount' => $allOrders->sum('grand_total') - $allOrders->sum('amount_paid'),
@@ -378,17 +410,21 @@ public function orderManagementReport(Request $request)
             }
             return $itemDisc + floatval($order->discount ?? 0);
         }),
+
+        // Cancelled orders metrics
+        'cancelled_orders_count' => $cancelledOrdersCount,
+        'cancelled_total_amount' => (clone $cancelledQuery)->sum('grand_total'),
     ];
 
-    // Get distinct values for dropdowns
-    $orderTypes = OrderManage::where('restaurant_id', $restaurantId)
+    // Get distinct values for dropdowns (including both active and trashed)
+    $orderTypes = OrderManage::withTrashed()->where('restaurant_id', $restaurantId)
         ->distinct()
         ->pluck('order_type')
         ->filter()
         ->values()
         ->toArray();
 
-    $paymentStatuses = OrderManage::where('restaurant_id', $restaurantId)
+    $paymentStatuses = OrderManage::withTrashed()->where('restaurant_id', $restaurantId)
         ->distinct()
         ->pluck('payment_status')
         ->filter()
@@ -403,7 +439,10 @@ public function orderManagementReport(Request $request)
         'fromDate',
         'toDate',
         'orderType',
-        'paymentStatus'
+        'paymentStatus',
+        'tab',
+        'activeOrdersCount',
+        'cancelledOrdersCount'
     ));
 }
 
@@ -556,6 +595,62 @@ public function itemGstSummary(Request $request)
 }
 
     /**
+     * Soft delete an order with a reason provided via modal.
+     */
+    public function deleteOrderWithReason(Request $request)
+    {
+        $request->validate([
+            'order_id' => 'required|exists:orders,id',
+            'cancel_reason' => 'required|string|max:1000',
+        ]);
+
+        $restaurantId = auth()->user()->restaurant_id;
+        $order = OrderManage::where('restaurant_id', $restaurantId)->where('id', $request->order_id)->first();
+        
+        if (!$order) {
+            return response()->json(['success' => false, 'message' => 'Order not found or already deleted.'], 404);
+        }
+
+        $reason = trim($request->cancel_reason);
+
+        // Record cancel reason, cancelled_by, update status and remarks
+        $order->cancel_reason = $reason;
+        $order->cancelled_by = auth()->id();
+        $order->order_status = 'CANCELLED';
+        $order->remarks = ($order->remarks ? $order->remarks . "\n" : "") . "[Cancellation Reason: " . $reason . "]";
+        $order->save();
+
+        // Also update order items status to CANCELLED
+        $order->orderItems()->update(['order_status' => 'CANCELLED']);
+
+        // Release table if occupied by this order
+        if ($order->table_id) {
+            $table = TableManage::where('id', $order->table_id)->where('restaurant_id', $restaurantId)->first();
+            if ($table && ($table->order_id == $order->id || $table->table_status == 'OCCUPIED')) {
+                $table->order_id = null;
+                $table->table_status = 'AVAILABLE';
+                $table->save();
+            }
+        }
+
+        // Soft delete associated cash drawer transaction if present
+        if (class_exists(CashDrawerTransaction::class)) {
+            CashDrawerTransaction::where('restaurant_id', $restaurantId)
+                ->where('reference_id', $order->id)
+                ->where('transaction_type', CashDrawerTransaction::TYPE_ORDER_PAYMENT)
+                ->delete();
+        }
+
+        // Soft delete the order
+        $order->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order #' . ($order->order_id ?? $order->id) . ' has been cancelled and moved to Cancel Order tab successfully.'
+        ]);
+    }
+
+    /**
      * Send OTP for deleting an order to the restaurant admin's email.
      */
     public function sendOrderDeleteOtp(Request $request)
@@ -697,6 +792,7 @@ public function itemGstSummary(Request $request)
             ->join('sub_category', 'order_items.subcategory_id', '=', 'sub_category.id')
             ->leftJoin('category', 'sub_category.category_id', '=', 'category.id')
             ->where('orders.restaurant_id', $restaurantId)
+            ->whereNull('orders.deleted_at')
             ->whereIn('orders.payment_status', ['PAID', 'MISCORDER'])
             ->whereBetween('orders.created_at', [$fromDate, $toDate]);
 
@@ -775,6 +871,7 @@ public function itemGstSummary(Request $request)
             ->join('sub_category', 'order_items.subcategory_id', '=', 'sub_category.id')
             ->leftJoin('category', 'sub_category.category_id', '=', 'category.id')
             ->where('orders.restaurant_id', $restaurantId)
+            ->whereNull('orders.deleted_at')
             ->whereIn('orders.payment_status', ['PAID', 'MISCORDER'])
             ->whereBetween('orders.created_at', [$fromDate, $toDate]);
 
@@ -919,6 +1016,7 @@ public function itemGstSummary(Request $request)
             ->join('sub_category', 'order_items.subcategory_id', '=', 'sub_category.id')
             ->leftJoin('category', 'sub_category.category_id', '=', 'category.id')
             ->where('orders.restaurant_id', $restaurantId)
+            ->whereNull('orders.deleted_at')
             ->whereIn('orders.payment_status', ['PAID', 'MISCORDER'])
             ->whereBetween('orders.created_at', [$fromDate, $toDate]);
 
@@ -1006,6 +1104,7 @@ public function itemGstSummary(Request $request)
             ->join('sub_category', 'order_items.subcategory_id', '=', 'sub_category.id')
             ->leftJoin('category', 'sub_category.category_id', '=', 'category.id')
             ->where('orders.restaurant_id', $restaurantId)
+            ->whereNull('orders.deleted_at')
             ->whereIn('orders.payment_status', ['PAID', 'MISCORDER'])
             ->whereBetween('orders.created_at', [$fromDate, $toDate]);
 
@@ -1146,6 +1245,7 @@ public function itemGstSummary(Request $request)
                 DB::raw('AVG(amount_paid) as avg_order_val')
             )
             ->where('restaurant_id', $restaurantId)
+            ->whereNull('deleted_at')
             ->whereBetween('created_at', [$fromDate, $toDate])
             ->whereIn('payment_status', ['PAID', 'MISCORDER'])
             ->groupBy('payment_method')
@@ -1189,6 +1289,7 @@ public function itemGstSummary(Request $request)
                 DB::raw('COUNT(*) as daily_orders')
             )
             ->where('restaurant_id', $restaurantId)
+            ->whereNull('deleted_at')
             ->whereBetween('created_at', [$fromDate, $toDate])
             ->whereIn('payment_status', ['PAID', 'MISCORDER'])
             ->groupBy(DB::raw('DATE(created_at)'), 'payment_method')
@@ -1231,6 +1332,7 @@ public function itemGstSummary(Request $request)
         // 3. Detailed Orders Query
         $ordersQuery = OrderManage::with('table')
             ->where('restaurant_id', $restaurantId)
+            ->whereNull('deleted_at')
             ->whereBetween('created_at', [$fromDate, $toDate])
             ->whereIn('payment_status', ['PAID', 'MISCORDER']);
 
@@ -1277,6 +1379,7 @@ public function itemGstSummary(Request $request)
 
         $query = DB::table('orders')
             ->where('restaurant_id', $restaurantId)
+            ->whereNull('deleted_at')
             ->whereBetween('created_at', [$fromDate, $toDate])
             ->whereIn('payment_status', ['PAID', 'MISCORDER']);
 
@@ -1380,6 +1483,7 @@ public function itemGstSummary(Request $request)
         // 1. Fetch all orders with a customer phone or name in this period
         $periodOrders = DB::table('orders')
             ->where('restaurant_id', $restaurantId)
+            ->whereNull('deleted_at')
             ->whereBetween('created_at', [$fromDate, $toDate])
             ->whereIn('payment_status', ['PAID', 'MISCORDER'])
             ->where(function($q) {
@@ -1436,6 +1540,7 @@ public function itemGstSummary(Request $request)
                     DB::raw('SUM(amount_paid) as lifetime_spent')
                 )
                 ->where('restaurant_id', $restaurantId)
+                ->whereNull('deleted_at')
                 ->whereIn('payment_status', ['PAID', 'MISCORDER'])
                 ->whereIn('customer_phone', $phones)
                 ->groupBy('customer_phone')
@@ -1454,6 +1559,7 @@ public function itemGstSummary(Request $request)
                     DB::raw('SUM(amount_paid) as lifetime_spent')
                 )
                 ->where('restaurant_id', $restaurantId)
+                ->whereNull('deleted_at')
                 ->whereIn('payment_status', ['PAID', 'MISCORDER'])
                 ->whereIn('customer_name', $names)
                 ->groupBy('customer_name')
@@ -1585,6 +1691,7 @@ public function itemGstSummary(Request $request)
 
         $periodOrders = DB::table('orders')
             ->where('restaurant_id', $restaurantId)
+            ->whereNull('deleted_at')
             ->whereBetween('created_at', [$fromDate, $toDate])
             ->whereIn('payment_status', ['PAID', 'MISCORDER'])
             ->where(function($q) {
@@ -1632,6 +1739,7 @@ public function itemGstSummary(Request $request)
                     DB::raw('SUM(amount_paid) as lifetime_spent')
                 )
                 ->where('restaurant_id', $restaurantId)
+                ->whereNull('deleted_at')
                 ->whereIn('payment_status', ['PAID', 'MISCORDER'])
                 ->whereIn('customer_phone', $phones)
                 ->groupBy('customer_phone')
@@ -1650,6 +1758,7 @@ public function itemGstSummary(Request $request)
                     DB::raw('SUM(amount_paid) as lifetime_spent')
                 )
                 ->where('restaurant_id', $restaurantId)
+                ->whereNull('deleted_at')
                 ->whereIn('payment_status', ['PAID', 'MISCORDER'])
                 ->whereIn('customer_name', $names)
                 ->groupBy('customer_name')

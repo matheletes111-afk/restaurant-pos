@@ -113,10 +113,28 @@
                                         <div class="payment-summary">
                                             <h4 class="text-center mb-4">{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Bank Update & Authorization Summary' : 'Payment Summary' }}</h4>
                                             
-                                             <table class="table table-bordered">
+                                             @php
+    $curr = strtoupper($plan->currency ?? 'INR');
+    $currSymbol = ($curr === 'USD') ? '$' : (($curr === 'EUR') ? '€' : (($curr === 'GBP') ? '£' : '₹'));
+@endphp
+<table class="table table-bordered">
                                                 <tr>
                                                     <th>Plan Name:</th>
                                                     <td><strong>{{ $plan->name }}</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Plan Type:</th>
+                                                    <td>
+                                                        @if(($plan->plan_type ?? 'DOMESTIC') === 'INTERNATIONAL')
+                                                            <span class="badge bg-dark text-white" style="font-size: 0.85rem; padding: 6px 12px; border-radius: 8px;">
+                                                                <i class="fas fa-globe me-1"></i> International (No GST)
+                                                            </span>
+                                                        @else
+                                                            <span class="badge bg-info text-dark" style="font-size: 0.85rem; padding: 6px 12px; border-radius: 8px;">
+                                                                <i class="fas fa-flag me-1"></i> Domestic (Incl. 18% GST)
+                                                            </span>
+                                                        @endif
+                                                    </td>
                                                 </tr>
                                                 <tr>
                                                     <th>Billing Type:</th>
@@ -139,19 +157,19 @@
                                                 </tr>
                                                 <tr>
                                                     <th>Refund Amount:</th>
-                                                    <td class="text-success">₹{{ number_format($refund_amount ?? 0, 2) }}</td>
+                                                    <td class="text-success">{{ $currSymbol }}{{ number_format($refund_amount ?? 0, 2) }}</td>
                                                 </tr>
                                                 @endif
                                                 <tr>
                                                     <th>{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Renewal Rate / Auth Amount:' : 'Amount Payable:' }}</th>
-                                                    <td class="font-weight-bold text-success">₹{{ number_format($payable_amount, 2) }}</td>
+                                                    <td class="font-weight-bold text-success">{{ $currSymbol }}{{ number_format($payable_amount, 2) }} <span class="badge bg-light text-dark border">{{ $curr }}</span></td>
                                                 </tr>
                                             </table>
                                             
                                             <div class="text-center mt-4">
                                                 <button id="rzp-button" class="btn btn-primary btn-lg" style="box-shadow: 0 4px 14px rgba(255, 106, 0, 0.35); font-weight: 700; padding: 14px 32px; border-radius: 50px;">
                                                     <i class="fa fa-credit-card me-2"></i> 
-                                                    <span id="rzp-button-text">{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Authorize New Bank / Card (₹' . number_format($payable_amount, 2) . ')' : (!empty($is_one_time) ? 'Pay Now ₹' . number_format($payable_amount, 2) : 'Pay & Setup AutoPay (₹' . number_format($payable_amount, 2) . ')') }}</span>
+                                                    <span id="rzp-button-text">{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Authorize New Bank / Card (' . $currSymbol . number_format($payable_amount, 2) . ' ' . $curr . ')' : (!empty($is_one_time) ? 'Pay Now ' . $currSymbol . number_format($payable_amount, 2) . ' ' . $curr : 'Pay & Setup AutoPay (' . $currSymbol . number_format($payable_amount, 2) . ' ' . $curr . ')') }}</span>
                                                 </button>
                                                 
                                                 <a href="{{ route('admin.subscriptions.index') }}" class="btn btn-secondary btn-lg ms-2" style="padding: 14px 24px; border-radius: 50px;">
@@ -194,6 +212,8 @@
             payableAmountPaise: @json(max((int)round(($payable_amount ?? 0) * 100), 100)),
             planId: @json($plan->id ?? ''),
             userId: @json($user->id ?? ''),
+            currency: @json(strtoupper($plan->currency ?? 'INR')),
+            currencySymbol: @json(($plan->currency ?? 'INR') === 'USD' ? '$' : (($plan->currency ?? 'INR') === 'EUR' ? '€' : (($plan->currency ?? 'INR') === 'GBP' ? '£' : '₹'))),
             csrfToken: @json(csrf_token()),
             appName: @json(config('app.name', 'Bill&Bite POS')),
             razorpayKey: @json(config('services.razorpay.key_id') ?? env('RAZORPAY_KEY_ID', '')),
@@ -379,7 +399,7 @@
                 if (config.isOneTime) {
                     options["order_id"] = config.orderId;
                     options["amount"] = config.payableAmountPaise;
-                    options["currency"] = "INR";
+                    options["currency"] = config.currency || "INR";
                 } else {
                     options["subscription_id"] = config.subscriptionId;
                 }

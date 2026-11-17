@@ -128,7 +128,19 @@ public function store(Request $request)
     // }
 
     // Set default GST percentage (18% if not provided)
-    $gstPercentage = $request->gst_percentage ?? 18.00;
+    $planType = ($request->plan_type === 'INTERNATIONAL') ? 'INTERNATIONAL' : 'DOMESTIC';
+    if ($planType === 'INTERNATIONAL') {
+        $gstPercentage = 0.00;
+        $taxableAmount = round((float)$request->price, 2);
+        $gstAmount = 0.00;
+    } else {
+        $gstPercentage = $request->gst_percentage ?? 18.00;
+        $priceIncludingGst = (float)$request->price;
+        $taxableAmount = round($priceIncludingGst / (1 + ($gstPercentage / 100)), 2);
+        $gstAmount = round($priceIncludingGst - $taxableAmount, 2);
+    }
+    // bypass old calculation
+    if (false) {
     
     // Calculate taxable amount and GST amount (for database storage only)
     $priceIncludingGst = $request->price;
@@ -138,6 +150,7 @@ public function store(Request $request)
     // Round to 2 decimal places
     $taxableAmount = round($taxableAmount, 2);
     $gstAmount = round($gstAmount, 2);
+    }
 
     // Check if plan already exists
     $planChk = Plan::where('name', $request->name)
@@ -227,6 +240,8 @@ public function store(Request $request)
                 ],
                 'notes' => [
                     'duration_days' => $request->duration_days,
+                'market_plan_type' => $planType,
+                    'market_plan_type' => $planType,
                     'plan_type' => 'PAID',
                     'gst_percentage' => $gstPercentage,
                     'taxable_amount' => $taxableAmount,
@@ -244,6 +259,7 @@ public function store(Request $request)
 
         $plan = new Plan();
         $plan->name = $request->name;
+        $plan->plan_type = ($request->plan_type === 'INTERNATIONAL') ? 'INTERNATIONAL' : 'DOMESTIC';
         $plan->price = $request->price; // Price including GST
         $plan->label_name = $request->label_name;
         $plan->cross_price = $request->cross_price;
@@ -279,6 +295,7 @@ public function store(Request $request)
 
         $history = new PlanHistory();
         $history->plan_id = $plan->id;
+        $history->plan_type = ($request->plan_type === 'INTERNATIONAL') ? 'INTERNATIONAL' : 'DOMESTIC';
         $history->name = $request->name;
         $history->label_name = $request->label_name;
         $history->cross_price = $request->cross_price;
@@ -352,7 +369,19 @@ public function update(Request $request, $id)
                 ->firstOrFail();
 
     // Set default GST percentage (18% if not provided)
-    $gstPercentage = $request->gst_percentage ?? 18.00;
+    $planType = ($request->plan_type === 'INTERNATIONAL') ? 'INTERNATIONAL' : 'DOMESTIC';
+    if ($planType === 'INTERNATIONAL') {
+        $gstPercentage = 0.00;
+        $taxableAmount = round((float)$request->price, 2);
+        $gstAmount = 0.00;
+    } else {
+        $gstPercentage = $request->gst_percentage ?? 18.00;
+        $priceIncludingGst = (float)$request->price;
+        $taxableAmount = round($priceIncludingGst / (1 + ($gstPercentage / 100)), 2);
+        $gstAmount = round($priceIncludingGst - $taxableAmount, 2);
+    }
+    // bypass old calculation
+    if (false) {
     
     // Calculate taxable amount and GST amount (for database storage only)
     $priceIncludingGst = $request->price;
@@ -362,6 +391,7 @@ public function update(Request $request, $id)
     // Round to 2 decimal places
     $taxableAmount = round($taxableAmount, 2);
     $gstAmount = round($gstAmount, 2);
+    }
 
     // Check if plan already exists with different ID (Commented out to allow editing plans multiple times)
     /*
@@ -444,6 +474,7 @@ public function update(Request $request, $id)
             ],
             'notes' => [
                 'duration_days' => $request->duration_days,
+                'market_plan_type' => $planType,
                 'plan_type' => 'PAID',
                 'gst_percentage' => $gstPercentage,
                 'taxable_amount' => $taxableAmount,
@@ -455,6 +486,7 @@ public function update(Request $request, $id)
         // Create new plan entry (like Razorpay)
         $newUpdatedPlan = new Plan();
         $newUpdatedPlan->name = $request->name;
+        $newUpdatedPlan->plan_type = $planType;
         $newUpdatedPlan->plan_parent_id = $plan->id;
         $newUpdatedPlan->price = $request->price;
         $newUpdatedPlan->label_name = $request->label_name;
@@ -495,6 +527,7 @@ public function update(Request $request, $id)
         // Create plan history
         $insHis = new PlanHistory();
         $insHis->plan_id = $newUpdatedPlan->id;
+        $insHis->plan_type = $planType;
         $insHis->name = $request->name;
         $insHis->label_name = $request->label_name;
         $insHis->cross_price = $request->cross_price;
