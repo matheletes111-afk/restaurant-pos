@@ -336,7 +336,12 @@
                                             @if($isFree)
                                                 <span class="sub-free-badge">FREE</span>
                                             @else
-                                                <span class="sub-price-text">₹{{ number_format($subscription->plan->price ?? 0, 2) }}</span>
+                                                @php
+                                                $subCurr = strtoupper($subscription->plan->currency ?? 'INR');
+                                                $subSym = ($subCurr === 'USD') ? '$' : (($subCurr === 'EUR') ? '€' : (($subCurr === 'GBP') ? '£' : '₹'));
+                                            @endphp
+                                            <span class="sub-price-text">{{ $subSym }}{{ number_format($subscription->plan->price ?? 0, 2) }}</span>
+                                            <span class="badge bg-light text-muted border ms-1" style="font-size: 0.65rem;">{{ $subCurr }}</span>
                                             @endif
                                         </td>
                                         <td>
@@ -446,7 +451,11 @@
                                             @if($isFree)
                                                 <span class="sub-free-badge">FREE</span>
                                             @else
-                                                ₹{{ number_format($subscription->plan->price ?? 0, 2) }}
+                                                @php
+                                                $subCurr = strtoupper($subscription->plan->currency ?? 'INR');
+                                                $subSym = ($subCurr === 'USD') ? '$' : (($subCurr === 'EUR') ? '€' : (($subCurr === 'GBP') ? '£' : '₹'));
+                                            @endphp
+                                            {{ $subSym }}{{ number_format($subscription->plan->price ?? 0, 2) }} <small class="text-muted">{{ $subCurr }}</small>
                                             @endif
                                             <span class="badge {{ $cycle == 'yearly' ? 'bg-success' : 'bg-primary' }} text-white ms-1" style="font-size: 0.65rem;">
                                                 {{ ucfirst($cycle) }}
@@ -573,8 +582,8 @@
                                 </div>
                                 <div class="text-md-end">
                                     <div class="d-flex align-items-baseline justify-content-md-end gap-1">
-                                        <span id="modalPlanCrossPrice" class="text-muted text-decoration-line-through small me-1" style="display: none;">₹999</span>
-                                        <h3 class="mb-0 fw-bold" style="color: #ff5e14; font-family: 'Outfit', sans-serif;" id="modalPlanPrice">₹499.00</h3>
+                                        <span id="modalPlanCrossPrice" class="text-muted text-decoration-line-through small me-1" style="display: none;"></span>
+                                        <h3 class="mb-0 fw-bold" style="color: #ff5e14; font-family: 'Outfit', sans-serif;" id="modalPlanPrice">--</h3>
                                     </div>
                                     <span class="badge bg-white border text-muted px-2 py-1 mt-1" id="modalPlanBillingCycle">Monthly Plan</span>
                                 </div>
@@ -664,7 +673,7 @@
                             <div class="row g-3">
                                 <div class="col-6 col-md-3">
                                     <div class="sub-card-stat-label">Amount Paid</div>
-                                    <div class="sub-card-stat-value text-success" id="modalPaymentAmount">₹0.00</div>
+                                    <div class="sub-card-stat-value text-success" id="modalPaymentAmount">--</div>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <div class="sub-card-stat-label">Payment Status</div>
@@ -689,7 +698,7 @@
                                 </div>
                                 <div class="col-md-5 text-md-end" id="modalRefundRow" style="display: none;">
                                     <small class="text-info fw-bold">
-                                        <i class="fas fa-undo-alt me-1"></i> Refund Credit: <span id="modalRefundAmount">₹0.00</span>
+                                        <i class="fas fa-undo-alt me-1"></i> Refund Credit: <span id="modalRefundAmount">--</span>
                                     </small>
                                 </div>
                             </div>
@@ -1031,7 +1040,8 @@
                             }
 
                             if (payment.refund_amount && payment.refund_amount > 0) {
-                                $('#modalRefundAmount').text('₹' + parseFloat(payment.refund_amount).toFixed(2));
+                                let refundDisplay = payment.formatted_refund_amount || ((plan.currency === 'USD' ? '$' : (plan.currency === 'EUR' ? '€' : (plan.currency === 'GBP' ? '£' : '₹'))) + parseFloat(payment.refund_amount).toFixed(2));
+                                $('#modalRefundAmount').text(refundDisplay);
                                 $('#modalRefundRow').show();
                             } else {
                                 $('#modalRefundRow').hide();

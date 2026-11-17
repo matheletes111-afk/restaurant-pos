@@ -1141,6 +1141,7 @@ class SubscriptionController extends Controller
                     'description' => $payment ? $payment->description : 'Subscription: ' . ($plan->name ?? 'Plan'),
                     'gst_percentage' => $payment ? ($payment->gst_percentage ?? (($plan && $plan->plan_type === 'INTERNATIONAL') ? '0' : '18')) : (($plan && $plan->plan_type === 'INTERNATIONAL') ? '0' : '18'),
                     'refund_amount' => $payment ? (float)$payment->refund_amount : (float)($subscription->refund_amount ?? 0),
+                    'formatted_refund_amount' => $pCurrSym . number_format($payment ? (float)$payment->refund_amount : (float)($subscription->refund_amount ?? 0), 2),
                 ],
 
                 'restaurant' => $subscription->restaurant_details ? [
