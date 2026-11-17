@@ -24,6 +24,7 @@ class RestaurantProfileApiController extends Controller
         try {
             // Validation
             $validator = Validator::make($request->all(), [
+                'name' => 'nullable|string|max:255',
                 'restaurant_name' => 'required|string|max:255',
                 'phone' => 'required|string|max:20',
                 'address' => 'required|string',
@@ -49,8 +50,11 @@ class RestaurantProfileApiController extends Controller
             // Get user (owner)
             $user = User::find($restaurant->owner_id);
             
-            // Update User Table (Phone only - email is readonly)
+            // Update User Table (Name and Phone - email is readonly)
             if ($user) {
+                if ($request->filled('name')) {
+                    $user->name = trim($request->name);
+                }
                 $user->phone = $request->phone;
                 $user->save();
             }

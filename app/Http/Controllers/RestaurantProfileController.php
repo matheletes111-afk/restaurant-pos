@@ -45,6 +45,7 @@ class RestaurantProfileController extends Controller
     {
         // Validation
         $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
             'restaurant_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'address' => 'required|string',
@@ -83,10 +84,18 @@ class RestaurantProfileController extends Controller
             // Get user (owner)
             $user = User::find($restaurant->owner_id) ?: Auth::user();
             
-            // Update User Table (Phone only - email is readonly)
+            // Update User Table (Name and Phone - email is readonly)
             if ($user) {
+                if ($request->filled('name')) {
+                    $user->name = trim($request->name);
+                }
                 $user->phone = $request->phone;
                 $user->save();
+            }
+
+            // Keep currently authenticated user name in sync if different user instance
+            if (Auth::check() && $user && Auth::id() !== $user->id && $request->filled('name')) {
+                Auth::user()->update(['name' => trim($request->name)]);
             }
 
             // Ensure directory exists
