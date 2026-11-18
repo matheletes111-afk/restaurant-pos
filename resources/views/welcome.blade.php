@@ -7,6 +7,30 @@
     <title>Bill&Bite - Complete Restaurant Management System</title>
     <meta name="description" content="Bill&amp;Bite is a complete restaurant management system with QR table ordering, POS, kitchen display, inventory, staff management, and GST billing.">
     <link rel="canonical" href="https://billnbite.com/">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "Organization",
+                "@id": "https://billnbite.com/#organization",
+                "name": "Bill&Bite",
+                "url": "https://billnbite.com/",
+                "logo": "https://billnbite.com/logo.png"
+            },
+            {
+                "@type": "SoftwareApplication",
+                "@id": "https://billnbite.com/#software",
+                "name": "Bill&Bite",
+                "url": "https://billnbite.com/",
+                "applicationCategory": "BusinessApplication",
+                "operatingSystem": "Web",
+                "description": "Complete restaurant management system with QR table ordering, POS, kitchen display, inventory, staff management, and GST billing.",
+                "publisher": { "@id": "https://billnbite.com/#organization" }
+            }
+        ]
+    }
+    </script>
     <link rel="shortcut icon" href="{{ asset('fav_web.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

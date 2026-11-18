@@ -3,6 +3,7 @@
 <head>
   @include('includes.gtm_head')
   <title>BILL & BITE | Forget Password</title>
+    <meta name="robots" content="noindex, follow">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
   <meta name="description" content="Reset your Bill&amp;Bite account password to regain access to your restaurant management dashboard.">
