@@ -7,6 +7,50 @@
     <title>Bill&Bite - Complete Bar, Pub & Restaurant POS Management System</title>
     <meta name="description" content="Bill&Bite Bar POS is a complete bar and restaurant management system with ML liquid stock tracking, peg variations, brand management, Bar KOT, and table QR ordering.">
     <link rel="canonical" href="{{ url('/bar') }}">
+    @include('includes.seo_social', [
+        'ogTitle' => 'Bill&Bite - Complete Bar, Pub & Restaurant POS Management System',
+        'ogDescription' => 'Bill&Bite Bar POS is a complete bar and restaurant management system with ML liquid stock tracking, peg variations, brand management, Bar KOT, and table QR ordering.',
+        'ogUrl' => url('/bar'),
+    ])
+    @php
+        $barOffers = [];
+        foreach (($defaultPlans ?? collect()) as $barPlan) {
+            $barOffers[] = [
+                '@type' => 'Offer',
+                'name' => trim($barPlan->name . ' (' . ucfirst(strtolower($barPlan->billing_cycle ?? 'monthly')) . ')'),
+                'price' => (float) $barPlan->price,
+                'priceCurrency' => 'INR',
+                'url' => url('/bar'),
+            ];
+        }
+        $barSchema = [
+            '@context' => 'https://schema.org',
+            '@graph' => array_values(array_filter([
+                [
+                    '@type' => 'SoftwareApplication',
+                    '@id' => url('/bar') . '#software',
+                    'name' => 'Bill&Bite Bar POS',
+                    'url' => url('/bar'),
+                    'applicationCategory' => 'BusinessApplication',
+                    'operatingSystem' => 'Web',
+                    'description' => 'Complete bar and restaurant management system with ML liquid stock tracking, peg variations, brand management, Bar KOT, and table QR ordering.',
+                    'publisher' => ['@type' => 'Organization', 'name' => 'Bill&Bite', 'url' => url('/')],
+                    'offers' => count($barOffers) ? $barOffers : null,
+                ],
+                [
+                    '@type' => 'FAQPage',
+                    'mainEntity' => [
+                        ['@type' => 'Question', 'name' => 'How does the Milliliter (ML) liquid stock tracking work?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'When adding a bar product, you specify its bottle size (e.g. 750ml, 1000ml) and opening stock. You can create variations like 30ml, 60ml, 90ml, or Full Bottle. When an order item is marked as "SERVED" at the bar, the POS automatically deducts that exact ML amount from your current inventory in real time.']],
+                        ['@type' => 'Question', 'name' => 'Can I manage both my bar counter and food kitchen on the same system?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Yes, absolutely! When a customer places an order with both food and alcoholic beverages, Bill&Bite routes the drinks to the Bar KOT counter screen and the food to the Kitchen Display System (KDS), while generating a single consolidated bill for the customer.']],
+                        ['@type' => 'Question', 'name' => 'How does Bill&Bite handle state liquor VAT and restaurant GST?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'In most states, alcohol is subject to Liquor VAT while food items are subject to GST. Bill&Bite POS automatically applies your configured VAT rate to alcoholic drinks and GST to food items on the same order, producing fully compliant tax invoices.']],
+                        ['@type' => 'Question', 'name' => 'Can customers order drinks from their mobile phones via Table QR?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Yes! Customers can scan the table QR code to browse your full beverage catalog, choose peg sizes or cocktails, add food items, and send orders straight to the bar and kitchen.']],
+                        ['@type' => 'Question', 'name' => 'Are Online Installation & 24x7 Support included with every plan?', 'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Yes! Every Bill&Bite Bar plan includes free online installation, menu setup assistance, bartender training, and dedicated 24x7 online customer support.']],
+                    ],
+                ],
+            ], fn ($node) => $node !== null)),
+        ];
+    @endphp
+    <script type="application/ld+json">{!! json_encode($barSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_PRETTY_PRINT) !!}</script>
     <link rel="shortcut icon" href="{{ asset('fav_web.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

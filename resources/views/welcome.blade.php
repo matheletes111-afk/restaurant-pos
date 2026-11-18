@@ -7,6 +7,11 @@
     <title>Bill&Bite - Complete Restaurant Management System</title>
     <meta name="description" content="Bill&amp;Bite is a complete restaurant management system with QR table ordering, POS, kitchen display, inventory, staff management, and GST billing.">
     <link rel="canonical" href="https://billnbite.com/">
+    @include('includes.seo_social', [
+        'ogTitle' => 'Bill&Bite - Complete Restaurant Management System',
+        'ogDescription' => 'Bill&Bite is a complete restaurant management system with QR table ordering, POS, kitchen display, inventory, staff management, and GST billing.',
+        'ogUrl' => url('/'),
+    ])
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -1178,6 +1183,7 @@
                     <h4>Company</h4>
                     <ul>
                         <li><a href="{{ route('about.us') }}">About Us</a></li>
+                        <li><a href="{{ url('/bar') }}">Bar POS</a></li>
                         <li><a href="{{ route('blog.index') }}">Blog</a></li>
                         <li><a href="{{ route('privacy.policy') }}">Privacy Policy</a></li>
                         <li><a href="{{ route('terms.conditions') }}">Terms & Conditions</a></li>

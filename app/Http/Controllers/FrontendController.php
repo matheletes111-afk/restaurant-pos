@@ -90,6 +90,7 @@ class FrontendController extends Controller
     {
         $staticPages = [
             ['loc' => url('/'), 'changefreq' => 'weekly', 'priority' => '1.0'],
+            ['loc' => url('/bar'), 'changefreq' => 'weekly', 'priority' => '0.9'],
             ['loc' => url('/about-us'), 'changefreq' => 'monthly', 'priority' => '0.6'],
             ['loc' => url('/blog'), 'changefreq' => 'weekly', 'priority' => '0.7'],
             ['loc' => url('/terms-and-conditions'), 'changefreq' => 'yearly', 'priority' => '0.3'],

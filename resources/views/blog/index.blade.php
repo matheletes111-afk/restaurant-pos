@@ -81,6 +81,7 @@
                 <a href="{{ route('home') }}#features">Features</a>
                 <a href="{{ route('home') }}#pricing">Pricing</a>
                 <a href="{{ route('home') }}#how-it-works">How It Works</a>
+                <a href="{{ url('/bar') }}">Bar POS</a>
                 <a href="{{ route('blog.index') }}">Blog</a>
                 <a href="{{ route('home') }}#faq">FAQ</a>
             </div>
@@ -135,6 +136,7 @@
             <div class="footer-bottom" style="text-align: center; padding: 30px 0; color: var(--text-light); font-size: 0.9rem;">
                 <p style="margin-bottom: 10px;">
                     <a href="{{ route('about.us') }}" style="color: var(--text-light); margin: 0 10px;">About Us</a>
+                    <a href="{{ url('/bar') }}" style="color: var(--text-light); margin: 0 10px;">Bar POS</a>
                     <a href="{{ route('blog.index') }}" style="color: var(--text-light); margin: 0 10px;">Blog</a>
                     <a href="{{ route('privacy.policy') }}" style="color: var(--text-light); margin: 0 10px;">Privacy Policy</a>
                     <a href="{{ route('terms.conditions') }}" style="color: var(--text-light); margin: 0 10px;">Terms &amp; Conditions</a>
