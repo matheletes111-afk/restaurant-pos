@@ -150,6 +150,7 @@ class OrderManagementController extends Controller
         
         $totalVat = 0;
         
+        $calcItems = [];
         foreach ($order->orderItems as $item) {
             // Get item discount percentage (from database if exists, otherwise 0)
             $itemDiscount = $item->item_discount_percentage ?? 0;
@@ -165,36 +166,43 @@ class OrderManagementController extends Controller
             
             $vatRate = floatval($item->vat_rate ?? 0);
             $vatAmount = floatval($item->vat_amount ?? (($taxableAmount * $vatRate) / 100));
-            $totalVat += $vatAmount;
 
-            // Use restaurant GST percentage if GST registered and not a bar item (liquor is GST exempt)
-            if ($vatRate > 0) {
-                $gstRate = 0;
-                $gstAmount = 0;
-            } else {
-                $gstRate = $is_gst_registered ? ($item->gst_rate ?? $restaurant_gst_percentage) : 0;
-                $gstAmount = $item->gst_amount ?? (($taxableAmount * $gstRate) / 100);
-            }
-            
-            $lineOriginal = $isAddonItem ? ($item->price * $item->quantity) : (($item->price * $item->quantity) + $addonsCost);
-            $originalSubtotal += $lineOriginal;
-            $totalTaxable += $taxableAmount;
-            if ($is_gst_registered && $vatRate <= 0) {
-                $totalGst += $gstAmount;
-                // Split GST (50-50 for CGST/SGST)
-                $halfGstRate = $gstRate / 2;
-                $totalCgst += $item->cgst_amount ?? (($taxableAmount * $halfGstRate) / 100);
-                $totalSgst += $item->sgst_amount ?? (($taxableAmount * $halfGstRate) / 100);
-            }
+            $calcItems[] = [
+                'original_price' => floatval($item->price),
+                'quantity' => intval($item->quantity),
+                'addons_cost' => $addonsCost,
+                'taxable_amount' => $taxableAmount,
+                'vat_rate' => $vatRate,
+                'vat_amount' => $vatAmount,
+            ];
         }
 
-        // Apply order level discount
-        $discountPercent = $order->discount_percentage ?? 0;
-        $totalBeforeDiscount = $totalTaxable + $totalGst + $totalVat;
-        $discountAmount = ($totalBeforeDiscount * $discountPercent) / 100;
-        $grandTotal = $totalBeforeDiscount - $discountAmount;
-        $finalTotal = round($grandTotal);
-        $roundOff = $finalTotal - $grandTotal;
+        // Apply order level discount on taxable amount before GST/VAT
+        $orderDiscountType = strtoupper(trim($order->discount_type ?? 'FIXED'));
+        $orderDiscountValue = $orderDiscountType === 'PERCENT'
+            ? floatval($order->discount_percentage ?? 0)
+            : floatval($order->discount ?? 0);
+
+        $totals = $this->calculateOrderTotals(
+            $calcItems,
+            $orderDiscountValue,
+            $orderDiscountType,
+            $is_gst_registered,
+            $restaurant_gst_percentage
+        );
+
+        $originalSubtotal = $totals['original_subtotal'];
+        $totalTaxable = $totals['total_taxable'];
+        $totalGst = $totals['total_gst'];
+        $totalCgst = $totals['total_cgst'];
+        $totalSgst = $totals['total_sgst'];
+        $totalIgst = $totals['total_igst'];
+        $totalVat = $totals['total_vat'];
+        $discountAmount = $totals['order_discount_amount'];
+        $discountPercent = $totals['order_discount_percentage'];
+        $grandTotal = $totals['grand_total'];
+        $finalTotal = $totals['final_total'];
+        $roundOff = $totals['round_off'];
 
         // Get all payments for this order
         $payments = OrderToPayment::where('order_id', $order_id)
@@ -274,6 +282,7 @@ class OrderManagementController extends Controller
         $data['total_sgst'] = $totalSgst;
         $data['total_igst'] = $totalIgst;
         $data['total_vat'] = $totalVat;
+        $data['discount_type'] = $orderDiscountType;
         $data['discount_percent'] = $discountPercent;
         $data['discount_amount'] = $discountAmount;
         $data['grand_total'] = $grandTotal;
@@ -340,53 +349,87 @@ class OrderManagementController extends Controller
     }
 
     /**
-     * Calculate order totals
+     * Calculate order totals with overall order discount applied on taxable amount before GST/VAT
      */
-    private function calculateOrderTotals($items, $orderDiscountPercent = 0, $isGstRegistered = false)
+    private function calculateOrderTotals($items, $orderDiscountValue = 0, $orderDiscountType = 'FIXED', $isGstRegistered = false, $restaurantGstPercentage = 0)
     {
         $originalSubtotal = 0;
-        $totalTaxable = 0;
-        $totalGst = 0;
-        $totalCgst = 0;
-        $totalSgst = 0;
-        $totalIgst = 0;
-        $totalVat = 0;
+        $foodTaxable = 0;
+        $liquorTaxable = 0;
+        $rawVatSum = 0;
         
         foreach ($items as $item) {
             $quantity = isset($item['quantity']) ? $item['quantity'] : (isset($item['qty']) ? $item['qty'] : 0);
             $addonsCost = floatval($item['addons_cost'] ?? 0);
             $originalSubtotal += ($item['original_price'] * $quantity) + $addonsCost;
-            $totalTaxable += $item['taxable_amount'];
-            $totalVat += floatval($item['vat_amount'] ?? 0);
-            if ($isGstRegistered) {
-                $totalGst += $item['gst_amount'];
-                $totalCgst += $item['cgst_amount'];
-                $totalSgst += $item['sgst_amount'];
-                $totalIgst += $item['igst_amount'];
+            
+            $vatRate = floatval($item['vat_rate'] ?? 0);
+            if ($vatRate > 0) {
+                $liquorTaxable += $item['taxable_amount'];
+                $rawVatSum += floatval($item['vat_amount'] ?? (($item['taxable_amount'] * $vatRate) / 100));
+            } else {
+                $foodTaxable += $item['taxable_amount'];
             }
         }
         
-        // Make sure orderDiscountPercent is properly converted
-        $orderDiscountPercent = floatval($orderDiscountPercent);
+        $totalTaxableBeforeDiscount = $foodTaxable + $liquorTaxable;
         
-        // Apply order discount on total (taxable + GST + VAT)
-        $totalBeforeDiscount = $totalTaxable + $totalGst + $totalVat;
-        $orderDiscountAmount = ($totalBeforeDiscount * $orderDiscountPercent) / 100;
+        // Compute overall order discount
+        $orderDiscountType = strtoupper(trim($orderDiscountType ?: 'FIXED'));
+        if (!in_array($orderDiscountType, ['PERCENT', 'FIXED'])) {
+            $orderDiscountType = 'FIXED';
+        }
+        $orderDiscountValue = floatval($orderDiscountValue);
+
+        if ($orderDiscountType === 'PERCENT') {
+            $orderDiscountPercent = max(0, min(100, $orderDiscountValue));
+            $orderDiscountAmount = ($totalTaxableBeforeDiscount * $orderDiscountPercent) / 100;
+        } else {
+            $orderDiscountAmount = max(0, min($totalTaxableBeforeDiscount, $orderDiscountValue));
+            $orderDiscountPercent = $totalTaxableBeforeDiscount > 0 ? round(($orderDiscountAmount / $totalTaxableBeforeDiscount) * 100, 2) : 0;
+        }
         
-        $grandTotal = $totalBeforeDiscount - $orderDiscountAmount;
-        
-        // Round off
+        // Apply overall discount on taxable amounts before taxes
+        $foodRatio = $totalTaxableBeforeDiscount > 0 ? ($foodTaxable / $totalTaxableBeforeDiscount) : 1;
+        $foodDiscount = $orderDiscountAmount * $foodRatio;
+        $liquorDiscount = $orderDiscountAmount - $foodDiscount;
+
+        $netFoodTaxable = max(0, $foodTaxable - $foodDiscount);
+        $netLiquorTaxable = max(0, $liquorTaxable - $liquorDiscount);
+        $netTotalTaxable = $netFoodTaxable + $netLiquorTaxable;
+
+        // Apply GST on post-discount food taxable amount
+        $totalGst = 0;
+        $totalCgst = 0;
+        $totalSgst = 0;
+        $totalIgst = 0;
+        if ($isGstRegistered && $netFoodTaxable > 0 && $restaurantGstPercentage > 0) {
+            $totalGst = ($netFoodTaxable * $restaurantGstPercentage) / 100;
+            $totalCgst = $totalGst / 2;
+            $totalSgst = $totalGst / 2;
+        }
+
+        // Apply VAT on post-discount liquor taxable amount
+        $totalVat = 0;
+        if ($netLiquorTaxable > 0 && $liquorTaxable > 0) {
+            $effectiveVatRate = $rawVatSum / $liquorTaxable;
+            $totalVat = $netLiquorTaxable * $effectiveVatRate;
+        }
+
+        $grandTotal = $netTotalTaxable + $totalGst + $totalVat;
         $finalTotal = round($grandTotal);
         $roundOff = $finalTotal - $grandTotal;
         
         return [
             'original_subtotal' => $originalSubtotal,
-            'total_taxable' => $totalTaxable,
+            'total_taxable' => $netTotalTaxable,
+            'taxable_before_discount' => $totalTaxableBeforeDiscount,
             'total_vat' => $totalVat,
             'total_gst' => $totalGst,
             'total_cgst' => $totalCgst,
             'total_sgst' => $totalSgst,
             'total_igst' => $totalIgst,
+            'order_discount_type' => $orderDiscountType,
             'order_discount_percentage' => $orderDiscountPercent,
             'order_discount_amount' => $orderDiscountAmount,
             'grand_total' => $grandTotal,
@@ -404,7 +447,8 @@ class OrderManagementController extends Controller
             'customer_name' => 'required|string|max:255',
             'customer_phone' => 'nullable|string|max:20',
             'order_items' => 'required|array|min:1',
-            'discount' => 'nullable|numeric|min:0|max:100',
+            'discount' => 'nullable|numeric|min:0',
+            'discount_type' => 'nullable|string|in:FIXED,PERCENT,fixed,percent',
         ]);
 
         $isTakeaway = empty($request->table_id);
@@ -415,8 +459,12 @@ class OrderManagementController extends Controller
         $restaurantGstPercentage = $restaurant->gst_percentage ?? 0;
         $isGstRegistered = !empty($restaurantGstin);
         
-        // Get discount percentage from request (this is the order level discount)
-        $orderDiscountPercent = floatval($request->discount ?? 0);
+        // Get discount value and type from request
+        $orderDiscountValue = floatval($request->discount ?? $request->order_discount ?? 0);
+        $orderDiscountType = strtoupper(trim($request->discount_type ?? $request->order_discount_type ?? 'FIXED'));
+        if (!in_array($orderDiscountType, ['PERCENT', 'FIXED'])) {
+            $orderDiscountType = 'FIXED';
+        }
         
         // Calculate GST for each item using restaurant GST percentage (including addons)
         $calculatedItems = [];
@@ -493,7 +541,7 @@ class OrderManagementController extends Controller
         }
         
         // Calculate order totals
-        $totals = $this->calculateOrderTotals($calculatedItems, $orderDiscountPercent, $isGstRegistered);
+        $totals = $this->calculateOrderTotals($calculatedItems, $orderDiscountValue, $orderDiscountType, $isGstRegistered, $restaurantGstPercentage);
         
         // Generate order number
         $restaurantId = auth()->user()->restaurant_id;
@@ -524,9 +572,10 @@ class OrderManagementController extends Controller
             $order->sgst_amount = $totals['total_sgst'];
             $order->igst_amount = $totals['total_igst'];
             
-            // Store discount - IMPORTANT FIX
+            // Store discount
             $order->discount = $totals['order_discount_amount']; // Discount amount in rupees
-            $order->discount_percentage = $orderDiscountPercent; // Discount percentage
+            $order->discount_percentage = $totals['order_discount_percentage']; // Discount percentage
+            $order->discount_type = $totals['order_discount_type']; // Discount type (FIXED or PERCENT)
             
             $order->grand_total = $totals['final_total'];
             $order->round_off = $totals['round_off'];
@@ -692,7 +741,8 @@ class OrderManagementController extends Controller
                 'success' => true,
                 'final_total' => $totals['final_total'],
                 'discount_amount' => $totals['order_discount_amount'],
-                'discount_percentage' => $orderDiscountPercent,
+                'discount_percentage' => $totals['order_discount_percentage'],
+                'discount_type' => $totals['order_discount_type'],
                 'order_id' => $order->id,
                 'order_type' => $isTakeaway ? 'TAKEAWAY' : 'DINE_IN',
                 'redirect_url' => $redirectUrl,
@@ -733,9 +783,17 @@ class OrderManagementController extends Controller
                 $order->order_complete = $request->order_complete;
             }
             
-            // Update discount percentage
-            $orderDiscountPercent = floatval($request->discount ?? $order->discount_percentage);
-            $order->discount_percentage = $orderDiscountPercent;
+            // Update discount settings
+            $orderDiscountType = strtoupper(trim($request->discount_type ?? $request->order_discount_type ?? $order->discount_type ?? 'FIXED'));
+            if (!in_array($orderDiscountType, ['PERCENT', 'FIXED'])) {
+                $orderDiscountType = 'FIXED';
+            }
+            $orderDiscountValue = $request->has('discount')
+                ? floatval($request->discount)
+                : ($request->has('order_discount')
+                    ? floatval($request->order_discount)
+                    : ($orderDiscountType === 'PERCENT' ? floatval($order->discount_percentage ?? 0) : floatval($order->discount ?? 0)));
+            $order->discount_type = $orderDiscountType;
             
             $order->save();
 
@@ -912,16 +970,9 @@ class OrderManagementController extends Controller
                 OrderItems::where('id', $request->delete_item_id)->delete();
             }
 
-            // Recalculate all totals from existing items
+            // Recalculate all totals from items with overall discount on taxable amount before GST/VAT
             $items = OrderItems::where('order_id', $id)->get();
-            $originalSubtotal = 0;
-            $totalTaxable = 0;
-            $totalGst = 0;
-            $totalCgst = 0;
-            $totalSgst = 0;
-            $totalIgst = 0;
-            $totalVat = 0;
-            
+            $calcItems = [];
             foreach ($items as $item) {
                 $addonsCost = 0;
                 if (!empty($item->addons_list) && is_array($item->addons_list)) {
@@ -929,41 +980,44 @@ class OrderManagementController extends Controller
                         $addonsCost += (floatval($a['price'] ?? 0) * intval($a['qty'] ?? $a['quantity'] ?? 1));
                     }
                 }
-                $isAddon = empty($item->subcategory_id);
-                if ($isAddon) {
-                    $originalSubtotal += $item->price * $item->quantity;
-                } else {
-                    $originalSubtotal += ($item->price * $item->quantity) + $addonsCost;
-                }
-                $totalTaxable += $item->taxable_amount;
-                $totalVat += floatval($item->vat_amount ?? 0);
-                $totalGst += $item->gst_amount;
-                $totalCgst += $item->cgst_amount;
-                $totalSgst += $item->sgst_amount;
-                $totalIgst += $item->igst_amount;
+                $vatRate = floatval($item->vat_rate ?? 0);
+                $calcItems[] = [
+                    'original_price' => floatval($item->price),
+                    'quantity' => intval($item->quantity),
+                    'addons_cost' => $addonsCost,
+                    'taxable_amount' => floatval($item->taxable_amount),
+                    'vat_rate' => $vatRate,
+                    'vat_amount' => floatval($item->vat_amount ?? (($item->taxable_amount * $vatRate) / 100)),
+                ];
             }
-            
-            // Apply order discount
-            $totalBeforeDiscount = $totalTaxable + $totalGst + $totalVat;
-            $discountAmount = ($totalBeforeDiscount * $orderDiscountPercent) / 100;
-            $grandTotal = $totalBeforeDiscount - $discountAmount;
-            $finalTotal = round($grandTotal);
-            $roundOff = $finalTotal - $grandTotal;
+
+            $totals = $this->calculateOrderTotals(
+                $calcItems,
+                $orderDiscountValue,
+                $orderDiscountType,
+                $isGstRegistered,
+                $restaurantGstPercentage
+            );
+
+            $finalTotal = $totals['final_total'];
+            $grandTotal = $totals['grand_total'];
+            $roundOff = $totals['round_off'];
 
             // Update order with recalculated totals
-            $order->total_amount = $originalSubtotal;
-            $order->taxable_amount = $totalTaxable;
-            $order->vat_amount = $totalVat;
-            $order->gst_amount = $totalGst;
-            $order->cgst_amount = $totalCgst;
-            $order->sgst_amount = $totalSgst;
-            $order->igst_amount = $totalIgst;
+            $order->total_amount = $totals['original_subtotal'];
+            $order->taxable_amount = $totals['total_taxable'];
+            $order->vat_amount = $totals['total_vat'];
+            $order->gst_amount = $totals['total_gst'];
+            $order->cgst_amount = $totals['total_cgst'];
+            $order->sgst_amount = $totals['total_sgst'];
+            $order->igst_amount = $totals['total_igst'];
             $order->grand_total = $finalTotal;
             $order->round_off = $roundOff;
             
-            // Store discount - IMPORTANT FIX
-            $order->discount = $discountAmount; // Discount amount in rupees
-            $order->discount_percentage = $orderDiscountPercent; // Discount percentage
+            // Store discount
+            $order->discount = $totals['order_discount_amount']; // Discount amount in rupees
+            $order->discount_percentage = $totals['order_discount_percentage']; // Discount percentage
+            $order->discount_type = $totals['order_discount_type']; // Discount type (FIXED or PERCENT)
             
             // Process new Cash & UPI payments if provided
             $cashAmount = floatval($request->cash_amount ?? 0);
@@ -1093,15 +1147,16 @@ class OrderManagementController extends Controller
                     'success' => true,
                     'final_total' => number_format($finalTotal, 2),
                     'amount_paid' => $order->amount_paid ? number_format($order->amount_paid, 2) : '0.00',
-                    'round_off' => number_format($roundOff, 2),
-                    'subtotal' => $originalSubtotal,
-                    'total_taxable' => $totalTaxable,
-                    'total_gst' => $totalGst,
-                    'total_cgst' => $totalCgst,
-                    'total_sgst' => $totalSgst,
-                    'total_igst' => $totalIgst,
-                    'discount_amount' => $discountAmount,
-                    'discount_percentage' => $orderDiscountPercent,
+                    'round_off' => number_format($totals['round_off'], 2),
+                    'subtotal' => $totals['original_subtotal'],
+                    'total_taxable' => $totals['total_taxable'],
+                    'total_gst' => $totals['total_gst'],
+                    'total_cgst' => $totals['total_cgst'],
+                    'total_sgst' => $totals['total_sgst'],
+                    'total_igst' => $totals['total_igst'],
+                    'discount_amount' => $totals['order_discount_amount'],
+                    'discount_percentage' => $totals['order_discount_percentage'],
+                    'discount_type' => $totals['order_discount_type'],
                     'redirect_url' => $isDoneOrPaid 
                         ? route('order.invoice', $order->id) . '?autoprint=1' 
                         : null

@@ -18,6 +18,7 @@ class OrderManage extends Model
         'order_type',
         'discount',
         'discount_percentage',
+        'discount_type',
         'total_amount',
         'taxable_amount',
         'gst_amount',

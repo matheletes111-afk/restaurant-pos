@@ -156,12 +156,11 @@ class RapidBillTest extends TestCase
         $order = OrderManage::find($orderId);
         $this->assertNotNull($order);
         $this->assertTrue(in_array(strtoupper($order->order_type), ['TAKEAWAY', 'EXPRESS']));
-        $this->assertEquals(12, $order->discount); // 10% of 120 = 12
-
         // Check OrderItems and KOT
         $orderItems = OrderItems::where('order_id', $order->id)->get();
         $this->assertCount(2, $orderItems);
         $this->assertNotNull($orderItems->first()->kot_no);
+        $this->assertEquals(10, $orderItems->first()->item_discount_percentage);
 
         // Check Split Payments in OrderToPayment
         $payments = OrderToPayment::where('order_id', $order->id)->get();

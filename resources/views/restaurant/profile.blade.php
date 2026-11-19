@@ -74,6 +74,7 @@
                         <i class="fas fa-map-marker-alt me-1"></i> {{ $restaurant->address }}
                     </p>
                     <p class="mb-0 text-white opacity-75">
+                        <i class="fas fa-envelope me-1"></i> {{ $restaurant->owner->email ?? 'N/A' }}
                         <i class="fas fa-user me-1"></i> {{ $restaurant->owner->name ?? Auth::user()->name ?? 'Owner' }} &nbsp;&bull;&nbsp; <i class="fas fa-envelope me-1"></i> {{ $restaurant->owner->email ?? 'N/A' }}
                     </p>
                 </div>
@@ -142,6 +143,10 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
+                                    <label>Email <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control readonly-field" 
+                                           value="{{ $restaurant->owner->email ?? 'N/A' }}" readonly disabled>
+                                    <small class="info-text">Email cannot be changed. Contact admin for email updates.</small>
                                     <label>Owner / User Name <span class="text-danger">*</span></label>
                                     <input type="text" name="name" class="form-control" 
                                            value="{{ old('name', $restaurant->owner->name ?? Auth::user()->name ?? '') }}" required placeholder="Enter full name">
@@ -151,6 +156,7 @@
                                 <div class="form-group">
                                     <label>Phone Number <span class="text-danger">*</span></label>
                                     <input type="text" name="phone" class="form-control" 
+                                           value="{{ old('phone', $restaurant->owner->phone ?? '') }}" required>
                                            value="{{ old('phone', $restaurant->owner->phone ?? Auth::user()->phone ?? '') }}" required>
                                 </div>
                             </div>

@@ -2130,9 +2130,30 @@
             <span class="fw-bold" id="lblItemDiscounts">-₹0.00</span>
           </div>
 
+          <!-- Overall Order Discount Input -->
+          <div class="order-discount-deck my-2 p-2 rounded" style="background: #f8fafc; border: 1px dashed #cbd5e1;">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <span class="small fw-bold text-dark"><i class="fa-solid fa-tags text-primary me-1"></i> Order Discount:</span>
+              <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-sm btn-outline-primary active btn-rapid-disc-type py-0 px-2" data-type="FIXED" id="btnRapidDiscFixed" style="font-size: 0.72rem; height: 22px;">₹ Fixed</button>
+                <button type="button" class="btn btn-sm btn-outline-primary btn-rapid-disc-type py-0 px-2" data-type="PERCENT" id="btnRapidDiscPercent" style="font-size: 0.72rem; height: 22px;">% Percent</button>
+              </div>
+            </div>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white px-2 py-0" id="lblRapidDiscSymbol" style="font-size: 0.75rem; font-weight: 700;">₹</span>
+              <input type="number" step="any" min="0" class="form-control form-control-sm py-0" id="txtOrderDiscount" placeholder="0" value="0" style="font-weight: 600; font-size: 0.85rem; height: 28px;">
+              <input type="hidden" id="selOrderDiscountType" value="FIXED">
+            </div>
+          </div>
+
+          <div class="summary-row" id="rowOrderDiscount" style="display: none; color: #dc2626;">
+            <span id="lblOrderDiscountTitle">Order Discount:</span>
+            <span class="fw-bold" id="lblOrderDiscountAmount">-₹0.00</span>
+          </div>
+
           @if($isGstEnabled)
             <div class="summary-row" id="rowFoodTaxable">
-              <span>Taxable Subtotal (Food):</span>
+              <span>Taxable Amount (Food):</span>
               <span id="lblTaxable">₹0.00</span>
             </div>
             <div class="summary-row" id="rowGst">
@@ -3664,7 +3685,7 @@ $(document).ready(function() {
     let items = Object.values(cart);
     let foodTaxable = 0;
     let liquorVatable = 0;
-    let totalVat = 0;
+    let rawVatSum = 0;
 
     items.forEach(function(i) {
       let base = i.base_price !== undefined ? parseFloat(i.base_price) : parseFloat(i.price);
@@ -3690,19 +3711,44 @@ $(document).ready(function() {
       if (isLiquor) {
         liquorVatable += lineTaxable;
         if (vatRate > 0) {
-          totalVat += (lineTaxable * vatRate) / 100;
+          rawVatSum += (lineTaxable * vatRate) / 100;
         }
       } else {
         foodTaxable += lineTaxable;
       }
     });
 
-    let gstAmount = 0;
-    if (IS_GST_ENABLED && RESTAURANT_GST_PERCENT > 0) {
-      gstAmount = (foodTaxable * RESTAURANT_GST_PERCENT) / 100;
+    let totalTaxableBeforeOrderDiscount = foodTaxable + liquorVatable;
+    let orderDiscountInput = parseFloat($('#txtOrderDiscount').val()) || 0;
+    let orderDiscountType = $('#selOrderDiscountType').val() || 'FIXED';
+    let overallDiscountAmt = 0;
+
+    if (orderDiscountType === 'PERCENT') {
+      let discPercent = Math.max(0, Math.min(100, orderDiscountInput));
+      overallDiscountAmt = (totalTaxableBeforeOrderDiscount * discPercent) / 100;
+    } else {
+      overallDiscountAmt = Math.max(0, Math.min(totalTaxableBeforeOrderDiscount, orderDiscountInput));
     }
 
-    let exactTotal = foodTaxable + gstAmount + liquorVatable + totalVat;
+    let foodRatio = totalTaxableBeforeOrderDiscount > 0 ? (foodTaxable / totalTaxableBeforeOrderDiscount) : 1;
+    let foodDiscount = overallDiscountAmt * foodRatio;
+    let liquorDiscount = overallDiscountAmt - foodDiscount;
+
+    let netFoodTaxable = Math.max(0, foodTaxable - foodDiscount);
+    let netLiquorTaxable = Math.max(0, liquorVatable - liquorDiscount);
+
+    let gstAmount = 0;
+    if (IS_GST_ENABLED && RESTAURANT_GST_PERCENT > 0 && netFoodTaxable > 0) {
+      gstAmount = (netFoodTaxable * RESTAURANT_GST_PERCENT) / 100;
+    }
+
+    let totalVat = 0;
+    if (netLiquorTaxable > 0 && liquorVatable > 0) {
+      let effectiveVatRate = rawVatSum / liquorVatable;
+      totalVat = netLiquorTaxable * effectiveVatRate;
+    }
+
+    let exactTotal = netFoodTaxable + gstAmount + netLiquorTaxable + totalVat;
     return Math.round(exactTotal);
   }
 
@@ -3712,7 +3758,7 @@ $(document).ready(function() {
     let totalDiscountAmount = 0;
     let foodTaxable = 0;
     let liquorVatable = 0;
-    let totalVat = 0;
+    let rawVatSum = 0;
 
     items.forEach(function(i) {
       let base = i.base_price !== undefined ? parseFloat(i.base_price) : parseFloat(i.price);
@@ -3743,19 +3789,51 @@ $(document).ready(function() {
       if (isLiquor) {
         liquorVatable += lineTaxable;
         if (vatRate > 0) {
-          totalVat += (lineTaxable * vatRate) / 100;
+          rawVatSum += (lineTaxable * vatRate) / 100;
         }
       } else {
         foodTaxable += lineTaxable;
       }
     });
 
-    let gstAmount = 0;
-    if (IS_GST_ENABLED && RESTAURANT_GST_PERCENT > 0) {
-      gstAmount = (foodTaxable * RESTAURANT_GST_PERCENT) / 100;
+    let totalTaxableBeforeOrderDiscount = foodTaxable + liquorVatable;
+
+    // Overall Order Discount Calculation (Percentage or Fixed)
+    let orderDiscountInput = parseFloat($('#txtOrderDiscount').val()) || 0;
+    let orderDiscountType = $('#selOrderDiscountType').val() || 'FIXED';
+    let overallDiscountAmt = 0;
+    let overallDiscountPercent = 0;
+
+    if (orderDiscountType === 'PERCENT') {
+      overallDiscountPercent = Math.max(0, Math.min(100, orderDiscountInput));
+      overallDiscountAmt = (totalTaxableBeforeOrderDiscount * overallDiscountPercent) / 100;
+    } else {
+      overallDiscountAmt = Math.max(0, Math.min(totalTaxableBeforeOrderDiscount, orderDiscountInput));
+      overallDiscountPercent = totalTaxableBeforeOrderDiscount > 0 ? ((overallDiscountAmt / totalTaxableBeforeOrderDiscount) * 100) : 0;
     }
 
-    let exactTotal = foodTaxable + gstAmount + liquorVatable + totalVat;
+    // Apply overall discount to taxable amounts before tax
+    let foodRatio = totalTaxableBeforeOrderDiscount > 0 ? (foodTaxable / totalTaxableBeforeOrderDiscount) : 1;
+    let foodDiscount = overallDiscountAmt * foodRatio;
+    let liquorDiscount = overallDiscountAmt - foodDiscount;
+
+    let netFoodTaxable = Math.max(0, foodTaxable - foodDiscount);
+    let netLiquorTaxable = Math.max(0, liquorVatable - liquorDiscount);
+
+    // Apply GST on post-discount food taxable amount
+    let gstAmount = 0;
+    if (IS_GST_ENABLED && RESTAURANT_GST_PERCENT > 0 && netFoodTaxable > 0) {
+      gstAmount = (netFoodTaxable * RESTAURANT_GST_PERCENT) / 100;
+    }
+
+    // Apply VAT on post-discount liquor taxable amount
+    let totalVat = 0;
+    if (netLiquorTaxable > 0 && liquorVatable > 0) {
+      let effectiveVatRate = rawVatSum / liquorVatable;
+      totalVat = netLiquorTaxable * effectiveVatRate;
+    }
+
+    let exactTotal = netFoodTaxable + gstAmount + netLiquorTaxable + totalVat;
     let grandTotal = Math.round(exactTotal);
     let roundOff = grandTotal - exactTotal;
 
@@ -3768,11 +3846,20 @@ $(document).ready(function() {
       $('#rowItemDiscounts').hide();
     }
 
+    if (overallDiscountAmt > 0) {
+      $('#rowOrderDiscount').show();
+      let discLabel = orderDiscountType === 'PERCENT' ? `Order Disc (${overallDiscountPercent.toFixed(1)}%):` : 'Order Disc (Fixed):';
+      $('#lblOrderDiscountTitle').text(discLabel);
+      $('#lblOrderDiscountAmount').text('-₹' + overallDiscountAmt.toFixed(2));
+    } else {
+      $('#rowOrderDiscount').hide();
+    }
+
     if (IS_GST_ENABLED) {
-      if (foodTaxable > 0 || liquorVatable === 0) {
+      if (netFoodTaxable > 0 || netLiquorTaxable === 0) {
         $('#rowFoodTaxable').show();
         $('#rowGst').show();
-        $('#lblTaxable').text('₹' + foodTaxable.toFixed(2));
+        $('#lblTaxable').text('₹' + netFoodTaxable.toFixed(2));
         $('#lblGst').text('₹' + gstAmount.toFixed(2));
       } else {
         // Only liquor items in cart: hide food GST rows
@@ -3781,9 +3868,9 @@ $(document).ready(function() {
       }
     }
 
-    if (liquorVatable > 0) {
+    if (netLiquorTaxable > 0) {
       $('#rowTotalVatable').show();
-      $('#lblTotalVatable').text('₹' + liquorVatable.toFixed(2));
+      $('#lblTotalVatable').text('₹' + netLiquorTaxable.toFixed(2));
       $('#rowTotalVat').show();
       $('#lblTotalVat').text('+₹' + totalVat.toFixed(2));
     } else {
@@ -3878,6 +3965,20 @@ $(document).ready(function() {
     }
   });
 
+  // Order-level Discount Event Handlers
+  $(document).on('click', '.btn-rapid-disc-type', function() {
+    $('.btn-rapid-disc-type').removeClass('active');
+    $(this).addClass('active');
+    let type = $(this).data('type');
+    $('#selOrderDiscountType').val(type);
+    $('#lblRapidDiscSymbol').text(type === 'PERCENT' ? '%' : '₹');
+    recalculateTotals();
+  });
+
+  $(document).on('input change', '#txtOrderDiscount', function() {
+    recalculateTotals();
+  });
+
   // Submit Rapid Bill
   $('#btnSubmitBill').on('click', function() {
     let items = Object.values(cart);
@@ -3909,6 +4010,8 @@ $(document).ready(function() {
       customer_phone: $('#custPhone').val().trim(),
       order_type: orderType,
       table_id: $('#tableIdSelect').val() || null,
+      order_discount: parseFloat($('#txtOrderDiscount').val()) || 0,
+      order_discount_type: $('#selOrderDiscountType').val() || 'FIXED',
       cash_amount: cash,
       upi_amount: upi,
       print_bill: $('#chkPrintBill').is(':checked') ? 1 : 0,

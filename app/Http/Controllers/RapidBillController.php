@@ -153,11 +153,9 @@ class RapidBillController extends Controller
         // 1. Calculate items with GST & Addons
         $calculatedItems = [];
         $originalSubtotal = 0;
-        $totalTaxable = 0;
-        $totalGst = 0;
-        $totalCgst = 0;
-        $totalSgst = 0;
-        $totalIgst = 0;
+        $foodTaxable = 0;
+        $liquorTaxable = 0;
+        $rawVatSum = 0;
 
         foreach ($rawItems as $item) {
             $dishId = $item['dish_id'] ?? $item['id'] ?? null;
@@ -237,7 +235,7 @@ class RapidBillController extends Controller
                 $lineOriginal = ($origPrice * $qty) + $addonsCost;
             }
 
-            // Step B: GST / VAT Calculation
+            // Step B: GST / VAT Rate Check
             $vatRate = 0;
             if (isset($item['vat_rate']) && is_numeric($item['vat_rate'])) {
                 $vatRate = floatval($item['vat_rate']);
@@ -247,21 +245,14 @@ class RapidBillController extends Controller
 
             if ($vatRate > 0) {
                 $gstRate = 0;
-                $gstAmount = 0;
-                $cgst = 0;
-                $sgst = 0;
-                $igst = 0;
-                $vatAmount = ($taxableAmount * $vatRate) / 100;
-                $itemTotal = $taxableAmount + $vatAmount;
+                $liquorTaxable += $taxableAmount;
+                $lineVat = ($taxableAmount * $vatRate) / 100;
+                $rawVatSum += $lineVat;
             } else {
-                $vatAmount = 0;
+                $vatRate = 0;
+                $lineVat = 0;
                 $gstRate = $isGstRegistered ? $restaurantGstPercentage : 0;
-                $gstAmount = ($taxableAmount * $gstRate) / 100;
-                $halfGstRate = $gstRate / 2;
-                $cgst = ($taxableAmount * $halfGstRate) / 100;
-                $sgst = ($taxableAmount * $halfGstRate) / 100;
-                $igst = 0;
-                $itemTotal = $taxableAmount + $gstAmount;
+                $foodTaxable += $taxableAmount;
             }
 
             $displayName = $dishName;
@@ -284,39 +275,66 @@ class RapidBillController extends Controller
                 'item_discount_percentage' => $itemDiscountPercent,
                 'taxable_amount' => $taxableAmount,
                 'vat_rate' => $vatRate,
-                'vat_amount' => $vatAmount,
+                'vat_amount' => $lineVat,
                 'bar_variation_id' => $item['bar_variation_id'] ?? null,
                 'bar_variation_name' => $item['bar_variation_name'] ?? null,
                 'bar_variation_ml' => $item['bar_variation_ml'] ?? null,
                 'gst_rate' => $gstRate,
-                'gst_amount' => $gstAmount,
-                'cgst_amount' => $cgst,
-                'sgst_amount' => $sgst,
-                'igst_amount' => $igst,
-                'total_amount' => $itemTotal,
+                'gst_amount' => 0,
+                'cgst_amount' => 0,
+                'sgst_amount' => 0,
+                'igst_amount' => 0,
+                'total_amount' => $taxableAmount,
                 'is_addon_item' => $isAddonItem,
             ];
 
             $originalSubtotal += $lineOriginal;
-            $totalTaxable += $taxableAmount;
-            if ($isGstRegistered && $vatRate <= 0) {
-                $totalGst += $gstAmount;
-                $totalCgst += $cgst;
-                $totalSgst += $sgst;
-            }
         }
 
-        // 2. Compute Item Discounts, VAT & Round off
-        $totalItemDiscount = max(0, $originalSubtotal - $totalTaxable);
-        $orderDiscountPercent = $originalSubtotal > 0 ? round(($totalItemDiscount / $originalSubtotal) * 100, 2) : 0;
-        $orderDiscountAmount = $totalItemDiscount;
-        
+        // 2. Compute Overall Order Discount (Percentage or Fixed) on sum of taxable amounts
+        $totalTaxableBeforeOrderDiscount = $foodTaxable + $liquorTaxable;
+        $orderDiscountInput = floatval($request->order_discount ?? $request->discount ?? 0);
+        $orderDiscountType = strtoupper(trim($request->order_discount_type ?? $request->discount_type ?? 'FIXED'));
+        if (!in_array($orderDiscountType, ['PERCENT', 'FIXED'])) {
+            $orderDiscountType = 'FIXED';
+        }
+
+        if ($orderDiscountType === 'PERCENT') {
+            $orderDiscountPercent = max(0, min(100, $orderDiscountInput));
+            $orderDiscountAmount = ($totalTaxableBeforeOrderDiscount * $orderDiscountPercent) / 100;
+        } else {
+            $orderDiscountAmount = max(0, min($totalTaxableBeforeOrderDiscount, $orderDiscountInput));
+            $orderDiscountPercent = $totalTaxableBeforeOrderDiscount > 0 ? round(($orderDiscountAmount / $totalTaxableBeforeOrderDiscount) * 100, 2) : 0;
+        }
+
+        // Apply overall discount to taxable amounts before tax
+        $foodRatio = $totalTaxableBeforeOrderDiscount > 0 ? ($foodTaxable / $totalTaxableBeforeOrderDiscount) : 1;
+        $foodDiscount = $orderDiscountAmount * $foodRatio;
+        $liquorDiscount = $orderDiscountAmount - $foodDiscount;
+
+        $netFoodTaxable = max(0, $foodTaxable - $foodDiscount);
+        $netLiquorTaxable = max(0, $liquorTaxable - $liquorDiscount);
+        $netTotalTaxable = $netFoodTaxable + $netLiquorTaxable;
+
+        // Apply GST on post-discount food taxable amount
+        $totalGst = 0;
+        $totalCgst = 0;
+        $totalSgst = 0;
+        $totalIgst = 0;
+        if ($isGstRegistered && $netFoodTaxable > 0 && $restaurantGstPercentage > 0) {
+            $totalGst = ($netFoodTaxable * $restaurantGstPercentage) / 100;
+            $totalCgst = $totalGst / 2;
+            $totalSgst = $totalGst / 2;
+        }
+
+        // Apply VAT on post-discount liquor taxable amount
         $totalVat = 0;
-        foreach ($calculatedItems as $ci) {
-            $totalVat += floatval($ci['vat_amount'] ?? 0);
+        if ($netLiquorTaxable > 0 && $liquorTaxable > 0) {
+            $effectiveVatRate = $rawVatSum / $liquorTaxable;
+            $totalVat = $netLiquorTaxable * $effectiveVatRate;
         }
 
-        $grandTotalRaw = $totalTaxable + $totalGst + $totalVat;
+        $grandTotalRaw = $netTotalTaxable + $totalGst + $totalVat;
         $finalTotal = round($grandTotalRaw);
         $roundOff = $finalTotal - $grandTotalRaw;
 
@@ -375,7 +393,7 @@ class RapidBillController extends Controller
             $order->table_id = $request->table_id ?: null;
             $order->order_type = $orderType;
             $order->total_amount = $originalSubtotal;
-            $order->taxable_amount = $totalTaxable;
+            $order->taxable_amount = $netTotalTaxable;
             $order->vat_amount = $totalVat;
             $order->gst_amount = $totalGst;
             $order->cgst_amount = $totalCgst;
@@ -383,6 +401,7 @@ class RapidBillController extends Controller
             $order->igst_amount = $totalIgst;
             $order->discount = $orderDiscountAmount;
             $order->discount_percentage = $orderDiscountPercent;
+            $order->discount_type = $orderDiscountType;
             $order->grand_total = $finalTotal;
             $order->round_off = $roundOff;
             $order->is_gst_bill = $isGstRegistered ? 'YES' : 'NO';
@@ -505,7 +524,7 @@ class RapidBillController extends Controller
                     ];
                 }, $calculatedItems),
                 'subtotal' => $originalSubtotal,
-                'taxable' => $totalTaxable,
+                'taxable' => $netTotalTaxable,
                 'gst' => $totalGst,
                 'discount' => $orderDiscountAmount,
                 'grand_total' => $finalTotal,

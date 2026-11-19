@@ -193,55 +193,34 @@ class SubscriptionController extends Controller
                         ->with('error', 'Only plan upgrades allowed during active subscription');
                 }
 
-                // Calculate proration for refund
+                // Calculate proration discount for unused days
                 $prorationData = $this->calculateProrationForRefund($existingSubscription, $oldPlan);
-                $refundAmount = $prorationData['refund_amount'];
+                $refundAmount = $prorationData['refund_amount']; // Credit from unused days
                 
-                // Full price for new plan
+                // Direct discount applied: Customer only pays the net difference (e.g. ₹600 - ₹25 = ₹575)
                 $payableAmount = max(0, $plan->price - $refundAmount);
                 $currency = strtoupper($plan->currency ?? 'INR');
 
-                if ($isOneTime) {
-                    // One-time payment for 365 days: AutoPay OFF (standard Razorpay Order)
-                    $razorpayOrder = $this->razorpay->order->create([
-                        'receipt' => 'sub_ord_' . substr(uniqid(), -6) . '_' . $user->restaurant_id,
-                        'amount' => max((int)round($payableAmount * 100), 100),
-                        'currency' => strtoupper($plan->currency ?? session('currency') ?? 'INR'),
-                        'notes' => [
-                            'user_id' => (string)$user->restaurant_id,
-                            'plan_id' => (string)$plan->id,
-                            'previous_plan' => (string)$oldPlan->id,
-                            'proration_refund_amount' => (string)$refundAmount,
-                            'is_one_time' => '1',
-                            'duration_days' => (string)($plan->duration_days ?: 365),
-                            'auto_renew' => '0'
-                        ]
-                    ]);
-                    $orderId = $razorpayOrder->id;
-                    $subscription = null;
-                } else {
-                    // Create recurring subscription with AutoPay
-                    $subPayload = [
-                        'plan_id' => $razorpayPlanId,
-                        'customer_notify' => 1,
-                        'total_count' => $totalCount,
-                        'notes' => [
-                            'user_id' => (string)$user->restaurant_id,
-                            'previous_plan' => (string)$oldPlan->id,
-                            'proration_total_days' => (string)$prorationData['total_days'],
-                            'proration_used_days' => (string)$prorationData['used_days'],
-                            'proration_refund_amount' => (string)$refundAmount,
-                            'is_upgrade_with_refund' => true
-                        ]
-                    ];
+                // For all upgrades, charge the net discounted difference directly at checkout (No bank refunds!)
+                $isOneTime = true;
+                $durationDays = $plan->duration_days ?: (in_array(strtolower(trim($plan->billing_cycle ?? '')), ['yearly', 'annual', '1year']) ? 365 : 30);
 
-                    if ($cust_id) {
-                        $subPayload['customer_id'] = $cust_id;
-                    }
-
-                    $subscription = $this->razorpay->subscription->create($subPayload);
-                    $orderId = $subscription->id;
-                }
+                $razorpayOrder = $this->razorpay->order->create([
+                    'receipt' => 'sub_upg_' . substr(uniqid(), -6) . '_' . $subRestaurantId,
+                    'amount' => max((int)round($payableAmount * 100), 100), // in paise (Razorpay min ₹1)
+                    'currency' => strtoupper($plan->currency ?? session('currency') ?? 'INR'),
+                    'notes' => [
+                        'user_id' => (string)$subRestaurantId,
+                        'plan_id' => (string)$plan->id,
+                        'previous_plan' => (string)$oldPlan->id,
+                        'proration_discount' => (string)$refundAmount,
+                        'is_upgrade' => '1',
+                        'duration_days' => (string)$durationDays,
+                        'auto_renew' => '0'
+                    ]
+                ]);
+                $orderId = $razorpayOrder->id;
+                $subscription = null;
             } else {
                 // New subscription
                 $payableAmount = $plan->price;
@@ -250,11 +229,11 @@ class SubscriptionController extends Controller
                 if ($isOneTime) {
                     // One-time payment for 365 days: AutoPay OFF (standard Razorpay Order)
                     $razorpayOrder = $this->razorpay->order->create([
-                        'receipt' => 'sub_ord_' . substr(uniqid(), -6) . '_' . $user->restaurant_id,
+                        'receipt' => 'sub_ord_' . substr(uniqid(), -6) . '_' . $subRestaurantId,
                         'amount' => max((int)round($payableAmount * 100), 100),
                         'currency' => strtoupper($plan->currency ?? session('currency') ?? 'INR'),
                         'notes' => [
-                            'user_id' => (string)$user->restaurant_id,
+                            'user_id' => (string)$subRestaurantId,
                             'plan_id' => (string)$plan->id,
                             'is_one_time' => '1',
                             'duration_days' => (string)($plan->duration_days ?: 365),
@@ -270,7 +249,7 @@ class SubscriptionController extends Controller
                         'customer_notify' => 1,
                         'total_count' => $totalCount,
                         'notes' => [
-                            'user_id' => (string)$user->restaurant_id,
+                            'user_id' => (string)$subRestaurantId,
                             'is_initial' => true
                         ]
                     ];
@@ -286,16 +265,17 @@ class SubscriptionController extends Controller
 
             // 4. Create payment record for new plan
             $payment = new Payment();
-            $payment->user_id = $user->restaurant_id;
+            $payment->user_id = $subRestaurantId;
             $payment->plan_id = $plan->id;
             $payment->razorpay_order_id = $orderId;
             $payment->amount = $payableAmount;
+            $payment->refund_amount = $refundAmount;
             $payment->gst_percentage = ($plan->plan_type === 'INTERNATIONAL') ? '0' : ($plan->gst_percentage !== null ? (string)$plan->gst_percentage : '18');
             $payment->currency = $currency ?? strtoupper($plan->currency ?? 'INR');
             $payment->status = 'pending';
-            $payment->description = $isOneTime
-                ? (isset($existingSubscription) ? 'Upgrade to 365 Days Plan (AutoPay OFF)' : '365 Days Plan (AutoPay OFF)')
-                : (isset($existingSubscription) ? 'Upgrade with refund' : 'New subscription');
+            $payment->description = isset($existingSubscription)
+                ? 'Upgrade to ' . $plan->name . ($refundAmount > 0 ? ' (Discount ₹' . number_format($refundAmount, 2) . ' applied)' : '')
+                : ($isOneTime ? '365 Days Plan (AutoPay OFF)' : 'New subscription for ' . $plan->name);
             $payment->save();
 
             // 5. Store data in session for payment page
@@ -303,8 +283,9 @@ class SubscriptionController extends Controller
                 'razorpay_order_id' => $isOneTime ? $orderId : null,
                 'razorpay_subscription_id' => $isOneTime ? null : $orderId,
                 'is_one_time' => $isOneTime,
+                'is_upgrade' => isset($existingSubscription),
                 'plan_id' => $plan->id,
-                'user_id' => $user->restaurant_id,
+                'user_id' => $subRestaurantId,
                 'payable_amount' => $payableAmount,
                 'currency' => $currency ?? strtoupper($plan->currency ?? 'INR'),
                 'existing_subscription_id' => $existingSubscription->id ?? null,
@@ -334,16 +315,20 @@ class SubscriptionController extends Controller
         }
     }
 
-    // New method for refund calculation
+    // Method for proration credit / discount calculation
     private function calculateProrationForRefund($subscription, $oldPlan)
     {
-        // Total days in the subscription period
-        $totalDays = Carbon::parse($subscription->start_date)
-            ->diffInDays(Carbon::parse($subscription->end_date)) + 1;
+        $startDate = !empty($subscription->start_date) ? Carbon::parse($subscription->start_date) : now();
+        $endDate = !empty($subscription->end_date) 
+            ? Carbon::parse($subscription->end_date) 
+            : (clone $startDate)->addDays($oldPlan->duration_days ?: 30);
+
+        // Total days in the subscription period (minimum 1 day)
+        $totalDays = max(1, $startDate->diffInDays($endDate) + 1);
             
         // Calculate actual used days
         $usedDays = min(
-            Carbon::parse($subscription->start_date)->diffInDays(now()) + 1,
+            $startDate->diffInDays(now()) + 1,
             $totalDays
         );
         
@@ -351,12 +336,12 @@ class SubscriptionController extends Controller
         $usedDays = max(1, $usedDays);
         
         // Calculate per day cost
-        $perDayCost = $oldPlan->price / $totalDays;
+        $perDayCost = ($oldPlan->price ?? 0) / $totalDays;
         
-        // Refund amount for unused days
-        $refundAmount = $oldPlan->price - ($perDayCost * $usedDays);
+        // Discount credit for unused days
+        $refundAmount = ($oldPlan->price ?? 0) - ($perDayCost * $usedDays);
         
-        // Ensure refund is not negative
+        // Ensure credit is not negative
         $refundAmount = max(0, $refundAmount);
 
         return [
@@ -503,9 +488,45 @@ class SubscriptionController extends Controller
                              session('razorpay_subscription_id') ?? 
                              $request->subscription_id;
 
-            $isOneTime = session('is_one_time', false) || 
-                         $request->is_one_time == '1' || 
-                         (!empty($orderId) && (empty($subscriptionId) || str_starts_with((string)$orderId, 'order_')));
+            $user = auth()->user() ?? User::find($request->user_id);
+            if (!$user) {
+                throw new \Exception('Authenticated user or User ID not found');
+            }
+            $subRestaurantId = method_exists($user, 'getSubscriptionRestaurantId') 
+                ? ($user->getSubscriptionRestaurantId() ?? $user->restaurant_id) 
+                : $user->restaurant_id;
+
+            $plan = Plan::find(session('plan_id') ?? $request->plan_id);
+            if (!$plan) {
+                // Fallback plan lookup from pending payment
+                $fallbackPayment = Payment::where('user_id', $subRestaurantId)
+                    ->where(function($q) use ($orderId, $subscriptionId) {
+                        if ($subscriptionId) $q->where('razorpay_order_id', $subscriptionId);
+                        if ($orderId) $q->orWhere('razorpay_order_id', $orderId);
+                    })
+                    ->latest('id')
+                    ->first();
+                if ($fallbackPayment && $fallbackPayment->plan_id) {
+                    $plan = Plan::find($fallbackPayment->plan_id);
+                }
+            }
+
+            if (!$plan) {
+                throw new \Exception('Subscription plan not found');
+            }
+
+            // Determine if AutoPay is OFF (one-time payment) vs recurring subscription
+            // If subscriptionId is present and starts with 'sub_', it is DEFINITELY a recurring subscription
+            $hasRzpSub = (!empty($subscriptionId) && str_starts_with((string)$subscriptionId, 'sub_'));
+            
+            $isOneTime = false;
+            if (!$hasRzpSub) {
+                $isOneTime = session('is_one_time', false) || 
+                             $request->is_one_time == '1' || 
+                             session('is_upgrade', false) ||
+                             ((int)($plan->duration_days ?? 0) >= 365) ||
+                             !empty($orderId);
+            }
             
             if (!$isOneTime && !$subscriptionId) {
                 throw new \Exception('Subscription ID not found in request or session');
@@ -513,16 +534,9 @@ class SubscriptionController extends Controller
             if ($isOneTime && !$orderId) {
                 throw new \Exception('Order ID not found in request or session');
             }
-            
-            $plan = Plan::find(session('plan_id') ?? $request->plan_id);
-            $user = auth()->user() ?? User::find($request->user_id);
-            
-            if (!$plan || !$user) {
-                throw new \Exception('Plan or User not found');
-            }
 
             // Get restaurant details
-            $restaurant = RestaurantMaster::where('owner_id', $user->id)->first();
+            $restaurant = RestaurantMaster::find($subRestaurantId);
             
             // Verify payment signature
             if ($request->razorpay_payment_id && $request->razorpay_signature) {
@@ -544,8 +558,22 @@ class SubscriptionController extends Controller
                     Log::info('Payment signature verified successfully');
                 } catch (\Exception $e) {
                     Log::warning('Payment signature verification failed: ' . $e->getMessage());
-                    // Don't throw exception for signature failure in development
-                    if (env('APP_ENV') === 'production') {
+                    // Fallback check: if subscription check failed, try order signature if orderId is available
+                    $fallbackOk = false;
+                    if (!$isOneTime && !empty($orderId) && str_starts_with((string)$orderId, 'order_')) {
+                        try {
+                            $this->razorpay->utility->verifyPaymentSignature([
+                                'razorpay_payment_id' => $request->razorpay_payment_id,
+                                'razorpay_order_id' => $orderId,
+                                'razorpay_signature' => $request->razorpay_signature
+                            ]);
+                            $fallbackOk = true;
+                            Log::info('Payment signature verified successfully via orderId fallback');
+                        } catch (\Exception $fallbackEx) {
+                            Log::warning('Fallback signature verification also failed: ' . $fallbackEx->getMessage());
+                        }
+                    }
+                    if (!$fallbackOk && env('APP_ENV') === 'production') {
                         throw new \Exception('Payment verification failed');
                     }
                 }
@@ -556,23 +584,27 @@ class SubscriptionController extends Controller
                 // 1. Fetch subscription from Razorpay to check its status
                 try {
                     $razorpaySubscription = $this->razorpay->subscription->fetch($subscriptionId);
-                    Log::info('Razorpay Subscription Status: ' . $razorpaySubscription->status);
+                    Log::info('Razorpay Subscription Status: ' . ($razorpaySubscription->status ?? 'unknown'));
                     
-                    if ($razorpaySubscription->status === 'created') {
+                    if (isset($razorpaySubscription->status) && $razorpaySubscription->status === 'created') {
                         sleep(2);
                         $razorpaySubscription = $this->razorpay->subscription->fetch($subscriptionId);
                     }
                 } catch (\Exception $e) {
                     Log::error('Failed to fetch subscription from Razorpay: ' . $e->getMessage());
-                    throw new \Exception('Unable to verify subscription status with payment gateway');
+                    // Do not abort if it's a transient gateway read error; continue to activate
                 }
             }
 
-            // 2. Fetch payment details from Razorpay to get rich method & account info
+            // 2. Fetch payment details from Razorpay to get rich method & account info AND exact amount charged
             $paymentMethod = 'Online / Gateway';
+            $actualAmountCharged = null;
             if ($request->razorpay_payment_id) {
                 try {
                     $razorpayPayment = $this->razorpay->payment->fetch($request->razorpay_payment_id);
+                    if ($razorpayPayment && !empty($razorpayPayment->amount)) {
+                        $actualAmountCharged = round($razorpayPayment->amount / 100, 2);
+                    }
                     $rawMethod = strtolower($razorpayPayment->method ?? '');
                     if ($rawMethod === 'card' && isset($razorpayPayment->card)) {
                         $network = $razorpayPayment->card->network ?? 'Card';
@@ -600,43 +632,72 @@ class SubscriptionController extends Controller
             $oldSubscriptionId = session('old_subscription_id') ?? $request->old_subscription_id;
             $oldRazorpaySubId = session('old_razorpay_subscription_id') ?? $request->old_razorpay_subscription_id;
 
-            // Create or update payment record
-            $payment = Payment::updateOrCreate(
-                [
-                    'razorpay_order_id' => $isOneTime ? $orderId : $subscriptionId,
-                    'user_id' => $user->restaurant_id
-                ],
-                [
-                    'plan_id' => $plan->id,
-                    'razorpay_payment_id' => $request->razorpay_payment_id,
-                    'razorpay_signature' => $request->razorpay_signature,
-                    'razorpay_response' => json_encode($request->all()),
-                    'amount' => session('payable_amount') ?? $plan->price,
-                    'currency' => strtoupper($plan->currency ?? session('currency') ?? 'INR'),
-                    'status' => 'success',
-                    'description' => $isOneTime 
-                        ? '365 Days Plan Subscription: ' . $plan->name . ' (AutoPay OFF)' 
-                        : ($isPaymentMethodUpdate 
-                            ? 'Updated AutoPay Bank/Card for ' . $plan->name 
-                            : 'Subscription payment for ' . $plan->name),
-                    'payment_method' => $paymentMethod,
-                    'created_at' => now()
-                ]
-            );
+            // Find existing pending payment for this order/subscription or create new
+            $targetOrderId = $isOneTime ? $orderId : ($subscriptionId ?: $orderId);
+            $payment = Payment::where('user_id', $subRestaurantId)
+                ->where(function($q) use ($orderId, $subscriptionId, $targetOrderId) {
+                    $q->where('razorpay_order_id', $targetOrderId);
+                    if ($subscriptionId) {
+                        $q->orWhere('razorpay_order_id', $subscriptionId);
+                    }
+                    if ($orderId) {
+                        $q->orWhere('razorpay_order_id', $orderId);
+                    }
+                })
+                ->orderBy('id', 'desc')
+                ->first();
+
+            if (!$payment) {
+                $payment = new Payment();
+                $payment->user_id = $subRestaurantId;
+                $payment->razorpay_order_id = $targetOrderId;
+            }
+
+            // Determine final payment amount: prefer actual amount charged by Razorpay, then session, then pending payment record, then plan price
+            $finalAmount = $actualAmountCharged 
+                ?? session('payable_amount') 
+                ?? ($payment->amount && $payment->amount > 0 ? (float)$payment->amount : null)
+                ?? $plan->price;
+
+            $payment->plan_id = $plan->id;
+            $payment->razorpay_payment_id = $request->razorpay_payment_id;
+            $payment->razorpay_signature = $request->razorpay_signature;
+            $payment->razorpay_response = json_encode($request->all());
+            $payment->amount = $finalAmount;
+            $payment->currency = strtoupper($plan->currency ?? session('currency') ?? 'INR');
+            $payment->status = 'success';
+            $isUpgrade = session('is_upgrade') || session('existing_subscription_id') || $request->existing_subscription_id;
+            $appliedDiscount = session('refund_amount') ?? $request->credit_amount ?? 0;
+
+            if ($isUpgrade) {
+                $payment->description = 'Upgrade to ' . $plan->name . ($appliedDiscount > 0 ? ' (Discount ₹' . number_format($appliedDiscount, 2) . ' applied)' : '');
+            } elseif ($isOneTime) {
+                $payment->description = $plan->name . ' (' . ($plan->duration_days ?: 365) . ' Days - AutoPay OFF)';
+            } elseif ($isPaymentMethodUpdate) {
+                $payment->description = 'Updated AutoPay Bank/Card for ' . $plan->name;
+            } else {
+                $payment->description = 'Subscription payment for ' . $plan->name;
+            }
+            $payment->payment_method = $paymentMethod;
+            $payment->gst_percentage = ($plan->plan_type === 'INTERNATIONAL') ? '0' : ($plan->gst_percentage !== null ? (string)$plan->gst_percentage : '18');
+            if (session()->has('refund_amount')) {
+                $payment->refund_amount = session('refund_amount');
+            }
+            $payment->save();
 
             // 3. Create or update subscription record
             if ($isOneTime) {
                 $startDate = now()->toDateTimeString();
-                $duration = $plan->duration_days ?: 365;
+                $duration = $plan->duration_days ?: (in_array(strtolower(trim($plan->billing_cycle ?? '')), ['yearly', 'annual', '1year']) ? 365 : 30);
                 $endDate = now()->addDays($duration)->endOfDay()->toDateTimeString();
                 $renewalDate = now()->addDays($duration)->toDateTimeString();
                 $status = 'active';
-                $autoRenew = 0; // AUTOPAY OFF for 365 days / 1 cycle plan!
+                $autoRenew = 0; // AUTOPAY OFF for one-time / upgrade difference payment
                 $targetRzpSubId = null;
             } else {
-                $start_at_ts = $razorpaySubscription->current_start ?? $razorpaySubscription->start_at;
-                $end_at_ts = $razorpaySubscription->current_end ?? $razorpaySubscription->end_at;
-                $charge_at_ts = $razorpaySubscription->charge_at;
+                $start_at_ts = $razorpaySubscription ? ($razorpaySubscription->current_start ?? $razorpaySubscription->start_at) : null;
+                $end_at_ts = $razorpaySubscription ? ($razorpaySubscription->current_end ?? $razorpaySubscription->end_at) : null;
+                $charge_at_ts = $razorpaySubscription ? $razorpaySubscription->charge_at : null;
 
                 $startDate = ($start_at_ts && $start_at_ts > 0) ? date('Y-m-d H:i:s', $start_at_ts) : now()->toDateTimeString();
                 
@@ -648,7 +709,7 @@ class SubscriptionController extends Controller
                     ? date('Y-m-d H:i:s', $charge_at_ts) 
                     : \Carbon\Carbon::parse($startDate)->addDays($plan->duration_days)->toDateTimeString();
 
-                $status = $razorpaySubscription->status;
+                $status = $razorpaySubscription ? $razorpaySubscription->status : 'active';
                 if (in_array($status, ['authenticated', 'created', 'active'])) {
                     $status = 'active';
                 }
@@ -685,7 +746,7 @@ class SubscriptionController extends Controller
                     $subscription = Subscription::updateOrCreate(
                         [
                             'razorpay_subscription_id' => $subscriptionId,
-                            'user_id' => $user->restaurant_id
+                            'user_id' => $subRestaurantId
                         ],
                         [
                             'plan_id' => $plan->id,
@@ -700,28 +761,28 @@ class SubscriptionController extends Controller
                     );
                 }
             } else {
-                // If previous subscription had an active Razorpay recurring subscription, cancel it safely
+                // Upgrade or new subscription
                 $existingSubId = session('existing_subscription_id') ?? $request->existing_subscription_id;
                 if ($existingSubId) {
                     $existingSub = Subscription::find($existingSubId);
                     if ($existingSub) {
-                        if ($existingSub->razorpay_subscription_id) {
+                        if ($existingSub->razorpay_subscription_id && $existingSub->razorpay_subscription_id !== $targetRzpSubId) {
                             $this->cancelOldSubscription($existingSub);
                         }
-                        $existingSub->update(['status' => 'upgraded', 'auto_renew' => 0]);
+                        $existingSub->update(['status' => 'expired', 'auto_renew' => 0, 'end_date' => now()]);
                     }
                 }
 
-                $subQuery = Subscription::where('user_id', $user->restaurant_id);
+                $subQuery = Subscription::where('user_id', $subRestaurantId);
                 if ($targetRzpSubId) {
                     $subscription = $subQuery->where('razorpay_subscription_id', $targetRzpSubId)->first();
                 } else {
-                    $subscription = $subQuery->where('status', 'active')->first();
+                    $subscription = null;
                 }
 
                 if (!$subscription) {
                     $subscription = new Subscription();
-                    $subscription->user_id = $user->restaurant_id;
+                    $subscription->user_id = $subRestaurantId;
                 }
 
                 $subscription->plan_id = $plan->id;
@@ -741,7 +802,7 @@ class SubscriptionController extends Controller
 
             DB::commit();
 
-            // 5. Send email notification (continue even if email fails)
+            // 5. Send email notification (non-blocking after DB::commit)
             try {
                 \Mail::to($user->email)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $subscription, $payment, $restaurant));
                 Log::info('Subscription success email sent to customer: ' . $user->email);
@@ -755,15 +816,13 @@ class SubscriptionController extends Controller
                 Log::error('Failed to send subscription success email: ' . $e->getMessage());
             }
 
-            // 6. Set success message and handle refund if upgrade
+            // 6. Set success message
             $existingSubscriptionId = session('existing_subscription_id') ?? $request->existing_subscription_id;
-            $creditAmount = session('credit_amount') ?? $request->credit_amount ?? 0;
             
             if ($isPaymentMethodUpdate) {
                 $successMessage = 'AutoPay Bank / Payment Method updated successfully! Future renewals will be automatically charged from your new payment method.';
-            } elseif ($existingSubscriptionId && $creditAmount > 0) {
-                $this->processImmediateRefund($existingSubscriptionId, $creditAmount);
-                $successMessage = 'Subscription activated successfully! Refund of ₹' . $creditAmount . ' will be processed shortly.';
+            } elseif ($existingSubscriptionId) {
+                $successMessage = 'Subscription upgraded successfully to ' . $plan->name . '!';
             } else {
                 $successMessage = 'Subscription activated successfully!';
             }

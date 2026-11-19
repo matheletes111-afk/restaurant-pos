@@ -304,13 +304,6 @@
                         </td>
                         <td class="right">{{ number_format($itemTotal, 2) }}</td>
                     </tr>
-                    @if($isGstBill && $gstRate > 0)
-                    <tr class="gst-note">
-                        <td colspan="4" class="right">
-                            (GST {{ number_format($gstRate, 2) }}%: {{ number_format($gstAmount, 2) }})
-                        </td>
-                    </tr>
-                    @endif
                     @endforeach
                 @endif
 
@@ -356,13 +349,6 @@
                         </td>
                         <td class="right">{{ number_format($bTotal, 2) }}</td>
                     </tr>
-                    @if($bVatRate > 0)
-                    <tr class="gst-note">
-                        <td colspan="4" class="right" style="color: #047857;">
-                            (State VAT {{ number_format($bVatRate, 2) }}%: {{ number_format($bVatAmount, 2) }})
-                        </td>
-                    </tr>
-                    @endif
                     @endforeach
                 @endif
             </tbody>
@@ -372,15 +358,15 @@
         
         <!-- Totals Section -->
         @php
-            $displaySubtotalVal = $original_subtotal ?? ($order->total_amount ?? 0);
-            $displayTaxableVal = $total_taxable ?? ($order->taxable_amount ?? 0);
-            $displayGstVal = $total_gst ?? ($order->gst_amount ?? 0);
-            $displayVatVal = $total_vat ?? ($order->vat_amount ?? 0);
+            $displaySubtotalVal = (float)($order->total_amount ?? ($original_subtotal ?? 0));
+            $orderDiscountAmount = (float)($order->discount ?? 0);
             $orderDiscountPercent = (float)($order->discount_percentage ?? 0);
-            $orderDiscountAmount = (float)($order->discount ?? (($displayTaxableVal + $displayGstVal + $displayVatVal) * $orderDiscountPercent / 100));
-            $finalTotal = (float)($order->grand_total ?? ($displayTaxableVal + $displayGstVal + $displayVatVal - $orderDiscountAmount));
+            $displayTaxableVal = (float)($order->taxable_amount ?? ($total_taxable ?? max(0, $displaySubtotalVal - $orderDiscountAmount)));
+            $displayGstVal = (float)($order->gst_amount ?? ($total_gst ?? 0));
+            $displayVatVal = (float)($order->vat_amount ?? ($total_vat ?? 0));
+            $finalTotal = (float)($order->grand_total ?? ($displayTaxableVal + $displayGstVal + $displayVatVal));
             $roundOff = (float)($order->round_off ?? 0);
-            $totalItemDiscount = max(0, $displaySubtotalVal - $displayTaxableVal);
+            $totalItemDiscount = max(0, $displaySubtotalVal - ($displayTaxableVal + $orderDiscountAmount));
         @endphp
         
         <table class="totals-table">
@@ -391,13 +377,20 @@
             </tr>
             @endif
             
-            @if($totalItemDiscount > 0)
+            @if($totalItemDiscount > 0.01)
             <tr>
                 <td>Item Discount:</td>
                 <td>- {{ number_format($totalItemDiscount, 2) }}</td>
             </tr>
             @endif
             
+            @if($orderDiscountAmount > 0.01)
+            <tr>
+                <td>Order Disc{{ (($order->discount_type ?? '') === 'PERCENT' && $orderDiscountPercent > 0) ? ' (' . $orderDiscountPercent . '%)' : '' }}:</td>
+                <td>- {{ number_format($orderDiscountAmount, 2) }}</td>
+            </tr>
+            @endif
+
             <tr>
                 <td>Taxable Amount:</td>
                 <td>{{ number_format($displayTaxableVal, 2) }}</td>
@@ -414,13 +407,6 @@
             <tr>
                 <td>State VAT (Liquor):</td>
                 <td>{{ number_format($displayVatVal, 2) }}</td>
-            </tr>
-            @endif
-            
-            @if($orderDiscountPercent > 0)
-            <tr>
-                <td>Order Disc ({{ $orderDiscountPercent }}%):</td>
-                <td>- {{ number_format($orderDiscountAmount, 2) }}</td>
             </tr>
             @endif
             

@@ -29,7 +29,11 @@ class PaymentHistoryController extends Controller
         }
         
         if ($request->filled('status') && $request->status != 'all') {
-            $query->where('status', $request->status);
+            if ($request->status === 'captured' || $request->status === 'success') {
+                $query->whereIn('status', ['captured', 'success']);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
         
         if ($request->filled('plan_id')) {
@@ -54,22 +58,22 @@ class PaymentHistoryController extends Controller
         
         // Statistics
         $statistics = [
-            'total_amount' => Payment::sum('amount') ?? 0,
+            'total_amount' => Payment::whereIn('status', ['captured', 'success'])->sum('amount') ?? 0,
             'total_payments' => Payment::count(),
-            'successful_payments' => Payment::where('status', 'captured')->count(),
+            'successful_payments' => Payment::whereIn('status', ['captured', 'success'])->count(),
             'failed_payments' => Payment::where('status', 'failed')->count(),
             'pending_payments' => Payment::where('status', 'pending')->count(),
-            'this_month_amount' => Payment::whereMonth('created_at', now()->month)
+            'this_month_amount' => Payment::whereIn('status', ['captured', 'success'])
+                ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
                 ->sum('amount') ?? 0,
         ];
         
         $statuses = [
             'all' => 'All',
-            'captured' => 'Success',
+            'success' => 'Success',
             'pending' => 'Pending',
             'failed' => 'Failed',
-            'refunded' => 'Refunded'
         ];
         
         return view('admin.payment-history', compact('payments', 'restaurants', 'plans', 'statistics', 'statuses'));

@@ -84,6 +84,7 @@ class RestaurantProfileController extends Controller
             // Get user (owner)
             $user = User::find($restaurant->owner_id) ?: Auth::user();
             
+            // Update User Table (Phone only - email is readonly)
             // Update User Table (Name and Phone - email is readonly)
             if ($user) {
                 if ($request->filled('name')) {

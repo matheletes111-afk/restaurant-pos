@@ -494,6 +494,22 @@ Route::prefix('leave-management')->group(function () {
         ->name('restaurant.leaves.export');
 });
 
+// Staff Extras (Earnings / Deductions / Advances)
+Route::prefix('staff-extras')->group(function () {
+    Route::get('/', [\App\Http\Controllers\StaffExtraController::class, 'index'])
+        ->name('restaurant.staff.extras.index');
+    Route::post('/store', [\App\Http\Controllers\StaffExtraController::class, 'store'])
+        ->name('restaurant.staff.extras.store');
+    Route::get('/show/{id}', [\App\Http\Controllers\StaffExtraController::class, 'show'])
+        ->name('restaurant.staff.extras.show');
+    Route::post('/update/{id}', [\App\Http\Controllers\StaffExtraController::class, 'update'])
+        ->name('restaurant.staff.extras.update');
+    Route::delete('/delete/{id}', [\App\Http\Controllers\StaffExtraController::class, 'destroy'])
+        ->name('restaurant.staff.extras.destroy');
+    Route::get('/export', [\App\Http\Controllers\StaffExtraController::class, 'export'])
+        ->name('restaurant.staff.extras.export');
+});
+
 // Restaurant Outlets / Branches Management
 Route::prefix('outlets')->group(function () {
     Route::get('/', [\App\Http\Controllers\RestaurantOutletController::class, 'index'])->name('restaurant.outlets.index');
@@ -791,6 +807,16 @@ Route::get('/expense', function() {
 });
 Route::get('/cash-drawer', function() {
     return redirect()->route('cash.drawer.index');
+});
+
+// Root Aliases for Staff Extras (supports direct /staff-extras/... requests)
+Route::prefix('staff-extras')->middleware(['auth', 'menu.permission', 'secure.restro.data'])->group(function () {
+    Route::get('/', [\App\Http\Controllers\StaffExtraController::class, 'index']);
+    Route::post('/store', [\App\Http\Controllers\StaffExtraController::class, 'store']);
+    Route::get('/show/{id}', [\App\Http\Controllers\StaffExtraController::class, 'show']);
+    Route::post('/update/{id}', [\App\Http\Controllers\StaffExtraController::class, 'update']);
+    Route::delete('/delete/{id}', [\App\Http\Controllers\StaffExtraController::class, 'destroy']);
+    Route::get('/export', [\App\Http\Controllers\StaffExtraController::class, 'export']);
 });
 
 // Franchise Sponsorship Owner Dashboard (Root route)

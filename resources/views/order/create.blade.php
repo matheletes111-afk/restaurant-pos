@@ -458,6 +458,17 @@
             </div>
           @endif
 
+          <!-- Quick Action Button Above Bill Calculation -->
+          <div class="mb-3">
+            <button type="button" class="btn-terminal-save btn-trigger-save-order" id="saveOrderBtnTop">
+              @if(!isset($table) || !$table)
+                <i class="fa-solid fa-circle-check"></i> Done &amp; Checkout Bill
+              @else
+                <i class="fa-solid fa-fire"></i> Save &amp; Fire KOT
+              @endif
+            </button>
+          </div>
+
           <!-- Order Summary Card -->
           <div class="summary-details-card">
             <h4 class="pos-panel-title mb-3">
@@ -472,6 +483,29 @@
             <div class="summary-row-item">
               <span class="summary-row-label">Item Discounts</span>
               <span class="summary-row-val text-success">- ₹<span id="item_discount_total">0.00</span></span>
+            </div>
+
+            <!-- Overall Order Discount Control Box -->
+            <div class="p-2 my-2 rounded" style="background: #f8fafc; border: 1px dashed #cbd5e1;">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="small font-weight-bold mb-0 text-dark" style="font-size: 0.78rem;">
+                  <i class="fa-solid fa-tags text-primary me-1"></i> Order Discount
+                </label>
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-sm btn-primary btn-order-disc-type py-0 px-2 active" data-type="FIXED" id="btnOrderDiscFixed" style="font-size: 0.72rem; height: 22px;">₹ Fixed</button>
+                  <button type="button" class="btn btn-sm btn-outline-primary btn-order-disc-type py-0 px-2" data-type="PERCENT" id="btnOrderDiscPercent" style="font-size: 0.72rem; height: 22px;">% Percent</button>
+                </div>
+              </div>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white px-2 py-0" id="lblOrderDiscSymbol" style="font-size: 0.78rem; font-weight: 700;">₹</span>
+                <input type="number" step="any" min="0" class="form-control form-control-sm py-0" id="order_discount_input" placeholder="0" value="0" style="font-weight: 600; font-size: 0.85rem; height: 28px;">
+                <input type="hidden" id="order_discount_type" value="FIXED">
+              </div>
+            </div>
+
+            <div class="summary-row-item" id="order_discount_row" style="display: none; color: #dc2626;">
+              <span class="summary-row-label text-danger" id="order_discount_label">Order Discount</span>
+              <span class="summary-row-val text-danger">- ₹<span id="order_discount_amount">0.00</span></span>
             </div>
 
             <div class="summary-row-item">
@@ -489,11 +523,6 @@
             <div class="summary-row-item" id="vat_row_item" style="display: none;">
               <span class="summary-row-label font-weight-bold" style="color: #d97706;"><i class="fa-solid fa-wine-glass me-1"></i> State VAT (Liquor)</span>
               <span class="summary-row-val font-weight-bold" style="color: #d97706;">+ ₹<span id="total_vat">0.00</span></span>
-            </div>
-
-            <div class="summary-row-item">
-              <span class="summary-row-label">Order Discount</span>
-              <span class="summary-row-val text-success">- ₹<span id="order_discount_amount">0.00</span></span>
             </div>
 
             <div class="summary-row-item" id="round_off_item" style="display: none;">
@@ -797,9 +826,9 @@ function getItemEffectiveUnitPrice(item) {
 
 function updateSummary() {
     let originalSubtotal = 0;
-    let totalTaxable = 0;
-    let totalGst = 0;
-    let totalVat = 0;
+    let foodTaxable = 0;
+    let liquorTaxable = 0;
+    let rawVatSum = 0;
     let totalItemDiscount = 0;
     let totalCount = 0;
     
@@ -807,23 +836,58 @@ function updateSummary() {
         let details = calculateItemDetails(item);
         
         originalSubtotal += details.originalAmount;
-        totalTaxable += details.taxableAmount;
-        totalGst += details.gstAmount;
-        totalVat += details.vatAmount;
         totalItemDiscount += details.itemDiscountAmount;
         totalCount += item.qty;
+
+        let vatRate = parseFloat(item.vat_rate || 0) || 0;
+        if (vatRate > 0) {
+            liquorTaxable += details.taxableAmount;
+            rawVatSum += details.vatAmount;
+        } else {
+            foodTaxable += details.taxableAmount;
+        }
     });
-    
-    let orderDiscountPercent = parseFloat($('#order_discount').val()) || 0;
-    let totalBeforeOrderDiscount = totalTaxable + totalGst + totalVat;
-    let orderDiscountAmount = (totalBeforeOrderDiscount * orderDiscountPercent) / 100;
-    let grandTotal = totalBeforeOrderDiscount - orderDiscountAmount;
+
+    let totalTaxableBeforeDiscount = foodTaxable + liquorTaxable;
+    let discountInput = parseFloat($('#order_discount_input').val()) || 0;
+    let discountType = $('#order_discount_type').val() || 'FIXED';
+    let orderDiscountAmt = 0;
+    let orderDiscountPct = 0;
+
+    if (discountType === 'PERCENT') {
+        orderDiscountPct = Math.max(0, Math.min(100, discountInput));
+        orderDiscountAmt = (totalTaxableBeforeDiscount * orderDiscountPct) / 100;
+    } else {
+        orderDiscountAmt = Math.max(0, Math.min(totalTaxableBeforeDiscount, discountInput));
+        orderDiscountPct = totalTaxableBeforeDiscount > 0 ? ((orderDiscountAmt / totalTaxableBeforeDiscount) * 100) : 0;
+    }
+
+    let foodRatio = totalTaxableBeforeDiscount > 0 ? (foodTaxable / totalTaxableBeforeDiscount) : 1;
+    let foodDiscount = orderDiscountAmt * foodRatio;
+    let liquorDiscount = orderDiscountAmt - foodDiscount;
+
+    let netFoodTaxable = Math.max(0, foodTaxable - foodDiscount);
+    let netLiquorTaxable = Math.max(0, liquorTaxable - liquorDiscount);
+    let netTotalTaxable = netFoodTaxable + netLiquorTaxable;
+
+    let totalGst = 0;
+    if (isGstRegistered && netFoodTaxable > 0 && restaurantGstPercentage > 0) {
+        totalGst = (netFoodTaxable * restaurantGstPercentage) / 100;
+    }
+
+    let totalVat = 0;
+    if (netLiquorTaxable > 0 && liquorTaxable > 0) {
+        let effectiveVatRate = rawVatSum / liquorTaxable;
+        totalVat = netLiquorTaxable * effectiveVatRate;
+    }
+
+    let grandTotal = netTotalTaxable + totalGst + totalVat;
     let finalTotal = Math.round(grandTotal);
     let roundOff = finalTotal - grandTotal;
     
     $('#original_subtotal').text(originalSubtotal.toFixed(2));
     $('#item_discount_total').text(totalItemDiscount.toFixed(2));
-    $('#total_taxable').text(totalTaxable.toFixed(2));
+    $('#total_taxable').text(netTotalTaxable.toFixed(2));
     if (isGstRegistered) {
         $('#total_gst').text(totalGst.toFixed(2));
     }
@@ -833,7 +897,16 @@ function updateSummary() {
     } else {
         $('#vat_row_item').hide();
     }
-    $('#order_discount_amount').text(orderDiscountAmount.toFixed(2));
+
+    if (orderDiscountAmt > 0.001) {
+        $('#order_discount_row').show();
+        let discTitle = discountType === 'PERCENT' ? `Order Discount (${orderDiscountPct.toFixed(1)}%):` : 'Order Discount:';
+        $('#order_discount_label').text(discTitle);
+        $('#order_discount_amount').text(orderDiscountAmt.toFixed(2));
+    } else {
+        $('#order_discount_row').hide();
+        $('#order_discount_amount').text('0.00');
+    }
     
     if (Math.abs(roundOff) > 0.01) {
         $('#round_off_item').show();
@@ -1637,12 +1710,12 @@ $(document).ready(function() {
         if (val === 'DONE') {
             $('#checkoutPaymentSection').slideDown(250);
             $('#statusBadgeTag').text('Instant Checkout');
-            $('#saveOrderBtn').html('<i class="fa-solid fa-circle-check"></i> Done &amp; Checkout Bill');
+            $('#saveOrderBtn, #saveOrderBtnTop').html('<i class="fa-solid fa-circle-check"></i> Done &amp; Checkout Bill');
             syncPaymentSplit('total_change');
         } else {
             $('#checkoutPaymentSection').slideUp(250);
             $('#statusBadgeTag').text('Running Service');
-            $('#saveOrderBtn').html('<i class="fa-solid fa-fire"></i> Save &amp; Fire KOT');
+            $('#saveOrderBtn, #saveOrderBtnTop').html('<i class="fa-solid fa-fire"></i> Save &amp; Fire KOT');
         }
     });
 
@@ -1713,12 +1786,34 @@ $(document).ready(function() {
         syncPaymentSplit('upi_input');
     });
     
+    // Overall Order Discount Toggle and Input Listeners
+    $(document).on('click', '.btn-order-disc-type', function(e) {
+        e.preventDefault();
+        let type = $(this).attr('data-type');
+        $('.btn-order-disc-type').removeClass('btn-primary active').addClass('btn-outline-primary');
+        $(this).removeClass('btn-outline-primary').addClass('btn-primary active');
+        $('#order_discount_type').val(type);
+        $('#lblOrderDiscSymbol').text(type === 'PERCENT' ? '%' : '₹');
+        updateSummary();
+    });
+
+    $(document).on('input change', '#order_discount_input', function() {
+        updateSummary();
+    });
+
+    // Save Order Top Button Delegate
+    $(document).on('click', '#saveOrderBtnTop', function(e) {
+        e.preventDefault();
+        $('#saveOrderBtn').trigger('click');
+    });
+
     // Save Order
     $('#saveOrderBtn').click(function() {
         let customer_name = $('#customer_name').val().trim();
         let customer_phone = $('#customer_phone').val().trim();
         let table_id = $('#table_id').val();
-        let orderDiscount = $('#order_discount').val() || 0;
+        let orderDiscount = $('#order_discount_input').val() || 0;
+        let orderDiscountType = $('#order_discount_type').val() || 'FIXED';
         let order_complete = $('#order_complete').length ? $('#order_complete').val() : 'DONE';
         let remarks = $('#remarks').val() || null;
         let finalTotal = parseFloat($('#final_total').text()) || 0;
@@ -1761,7 +1856,7 @@ $(document).ready(function() {
         }));
         
         let btnText = (order_complete === 'DONE') ? 'Processing Checkout & Printing...' : 'Saving Order & Firing KOT...';
-        $(this).prop('disabled', true).html(`<i class="fa-solid fa-spinner fa-spin me-2"></i> ${btnText}`);
+        $('#saveOrderBtn, #saveOrderBtnTop').prop('disabled', true).html(`<i class="fa-solid fa-spinner fa-spin me-2"></i> ${btnText}`);
         
         $.ajax({
             url: "{{ route('order.save') }}",
@@ -1772,6 +1867,7 @@ $(document).ready(function() {
                 customer_phone: customer_phone,
                 table_id: table_id,
                 discount: orderDiscount,
+                discount_type: orderDiscountType,
                 order_items: orderItemsData,
                 order_complete: order_complete,
                 cash_amount: cashAmount,
@@ -1789,13 +1885,19 @@ $(document).ready(function() {
                     }, 600);
                 } else {
                     showToast(response.message || 'Error saving order', true);
-                    $('#saveOrderBtn').prop('disabled', false).html('<i class="fa-solid fa-circle-check"></i> Done &amp; Checkout Bill');
+                    let fallbackText = (order_complete === 'DONE' || !$('#table_id').val()) 
+                        ? '<i class="fa-solid fa-circle-check"></i> Done &amp; Checkout Bill' 
+                        : '<i class="fa-solid fa-fire"></i> Save &amp; Fire KOT';
+                    $('#saveOrderBtn, #saveOrderBtnTop').prop('disabled', false).html(fallbackText);
                 }
             },
             error: function(xhr) {
                 let errorMsg = xhr.responseJSON?.message || 'An error occurred while saving';
                 showToast(errorMsg, true);
-                $('#saveOrderBtn').prop('disabled', false).html('<i class="fa-solid fa-circle-check"></i> Done &amp; Checkout Bill');
+                let fallbackText = (order_complete === 'DONE' || !$('#table_id').val()) 
+                    ? '<i class="fa-solid fa-circle-check"></i> Done &amp; Checkout Bill' 
+                    : '<i class="fa-solid fa-fire"></i> Save &amp; Fire KOT';
+                $('#saveOrderBtn, #saveOrderBtnTop').prop('disabled', false).html(fallbackText);
             }
         });
     });

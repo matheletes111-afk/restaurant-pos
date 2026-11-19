@@ -551,7 +551,7 @@
             <span class="pc-mtext">Staff</span>
           </a>
         </li>
-        <!-- <li class="pc-item {{ $disabledClass }}">
+        <li class="pc-item {{ $disabledClass }}">
           <a href="{{route('restaurant.attendance.index')}}" class="pc-link @if(Request::is('*attendance*')) active_class @endif">
             <span class="pc-micon"><i class="fas fa-user-clock"></i></span>
             <span class="pc-mtext">Attendance</span>
@@ -562,7 +562,13 @@
             <span class="pc-micon"><i class="fas fa-calendar-minus"></i></span>
             <span class="pc-mtext">Leave Management</span>
           </a>
-        </li> -->
+        </li>
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{route('restaurant.staff.extras.index')}}" class="pc-link @if(Request::is('*staff-extras*') || Request::is('*extras*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-coins"></i></span>
+            <span class="pc-mtext">Extras</span>
+          </a>
+        </li>
         @endif
 
         @if(auth()->user()->hasPermission('cash_drawer'))

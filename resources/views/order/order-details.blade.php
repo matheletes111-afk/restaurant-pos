@@ -889,16 +889,23 @@
                         <span class="summary-value text-success">- ₹{{ number_format($discountTotal, 2) }}</span>
                     </div>
                     @endif
+
+                    @if(($order->discount ?? 0) > 0 || ($order->discount_percentage ?? 0) > 0)
+                    <div class="summary-row">
+                        <span class="summary-label">Order Discount{{ (($order->discount_type ?? '') === 'PERCENT' && ($order->discount_percentage ?? 0) > 0) ? ' (' . ($order->discount_percentage) . '%)' : '' }}</span>
+                        <span class="summary-value text-success">- ₹{{ number_format($order->discount, 2) }}</span>
+                    </div>
+                    @endif
                     
                     <div class="summary-row">
                         <span class="summary-label">Taxable Amount</span>
-                        <span class="summary-value">₹{{ number_format($subtotal - $discountTotal, 2) }}</span>
+                        <span class="summary-value">₹{{ number_format($order->taxable_amount ?? ($subtotal - $discountTotal - ($order->discount ?? 0)), 2) }}</span>
                     </div>
                     
                     @if($isGstBill)
                     <div class="summary-row">
                         <span class="summary-label">GST Total ({{ $gstPercentage }}%)</span>
-                        <span class="summary-value">₹{{ number_format($gstTotal, 2) }}</span>
+                        <span class="summary-value">₹{{ number_format($order->gst_amount ?? $gstTotal, 2) }}</span>
                     </div>
                     @endif
 
@@ -906,13 +913,6 @@
                     <div class="summary-row" style="color: #047857;">
                         <span class="summary-label"><i class="fas fa-wine-glass me-1"></i> State VAT (Liquor)</span>
                         <span class="summary-value fw-bold">+ ₹{{ number_format($order->vat_amount, 2) }}</span>
-                    </div>
-                    @endif
-                    
-                    @if($order->discount_percentage > 0)
-                    <div class="summary-row">
-                        <span class="summary-label">Order Discount ({{ $order->discount_percentage }}%)</span>
-                        <span class="summary-value text-success">- ₹{{ number_format($order->discount, 2) }}</span>
                     </div>
                     @endif
                     

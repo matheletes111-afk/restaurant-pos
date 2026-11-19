@@ -1380,12 +1380,12 @@
 
                     {{-- Calculation Breakdown & Statutory Tax Cards --}}
                     @php
-                        $displaySubtotal = ($order->total_amount > 0 && abs($order->total_amount - $invOriginalSubtotal) < 0.01) ? $order->total_amount : $invOriginalSubtotal;
-                        $displayTaxable = ($order->taxable_amount > 0 && abs($order->taxable_amount - $invTaxableTotal) < 0.01) ? $order->taxable_amount : $invTaxableTotal;
-                        $displayGst = ($order->gst_amount > 0 && abs($order->gst_amount - $invGstTotal) < 0.01) ? $order->gst_amount : $invGstTotal;
+                        $displaySubtotal = ($order->total_amount > 0) ? $order->total_amount : $invOriginalSubtotal;
+                        $displayDiscount = (float)($order->discount ?? 0);
+                        $displayTaxable = ($order->taxable_amount > 0) ? $order->taxable_amount : max(0, $invTaxableTotal - $displayDiscount);
+                        $displayGst = (float)($order->gst_amount ?? $invGstTotal);
                         $displayVat = ($order->vat_amount > 0) ? (float)$order->vat_amount : (float)$invVatTotal;
-                        $displayDiscount = $order->discount ?? (($displayTaxable + $displayGst + $displayVat) * ($order->discount_percentage ?? 0) / 100);
-                        $displayGrandTotal = $order->grand_total ?? ($displayTaxable + $displayGst + $displayVat - $displayDiscount);
+                        $displayGrandTotal = (float)($order->grand_total ?? ($displayTaxable + $displayGst + $displayVat));
                     @endphp
                     <div class="inv-calc-container">
                         {{-- Financial Calculation Box --}}
@@ -1402,17 +1402,17 @@
                             </div>
                             @endif
 
+                            @if($displayDiscount > 0 || ($order->discount_percentage ?? 0) > 0)
+                            <div class="inv-calc-row text-danger">
+                                <span>Order Discount{{ (($order->discount_type ?? '') === 'PERCENT' && ($order->discount_percentage ?? 0) > 0) ? ' (' . ($order->discount_percentage) . '%)' : '' }}:</span>
+                                <span class="fw-semibold">- ₹{{ number_format($displayDiscount, 2) }}</span>
+                            </div>
+                            @endif
+
                             <div class="inv-calc-row">
                                 <span class="text-muted">Net Taxable:</span>
                                 <span class="fw-semibold">₹{{ number_format($displayTaxable, 2) }}</span>
                             </div>
-
-                            @if($displayDiscount > 0 || ($order->discount_percentage ?? 0) > 0)
-                            <div class="inv-calc-row text-danger">
-                                <span>Order Discount ({{ $order->discount_percentage ?? 0 }}%):</span>
-                                <span class="fw-semibold">- ₹{{ number_format($displayDiscount, 2) }}</span>
-                            </div>
-                            @endif
 
                             @if($order->is_gst_bill == 'YES' && $displayGst > 0)
                             <div class="inv-calc-row text-primary">

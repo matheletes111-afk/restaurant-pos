@@ -139,7 +139,11 @@
                                                 <tr>
                                                     <th>Billing Type:</th>
                                                     <td>
-                                                        @if(!empty($is_one_time))
+                                                        @if(!empty($is_upgrade))
+                                                            <span class="badge bg-info text-white" style="font-size: 0.85rem; padding: 6px 12px; border-radius: 8px;">
+                                                                <i class="fas fa-arrow-circle-up me-1"></i> Plan Upgrade (Pay Difference)
+                                                            </span>
+                                                        @elseif(!empty($is_one_time))
                                                             <span class="badge bg-success text-white" style="font-size: 0.85rem; padding: 6px 12px; border-radius: 8px;">
                                                                 <i class="fas fa-calendar-check me-1"></i> 1 Cycle (365 Days) — AutoPay OFF
                                                             </span>
@@ -156,20 +160,26 @@
                                                     <td>{{ $existing_subscription->plan->name ?? 'N/A' }}</td>
                                                 </tr>
                                                 <tr>
-                                                    <th>Refund Amount:</th>
-                                                    <td class="text-success">{{ $currSymbol }}{{ number_format($refund_amount ?? 0, 2) }}</td>
+                                                    <th>New Plan Price:</th>
+                                                    <td>{{ $currSymbol }}{{ number_format($plan->price, 2) }}</td>
+                                                </tr>
+                                                @if(($refund_amount ?? 0) > 0)
+                                                <tr>
+                                                    <th>Unused Days Credit:</th>
+                                                    <td class="text-success font-weight-bold">-{{ $currSymbol }}{{ number_format($refund_amount ?? 0, 2) }}</td>
                                                 </tr>
                                                 @endif
+                                                @endif
                                                 <tr>
-                                                    <th>{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Renewal Rate / Auth Amount:' : 'Amount Payable:' }}</th>
-                                                    <td class="font-weight-bold text-success">{{ $currSymbol }}{{ number_format($payable_amount, 2) }} <span class="badge bg-light text-dark border">{{ $curr }}</span></td>
+                                                    <th>{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Renewal Rate / Auth Amount:' : (!empty($is_upgrade) ? 'Net Amount Payable:' : 'Amount Payable:') }}</th>
+                                                    <td class="font-weight-bold text-success" style="font-size: 1.25rem;">{{ $currSymbol }}{{ number_format($payable_amount, 2) }} <span class="badge bg-light text-dark border" style="font-size: 0.85rem;">{{ $curr }}</span></td>
                                                 </tr>
                                             </table>
                                             
                                             <div class="text-center mt-4">
                                                 <button id="rzp-button" class="btn btn-primary btn-lg" style="box-shadow: 0 4px 14px rgba(255, 106, 0, 0.35); font-weight: 700; padding: 14px 32px; border-radius: 50px;">
                                                     <i class="fa fa-credit-card me-2"></i> 
-                                                    <span id="rzp-button-text">{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Authorize New Bank / Card (' . $currSymbol . number_format($payable_amount, 2) . ' ' . $curr . ')' : (!empty($is_one_time) ? 'Pay Now ' . $currSymbol . number_format($payable_amount, 2) . ' ' . $curr : 'Pay & Setup AutoPay (' . $currSymbol . number_format($payable_amount, 2) . ' ' . $curr . ')') }}</span>
+                                                    <span id="rzp-button-text">{{ isset($is_payment_method_update) && $is_payment_method_update ? 'Authorize New Bank / Card (' . $currSymbol . number_format($payable_amount, 2) . ' ' . $curr . ')' : 'Pay Now ' . $currSymbol . number_format($payable_amount, 2) . ' ' . $curr }}</span>
                                                 </button>
                                                 
                                                 <a href="{{ route('admin.subscriptions.index') }}" class="btn btn-secondary btn-lg ms-2" style="padding: 14px 24px; border-radius: 50px;">
@@ -177,10 +187,15 @@
                                                 </a>
                                             </div>
 
-                                            @if(!empty($is_one_time))
+                                            @if(!empty($is_upgrade) && ($refund_amount ?? 0) > 0)
+                                            <div class="alert alert-info mt-3" style="border-radius: 10px;">
+                                                <i class="fa fa-info-circle me-1"></i> 
+                                                <span>Your unused credit of <strong>{{ $currSymbol }}{{ number_format($refund_amount, 2) }}</strong> from your previous plan has been deducted as an upfront discount. You only pay the net difference of <strong>{{ $currSymbol }}{{ number_format($payable_amount, 2) }}</strong> today.</span>
+                                            </div>
+                                            @elseif(!empty($is_one_time))
                                             <div class="alert alert-success mt-3" style="border-radius: 10px;">
                                                 <i class="fa fa-check-circle me-1"></i> 
-                                                <span>This is a <strong>one-time 365-day payment</strong>. <strong>AutoPay is OFF</strong> — no automatic recurring debits will happen.</span>
+                                                <span>This is a <strong>one-time payment</strong>. <strong>AutoPay is OFF</strong> — no automatic recurring debits will happen.</span>
                                             </div>
                                             @endif
 

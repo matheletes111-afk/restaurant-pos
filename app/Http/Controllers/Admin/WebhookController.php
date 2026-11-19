@@ -189,22 +189,41 @@ class WebhookController extends Controller
             ]
         );
 
-        // Create payment record
-        Payment::updateOrCreate(
-            ['razorpay_payment_id' => $payment['id']],
-            [
-                'subscription_id' => $sub->id,
-                'user_id' => $sub->user_id,
-                'plan_id' => $plan ? $plan->id : null,
-                'razorpay_order_id' => $subscription['id'],
-                'amount' => isset($payment['amount']) ? ($payment['amount'] / 100) : 0,
-                'currency' => $payment['currency'] ?? 'INR',
-                'status' => 'success',
-                'description' => 'Recurring payment via Webhook',
-                'payment_method' => $payment['method'] ?? 'razorpay',
-                'razorpay_response' => json_encode($payload)
-            ]
-        );
+        // Mark previous active subscriptions as upgraded/expired if different
+        if ($targetRestaurantId) {
+            Subscription::where('user_id', $targetRestaurantId)
+                ->where('id', '!=', $sub->id)
+                ->where('status', 'active')
+                ->update(['status' => 'expired', 'auto_renew' => 0, 'end_date' => now()]);
+        }
+
+        // Create or update payment record
+        $existingPayment = Payment::where('razorpay_order_id', $subscription['id'])
+            ->where('status', 'pending')
+            ->first();
+
+        $paymentData = [
+            'subscription_id' => $sub->id,
+            'user_id' => $sub->user_id,
+            'plan_id' => $plan ? $plan->id : null,
+            'razorpay_order_id' => $subscription['id'],
+            'razorpay_payment_id' => $payment['id'],
+            'amount' => isset($payment['amount']) ? ($payment['amount'] / 100) : 0,
+            'currency' => $payment['currency'] ?? 'INR',
+            'status' => 'success',
+            'description' => 'Payment charged via Webhook',
+            'payment_method' => $payment['method'] ?? 'razorpay',
+            'razorpay_response' => json_encode($payload)
+        ];
+
+        if ($existingPayment) {
+            $existingPayment->update($paymentData);
+        } else {
+            Payment::updateOrCreate(
+                ['razorpay_payment_id' => $payment['id']],
+                $paymentData
+            );
+        }
     }
 
     private function handleSubscriptionCancelled($payload)

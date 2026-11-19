@@ -644,12 +644,12 @@
 
             <!-- Calculation Box -->
             @php
-                $pubDisplaySubtotal = ($order->total_amount > 0 && abs($order->total_amount - $pubOriginalSubtotal) < 0.01) ? $order->total_amount : $pubOriginalSubtotal;
-                $pubDisplayTaxable = ($order->taxable_amount > 0 && abs($order->taxable_amount - $pubTaxableTotal) < 0.01) ? $order->taxable_amount : $pubTaxableTotal;
-                $pubDisplayGst = ($order->gst_amount > 0 && abs($order->gst_amount - $pubGstTotal) < 0.01) ? $order->gst_amount : $pubGstTotal;
+                $pubDisplaySubtotal = ($order->total_amount > 0) ? $order->total_amount : $pubOriginalSubtotal;
+                $pubDisplayDiscount = (float)($order->discount ?? 0);
+                $pubDisplayTaxable = ($order->taxable_amount > 0) ? $order->taxable_amount : max(0, $pubTaxableTotal - $pubDisplayDiscount);
+                $pubDisplayGst = (float)($order->gst_amount ?? $pubGstTotal);
                 $pubDisplayVat = ($order->vat_amount > 0) ? (float)$order->vat_amount : (float)$pubVatTotal;
-                $pubDisplayDiscount = $order->discount ?? (($pubDisplayTaxable + $pubDisplayGst + $pubDisplayVat) * ($order->discount_percentage ?? 0) / 100);
-                $pubDisplayGrandTotal = $order->grand_total ?? ($pubDisplayTaxable + $pubDisplayGst + $pubDisplayVat - $pubDisplayDiscount);
+                $pubDisplayGrandTotal = (float)($order->grand_total ?? ($pubDisplayTaxable + $pubDisplayGst + $pubDisplayVat));
             @endphp
             <div class="pub-calc-box">
                 <div class="pub-calc-row">
@@ -661,6 +661,13 @@
                     <div class="pub-calc-row text-success">
                         <span>Item Discounts:</span>
                         <span>- ₹{{ number_format($pubItemDiscountTotal, 2) }}</span>
+                    </div>
+                @endif
+
+                @if($pubDisplayDiscount > 0 || ($order->discount_percentage ?? 0) > 0)
+                    <div class="pub-calc-row text-danger">
+                        <span>Order Discount{{ (($order->discount_type ?? '') === 'PERCENT' && ($order->discount_percentage ?? 0) > 0) ? ' (' . ($order->discount_percentage) . '%)' : '' }}:</span>
+                        <span>- ₹{{ number_format($pubDisplayDiscount, 2) }}</span>
                     </div>
                 @endif
 
@@ -680,13 +687,6 @@
                     <div class="pub-calc-row" style="color: #047857;">
                         <span><i class="fa-solid fa-wine-glass me-1"></i> State VAT (Liquor) @if(!empty($order->restaurant->vatin))<small class="text-muted">({{ $order->restaurant->vatin }})</small>@endif:</span>
                         <span class="fw-semibold">+ ₹{{ number_format($pubDisplayVat, 2) }}</span>
-                    </div>
-                @endif
-
-                @if($pubDisplayDiscount > 0 || ($order->discount_percentage ?? 0) > 0)
-                    <div class="pub-calc-row text-danger">
-                        <span>Order Discount ({{ $order->discount_percentage ?? 0 }}%):</span>
-                        <span>- ₹{{ number_format($pubDisplayDiscount, 2) }}</span>
                     </div>
                 @endif
 
