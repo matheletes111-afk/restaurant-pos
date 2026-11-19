@@ -255,13 +255,13 @@
                                     </button>
                                     @endif
 
-                                    <!-- @if(auth()->user()->hasPermission('staff', 'edit') || auth()->user()->role_type === 'ADMIN')
+                                    @if(auth()->user()->hasPermission('staff', 'edit') || auth()->user()->role_type === 'ADMIN')
                                     <a href="{{ route('restaurant.staff.operations', $value->id) }}"
                                        class="staff-btn-action btn-operation"
                                        title="Operation Type (Salary Management)">
                                         <i class="fas fa-sliders-h"></i>
                                     </a>
-                                    @endif -->
+                                    @endif
 
                                     @if(auth()->user()->role_type === 'ADMIN')
                                     <a href="{{ route('restaurant.staff.permissions', $value->id) }}"
