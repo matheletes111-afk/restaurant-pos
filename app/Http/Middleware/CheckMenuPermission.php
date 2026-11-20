@@ -96,7 +96,8 @@ class CheckMenuPermission
                         'report-sales-by-category', 'report.sales.by.category',
                         'report-popular-items', 'report.popular.items',
                         'report-payment-methods', 'report.payment.methods',
-                        'report-customer-analysis', 'report.customer.analysis'
+                        'report-customer-analysis', 'report.customer.analysis',
+                        'report-staff-attendance', 'report.staff.attendance'
                     ];
                     $routeName = $request->route() ? $request->route()->getName() : '';
                     $path = $request->path();
@@ -205,7 +206,8 @@ class CheckMenuPermission
                 'report-sales-by-category', 'report.sales.by.category',
                 'report-popular-items', 'report.popular.items',
                 'report-payment-methods', 'report.payment.methods',
-                'report-customer-analysis', 'report.customer.analysis'
+                'report-customer-analysis', 'report.customer.analysis',
+                'report-staff-attendance', 'report.staff.attendance'
             ]
         ];
 

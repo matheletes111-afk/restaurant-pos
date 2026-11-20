@@ -11,6 +11,7 @@ use App\Models\OrderManage;
 use App\Models\OrderItems;
 use App\Models\RestaurantMaster;
 use App\Models\CashDrawerTransaction;
+use App\Models\StaffAttendance;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -1882,6 +1883,348 @@ public function itemGstSummary(Request $request)
 
         $writer = new Xlsx($spreadsheet);
         $filename = "customer_analysis_" . $fromDate->format('Ymd') . "_" . $toDate->format('Ymd') . ".xlsx";
+
+        return response()->streamDownload(function() use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
+    }
+
+    /**
+     * Resolve outlet IDs for reports (handles multi-outlets, franchise parent, super admin, and single outlets)
+     */
+    protected function getReportOutletIds(Request $request): array
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return [];
+        }
+
+        if ($user->role === 'SA') {
+            $reqRestaurantId = $request->input('restaurant_id');
+            if ($reqRestaurantId && $reqRestaurantId !== 'all') {
+                return [(int) $reqRestaurantId];
+            }
+            if (session('active_restaurant_id')) {
+                return [(int) session('active_restaurant_id')];
+            }
+            $active = $this->getActiveRestaurantId();
+            return $active ? [(int) $active] : RestaurantMaster::where('status', '!=', 'D')->pluck('id')->toArray();
+        }
+
+        if (session()->has('active_outlet_id')) {
+            return [(int) session('active_outlet_id')];
+        }
+
+        if (method_exists($user, 'getAvailableOutlets')) {
+            $available = $user->getAvailableOutlets();
+            if ($available && $available->isNotEmpty()) {
+                $reqRestaurantId = $request->input('restaurant_id');
+                if ($reqRestaurantId && $reqRestaurantId !== 'all') {
+                    $selected = (int) $reqRestaurantId;
+                    if (in_array($selected, $available->pluck('id')->toArray())) {
+                        return [$selected];
+                    }
+                }
+                if (session('active_restaurant_id') && in_array((int)session('active_restaurant_id'), $available->pluck('id')->toArray())) {
+                    return [(int) session('active_restaurant_id')];
+                }
+                return $available->pluck('id')->toArray();
+            }
+        }
+
+        $active = $this->getActiveRestaurantId();
+        return $active ? [(int) $active] : [];
+    }
+
+    /**
+     * Staff Attendance Report
+     */
+    public function staffAttendanceReport(Request $request)
+    {
+        // Default to current month: 1st of month to today
+        $fromDate = $request->from_date 
+            ? Carbon::parse($request->from_date)->startOfDay() 
+            : Carbon::now()->startOfMonth()->startOfDay();
+            
+        $toDate = $request->to_date 
+            ? Carbon::parse($request->to_date)->endOfDay() 
+            : Carbon::now()->endOfDay();
+
+        if ($fromDate->gt($toDate)) {
+            $temp = $fromDate;
+            $fromDate = $toDate->copy()->startOfDay();
+            $toDate = $temp->copy()->endOfDay();
+        }
+
+        $outletIds = $this->getReportOutletIds($request);
+        $restaurantId = $this->getActiveRestaurantId();
+        $restaurant = RestaurantMaster::find($restaurantId);
+
+        $selectedStaffId = $request->input('staff_id', 'all');
+        $selectedAttendanceType = $request->input('attendance_type', 'all');
+        $selectedEmployeeType = $request->input('employee_type', 'all');
+
+        // Staff list for filter
+        $staffList = User::whereIn('restaurant_id', $outletIds)
+            ->where('role_type', '!=', 'ADMIN')
+            ->where('status', '!=', 'D')
+            ->with('salary')
+            ->orderBy('name', 'asc')
+            ->get();
+
+        // Query attendances
+        $query = StaffAttendance::whereIn('restaurant_id', $outletIds)
+            ->whereBetween('attendance_date', [$fromDate->format('Y-m-d'), $toDate->format('Y-m-d')])
+            ->with(['user', 'user.salary', 'creator']);
+
+        if (!empty($selectedStaffId) && $selectedStaffId !== 'all') {
+            $query->where('user_id', $selectedStaffId);
+        }
+
+        if (!empty($selectedAttendanceType) && $selectedAttendanceType !== 'all') {
+            $query->where('attendance_type', $selectedAttendanceType);
+        }
+
+        if (!empty($selectedEmployeeType) && $selectedEmployeeType !== 'all') {
+            $query->where('employee_type', $selectedEmployeeType);
+        }
+
+        $attendances = $query->orderBy('attendance_date', 'desc')
+            ->orderBy('user_id', 'asc')
+            ->get();
+
+        // Summary KPI Metrics
+        $totalRecords = $attendances->count();
+        $presentCount = $attendances->where('attendance_type', 'P')->count();
+        $halfDayCount = $attendances->where('attendance_type', 'H')->count();
+        $earlyLeaveCount = $attendances->where('attendance_type', 'EL')->count();
+        $weekoffCount = $attendances->where('attendance_type', 'WO')->count();
+        $totalHours = round($attendances->sum(function ($att) {
+            return (float) $att->worked_hours_decimal;
+        }), 2);
+        $uniqueStaffCount = $attendances->pluck('user_id')->unique()->count();
+        $hourlyCount = $attendances->where('employee_type', 'hourly')->count();
+        $permanentCount = $attendances->where('employee_type', '!=', 'hourly')->count();
+
+        $summary = [
+            'date_range' => $fromDate->format('d M Y') . ' — ' . $toDate->format('d M Y'),
+            'total_records' => $totalRecords,
+            'present_count' => $presentCount,
+            'half_day_count' => $halfDayCount,
+            'early_leave_count' => $earlyLeaveCount,
+            'weekoff_count' => $weekoffCount,
+            'total_hours' => $totalHours,
+            'unique_staff_count' => $uniqueStaffCount,
+            'hourly_count' => $hourlyCount,
+            'permanent_count' => $permanentCount,
+        ];
+
+        // Per-Staff Summary Aggregation
+        $staffSummaries = $attendances->groupBy('user_id')->map(function ($items, $userId) {
+            $first = $items->first();
+            $staff = $first ? $first->user : null;
+            $present = $items->where('attendance_type', 'P')->count();
+            $halfDay = $items->where('attendance_type', 'H')->count();
+            $earlyLeave = $items->where('attendance_type', 'EL')->count();
+            $weekoff = $items->where('attendance_type', 'WO')->count();
+            $hours = round($items->sum(function ($att) {
+                return (float) $att->worked_hours_decimal;
+            }), 2);
+
+            return [
+                'user_id' => $userId,
+                'staff' => $staff,
+                'name' => $staff ? $staff->name : 'N/A',
+                'role_type' => $staff ? $staff->role_type : '—',
+                'phone' => $staff ? ($staff->phone ?: '—') : '—',
+                'wage_type' => $first ? ($first->employee_type === 'hourly' ? 'Hourly Wage' : 'Permanent') : '—',
+                'total_days' => $items->count(),
+                'present_days' => $present,
+                'half_days' => $halfDay,
+                'early_leaves' => $earlyLeave,
+                'weekoffs' => $weekoff,
+                'total_hours' => $hours,
+            ];
+        })->values();
+
+        return view('report.staff-attendance', compact(
+            'attendances',
+            'staffList',
+            'summary',
+            'staffSummaries',
+            'fromDate',
+            'toDate',
+            'selectedStaffId',
+            'selectedAttendanceType',
+            'selectedEmployeeType',
+            'restaurant'
+        ));
+    }
+
+    /**
+     * Export Staff Attendance Report to Excel (.xlsx)
+     */
+    public function exportStaffAttendance(Request $request)
+    {
+        $fromDate = $request->from_date 
+            ? Carbon::parse($request->from_date)->startOfDay() 
+            : Carbon::now()->startOfMonth()->startOfDay();
+            
+        $toDate = $request->to_date 
+            ? Carbon::parse($request->to_date)->endOfDay() 
+            : Carbon::now()->endOfDay();
+
+        if ($fromDate->gt($toDate)) {
+            $temp = $fromDate;
+            $fromDate = $toDate->copy()->startOfDay();
+            $toDate = $temp->copy()->endOfDay();
+        }
+
+        $outletIds = $this->getReportOutletIds($request);
+        $restaurantId = $this->getActiveRestaurantId();
+        $restaurant = RestaurantMaster::find($restaurantId);
+
+        $selectedStaffId = $request->input('staff_id', 'all');
+        $selectedAttendanceType = $request->input('attendance_type', 'all');
+        $selectedEmployeeType = $request->input('employee_type', 'all');
+
+        $query = StaffAttendance::whereIn('restaurant_id', $outletIds)
+            ->whereBetween('attendance_date', [$fromDate->format('Y-m-d'), $toDate->format('Y-m-d')])
+            ->with(['user', 'user.salary', 'creator']);
+
+        if (!empty($selectedStaffId) && $selectedStaffId !== 'all') {
+            $query->where('user_id', $selectedStaffId);
+        }
+
+        if (!empty($selectedAttendanceType) && $selectedAttendanceType !== 'all') {
+            $query->where('attendance_type', $selectedAttendanceType);
+        }
+
+        if (!empty($selectedEmployeeType) && $selectedEmployeeType !== 'all') {
+            $query->where('employee_type', $selectedEmployeeType);
+        }
+
+        $attendances = $query->orderBy('attendance_date', 'desc')
+            ->orderBy('user_id', 'asc')
+            ->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Staff Attendance');
+
+        // Banner Title
+        $sheet->setCellValue('A1', ($restaurant->name ?? 'Restaurant') . ' - Staff Attendance Report');
+        $filterDesc = [];
+        if ($selectedStaffId && $selectedStaffId !== 'all') {
+            $filteredStaff = User::find($selectedStaffId);
+            $filterDesc[] = 'Staff: ' . ($filteredStaff ? $filteredStaff->name : $selectedStaffId);
+        }
+        if ($selectedAttendanceType && $selectedAttendanceType !== 'all') {
+            $filterDesc[] = 'Status: ' . $selectedAttendanceType;
+        }
+        if ($selectedEmployeeType && $selectedEmployeeType !== 'all') {
+            $filterDesc[] = 'Type: ' . ucfirst($selectedEmployeeType);
+        }
+        $filterText = !empty($filterDesc) ? ' | Filter: ' . implode(', ', $filterDesc) : ' | All Staff & Types';
+
+        $sheet->setCellValue('A2', 'Date Range: ' . $fromDate->format('d M Y') . ' to ' . $toDate->format('d M Y') . $filterText . ' | Generated: ' . now()->format('d M Y h:i A'));
+        $sheet->mergeCells('A1:M1');
+        $sheet->mergeCells('A2:M2');
+
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF0F172A'));
+        $sheet->getStyle('A2')->getFont()->setSize(10)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF64748B'));
+
+        // Table Headers
+        $headers = [
+            'A4' => '#',
+            'B4' => 'Date',
+            'C4' => 'Day',
+            'D4' => 'Staff Name',
+            'E4' => 'Role / Designation',
+            'F4' => 'Phone',
+            'G4' => 'Wage Type',
+            'H4' => 'Attendance Status',
+            'I4' => 'In / Login Time',
+            'J4' => 'Out / Logout Time',
+            'K4' => 'Duration',
+            'L4' => 'Hours (Decimal)',
+            'M4' => 'Notes / Remarks'
+        ];
+
+        foreach ($headers as $cell => $text) {
+            $sheet->setCellValue($cell, $text);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'size' => 11],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['argb' => 'FF1E293B']
+            ],
+            'alignment' => [
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'borders' => [
+                'bottom' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['argb' => 'FFFF5E14']]
+            ]
+        ];
+        $sheet->getStyle('A4:M4')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(4)->setRowHeight(28);
+
+        $row = 5;
+        $totalHoursDecimal = 0;
+        foreach ($attendances as $idx => $att) {
+            $user = $att->user;
+            $hrs = (float) $att->worked_hours_decimal;
+            $totalHoursDecimal += $hrs;
+
+            $sheet->setCellValue('A' . $row, $idx + 1);
+            $sheet->setCellValue('B' . $row, $att->attendance_date ? Carbon::parse($att->attendance_date)->format('d M Y') : '—');
+            $sheet->setCellValue('C' . $row, $att->attendance_date ? Carbon::parse($att->attendance_date)->format('D') : '—');
+            $sheet->setCellValue('D' . $row, $user ? $user->name : 'N/A');
+            $sheet->setCellValue('E' . $row, $user ? ($user->role_type ?: 'STAFF') : '—');
+            $sheet->setCellValue('F' . $row, $user ? ($user->phone ?: '—') : '—');
+            $sheet->setCellValue('G' . $row, $att->employee_type === 'hourly' ? 'Hourly Wage' : 'Permanent');
+            $sheet->setCellValue('H' . $row, $att->type_label);
+            $sheet->setCellValue('I' . $row, $att->formatted_login_time);
+            $sheet->setCellValue('J' . $row, $att->formatted_logout_time);
+            $sheet->setCellValue('K' . $row, $att->work_duration ?: ($hrs > 0 ? "{$hrs} hrs" : '—'));
+            $sheet->setCellValue('L' . $row, round($hrs, 2));
+            $sheet->setCellValue('M' . $row, $att->notes ?: '—');
+
+            if ($row % 2 == 0) {
+                $sheet->getStyle('A' . $row . ':M' . $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF8FAFC');
+            }
+            $row++;
+        }
+
+        // Totals Row
+        $sheet->setCellValue('A' . $row, 'TOTAL');
+        $sheet->setCellValue('B' . $row, $attendances->count() . ' Records');
+        $sheet->setCellValue('L' . $row, round($totalHoursDecimal, 2) . ' hrs');
+
+        $totalStyle = [
+            'font' => ['bold' => true, 'color' => ['argb' => 'FF0F172A'], 'size' => 11],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['argb' => 'FFFFE4D6']
+            ],
+            'borders' => [
+                'top' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FFFF5E14']],
+                'bottom' => ['borderStyle' => Border::BORDER_DOUBLE, 'color' => ['argb' => 'FFFF5E14']]
+            ]
+        ];
+        $sheet->getStyle('A' . $row . ':M' . $row)->applyFromArray($totalStyle);
+
+        foreach (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'] as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $filename = "staff_attendance_report_" . $fromDate->format('Ymd') . "_" . $toDate->format('Ymd') . ".xlsx";
 
         return response()->streamDownload(function() use ($writer) {
             $writer->save('php://output');

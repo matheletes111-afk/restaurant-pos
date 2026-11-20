@@ -725,6 +725,10 @@ Route::get('admin/temp-order/reject/{id}', [App\Http\Controllers\TempOrderAdminC
     // New vs Return Customer Analysis Report
     Route::get('report-customer-analysis', [App\Http\Controllers\ReportController::class, 'customerAnalysisReport'])->name('report.customer.analysis');
     Route::get('report-customer-analysis/export', [App\Http\Controllers\ReportController::class, 'exportCustomerAnalysis'])->name('report.customer.analysis.export');
+
+    // Staff Attendance Report
+    Route::get('report-staff-attendance', [App\Http\Controllers\ReportController::class, 'staffAttendanceReport'])->name('report.staff.attendance');
+    Route::get('report-staff-attendance/export', [App\Http\Controllers\ReportController::class, 'exportStaffAttendance'])->name('report.staff.attendance.export');
     // Expense Management Routes
     Route::prefix('expense')->group(function () {
         Route::get('/', [App\Http\Controllers\ExpenseController::class, 'index'])->name('expense.index');

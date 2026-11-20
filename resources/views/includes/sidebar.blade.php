@@ -791,6 +791,13 @@
               </a>
             </li>
 
+            <li class="pc-item">
+              <a href="{{ route('report.staff.attendance') }}" class="pc-link @if(Request::is('*report-staff-attendance*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-user-clock text-warning"></i></span>
+                <span class="pc-mtext">Attendance Report</span>
+              </a>
+            </li>
+
             <!-- Live Stocks -->
             @if(@$plan_details->inventory_checkbox=="Y" || $active == "")
             <li class="pc-item">
