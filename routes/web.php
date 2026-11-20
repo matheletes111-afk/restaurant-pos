@@ -510,6 +510,24 @@ Route::prefix('staff-extras')->group(function () {
         ->name('restaurant.staff.extras.export');
 });
 
+// Staff Salary Management & Permanent Payroll
+Route::prefix('salary-management')->group(function () {
+    Route::get('/', [\App\Http\Controllers\StaffPayrollController::class, 'index'])
+        ->name('restaurant.salary.index');
+    Route::post('/save-single', [\App\Http\Controllers\StaffPayrollController::class, 'saveSingle'])
+        ->name('restaurant.salary.save-single');
+    Route::post('/save-batch', [\App\Http\Controllers\StaffPayrollController::class, 'saveBatch'])
+        ->name('restaurant.salary.save-batch');
+    Route::get('/export', [\App\Http\Controllers\StaffPayrollController::class, 'export'])
+        ->name('restaurant.salary.export');
+    Route::post('/hourly-payment', [\App\Http\Controllers\StaffPayrollController::class, 'recordHourlyPayment'])
+        ->name('restaurant.salary.record-hourly-payment');
+    Route::delete('/hourly-payment/{id}', [\App\Http\Controllers\StaffPayrollController::class, 'deleteHourlyPayment'])
+        ->name('restaurant.salary.delete-hourly-payment');
+    Route::post('/save-hourly-wage', [\App\Http\Controllers\StaffPayrollController::class, 'saveHourlyWage'])
+        ->name('restaurant.salary.save-hourly-wage');
+});
+
 // Restaurant Outlets / Branches Management
 Route::prefix('outlets')->group(function () {
     Route::get('/', [\App\Http\Controllers\RestaurantOutletController::class, 'index'])->name('restaurant.outlets.index');
@@ -817,6 +835,17 @@ Route::prefix('staff-extras')->middleware(['auth', 'menu.permission', 'secure.re
     Route::post('/update/{id}', [\App\Http\Controllers\StaffExtraController::class, 'update']);
     Route::delete('/delete/{id}', [\App\Http\Controllers\StaffExtraController::class, 'destroy']);
     Route::get('/export', [\App\Http\Controllers\StaffExtraController::class, 'export']);
+});
+
+// Root Aliases for Staff Salary Management (supports direct /salary-management/... requests)
+Route::prefix('salary-management')->middleware(['auth', 'menu.permission', 'secure.restro.data'])->group(function () {
+    Route::get('/', [\App\Http\Controllers\StaffPayrollController::class, 'index']);
+    Route::post('/save-single', [\App\Http\Controllers\StaffPayrollController::class, 'saveSingle']);
+    Route::post('/save-batch', [\App\Http\Controllers\StaffPayrollController::class, 'saveBatch']);
+    Route::get('/export', [\App\Http\Controllers\StaffPayrollController::class, 'export']);
+    Route::post('/hourly-payment', [\App\Http\Controllers\StaffPayrollController::class, 'recordHourlyPayment']);
+    Route::delete('/hourly-payment/{id}', [\App\Http\Controllers\StaffPayrollController::class, 'deleteHourlyPayment']);
+    Route::post('/save-hourly-wage', [\App\Http\Controllers\StaffPayrollController::class, 'saveHourlyWage']);
 });
 
 // Franchise Sponsorship Owner Dashboard (Root route)

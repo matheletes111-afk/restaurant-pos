@@ -86,6 +86,16 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(StaffExtra::class, 'user_id');
     }
 
+    public function payrolls()
+    {
+        return $this->hasMany(StaffPayroll::class, 'user_id');
+    }
+
+    public function salaryPayments()
+    {
+        return $this->hasMany(StaffSalaryPayment::class, 'user_id');
+    }
+
     public function hasPermission($menuKey, $action = 'view')
     {
         // Restaurant ADMIN and Super Admin have all access by default

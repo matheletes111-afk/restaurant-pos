@@ -17,6 +17,7 @@ class StaffAttendance extends Model
         'user_id',
         'attendance_date',
         'attendance_type',
+        'employee_type',
         'login_time',
         'logout_time',
         'notes',
@@ -26,6 +27,20 @@ class StaffAttendance extends Model
     protected $casts = [
         'attendance_date' => 'date:Y-m-d',
     ];
+
+    protected static function booted()
+    {
+        static::creating(function ($attendance) {
+            if (empty($attendance->employee_type) && !empty($attendance->user_id)) {
+                $salary = StaffSalary::where('user_id', $attendance->user_id)->first();
+                if ($salary && ($salary->employment_type === 'hourly' || (float)$salary->hourly_wage > 0)) {
+                    $attendance->employee_type = 'hourly';
+                } else {
+                    $attendance->employee_type = 'permanent';
+                }
+            }
+        });
+    }
 
     public function user()
     {
@@ -138,6 +153,36 @@ class StaffAttendance extends Model
             return "{$mins}m";
         } catch (\Exception $e) {
             return null;
+        }
+    }
+
+    /**
+     * Total worked hours as a decimal number (e.g. 7.50).
+     */
+    public function getWorkedHoursDecimalAttribute(): float
+    {
+        if (empty($this->login_time) || empty($this->logout_time)) {
+            if ($this->attendance_type === 'P') {
+                return 8.00;
+            } elseif ($this->attendance_type === 'H') {
+                return 4.00;
+            }
+            return 0.00;
+        }
+
+        try {
+            $dateStr = $this->attendance_date ? Carbon::parse($this->attendance_date)->format('Y-m-d') : date('Y-m-d');
+            $start = Carbon::parse($dateStr . ' ' . $this->login_time);
+            $end = Carbon::parse($dateStr . ' ' . $this->logout_time);
+
+            if ($end->lt($start)) {
+                $end->addDay(); // Shift crossed midnight
+            }
+
+            $diffMinutes = $start->diffInMinutes($end);
+            return round($diffMinutes / 60, 2);
+        } catch (\Exception $e) {
+            return 0.00;
         }
     }
 }

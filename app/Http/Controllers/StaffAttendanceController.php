@@ -136,7 +136,7 @@ class StaffAttendanceController extends Controller
         $staffList = User::whereIn('restaurant_id', $outletIds)
             ->where('role_type', '!=', 'ADMIN')
             ->where('status', '!=', 'D')
-            ->with('restaurant')
+            ->with(['restaurant', 'salary'])
             ->orderBy('name', 'asc')
             ->get();
 
@@ -186,6 +186,7 @@ class StaffAttendanceController extends Controller
             'date' => 'required|date',
             'user_id' => 'required|exists:users,id',
             'attendance_type' => 'required|in:P,H,EL,WO',
+            'employee_type' => 'nullable|in:hourly,permanent',
             'login_time' => 'required_unless:attendance_type,WO|nullable|string',
             'logout_time' => 'nullable|string',
             'notes' => 'nullable|string|max:500',
@@ -243,11 +244,19 @@ class StaffAttendanceController extends Controller
 
         $restaurantId = $staff->restaurant_id ?: ($context['selectedOutletId'] !== 'all' ? $context['selectedOutletId'] : 1);
 
+        $employeeType = $request->input('employee_type');
+        if (empty($employeeType)) {
+            $employeeType = ($staff->salary && ($staff->salary->employment_type === 'hourly' || (float)$staff->salary->hourly_wage > 0))
+                ? 'hourly'
+                : 'permanent';
+        }
+
         StaffAttendance::create([
             'restaurant_id' => $restaurantId,
             'user_id' => $staff->id,
             'attendance_date' => $request->date,
             'attendance_type' => $request->attendance_type,
+            'employee_type' => $employeeType,
             'login_time' => $request->filled('login_time') ? $request->login_time : null,
             'logout_time' => $request->filled('logout_time') ? $request->logout_time : null,
             'notes' => $request->notes,
@@ -286,6 +295,7 @@ class StaffAttendanceController extends Controller
             'logout_time' => 'nullable|string',
             'notes' => 'nullable|string|max:500',
             'attendance_type' => 'nullable|in:P,H,EL,WO',
+            'employee_type' => 'nullable|in:hourly,permanent',
         ]);
 
         $context = $this->resolveOutletContext($request);
@@ -345,6 +355,9 @@ class StaffAttendanceController extends Controller
 
         $attendance->login_time = $request->filled('login_time') ? $request->login_time : null;
         $attendance->logout_time = $request->filled('logout_time') ? $request->logout_time : null;
+        if ($request->filled('employee_type')) {
+            $attendance->employee_type = $request->employee_type;
+        }
         if ($request->has('notes')) {
             $attendance->notes = $request->notes;
         }

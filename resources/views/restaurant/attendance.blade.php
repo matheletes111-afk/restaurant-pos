@@ -276,7 +276,7 @@
 
                 <div class="row g-3">
                     {{-- 1. Select Staff Member --}}
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label fw-bold text-dark small mb-1">
                             Select Staff Member <span class="text-danger">*</span>
                         </label>
@@ -285,8 +285,10 @@
                             @forelse($staffList as $staff)
                                 @php
                                     $alreadyMarked = in_array($staff->id, $markedUserIds);
+                                    $isHourly = ($staff->salary && ($staff->salary->employment_type === 'hourly' || (float)$staff->salary->hourly_wage > 0));
                                 @endphp
                                 <option value="{{ $staff->id }}" 
+                                        data-employee-type="{{ $isHourly ? 'hourly' : 'permanent' }}"
                                         {{ $alreadyMarked ? 'disabled' : '' }} 
                                         {{ old('user_id') == $staff->id ? 'selected' : '' }}>
                                     {{ $staff->name }} ({{ $staff->role_type }}){{ (isset($availableOutlets) && $availableOutlets->count() > 1 && $staff->restaurant) ? ' — [' . $staff->restaurant->name . ']' : '' }}{{ $alreadyMarked ? ' — [Already Marked Today]' : '' }}
@@ -300,12 +302,24 @@
                                 <i class="fas fa-exclamation-circle me-1"></i> No staff found for this restaurant. <a href="{{ route('restaurant.staff.index', array_filter(['restaurant_id' => request('restaurant_id', $selectedOutletId ?? null)])) }}" class="fw-bold text-decoration-underline">Manage / Add Staff here</a>.
                             </div>
                         @else
-                            <small class="text-muted" style="font-size: 0.76rem;">Staff already marked for this date are disabled.</small>
+                            <small class="text-muted" style="font-size: 0.76rem;">Staff marked today are disabled.</small>
                         @endif
                     </div>
 
-                    {{-- 2. Login Time --}}
-                    <div class="col-md-4">
+                    {{-- 2. Employee Wage Type --}}
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold text-dark small mb-1">
+                            Employee Wage Type <span class="text-danger">*</span>
+                        </label>
+                        <select name="employee_type" id="employee_type" class="form-select fw-semibold" required>
+                            <option value="permanent" {{ old('employee_type', 'permanent') === 'permanent' ? 'selected' : '' }}>Permanent (Monthly)</option>
+                            <option value="hourly" {{ old('employee_type') === 'hourly' ? 'selected' : '' }}>Hourly Wage (Duty)</option>
+                        </select>
+                        <small class="text-muted" style="font-size: 0.76rem;">Determines wage calculation.</small>
+                    </div>
+
+                    {{-- 3. Login Time --}}
+                    <div class="col-md-3">
                         <label class="form-label fw-bold text-dark small mb-1">
                             Login Time <span class="text-danger">*</span>
                         </label>
@@ -313,16 +327,16 @@
                         <small class="text-muted" style="font-size: 0.76rem;">Start time of staff shift.</small>
                     </div>
 
-                    {{-- 3. Logout Time (Optional) --}}
-                    <div class="col-md-4">
+                    {{-- 4. Logout Time (Optional) --}}
+                    <div class="col-md-3">
                         <label class="form-label fw-bold text-dark small mb-1">
                             Logout Time <span class="text-muted fw-normal">(Optional)</span>
                         </label>
                         <input type="time" name="logout_time" id="logout_time" class="form-control" value="{{ old('logout_time') }}">
-                        <small class="text-muted" style="font-size: 0.76rem;">Optional. Can be updated later at shift end.</small>
+                        <small class="text-muted" style="font-size: 0.76rem;">Optional. Set at shift end.</small>
                     </div>
 
-                    {{-- 4. Attendance Type Radio Selection --}}
+                    {{-- 5. Attendance Type Radio Selection --}}
                     <div class="col-12">
                         <label class="form-label fw-bold text-dark small mb-2">
                             Attendance Classification <span class="text-danger">*</span>
@@ -429,13 +443,14 @@
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 45px;" class="text-center">#</th>
-                                <th style="min-width: 200px;">Staff Member</th>
+                                <th style="min-width: 190px;">Staff Member</th>
+                                <th style="min-width: 130px;">Wage Type</th>
                                 <th style="min-width: 150px;">Classification</th>
-                                <th style="min-width: 120px;">Login Time</th>
-                                <th style="min-width: 140px;">Logout Time</th>
-                                <th style="min-width: 110px;">Duration</th>
-                                <th style="min-width: 180px;">Notes</th>
-                                <th style="width: 130px;" class="text-end">Actions</th>
+                                <th style="min-width: 110px;">Login Time</th>
+                                <th style="min-width: 130px;">Logout Time</th>
+                                <th style="min-width: 100px;">Duration</th>
+                                <th style="min-width: 160px;">Notes</th>
+                                <th style="width: 120px;" class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -470,6 +485,17 @@
                                                 </div>
                                             </div>
                                         </div>
+                                    </td>
+                                    <td>
+                                        @if($att->employee_type === 'hourly')
+                                            <span class="badge px-2 py-1 fw-bold" style="background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; font-size: 0.74rem;">
+                                                <i class="fas fa-stopwatch me-1"></i> Hourly Wage
+                                            </span>
+                                        @else
+                                            <span class="badge px-2 py-1 fw-bold" style="background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; font-size: 0.74rem;">
+                                                <i class="fas fa-calendar-alt me-1"></i> Permanent
+                                            </span>
+                                        @endif
                                     </td>
                                     <td>
                                         @if($att->attendance_type === 'P')
@@ -531,6 +557,7 @@
                                                     data-id="{{ $att->id }}"
                                                     data-staff="{{ $staff ? $staff->name : '' }}"
                                                     data-type="{{ $att->attendance_type }}"
+                                                    data-employee-type="{{ $att->employee_type ?: 'permanent' }}"
                                                     data-login="{{ $att->login_time }}"
                                                     data-logout="{{ $att->logout_time }}"
                                                     data-notes="{{ $att->notes }}">
@@ -573,6 +600,14 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Employee Wage Type</label>
+                        <select name="employee_type" id="modalEmployeeType" class="form-select fw-semibold">
+                            <option value="permanent">Permanent (Monthly)</option>
+                            <option value="hourly">Hourly Wage (Duty)</option>
+                        </select>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label fw-bold small">Attendance Classification</label>
                         <select name="attendance_type" id="modalAttendanceType" class="form-select">
@@ -628,6 +663,25 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Auto-detect employee wage type when staff member is selected
+        const userSelect = document.getElementById('user_id');
+        const empTypeSelect = document.getElementById('employee_type');
+        if (userSelect && empTypeSelect) {
+            userSelect.addEventListener('change', function() {
+                const opt = this.options[this.selectedIndex];
+                if (opt && opt.dataset.employeeType) {
+                    empTypeSelect.value = opt.dataset.employeeType;
+                }
+            });
+            // If already preselected on load
+            if (userSelect.selectedIndex > 0) {
+                const opt = userSelect.options[userSelect.selectedIndex];
+                if (opt && opt.dataset.employeeType && !empTypeSelect.value) {
+                    empTypeSelect.value = opt.dataset.employeeType;
+                }
+            }
+        }
+
         // Initial sync of login_time required attribute
         const checkedType = document.querySelector('input[name="attendance_type"]:checked');
         if (checkedType) {
@@ -656,12 +710,16 @@
                 const id = this.dataset.id;
                 const staffName = this.dataset.staff;
                 const type = this.dataset.type;
+                const empType = this.dataset.employeeType || 'permanent';
                 const login = this.dataset.login;
                 const logout = this.dataset.logout;
                 const notes = this.dataset.notes;
 
                 document.getElementById('modalStaffName').textContent = staffName;
                 document.getElementById('modalAttendanceType').value = type;
+                if (document.getElementById('modalEmployeeType')) {
+                    document.getElementById('modalEmployeeType').value = empType;
+                }
                 document.getElementById('modalLoginTime').value = login || '';
                 document.getElementById('modalLogoutTime').value = logout || '';
                 document.getElementById('modalNotes').value = notes || '';

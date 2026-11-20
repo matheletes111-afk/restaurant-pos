@@ -36,6 +36,10 @@ class SecureRestaurantData
 
         // Map URL path segments to their database tables
         $modelMapping = [
+            'salary-management/hourly-payment' => ['table' => 'staff_salary_payments', 'column' => 'id', 'restro_col' => 'restaurant_id'],
+            'staff-extras' => ['table' => 'staff_extras', 'column' => 'id', 'restro_col' => 'restaurant_id'],
+            'leave-management' => ['table' => 'staff_leaves', 'column' => 'id', 'restro_col' => 'restaurant_id'],
+            'salary-management' => ['table' => 'staff_payrolls', 'column' => 'id', 'restro_col' => 'restaurant_id'],
             'attendance' => ['table' => 'staff_attendances', 'column' => 'id', 'restro_col' => 'restaurant_id'],
             'pending-temp-orders/delete-item' => ['table' => 'temp_order_items', 'column' => 'id', 'restro_col' => 'restaurant_id'],
             'pending-temp-orders' => ['table' => 'temp_orders', 'column' => 'id', 'restro_col' => 'restaurant_id'],
@@ -67,6 +71,7 @@ class SecureRestaurantData
 
         // Map specific parameter keys directly to database tables
         $parameterNameMapping = [
+            'payment_id' => ['table' => 'staff_salary_payments', 'column' => 'id', 'restro_col' => 'restaurant_id'],
             'attendance_id' => ['table' => 'staff_attendances', 'column' => 'id', 'restro_col' => 'restaurant_id'],
             'document_id' => ['table' => 'staff_documents', 'column' => 'id', 'restro_col' => 'restaurant_id'],
             'order_id' => ['table' => 'orders', 'column' => 'id', 'restro_col' => 'restaurant_id'],

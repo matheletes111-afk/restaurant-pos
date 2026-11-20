@@ -569,6 +569,12 @@
             <span class="pc-mtext">Extras</span>
           </a>
         </li>
+        <li class="pc-item {{ $disabledClass }}">
+          <a href="{{route('restaurant.salary.index')}}" class="pc-link @if(Request::is('*salary-management*') || Request::is('*payroll*')) active_class @endif">
+            <span class="pc-micon"><i class="fas fa-money-check-alt"></i></span>
+            <span class="pc-mtext">Salary Management</span>
+          </a>
+        </li>
         @endif
 
         @if(auth()->user()->hasPermission('cash_drawer'))
