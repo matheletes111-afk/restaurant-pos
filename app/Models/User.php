@@ -142,6 +142,25 @@ class User extends Authenticatable implements JWTSubject
         return ($this->role === 'RES' && $this->role_type === 'ADMIN');
     }
 
+    public function isStaff(): bool
+    {
+        return ($this->role === 'RES' && $this->role_type !== 'ADMIN');
+    }
+
+    public function hasAnyPermission(): bool
+    {
+        if ($this->role !== 'RES' || $this->role_type === 'ADMIN') {
+            return true;
+        }
+
+        $perms = $this->permissions;
+        if (!is_array($perms) || empty($perms)) {
+            return false;
+        }
+
+        return count($perms) > 0;
+    }
+
     public function getSubscriptionRestaurantId(): ?int
     {
         if (empty($this->restaurant_id)) {

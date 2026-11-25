@@ -213,6 +213,17 @@ class RapidBillController extends Controller
 
             $isAddonItem = !empty($item['is_addon']) || str_starts_with(strval($dishId ?? ''), 'addon_') || !is_numeric($dishId);
 
+            $isRawDish = !empty($item['is_raw_dish']);
+            $weightInKg = isset($item['weight_in_kg']) ? floatval($item['weight_in_kg']) : null;
+            $weightGram = isset($item['weight_gram']) ? intval($item['weight_gram']) : null;
+            $perKgPrice = isset($item['per_kg_price']) ? floatval($item['per_kg_price']) : null;
+            if ($dishObj && $dishObj->is_raw_dish) {
+                $isRawDish = true;
+                if ($perKgPrice === null || $perKgPrice <= 0) {
+                    $perKgPrice = floatval($dishObj->price ?? 0);
+                }
+            }
+
             if ($isAddonItem && empty($cleanAddons)) {
                 $cleanAddons[] = [
                     'id' => is_numeric($dishId) ? $dishId : null,
@@ -286,6 +297,10 @@ class RapidBillController extends Controller
                 'igst_amount' => 0,
                 'total_amount' => $taxableAmount,
                 'is_addon_item' => $isAddonItem,
+                'is_raw_dish' => $isRawDish,
+                'weight_in_kg' => $weightInKg,
+                'weight_gram' => $weightGram,
+                'per_kg_price' => $perKgPrice,
             ];
 
             $originalSubtotal += $lineOriginal;
@@ -439,6 +454,10 @@ class RapidBillController extends Controller
                 $orderItem->sgst_amount = $cItem['sgst_amount'];
                 $orderItem->igst_amount = $cItem['igst_amount'];
                 $orderItem->total_amount = $cItem['total_amount'];
+                $orderItem->is_raw_dish = !empty($cItem['is_raw_dish']);
+                $orderItem->weight_in_kg = $cItem['weight_in_kg'] ?? null;
+                $orderItem->weight_gram = $cItem['weight_gram'] ?? null;
+                $orderItem->per_kg_price = $cItem['per_kg_price'] ?? null;
 
                 $isBar = !empty($cItem['bar_variation_id']) || ($cItem['vat_rate'] ?? 0) > 0;
                 if (!$isBar && $isNumericSubcat) {

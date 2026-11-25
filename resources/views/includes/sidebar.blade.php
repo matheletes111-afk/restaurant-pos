@@ -490,7 +490,7 @@
         @endif
 
         {{-- Customer List --}}
-        @if(auth()->user()->role == 'RES' || auth()->user()->hasPermission('order_master') || auth()->user()->hasPermission('customer_list'))
+        @if(auth()->user()->isOwner() || auth()->user()->hasPermission('order_master') || auth()->user()->hasPermission('customer_list'))
         <li class="pc-item {{ $disabledClass }}">
           <a href="{{ route('restaurant.customers.index') }}" class="pc-link @if(Request::is('*customer-list*') || Request::is('*customers*')) active_class @endif">
             <span class="pc-micon"><i class="fas fa-users"></i></span>
@@ -551,31 +551,98 @@
             <span class="pc-mtext">Staff</span>
           </a>
         </li>
-        <li class="pc-item {{ $disabledClass }}">
-          <a href="{{route('restaurant.attendance.index')}}" class="pc-link @if(Request::is('*attendance*')) active_class @endif">
-            <span class="pc-micon"><i class="fas fa-user-clock"></i></span>
-            <span class="pc-mtext">Attendance</span>
+
+        {{-- Admin HRM Dropdown Menu --}}
+        @php
+          $isHrmActive = (Request::is('*attendance*') && !Request::is('*report*') && !Request::is('*user-hrm*')) 
+                      || Request::is('*leave-management*') 
+                      || Request::is('*staff-extras*') 
+                      || Request::is('*extras*') 
+                      || Request::is('*salary-management*') 
+                      || Request::is('*payroll*');
+        @endphp
+        <li class="pc-item pc-hasmenu {{ $isHrmActive ? 'pc-trigger active' : '' }} {{ $disabledClass }}">
+          <a href="#!" class="pc-link {{ $isHrmActive ? 'active-parent' : '' }}">
+            <span class="pc-micon">
+              <i class="fas fa-user-tie"></i>
+            </span>
+            <span class="pc-mtext">Admin HRM</span>
+            <span class="pc-arrow">
+              <i data-feather="chevron-right"></i>
+            </span>
           </a>
-        </li>
-        <li class="pc-item {{ $disabledClass }}">
-          <a href="{{route('restaurant.leaves.index')}}" class="pc-link @if(Request::is('*leave-management*')) active_class @endif">
-            <span class="pc-micon"><i class="fas fa-calendar-minus"></i></span>
-            <span class="pc-mtext">Leave Management</span>
-          </a>
-        </li>
-        <li class="pc-item {{ $disabledClass }}">
-          <a href="{{route('restaurant.staff.extras.index')}}" class="pc-link @if(Request::is('*staff-extras*') || Request::is('*extras*')) active_class @endif">
-            <span class="pc-micon"><i class="fas fa-coins"></i></span>
-            <span class="pc-mtext">Extras</span>
-          </a>
-        </li>
-        <li class="pc-item {{ $disabledClass }}">
-          <a href="{{route('restaurant.salary.index')}}" class="pc-link @if(Request::is('*salary-management*') || Request::is('*payroll*')) active_class @endif">
-            <span class="pc-micon"><i class="fas fa-money-check-alt"></i></span>
-            <span class="pc-mtext">Salary Management</span>
-          </a>
+
+          <ul class="pc-submenu" style="{{ $isHrmActive ? 'display: block;' : '' }}">
+            <li class="pc-item">
+              <a href="{{route('restaurant.attendance.index')}}" class="pc-link @if(Request::is('*attendance*') && !Request::is('*report*') && !Request::is('*user-hrm*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-user-clock"></i></span>
+                <span class="pc-mtext">Attendance</span>
+              </a>
+            </li>
+            <li class="pc-item">
+              <a href="{{route('restaurant.leaves.index')}}" class="pc-link @if(Request::is('*leave-management*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-calendar-minus"></i></span>
+                <span class="pc-mtext">Leave Management</span>
+              </a>
+            </li>
+            <li class="pc-item">
+              <a href="{{route('restaurant.staff.extras.index')}}" class="pc-link @if(Request::is('*staff-extras*') || Request::is('*extras*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-coins"></i></span>
+                <span class="pc-mtext">Extras</span>
+              </a>
+            </li>
+            <li class="pc-item">
+              <a href="{{route('restaurant.salary.index')}}" class="pc-link @if(Request::is('*salary-management*') || Request::is('*payroll*')) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-money-check-alt"></i></span>
+                <span class="pc-mtext">Salary Management</span>
+              </a>
+            </li>
+          </ul>
         </li>
         @endif
+
+        {{-- User HRM (Staff Self-Service Portal) --}}
+        @php
+          $isUserHrmActive = Request::is('*user-hrm*');
+        @endphp
+        <li class="pc-item pc-hasmenu {{ $isUserHrmActive ? 'pc-trigger active' : '' }} {{ $disabledClass }}">
+          <a href="#!" class="pc-link {{ $isUserHrmActive ? 'active-parent' : '' }}">
+            <span class="pc-micon">
+              <i class="fas fa-id-card-alt"></i>
+            </span>
+            <span class="pc-mtext">User HRM</span>
+            <span class="pc-arrow">
+              <i data-feather="chevron-right"></i>
+            </span>
+          </a>
+
+          <ul class="pc-submenu" style="{{ $isUserHrmActive ? 'display: block;' : '' }}">
+            <li class="pc-item">
+              <a href="{{ route('user.hrm.index', ['tab' => 'attendance']) }}" class="pc-link @if(Request::is('*user-hrm*') && (request('tab') == 'attendance' || !request('tab'))) active_class @endif">
+                <span class="pc-micon"><i class="fas fa-user-clock"></i></span>
+                <span class="pc-mtext">My Attendance</span>
+              </a>
+            </li>
+            <li class="pc-item">
+              <a href="{{ route('user.hrm.index', ['tab' => 'leaves']) }}" class="pc-link @if(Request::is('*user-hrm*') && request('tab') == 'leaves') active_class @endif">
+                <span class="pc-micon"><i class="fas fa-calendar-minus"></i></span>
+                <span class="pc-mtext">My Leaves</span>
+              </a>
+            </li>
+            <li class="pc-item">
+              <a href="{{ route('user.hrm.index', ['tab' => 'extras']) }}" class="pc-link @if(Request::is('*user-hrm*') && request('tab') == 'extras') active_class @endif">
+                <span class="pc-micon"><i class="fas fa-coins"></i></span>
+                <span class="pc-mtext">My Extras</span>
+              </a>
+            </li>
+            <li class="pc-item">
+              <a href="{{ route('user.hrm.index', ['tab' => 'salary']) }}" class="pc-link @if(Request::is('*user-hrm*') && request('tab') == 'salary') active_class @endif">
+                <span class="pc-micon"><i class="fas fa-file-invoice-dollar"></i></span>
+                <span class="pc-mtext">My Salary &amp; Slips</span>
+              </a>
+            </li>
+          </ul>
+        </li>
 
         @if(auth()->user()->hasPermission('cash_drawer'))
         <li class="pc-item {{ $disabledClass }}">
@@ -604,7 +671,7 @@
         </li>
         @endif
 
-        @if(auth()->user()->role == 'RES')
+        @if(auth()->user()->isOwner() || auth()->user()->role_type === 'ADMIN' || auth()->user()->hasPermission('restaurant_profile'))
         <li class="pc-item {{ $disabledClass }}">
           <a href="{{ route('restaurant.profile.index') }}" class="pc-link @if(Request::is('*restaurant/profile*')) active_class @endif">
             <span class="pc-micon"><i class="fas fa-id-card"></i></span>
@@ -933,7 +1000,7 @@
           <div class="d-flex align-items-center justify-content-between">
             <div class="flex-grow-1 me-2 text-truncate">
               <h6 class="mb-0 text-truncate fw-bold">@if(auth()->user()->role=="RES"){{ optional(auth()->user()->restaurant)->name ?? auth()->user()->name }}@else{{ auth()->user()->name }}@endif</h6>
-              <small class="text-muted" style="font-size: 0.75rem;">{{ auth()->user()->role == 'RES' ? 'Restaurant Admin' : (auth()->user()->role == 'FSO' ? 'Franchise Owner' : 'Super Admin') }}</small>
+              <small class="text-muted" style="font-size: 0.75rem;">{{ auth()->user()->role == 'RES' ? (auth()->user()->isOwner() ? 'Restaurant Admin' : (auth()->user()->role_type ?: 'Staff')) : (auth()->user()->role == 'FSO' ? 'Franchise Owner' : 'Super Admin') }}</small>
             </div>
             <a href="{{ route('logout') }}" class="pc-head-link bg-transparent p-1" title="Logout">
               <i class="ti ti-power text-danger fs-5"></i>
@@ -941,10 +1008,15 @@
           </div>
         </div>
         <div class="dropdown-divider my-1"></div>
-        @if(auth()->user()->role=="RES")
+        @if(auth()->user()->isOwner() || auth()->user()->role_type === 'ADMIN')
         <a href="{{ route('restaurant.profile.index') }}" class="dropdown-item d-flex align-items-center py-2 px-3 rounded mb-1" style="color: #ff6a00; font-weight: 600;">
           <i class="fas fa-user-circle me-2 fs-5"></i>
-          <span>View Profile</span>
+          <span>Restaurant Profile</span>
+        </a>
+        @else
+        <a href="{{ route('user.hrm.index') }}" class="dropdown-item d-flex align-items-center py-2 px-3 rounded mb-1" style="color: #ff6a00; font-weight: 600;">
+          <i class="fas fa-id-card-alt me-2 fs-5"></i>
+          <span>My User HRM</span>
         </a>
         @endif
         <a href="{{ route('logout') }}" class="dropdown-item d-flex align-items-center py-2 px-3 rounded text-danger" style="font-weight: 600;">

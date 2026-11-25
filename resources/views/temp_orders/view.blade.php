@@ -201,6 +201,11 @@
                   <td>
                     <div>
                       <strong style="color: #0f172a; font-size: 0.92rem;">{{ $i->menuItem->name ?? 'Dish Item' }}</strong>
+                      @if($i->is_raw_dish || !empty($i->formatted_weight))
+                        <span class="badge bg-light text-primary border border-primary-subtle ms-1" style="font-size: 0.72rem; font-weight: 600;">
+                          <i class="fa-solid fa-weight-scale me-1"></i>{{ $i->formatted_weight }}
+                        </span>
+                      @endif
                       @if(!empty($i->bar_variation_name) || !empty($i->bar_variation_ml))
                         <span class="badge" style="background: linear-gradient(135deg, #1e293b, #334155); color: #f8fafc; font-size: 0.72rem; padding: 2px 7px; border-radius: 6px; font-weight: 600; letter-spacing: 0.3px; border: 1px solid rgba(255,255,255,0.15); display: inline-flex; align-items: center; gap: 4px;">
                           <i class="fa-solid fa-wine-glass-empty text-warning"></i> {{ $i->bar_variation_name ?: ($i->bar_variation_ml . ' ml') }}

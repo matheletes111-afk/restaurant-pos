@@ -527,6 +527,11 @@
                                     @endif
                                     <div>
                                         <strong class="text-dark">{{ $item->subcategory->name ?? 'Dish Item' }}</strong>
+                                        @if($item->is_raw_dish || !empty($item->formatted_weight))
+                                            <span class="badge bg-light text-primary border border-primary-subtle ms-1" style="font-size: 0.72rem; font-weight: 600;">
+                                                <i class="fa-solid fa-weight-scale me-1"></i>{{ $item->formatted_weight }}
+                                            </span>
+                                        @endif
                                         @if($item->item_discount_percentage > 0)
                                             <span class="badge bg-success-subtle text-success ms-1 small">{{ $item->item_discount_percentage }}% off</span>
                                         @endif

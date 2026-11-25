@@ -749,6 +749,11 @@
                                                 <span class="badge bg-warning-subtle text-dark border border-warning me-1 px-1.5 py-0.5" style="font-size: 0.65rem;"><i class="fa-solid fa-wine-bottle text-warning"></i> BAR</span>
                                             @endif
                                             {{ $item->subcategory->name ?? 'Custom Item' }}
+                                            @if($item->is_raw_dish || !empty($item->formatted_weight))
+                                                <span class="badge bg-light text-primary border border-primary-subtle ms-1" style="font-size: 0.72rem; font-weight: 600;">
+                                                    <i class="fa-solid fa-weight-scale me-1"></i>{{ $item->formatted_weight }}
+                                                </span>
+                                            @endif
                                             @if(!empty($item->bar_variation_name))
                                                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1" style="font-size: 0.72rem;">{{ $item->bar_variation_name }}</span>
                                             @elseif(!empty($item->bar_variation_ml))

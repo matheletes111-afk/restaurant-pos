@@ -5,7 +5,16 @@
     @include('includes.style')
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <style>
+        #restaurantProfileMap {
+            height: 320px;
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            margin-bottom: 15px;
+            z-index: 1;
+        }
         .profile-header {
             background: linear-gradient(135deg, #1A2C3E 0%, #2C3E50 100%);
             border-radius: 20px;
@@ -259,6 +268,121 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Thermal Print Setup (80mm vs 58mm) -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group mb-4 p-3 rounded" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                                    <label class="d-flex align-items-center gap-2 fw-bold text-dark mb-1" style="font-size: 0.95rem;">
+                                        <i class="fas fa-print text-primary"></i> Thermal Print Setup (Receipts &amp; KOT Slips)
+                                    </label>
+                                    <small class="text-muted d-block mb-3" style="font-size: 0.8rem;">
+                                        Select the thermal paper roll width used by your counter POS and kitchen/bar receipt printers. Receipts and KOT slips will automatically format for the selected width.
+                                    </small>
+
+                                    @php
+                                        $currentPrintSize = old('thermal_print_size', $restaurant->thermal_print_size ?? '80mm');
+                                    @endphp
+                                    <div class="row g-3">
+                                        <div class="col-sm-6">
+                                            <label class="thermal-card-option border rounded p-3 d-flex align-items-start gap-3 w-100 mb-0" 
+                                                   style="cursor: pointer; transition: all 0.2s ease; background: {{ $currentPrintSize === '80mm' ? '#eef2ff' : '#ffffff' }}; border-color: {{ $currentPrintSize === '80mm' ? '#4f46e5' : '#cbd5e1' }} !important;">
+                                                <input type="radio" name="thermal_print_size" value="80mm" class="mt-1" {{ $currentPrintSize === '80mm' ? 'checked' : '' }} onchange="highlightPrintOption(this)">
+                                                <div>
+                                                    <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                                                        <span>80mm Thermal (Standard)</span>
+                                                        <span class="badge badge-primary bg-primary text-white" style="font-size: 0.65rem;">Default</span>
+                                                    </div>
+                                                    <small class="text-muted d-block mt-1" style="font-size: 0.78rem;">
+                                                        Standard 3-inch roll width (~74mm printable area). Best for desktop POS receipt printers (Epson, TVS, Star Micronics, Posiflex).
+                                                    </small>
+                                                </div>
+                                            </label>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="thermal-card-option border rounded p-3 d-flex align-items-start gap-3 w-100 mb-0" 
+                                                   style="cursor: pointer; transition: all 0.2s ease; background: {{ $currentPrintSize === '58mm' ? '#eef2ff' : '#ffffff' }}; border-color: {{ $currentPrintSize === '58mm' ? '#4f46e5' : '#cbd5e1' }} !important;">
+                                                <input type="radio" name="thermal_print_size" value="58mm" class="mt-1" {{ $currentPrintSize === '58mm' ? 'checked' : '' }} onchange="highlightPrintOption(this)">
+                                                <div>
+                                                    <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                                                        <span>58mm Thermal (Compact / Mini)</span>
+                                                        <span class="badge badge-secondary bg-secondary text-white" style="font-size: 0.65rem;">Narrow Roll</span>
+                                                    </div>
+                                                    <small class="text-muted d-block mt-1" style="font-size: 0.78rem;">
+                                                        Compact 2-inch roll width (~48mm printable area). Formatted for portable, Bluetooth, or handheld mini thermal receipt printers.
+                                                    </small>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Restaurant Physical Location & Geofence (GPS Setup) -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group mb-4 p-3 rounded" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                        <div>
+                                            <label class="d-flex align-items-center gap-2 fw-bold text-dark mb-0" style="font-size: 0.95rem;">
+                                                <i class="fas fa-map-marked-alt text-primary"></i> Restaurant Physical Location &amp; Geofence
+                                            </label>
+                                            <small class="text-muted d-block mt-1" style="font-size: 0.8rem;">
+                                                Pinpoint the exact GPS coordinates of your restaurant. Drag the marker or click on the map to set location. Used for staff biometric attendance verification and delivery dispatch.
+                                            </small>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span id="profileLocationStatusPill" class="badge {{ ($restaurant->latitude && $restaurant->longitude) ? 'badge-success bg-success' : 'badge-warning bg-warning' }} text-white px-2 py-1" style="font-size: 0.75rem;">
+                                                <i class="fas {{ ($restaurant->latitude && $restaurant->longitude) ? 'fa-check-circle' : 'fa-exclamation-triangle' }} me-1"></i>
+                                                {{ ($restaurant->latitude && $restaurant->longitude) ? 'Location Configured' : 'Coordinates Not Set' }}
+                                            </span>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="btnDetectProfileLocation">
+                                                <i class="fas fa-crosshairs me-1"></i> Detect Current GPS
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {{-- Interactive Map --}}
+                                    <div id="restaurantProfileMap"></div>
+
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <div class="form-group mb-2">
+                                                <label class="small fw-bold text-muted mb-1">Latitude</label>
+                                                <input type="number" step="any" name="latitude" id="profile_lat" class="form-control form-control-sm font-monospace" value="{{ old('latitude', $restaurant->latitude) }}" placeholder="e.g. 22.572646">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group mb-2">
+                                                <label class="small fw-bold text-muted mb-1">Longitude</label>
+                                                <input type="number" step="any" name="longitude" id="profile_lng" class="form-control form-control-sm font-monospace" value="{{ old('longitude', $restaurant->longitude) }}" placeholder="e.g. 88.363895">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group mb-2">
+                                                <label class="small fw-bold text-muted mb-1">Allowed Radius (Meters)</label>
+                                                <input type="number" name="geofence_radius_meters" id="profile_geo_radius" class="form-control form-control-sm font-monospace" value="{{ old('geofence_radius_meters', $restaurant->geofence_radius_meters ?? 50) }}" min="10" max="1000">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2 pt-2 border-top">
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" name="geofence_enabled" id="profile_geo_enabled" value="1" {{ old('geofence_enabled', $restaurant->geofence_enabled ?? true) ? 'checked' : '' }}>
+                                            <label class="form-check-label small fw-bold text-dark ms-1" for="profile_geo_enabled">
+                                                Enforce GPS Attendance Geofencing for Staff
+                                            </label>
+                                        </div>
+                                        <div>
+                                            <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none" id="btnClearProfileLocation">
+                                                <i class="fas fa-trash-alt me-1"></i> Clear Coordinates
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         
                         <div class="text-right">
                             <button type="submit" class="btn btn-primary">
@@ -291,12 +415,57 @@
                             <strong><i class="fas fa-percent me-1"></i> GST Percentage:</strong><br>
                             <span class="text-primary">{{ $restaurant->gst_percentage ?? 0 }}%</span>
                         </div>
-                        <div class="mt-3 pt-2 border-top">
+                        <div class="mb-3 pt-2 border-top">
+                            <strong><i class="fas fa-print me-1"></i> Thermal Receipt Setup:</strong><br>
+                            <span class="badge {{ ($restaurant->thermal_print_size ?? '80mm') === '58mm' ? 'badge-secondary bg-secondary' : 'badge-primary bg-primary' }} text-white mt-1" style="font-size: 0.75rem;">
+                                {{ ($restaurant->thermal_print_size ?? '80mm') === '58mm' ? '58mm (2-inch Compact Roll)' : '80mm (3-inch Standard Roll)' }}
+                            </span>
+                        </div>
+                        <div class="mt-2 pt-2 border-top">
                             <small class="text-muted">
                                 <i class="fas fa-info-circle me-1"></i> 
-                                GST will be applied on all bills based on this percentage.
+                                GST and thermal print settings apply automatically to receipts and KOTs.
                             </small>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- Location & Geofence Preview Card -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-map-marked-alt me-2"></i> GPS &amp; Geofence
+                    </div>
+                    
+                    <div class="gst-preview">
+                        <div class="mb-3">
+                            <strong><i class="fas fa-map-pin me-1 text-danger"></i> Coordinates:</strong><br>
+                            @if($restaurant->latitude && $restaurant->longitude)
+                                <span class="text-dark font-monospace small">{{ number_format($restaurant->latitude, 6) }}, {{ number_format($restaurant->longitude, 6) }}</span>
+                                <span class="badge badge-success bg-success text-white ml-2">Active</span>
+                            @else
+                                <span class="text-muted small">Coordinates not set yet</span>
+                                <span class="badge badge-warning bg-warning text-white ml-2">Pending</span>
+                            @endif
+                        </div>
+                        <div class="mb-3">
+                            <strong><i class="fas fa-circle-notch me-1 text-primary"></i> Geofence Radius:</strong><br>
+                            <span class="text-primary font-weight-bold">{{ $restaurant->geofence_radius_meters ?? 50 }} meters</span>
+                        </div>
+                        <div class="mb-3">
+                            <strong><i class="fas fa-shield-alt me-1 text-info"></i> Attendance Geofencing:</strong><br>
+                            @if($restaurant->geofence_enabled ?? true)
+                                <span class="badge badge-success bg-success text-white">Enabled (Strict Verification)</span>
+                            @else
+                                <span class="badge badge-secondary bg-secondary text-white">Disabled</span>
+                            @endif
+                        </div>
+                        @if($restaurant->latitude && $restaurant->longitude)
+                            <div class="pt-2 border-top">
+                                <a href="https://www.google.com/maps?q={{ $restaurant->latitude }},{{ $restaurant->longitude }}" target="_blank" class="btn btn-sm btn-outline-info w-100">
+                                    <i class="fas fa-external-link-alt me-1"></i> Open in Google Maps
+                                </a>
+                            </div>
+                        @endif
                     </div>
                 </div>
                 
@@ -443,6 +612,174 @@ function previewQRCode(input) {
         reader.readAsDataURL(file);
     }
 }
+
+// Thermal print size radio selector highlight
+function highlightPrintOption(radio) {
+    document.querySelectorAll('.thermal-card-option').forEach(card => {
+        card.style.background = '#ffffff';
+        card.style.borderColor = '#cbd5e1';
+    });
+    const parentCard = radio.closest('.thermal-card-option');
+    if (parentCard) {
+        parentCard.style.background = '#eef2ff';
+        parentCard.style.borderColor = '#4f46e5';
+    }
+}
+</script>
+
+<!-- Leaflet Map JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+let profileMap = null;
+let profileMarker = null;
+let profileCircle = null;
+
+function initProfileLocationMap() {
+    const latInput = document.getElementById('profile_lat');
+    const lngInput = document.getElementById('profile_lng');
+    const radiusInput = document.getElementById('profile_geo_radius');
+    const pill = document.getElementById('profileLocationStatusPill');
+
+    if (!document.getElementById('restaurantProfileMap') || !latInput || !lngInput) {
+        return;
+    }
+
+    const rawLat = parseFloat(latInput.value);
+    const rawLng = parseFloat(lngInput.value);
+    const hasExisting = !isNaN(rawLat) && !isNaN(rawLng) && rawLat !== 0;
+
+    const defaultLat = hasExisting ? rawLat : 22.572646; // Fallback center
+    const defaultLng = hasExisting ? rawLng : 88.363895;
+
+    profileMap = L.map('restaurantProfileMap').setView([defaultLat, defaultLng], hasExisting ? 17 : 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(profileMap);
+
+    profileMarker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(profileMap);
+    profileMarker.bindPopup('<b>{{ addslashes($restaurant->name) }}</b><br>Drag marker or click on map to set location.');
+
+    if (hasExisting) {
+        profileMarker.openPopup();
+    }
+
+    const currentRadius = parseInt(radiusInput ? radiusInput.value : 50, 10) || 50;
+    profileCircle = L.circle([defaultLat, defaultLng], {
+        color: '#ff6a00',
+        fillColor: '#ff8c42',
+        fillOpacity: 0.22,
+        radius: currentRadius
+    }).addTo(profileMap);
+
+    function updateInputs(lat, lng) {
+        latInput.value = parseFloat(lat).toFixed(8);
+        lngInput.value = parseFloat(lng).toFixed(8);
+        if (pill) {
+            pill.className = 'badge badge-success bg-success text-white px-2 py-1';
+            pill.innerHTML = '<i class="fas fa-check-circle me-1"></i> Location Configured (' + parseFloat(lat).toFixed(4) + ', ' + parseFloat(lng).toFixed(4) + ')';
+        }
+    }
+
+    // Drag marker
+    profileMarker.on('dragend', function(e) {
+        const pos = profileMarker.getLatLng();
+        updateInputs(pos.lat, pos.lng);
+        profileCircle.setLatLng(pos);
+    });
+
+    // Click map to reposition
+    profileMap.on('click', function(e) {
+        profileMarker.setLatLng(e.latlng);
+        profileCircle.setLatLng(e.latlng);
+        updateInputs(e.latlng.lat, e.latlng.lng);
+    });
+
+    // Manual input typing
+    function onManualCoordsChange() {
+        const newLat = parseFloat(latInput.value);
+        const newLng = parseFloat(lngInput.value);
+        if (!isNaN(newLat) && !isNaN(newLng) && newLat >= -90 && newLat <= 90 && newLng >= -180 && newLng <= 180) {
+            profileMarker.setLatLng([newLat, newLng]);
+            profileCircle.setLatLng([newLat, newLng]);
+            profileMap.panTo([newLat, newLng]);
+            if (pill) {
+                pill.className = 'badge badge-success bg-success text-white px-2 py-1';
+                pill.innerHTML = '<i class="fas fa-check-circle me-1"></i> Location Configured';
+            }
+        }
+    }
+    latInput.addEventListener('input', onManualCoordsChange);
+    lngInput.addEventListener('input', onManualCoordsChange);
+
+    // Dynamic radius update
+    if (radiusInput) {
+        radiusInput.addEventListener('input', function() {
+            const r = parseInt(this.value, 10) || 50;
+            profileCircle.setRadius(r);
+        });
+    }
+
+    // Auto-detect GPS button
+    const btnDetect = document.getElementById('btnDetectProfileLocation');
+    if (btnDetect) {
+        btnDetect.addEventListener('click', function() {
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by your current browser.');
+                return;
+            }
+            btnDetect.disabled = true;
+            btnDetect.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Detecting GPS...';
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const uLat = position.coords.latitude;
+                    const uLng = position.coords.longitude;
+                    profileMap.flyTo([uLat, uLng], 18);
+                    profileMarker.setLatLng([uLat, uLng]);
+                    profileCircle.setLatLng([uLat, uLng]);
+                    updateInputs(uLat, uLng);
+                    profileMarker.openPopup();
+                    btnDetect.disabled = false;
+                    btnDetect.innerHTML = '<i class="fas fa-crosshairs me-1"></i> Detect Current GPS';
+                },
+                function(error) {
+                    btnDetect.disabled = false;
+                    btnDetect.innerHTML = '<i class="fas fa-crosshairs me-1"></i> Detect Current GPS';
+                    alert('Could not acquire location: ' + error.message);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        });
+    }
+
+    // Clear coordinates button
+    const btnClear = document.getElementById('btnClearProfileLocation');
+    if (btnClear) {
+        btnClear.addEventListener('click', function() {
+            if (confirm('Clear coordinates? Staff will not be restricted by geofencing until set again.')) {
+                latInput.value = '';
+                lngInput.value = '';
+                if (pill) {
+                    pill.className = 'badge badge-warning bg-warning text-white px-2 py-1';
+                    pill.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Coordinates Not Set';
+                }
+            }
+        });
+    }
+
+    // Trigger map resize check
+    setTimeout(function() {
+        if (profileMap) {
+            profileMap.invalidateSize();
+        }
+    }, 400);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initProfileLocationMap();
+});
 </script>
 
 </body>

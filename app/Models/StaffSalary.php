@@ -18,8 +18,12 @@ class StaffSalary extends Model
         'monthly_salary',
         'pf_percentage',
         'esi_percentage',
+        'ptax_type',
         'ptax_percentage',
+        'ptax_amount',
+        'other_deduction_type',
         'other_deduction_percentage',
+        'other_deduction_amount',
         'weekoff_count',
         'hourly_wage',
         'notes',
@@ -29,8 +33,12 @@ class StaffSalary extends Model
         'monthly_salary' => 'decimal:2',
         'pf_percentage' => 'decimal:2',
         'esi_percentage' => 'decimal:2',
+        'ptax_type' => 'string',
         'ptax_percentage' => 'decimal:2',
+        'ptax_amount' => 'decimal:2',
+        'other_deduction_type' => 'string',
         'other_deduction_percentage' => 'decimal:2',
+        'other_deduction_amount' => 'decimal:2',
         'weekoff_count' => 'integer',
         'hourly_wage' => 'decimal:2',
     ];
@@ -53,13 +61,25 @@ class StaffSalary extends Model
         $gross = (float) ($this->monthly_salary ?? 0);
         $pfPct = (float) ($this->pf_percentage ?? 0);
         $esiPct = (float) ($this->esi_percentage ?? 0);
-        $ptaxPct = (float) ($this->ptax_percentage ?? 0);
-        $otherPct = (float) ($this->other_deduction_percentage ?? 0);
 
         $pfAmount = round(($gross * $pfPct) / 100, 2);
         $esiAmount = round(($gross * $esiPct) / 100, 2);
-        $ptaxAmount = round(($gross * $ptaxPct) / 100, 2);
-        $otherAmount = round(($gross * $otherPct) / 100, 2);
+
+        // P-Tax
+        if (($this->ptax_type ?? 'percentage') === 'fixed') {
+            $ptaxAmount = round((float) ($this->ptax_amount ?? 0), 2);
+        } else {
+            $ptaxPct = (float) ($this->ptax_percentage ?? 0);
+            $ptaxAmount = round(($gross * $ptaxPct) / 100, 2);
+        }
+
+        // Other Deduction
+        if (($this->other_deduction_type ?? 'percentage') === 'fixed') {
+            $otherAmount = round((float) ($this->other_deduction_amount ?? 0), 2);
+        } else {
+            $otherPct = (float) ($this->other_deduction_percentage ?? 0);
+            $otherAmount = round(($gross * $otherPct) / 100, 2);
+        }
 
         $totalDeductions = round($pfAmount + $esiAmount + $ptaxAmount + $otherAmount, 2);
         $netSalary = max(0, round($gross - $totalDeductions, 2));

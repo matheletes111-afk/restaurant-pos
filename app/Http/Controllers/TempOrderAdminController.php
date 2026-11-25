@@ -330,6 +330,10 @@ public function approveOrder($id)
             $orderItem->bar_variation_name = $p['bar_variation_name'] ?? null;
             $orderItem->bar_variation_ml = $p['bar_variation_ml'] ?? null;
             $orderItem->total_amount = $p['total_amount'];
+            $orderItem->is_raw_dish = $origItem->is_raw_dish;
+            $orderItem->weight_in_kg = $origItem->weight_in_kg;
+            $orderItem->weight_gram = $origItem->weight_gram;
+            $orderItem->per_kg_price = $origItem->per_kg_price;
             $orderItem->order_status = 'PENDING';
             $orderItem->is_new = 0;
             $orderItem->restaurant_id = $order->restaurant_id;

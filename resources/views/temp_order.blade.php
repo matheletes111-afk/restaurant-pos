@@ -2821,20 +2821,33 @@
                       @endif
                       <p class="food-item-desc">{{ $item->description ?? 'Expertly crafted dish prepared with the freshest authentic ingredients.' }}</p>
 
+                      @php
+                        $isRawDish = !empty($item->is_raw_dish);
+                      @endphp
                       <div class="food-card-footer">
                         <div class="price-block">
                           @if($hasDiscount)
                             <span class="cross-price-label">₹{{ number_format($item->price, 2) }}</span>
                           @endif
-                          <span class="active-price-label">₹{{ number_format($discountedPrice, 2) }}</span>
+                          <span class="active-price-label">
+                            ₹{{ number_format($discountedPrice, 2) }}
+                            @if($isRawDish)
+                              <small style="font-size: 0.72rem; color: #64748b; font-weight: 700;">/Kg</small>
+                            @endif
+                          </span>
+                          @if($isRawDish)
+                            <span class="badge ms-1" style="background:#fef3c7; color:#92400e; font-size:0.65rem; font-weight:800; border-radius:6px; border:1px solid #fde68a;">
+                              <i class="fas fa-balance-scale me-1"></i>Raw / Kg
+                            </span>
+                          @endif
                           @if(!empty($restaurant_details?->gstin))
                             <span class="gst-tax-note">+ {{ $restaurant_details->gst_percentage ?? 0 }}% GST</span>
                           @endif
                         </div>
 
                         <div class="card-stepper-wrap">
-                          <button type="button" class="btn-add-tray addItemBtn initial-dish-actions" data-id="{{ $item->id }}" data-name="{{ $item->name }}" data-price="{{ $item->price }}" data-discounted-price="{{ $discountedPrice }}" data-discount="{{ $item->discount_percentage ?? 0 }}" data-food-type="{{ $isVeg ? 'Veg' : 'Non-Veg' }}" data-addons='@json($availableDishAddons)'>
-                            <i class="fas fa-plus"></i> Add
+                          <button type="button" class="btn-add-tray addItemBtn initial-dish-actions" data-id="{{ $item->id }}" data-name="{{ $item->name }}" data-price="{{ $item->price }}" data-discounted-price="{{ $discountedPrice }}" data-discount="{{ $item->discount_percentage ?? 0 }}" data-food-type="{{ $isVeg ? 'Veg' : 'Non-Veg' }}" data-is-raw="{{ $isRawDish ? '1' : '0' }}" data-addons='@json($availableDishAddons)'>
+                            <i class="fas {{ $isRawDish ? 'fa-balance-scale' : 'fa-plus' }}"></i> {{ $isRawDish ? 'Weigh & Add' : 'Add' }}
                           </button>
                           @if($hasAddons)
                             <span class="dish-customise-badge openAddonCustomiseBtn" data-id="{{ $item->id }}" data-name="{{ $item->name }}" data-price="{{ $item->price }}" data-discounted-price="{{ $discountedPrice }}" data-discount="{{ $item->discount_percentage ?? 0 }}" data-food-type="{{ $isVeg ? 'Veg' : 'Non-Veg' }}" data-addons='@json($availableDishAddons)'>
@@ -2844,7 +2857,7 @@
                           <div class="card-active-counter" data-card-id="{{ $item->id }}">
                             <button type="button" class="card-counter-btn decreaseCardQty" data-id="{{ $item->id }}">−</button>
                             <span class="card-counter-val">1</span>
-                            <button type="button" class="card-counter-btn increaseCardQty" data-id="{{ $item->id }}" data-name="{{ $item->name }}" data-price="{{ $item->price }}" data-discounted-price="{{ $discountedPrice }}" data-discount="{{ $item->discount_percentage ?? 0 }}" data-food-type="{{ $isVeg ? 'Veg' : 'Non-Veg' }}" data-addons='@json($availableDishAddons)'>+</button>
+                            <button type="button" class="card-counter-btn increaseCardQty" data-id="{{ $item->id }}" data-name="{{ $item->name }}" data-price="{{ $item->price }}" data-discounted-price="{{ $discountedPrice }}" data-discount="{{ $item->discount_percentage ?? 0 }}" data-food-type="{{ $isVeg ? 'Veg' : 'Non-Veg' }}" data-is-raw="{{ $isRawDish ? '1' : '0' }}" data-addons='@json($availableDishAddons)'>+</button>
                           </div>
                         </div>
                       </div>
@@ -3306,6 +3319,76 @@
         <i class="fas fa-plus-circle"></i>
         <span id="confirmBarBtnText">Add Variations to Tray</span>
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Customer Raw Dish Weight Entry Modal (Kg & Grams) -->
+<div class="customer-addon-modal-overlay" id="customerRawWeightModal" style="display: none; z-index: 100000;">
+  <div class="customer-addon-modal-card" style="width: 95%; max-width: 460px; margin: auto !important;">
+    <div class="customer-addon-modal-header" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="badge" style="background:#fef3c7; color:#92400e; font-weight: 800; font-size: 0.72rem; padding: 3px 8px; border-radius: 6px;">
+          <i class="fas fa-balance-scale me-1"></i> Raw Dish (By Weight)
+        </span>
+        <div>
+          <h4 class="cust-addon-modal-title" id="custRawDishTitle" style="color: #fff; margin: 0; font-size: 1.15rem;">Dish Name</h4>
+          <span class="cust-addon-modal-base" id="custRawRateText" style="color: #94a3b8; font-size: 0.82rem;">Rate: ₹0.00 / Kg</span>
+        </div>
+      </div>
+      <button type="button" class="btn-close-addon-modal text-white" id="btnCloseCustRawModal" style="color: #fff !important;">&times;</button>
+    </div>
+
+    <div class="customer-addon-modal-body" style="padding: 20px;">
+      <div class="mb-3 text-center">
+        <label style="font-size: 0.8rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 8px;">Select Quantity / Weight:</label>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <div style="display: flex; align-items: center; border: 1.5px solid #cbd5e1; border-radius: 12px; overflow: hidden; background: #fff;">
+            <input type="number" id="custRawKgInput" min="0" step="1" value="1" style="width: 70px; text-align: center; border: none; font-size: 1.3rem; font-weight: 800; padding: 8px 4px; outline: none; font-family: 'Outfit', sans-serif;">
+            <span style="background: #f1f5f9; padding: 8px 12px; font-weight: 800; color: #475569; font-size: 0.88rem; border-left: 1px solid #cbd5e1;">Kg</span>
+          </div>
+          <span style="font-size: 1.3rem; font-weight: 800; color: #94a3b8;">+</span>
+          <div style="display: flex; align-items: center; border: 1.5px solid #cbd5e1; border-radius: 12px; overflow: hidden; background: #fff;">
+            <input type="number" id="custRawGramInput" min="0" max="999" step="50" value="0" style="width: 75px; text-align: center; border: none; font-size: 1.3rem; font-weight: 800; padding: 8px 4px; outline: none; font-family: 'Outfit', sans-serif;">
+            <span style="background: #f1f5f9; padding: 8px 12px; font-weight: 800; color: #475569; font-size: 0.88rem; border-left: 1px solid #cbd5e1;">Grams</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Stepper Chips -->
+      <div style="display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 16px;">
+        <button type="button" class="btn-cust-quick-raw" data-kg="0" data-g="100" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; color: #334155; cursor: pointer;">+100g</button>
+        <button type="button" class="btn-cust-quick-raw" data-kg="0" data-g="250" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; color: #334155; cursor: pointer;">+250g</button>
+        <button type="button" class="btn-cust-quick-raw" data-kg="0" data-g="500" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; color: #334155; cursor: pointer;">+500g</button>
+        <button type="button" class="btn-cust-quick-raw" data-kg="1" data-g="0" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; color: #334155; cursor: pointer;">+1 Kg</button>
+        <button type="button" class="btn-cust-quick-raw" data-kg="2" data-g="0" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; color: #334155; cursor: pointer;">+2 Kg</button>
+        <button type="button" class="btn-cust-quick-raw-reset" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; color: #dc2626; cursor: pointer;">Reset</button>
+      </div>
+
+      <!-- Calculation Card -->
+      <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 14px 16px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #64748b; margin-bottom: 5px;">
+          <span>Selected Weight:</span>
+          <strong style="color: #0f172a;" id="custRawTotalWeightDisplay">1 Kg 0 g (1.000 Kg)</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #64748b; margin-bottom: 6px;">
+          <span>Rate:</span>
+          <strong style="color: #0f172a; font-family: monospace;" id="custRawPerKgDisplay">₹0.00 / Kg</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 1.05rem; font-weight: 800; padding-top: 8px; border-top: 1px solid #e2e8f0; color: #0f172a;">
+          <span>Calculated Price:</span>
+          <span style="color: #ff5e14; font-size: 1.3rem; font-family: 'Outfit', sans-serif;" id="custRawCalculatedPrice">₹0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="customer-addon-modal-footer" style="padding: 16px 20px;">
+      <div style="display: flex; gap: 10px; width: 100%;">
+        <button type="button" class="btn-skip-addons" id="btnCancelCustRawModal" style="flex: 1;">Cancel</button>
+        <button type="button" class="btn-apply-cust-addons" id="btnConfirmCustRawWeight" style="flex: 2;">
+          <i class="fas fa-plus-circle me-1"></i> Add to Tray
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -3794,6 +3877,14 @@ function refreshTable() {
             barBadge = `<span class="badge" style="background: linear-gradient(135deg, #1e293b, #334155); color: #f8fafc; font-size: 0.72rem; padding: 2px 7px; border-radius: 6px; font-weight: 600; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-wine-glass-alt text-warning"></i> ${escapeHtml(item.bar_variation_name || (item.bar_variation_ml + ' ml'))}</span>`;
         }
 
+        let rawBadge = '';
+        if (item.is_raw_dish) {
+            let weightStr = `${item.weight_kg ? item.weight_kg + ' Kg ' : ''}${item.weight_gram ? item.weight_gram + ' g' : ''}`.trim();
+            if (!weightStr) weightStr = (item.weight_in_kg || 0) + ' Kg';
+            let perKg = parseFloat(item.per_kg_price || item.price);
+            rawBadge = `<div class="mt-1"><span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.7rem; font-weight:700; padding:2px 6px; border-radius:4px;"><i class="fas fa-balance-scale me-1"></i>${weightStr}</span></div>`;
+        }
+
         let taxCell = '';
         if (details.vatRate > 0) {
             taxCell = `<td style="color:#0284c7;font-weight:600;">₹${details.vatAmount.toFixed(2)} <small style="font-size:0.72rem;">(VAT ${details.vatRate}%)</small></td>`;
@@ -3808,6 +3899,7 @@ function refreshTable() {
                 <td>
                     <span class="tray-item-title">${escapeHtml(item.name)}</span>
                     ${barBadge}
+                    ${rawBadge}
                     ${addonsHtml}
                 </td>
                 <td style="text-align:center;">
@@ -3964,11 +4056,124 @@ $(document).on('click', '.addStandaloneAddonBtn, .increaseStandaloneAddonQty', f
     refreshTable();
 });
 
+/* Customer Raw Dish Weight Entry Modal Logic */
+let currentCustRawDish = null;
+
+function openCustRawModal(dish) {
+    currentCustRawDish = dish;
+    $('#custRawDishTitle').text(dish.name);
+    let perKg = parseFloat(dish.price) || 0;
+    $('#custRawRateText').text('Rate: ₹' + perKg.toFixed(2) + ' / Kg');
+    $('#custRawPerKgDisplay').text('₹' + perKg.toFixed(2) + ' / Kg');
+
+    $('#custRawKgInput').val(1);
+    $('#custRawGramInput').val(0);
+    recalculateCustRawModal();
+    $('#customerRawWeightModal').css('display', 'flex').hide().fadeIn(180);
+}
+
+function recalculateCustRawModal() {
+    if (!currentCustRawDish) return;
+    let kg = parseInt($('#custRawKgInput').val()) || 0;
+    let gram = parseInt($('#custRawGramInput').val()) || 0;
+    if (kg < 0) { kg = 0; $('#custRawKgInput').val(0); }
+    if (gram < 0) { gram = 0; $('#custRawGramInput').val(0); }
+
+    let totalKg = kg + (gram / 1000);
+    let perKg = parseFloat(currentCustRawDish.price) || 0;
+    let calculated = Math.round(totalKg * perKg * 100) / 100;
+
+    let weightText = `${kg > 0 ? kg + ' Kg ' : ''}${gram > 0 ? gram + ' g' : ''}`.trim();
+    if (!weightText) weightText = '0 g';
+    $('#custRawTotalWeightDisplay').text(`${weightText} (${totalKg.toFixed(3)} Kg)`);
+    $('#custRawCalculatedPrice').text('₹' + calculated.toFixed(2));
+}
+
+$(document).on('input change', '#custRawKgInput, #custRawGramInput', function() {
+    recalculateCustRawModal();
+});
+
+$(document).on('click', '.btn-cust-quick-raw', function(e) {
+    e.preventDefault();
+    let addKg = parseInt($(this).data('kg')) || 0;
+    let addG = parseInt($(this).data('g')) || 0;
+    let curKg = parseInt($('#custRawKgInput').val()) || 0;
+    let curG = parseInt($('#custRawGramInput').val()) || 0;
+
+    let newG = curG + addG;
+    let carryKg = Math.floor(newG / 1000);
+    newG = newG % 1000;
+    let newKg = curKg + addKg + carryKg;
+
+    $('#custRawKgInput').val(newKg);
+    $('#custRawGramInput').val(newG);
+    recalculateCustRawModal();
+});
+
+$(document).on('click', '.btn-cust-quick-raw-reset', function(e) {
+    e.preventDefault();
+    $('#custRawKgInput').val(0);
+    $('#custRawGramInput').val(0);
+    recalculateCustRawModal();
+});
+
+$(document).on('click', '#btnCloseCustRawModal, #btnCancelCustRawModal', function(e) {
+    e.preventDefault();
+    $('#customerRawWeightModal').fadeOut(120);
+    currentCustRawDish = null;
+});
+
+$(document).on('click', '#customerRawWeightModal', function(e) {
+    if (e.target === this) {
+        $('#customerRawWeightModal').fadeOut(120);
+        currentCustRawDish = null;
+    }
+});
+
+$(document).on('click', '#btnConfirmCustRawWeight', function(e) {
+    e.preventDefault();
+    if (!currentCustRawDish) return;
+    let kg = parseInt($('#custRawKgInput').val()) || 0;
+    let gram = parseInt($('#custRawGramInput').val()) || 0;
+    let totalKg = kg + (gram / 1000);
+
+    if (totalKg <= 0) {
+        alert('Please enter a weight greater than 0.');
+        return;
+    }
+
+    let perKg = parseFloat(currentCustRawDish.price) || 0;
+    let calculatedPrice = Math.round(totalKg * perKg * 100) / 100;
+
+    cart.push({
+        id: currentCustRawDish.id,
+        name: currentCustRawDish.name,
+        price: calculatedPrice,
+        base_price: calculatedPrice,
+        qty: 1,
+        is_raw_dish: true,
+        weight_in_kg: totalKg,
+        weight_kg: kg,
+        weight_gram: gram,
+        per_kg_price: perKg,
+        discount: currentCustRawDish.discount || 0,
+        food_type: currentCustRawDish.foodType || 'Veg',
+        available_addons: currentCustRawDish.addons || [],
+        addons: []
+    });
+
+    $('#customerRawWeightModal').fadeOut(120);
+    showTempToast(`Added ${currentCustRawDish.name} (${totalKg.toFixed(3)} Kg) to tray!`, true);
+    currentCustRawDish = null;
+    refreshTable();
+});
+
 /* Add to cart from dish card */
 $(document).on('click', '.addItemBtn', function(e) {
     e.preventDefault();
     e.stopPropagation();
     let itemId       = $(this).data('id');
+    let isRaw        = parseInt($(this).data('is-raw')) === 1;
     let rawAddons    = $(this).data('addons');
     let addons       = (typeof rawAddons === 'string') ? JSON.parse(rawAddons || '[]') : (rawAddons || []);
     let basePrice    = parseFloat($(this).data('price'));
@@ -3976,6 +4181,19 @@ $(document).on('click', '.addItemBtn', function(e) {
     let discount     = parseFloat($(this).data('discount')) || 0;
     let name         = $(this).data('name');
     let foodType     = $(this).data('food-type') || 'Veg';
+
+    if (isRaw) {
+        openCustRawModal({
+            id: itemId,
+            name: name,
+            price: basePrice,
+            discountedPrice: discPrice,
+            discount: discount,
+            foodType: foodType,
+            addons: addons
+        });
+        return;
+    }
 
     let existing = cart.find(i => String(i.id) === String(itemId) && (!i.addons || i.addons.length === 0));
     if (existing) {
@@ -4681,7 +4899,11 @@ $(document).on('click', '#placeOrderBtn', function() {
         bar_variation_id: item.bar_variation_id || null,
         bar_variation_name: item.bar_variation_name || null,
         bar_variation_ml: item.bar_variation_ml || null,
-        vat_rate: item.vat_rate || 0
+        vat_rate: item.vat_rate || 0,
+        is_raw_dish: item.is_raw_dish ? 1 : 0,
+        weight_in_kg: item.weight_in_kg || null,
+        weight_gram: item.weight_gram || null,
+        per_kg_price: item.per_kg_price || null
     }));
 
     let $btn = $(this);

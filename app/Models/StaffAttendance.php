@@ -20,6 +20,13 @@ class StaffAttendance extends Model
         'employee_type',
         'login_time',
         'logout_time',
+        'checkin_lat',
+        'checkin_lng',
+        'checkin_distance_meters',
+        'checkout_lat',
+        'checkout_lng',
+        'checkout_distance_meters',
+        'geofence_status',
         'notes',
         'created_by',
     ];

@@ -137,7 +137,7 @@ class StaffLeaveController extends Controller
             ->get();
 
         // Leave applications overlapping the date range
-        $leaves = StaffLeave::whereIn('restaurant_id', $outletIds)
+        $allLeaves = StaffLeave::whereIn('restaurant_id', $outletIds)
             ->where(function ($q) use ($fromDate, $toDate) {
                 $q->whereBetween('start_date', [$fromDate, $toDate])
                   ->orWhereBetween('end_date', [$fromDate, $toDate])
@@ -146,18 +146,27 @@ class StaffLeaveController extends Controller
                           ->where('end_date', '>=', $toDate);
                   });
             })
-            ->with(['user.restaurant', 'creator', 'canceller'])
+            ->with(['user.restaurant', 'creator', 'canceller', 'approver'])
             ->orderBy('id', 'desc')
             ->get();
 
         // Statistics for the date range
         $stats = [
-            'total_applications' => $leaves->count(),
-            'approved_count' => $leaves->where('status', 'approved')->count(),
-            'total_days_taken' => (float) $leaves->where('status', 'approved')->sum('days_count'),
-            'cancelled_count' => $leaves->where('status', 'cancelled')->count(),
-            'distinct_staff' => $leaves->where('status', 'approved')->pluck('user_id')->unique()->count(),
+            'total_applications' => $allLeaves->count(),
+            'pending_count' => $allLeaves->where('status', 'pending')->count(),
+            'approved_count' => $allLeaves->where('status', 'approved')->count(),
+            'rejected_count' => $allLeaves->where('status', 'rejected')->count(),
+            'total_days_taken' => (float) $allLeaves->where('status', 'approved')->sum('days_count'),
+            'cancelled_count' => $allLeaves->where('status', 'cancelled')->count(),
+            'distinct_staff' => $allLeaves->where('status', 'approved')->pluck('user_id')->unique()->count(),
         ];
+
+        $statusFilter = $request->input('status', 'all');
+        if ($statusFilter !== 'all' && in_array($statusFilter, ['pending', 'approved', 'rejected', 'cancelled'])) {
+            $leaves = $allLeaves->where('status', $statusFilter);
+        } else {
+            $leaves = $allLeaves;
+        }
 
         $leaveDefinitions = StaffLeavePolicy::getLeaveTypeDefinitions();
 
@@ -187,6 +196,7 @@ class StaffLeaveController extends Controller
             'leaves',
             'fromDate',
             'toDate',
+            'statusFilter',
             'staffList',
             'stats',
             'availableOutlets',
@@ -318,16 +328,18 @@ class StaffLeaveController extends Controller
             return back()->with('error', 'This leave record is already cancelled.');
         }
 
-        // Restore deducted leave quota to policy
-        $year = (int) date('Y', strtotime($leave->start_date));
-        $policy = StaffLeavePolicy::where('user_id', $leave->user_id)
-            ->where('leave_type', $leave->leave_type)
-            ->where('year', $year)
-            ->first();
+        // Restore deducted leave quota to policy only if it was approved
+        if ($leave->status === 'approved') {
+            $year = (int) date('Y', strtotime($leave->start_date));
+            $policy = StaffLeavePolicy::where('user_id', $leave->user_id)
+                ->where('leave_type', $leave->leave_type)
+                ->where('year', $year)
+                ->first();
 
-        if ($policy && $policy->used_count > 0) {
-            $deduction = min((float) $policy->used_count, (float) $leave->days_count);
-            $policy->decrement('used_count', $deduction);
+            if ($policy && $policy->used_count > 0) {
+                $deduction = min((float) $policy->used_count, (float) $leave->days_count);
+                $policy->decrement('used_count', $deduction);
+            }
         }
 
         // Mark as cancelled and store cancellation remarks
@@ -348,7 +360,253 @@ class StaffLeaveController extends Controller
         }
 
         return redirect()->route('restaurant.leaves.index', $redirectParams)
-            ->with('success', "Leave for {$staffName} has been cancelled and {$leave->days_count} day(s) restored to their leave balance. Record is preserved in list with cancellation remarks.");
+            ->with('success', "Leave for {$staffName} has been cancelled" . ($leave->status === 'approved' ? " and {$leave->days_count} day(s) restored to their leave balance." : "."));
+    }
+
+    /**
+     * Approve a pending leave request and adjust quota.
+     */
+    public function approve(Request $request, $leave_id)
+    {
+        $user = auth()->user();
+        if ($user->role !== 'SA' && !$user->hasPermission('staff', 'edit') && $user->role_type !== 'ADMIN') {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $context = $this->resolveOutletContext($request);
+        $query = StaffLeave::where('id', $leave_id);
+        if (!$context['isSuperAdmin']) {
+            $allowed = $context['availableOutlets']->isNotEmpty()
+                ? $context['availableOutlets']->pluck('id')->toArray()
+                : $context['outletIds'];
+            $query->whereIn('restaurant_id', $allowed);
+        }
+        $leave = $query->with('user')->firstOrFail();
+
+        if ($leave->status === 'approved') {
+            return back()->with('error', 'This leave request is already approved.');
+        }
+
+        $year = (int) date('Y', strtotime($leave->start_date));
+        $policy = StaffLeavePolicy::where('user_id', $leave->user_id)
+            ->where('leave_type', $leave->leave_type)
+            ->where('year', $year)
+            ->first();
+
+        $unused = $policy ? (float) $policy->remaining_balance : 0.00;
+        $defs = StaffLeavePolicy::getLeaveTypeDefinitions();
+        $typeName = $defs[$leave->leave_type]['name'] ?? ucwords(str_replace('_', ' ', $leave->leave_type));
+
+        if ($policy && $leave->days_count > $unused) {
+            return back()->with('error', "Cannot approve: Requested {$leave->days_count} day(s), but only {$unused} day(s) unused balance available for {$typeName}.");
+        }
+
+        // Deduct from policy quota
+        if ($policy) {
+            $policy->increment('used_count', $leave->days_count);
+        }
+
+        $leave->status = 'approved';
+        $leave->approved_by = $user->id;
+        $leave->approved_at = now();
+        if ($request->filled('admin_remarks')) {
+            $leave->admin_remarks = $request->admin_remarks;
+        }
+        $leave->save();
+
+        $staffName = $leave->user ? $leave->user->name : 'Staff';
+        $remaining = $policy ? max(0, $unused - $leave->days_count) : 0;
+
+        return back()->with('success', "Leave request of {$leave->days_count} day(s) ({$typeName}) for {$staffName} approved and adjusted from quota. Remaining balance: {$remaining} day(s).");
+    }
+
+    /**
+     * Reject a leave request.
+     */
+    public function reject(Request $request, $leave_id)
+    {
+        $user = auth()->user();
+        if ($user->role !== 'SA' && !$user->hasPermission('staff', 'edit') && $user->role_type !== 'ADMIN') {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $context = $this->resolveOutletContext($request);
+        $query = StaffLeave::where('id', $leave_id);
+        if (!$context['isSuperAdmin']) {
+            $allowed = $context['availableOutlets']->isNotEmpty()
+                ? $context['availableOutlets']->pluck('id')->toArray()
+                : $context['outletIds'];
+            $query->whereIn('restaurant_id', $allowed);
+        }
+        $leave = $query->with('user')->firstOrFail();
+
+        // If previously approved, restore quota
+        if ($leave->status === 'approved') {
+            $year = (int) date('Y', strtotime($leave->start_date));
+            $policy = StaffLeavePolicy::where('user_id', $leave->user_id)
+                ->where('leave_type', $leave->leave_type)
+                ->where('year', $year)
+                ->first();
+
+            if ($policy && $policy->used_count > 0) {
+                $deduction = min((float) $policy->used_count, (float) $leave->days_count);
+                $policy->decrement('used_count', $deduction);
+            }
+        }
+
+        $leave->status = 'rejected';
+        $leave->admin_remarks = $request->input('admin_remarks', 'Rejected by administrator');
+        $leave->save();
+
+        $staffName = $leave->user ? $leave->user->name : 'Staff';
+        return back()->with('success', "Leave request for {$staffName} has been rejected.");
+    }
+
+    /**
+     * Fetch leave details for Edit Modal via AJAX.
+     */
+    public function details(Request $request, $leave_id)
+    {
+        $user = auth()->user();
+        if ($user->role !== 'SA' && !$user->hasPermission('staff', 'view') && $user->role_type !== 'ADMIN') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $context = $this->resolveOutletContext($request);
+        $query = StaffLeave::where('id', $leave_id);
+        if (!$context['isSuperAdmin']) {
+            $allowed = $context['availableOutlets']->isNotEmpty()
+                ? $context['availableOutlets']->pluck('id')->toArray()
+                : $context['outletIds'];
+            $query->whereIn('restaurant_id', $allowed);
+        }
+        $leave = $query->with('user')->firstOrFail();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $leave->id,
+                'user_id' => $leave->user_id,
+                'staff_name' => $leave->user ? $leave->user->name : 'Staff',
+                'leave_type' => $leave->leave_type,
+                'start_date' => Carbon::parse($leave->start_date)->format('Y-m-d'),
+                'end_date' => Carbon::parse($leave->end_date)->format('Y-m-d'),
+                'days_count' => (float) $leave->days_count,
+                'reason' => $leave->reason,
+                'status' => $leave->status,
+                'admin_remarks' => $leave->admin_remarks ?: $leave->cancellation_remarks,
+            ]
+        ]);
+    }
+
+    /**
+     * Update leave request (Edit functionality for Admin).
+     */
+    public function update(Request $request, $leave_id)
+    {
+        $user = auth()->user();
+        if ($user->role !== 'SA' && !$user->hasPermission('staff', 'edit') && $user->role_type !== 'ADMIN') {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'leave_type' => 'required|string',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'status' => 'required|in:pending,approved,rejected,cancelled',
+            'reason' => 'nullable|string|max:1000',
+            'admin_remarks' => 'nullable|string|max:1000',
+        ]);
+
+        $context = $this->resolveOutletContext($request);
+        $query = StaffLeave::where('id', $leave_id);
+        if (!$context['isSuperAdmin']) {
+            $allowed = $context['availableOutlets']->isNotEmpty()
+                ? $context['availableOutlets']->pluck('id')->toArray()
+                : $context['outletIds'];
+            $query->whereIn('restaurant_id', $allowed);
+        }
+        $leave = $query->with('user')->firstOrFail();
+
+        // Calculate new days
+        if ($request->leave_type === 'half_day') {
+            $newDays = 0.50;
+        } elseif ($request->leave_type === 'early_leave') {
+            $newDays = 1.00;
+        } else {
+            $start = Carbon::parse($request->start_date);
+            $end = Carbon::parse($request->end_date);
+            $newDays = (float) ($start->diffInDays($end) + 1);
+        }
+
+        $oldStatus = $leave->status;
+        $newStatus = $request->status;
+        $oldDays = (float) $leave->days_count;
+        $oldType = $leave->leave_type;
+        $newType = $request->leave_type;
+
+        $oldYear = (int) date('Y', strtotime($leave->start_date));
+        $newYear = (int) date('Y', strtotime($request->start_date));
+
+        // Step 1: If previously approved, restore old days to old policy
+        if ($oldStatus === 'approved') {
+            $oldPolicy = StaffLeavePolicy::where('user_id', $leave->user_id)
+                ->where('leave_type', $oldType)
+                ->where('year', $oldYear)
+                ->first();
+            if ($oldPolicy && $oldPolicy->used_count > 0) {
+                $restore = min((float) $oldPolicy->used_count, $oldDays);
+                $oldPolicy->decrement('used_count', $restore);
+            }
+        }
+
+        // Step 2: If new status is approved, deduct new days from new policy
+        if ($newStatus === 'approved') {
+            $newPolicy = StaffLeavePolicy::where('user_id', $leave->user_id)
+                ->where('leave_type', $newType)
+                ->where('year', $newYear)
+                ->first();
+
+            $unused = $newPolicy ? (float) $newPolicy->remaining_balance : 0.00;
+            $defs = StaffLeavePolicy::getLeaveTypeDefinitions();
+            $typeName = $defs[$newType]['name'] ?? $newType;
+
+            if ($newPolicy && $newDays > $unused) {
+                // If fails quota check, rollback old policy if it was approved
+                if ($oldStatus === 'approved' && isset($oldPolicy)) {
+                    $oldPolicy->increment('used_count', min((float)$oldPolicy->remaining_balance, $oldDays));
+                }
+                return back()->withInput()->with('error', "Cannot approve leave: Requested {$newDays} day(s), but only {$unused} day(s) unused balance available for {$typeName}.");
+            }
+
+            if ($newPolicy) {
+                $newPolicy->increment('used_count', $newDays);
+            }
+            $leave->approved_by = $user->id;
+            $leave->approved_at = now();
+        }
+
+        if ($newStatus === 'cancelled') {
+            $leave->cancelled_by = $user->id;
+            $leave->cancelled_at = now();
+            if ($request->filled('admin_remarks')) {
+                $leave->cancellation_remarks = $request->admin_remarks;
+            }
+        }
+
+        $leave->leave_type = $newType;
+        $leave->start_date = $request->start_date;
+        $leave->end_date = $request->end_date;
+        $leave->days_count = $newDays;
+        $leave->reason = $request->reason;
+        $leave->status = $newStatus;
+        if ($request->filled('admin_remarks')) {
+            $leave->admin_remarks = $request->admin_remarks;
+        }
+        $leave->save();
+
+        $staffName = $leave->user ? $leave->user->name : 'Staff';
+        return back()->with('success', "Leave request for {$staffName} has been updated successfully.");
     }
 
     /**

@@ -10,6 +10,11 @@ class SubCategory extends Model
     use HasFactory;
     protected $table = "sub_category";
     protected $guarded = [];
+
+    protected $casts = [
+        'is_raw_dish' => 'boolean',
+        'price' => 'decimal:2',
+    ];
     // 🔗 Belongs to a Category
     public function category()
     {

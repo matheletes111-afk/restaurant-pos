@@ -249,6 +249,7 @@ class CategoryController extends Controller
             $new = new SubCategory;
             $new->name = $request->name;
             $new->price = $request->price;
+            $new->is_raw_dish = $request->boolean('is_raw_dish');
             $new->gst_rate = $request->gst_rate ?? 0;
             $new->food_type = $request->food_type;
             $new->category_id = $request->category_id;
@@ -310,6 +311,7 @@ class CategoryController extends Controller
             $upd = [];
             $upd['name'] = $request->name;
             $upd['price'] = $request->price;
+            $upd['is_raw_dish'] = $request->boolean('is_raw_dish');
             $upd['gst_rate'] = $request->gst_rate ?? 0;
             $upd['food_type'] = $request->food_type;
             if ($request->hasFile('image')) {

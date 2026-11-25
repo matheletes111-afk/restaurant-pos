@@ -326,7 +326,14 @@
               <div class="kds-dish-block" id="item_{{ $item->id }}">
                 <div class="kds-dish-title-row">
                   <div>
-                    <h3 class="kds-dish-name">{{ $dishName }}</h3>
+                    <h3 class="kds-dish-name">
+                      {{ $dishName }}
+                      @if($item->is_raw_dish || !empty($item->formatted_weight))
+                        <span class="badge bg-light text-primary border border-primary-subtle" style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-left: 4px;">
+                          <i class="fa-solid fa-weight-scale me-1"></i>{{ $item->formatted_weight }}
+                        </span>
+                      @endif
+                    </h3>
                     <span class="kds-food-type-tag {{ $foodType }}">
                       <span class="kds-type-dot"></span>
                       {{ $foodType }}

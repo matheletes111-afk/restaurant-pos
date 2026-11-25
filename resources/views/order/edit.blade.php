@@ -160,6 +160,7 @@
                       $isNonVeg = (strtolower($item->food_type ?? 'veg') == 'non-veg');
                       $discount = (float)($item->discount_percentage ?? 0);
                       $finalPrice = $discount > 0 ? ($item->price - ($item->price * $discount / 100)) : $item->price;
+                      $isRawDish = !empty($item->is_raw_dish);
                       
                       $mappedAddons = ($item->addons) ? $item->addons->where('status', '!=', 'D')->where('status', '!=', 'I')->values() : collect([]);
                       $availableDishAddons = $mappedAddons;
@@ -177,6 +178,11 @@
                             <i class="fa-solid {{ $isNonVeg ? 'fa-drumstick-bite' : 'fa-leaf' }}"></i>
                             {{ $item->food_type ?? 'Veg' }}
                           </span>
+                          @if($isRawDish)
+                            <span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a; font-size:0.65rem; font-weight:800; border-radius:6px;" title="Raw Dish sold by weight (Kg/Grams)">
+                              <i class="fa-solid fa-weight-scale me-1"></i>/Kg
+                            </span>
+                          @endif
                           @if($addonsCount > 0)
                             <span class="badge-addon-pill" title="{{ $addonsCount }} Add-ons available">
                               <i class="fa-solid fa-plus-circle"></i> {{ $addonsCount }} Add-on{{ $addonsCount > 1 ? 's' : '' }}
@@ -195,6 +201,9 @@
                       <div>
                         <div class="food-pricing-row">
                           <span class="price-final">₹{{ number_format($finalPrice, 2) }}</span>
+                          @if($isRawDish)
+                            <small class="text-muted fw-bold" style="font-size:0.75rem;">/Kg</small>
+                          @endif
                           @if($discount > 0)
                             <span class="price-original-del">₹{{ number_format($item->price, 2) }}</span>
                           @endif
@@ -207,8 +216,9 @@
                                     data-name="{{ $item->name }}"
                                     data-price="{{ $item->price }}"
                                     data-discount="{{ $discount }}"
+                                    data-is-raw="{{ $isRawDish ? '1' : '0' }}"
                                     data-addons='@json($availableDishAddons)'>
-                              <i class="fa-solid fa-plus"></i> Add
+                              <i class="fa-solid {{ $isRawDish ? 'fa-scale-balanced' : 'fa-plus' }}"></i> {{ $isRawDish ? 'Weigh & Add' : 'Add' }}
                             </button>
                             <button type="button" class="btn-customize-addons-pos open-addon-modal-btn"
                                     data-id="{{ $item->id }}"
@@ -226,8 +236,9 @@
                                   data-name="{{ $item->name }}"
                                   data-price="{{ $item->price }}"
                                   data-discount="{{ $discount }}"
+                                  data-is-raw="{{ $isRawDish ? '1' : '0' }}"
                                   data-addons='@json($availableDishAddons)'>
-                            <i class="fa-solid fa-plus"></i> Add Item
+                            <i class="fa-solid {{ $isRawDish ? 'fa-scale-balanced' : 'fa-plus' }}"></i> {{ $isRawDish ? 'Weigh & Add' : 'Add Item' }}
                           </button>
                         @endif
                       </div>
@@ -452,6 +463,11 @@
                         data-is-addon="{{ $isAddon ? '1' : '0' }}">
                       <td>
                         <strong class="text-dark">{{ $item->subcategory->name ?? $item->name ?? 'Dish Item' }}</strong>
+                        @if($item->is_raw_dish || !empty($item->formatted_weight))
+                          <span class="badge ms-1" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a; font-size:0.7rem; font-weight:700;">
+                            <i class="fa-solid fa-weight-scale me-1"></i>{{ $item->formatted_weight }}
+                          </span>
+                        @endif
                         @if(!empty($item->bar_variation_name))
                           <span class="badge bg-warning text-dark ms-1" style="font-size: 0.72rem;"><i class="fa-solid fa-wine-glass me-1"></i>{{ $item->bar_variation_name }}</span>
                         @elseif($isBar)
@@ -905,6 +921,79 @@
   </div>
 </div>
 
+<!-- Raw Dish Weight Entry Modal (Kg & Grams) -->
+<div class="pos-addon-modal-backdrop" id="orderEditRawWeightModalBackdrop" style="display: none; z-index: 99999;">
+  <div class="pos-addon-modal-box" style="width: 95%; max-width: 460px; margin: auto !important; border-radius: 18px; overflow: hidden;">
+    <div class="pos-addon-modal-header" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff; padding: 16px 20px;">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge" style="background:#fef3c7; color:#92400e; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 6px;">
+            <i class="fa-solid fa-weight-scale me-1"></i> Raw Dish (By Weight)
+          </span>
+          <span class="badge-food-type badge-food-veg" id="orderEditRawFoodTypeBadge" style="font-size: 0.7rem; padding: 2px 6px;">Veg</span>
+        </div>
+        <h4 class="pos-addon-modal-title text-white mb-0" id="orderEditRawDishTitle" style="font-size: 1.15rem;">Dish Name</h4>
+        <div class="pos-addon-modal-subtitle text-white-50" id="orderEditRawRateText" style="font-size: 0.82rem;">Rate: ₹0.00 / Kg</div>
+      </div>
+      <button type="button" class="btn-close-addon-modal text-white" id="closeOrderEditRawModalBtn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="pos-addon-modal-body" style="padding: 20px; background: #fff;">
+      <div class="mb-3 text-center">
+        <label class="form-label text-muted fw-bold small text-uppercase mb-2" style="letter-spacing: 0.05em;">Enter Item Weight:</label>
+        <div class="row g-2 align-items-center justify-content-center">
+          <div class="col-5">
+            <div class="input-group">
+              <input type="number" id="orderEditRawKgInput" min="0" step="1" value="0" class="form-control text-center fw-bold" style="font-size: 1.25rem; border-radius: 10px 0 0 10px; font-family: 'Outfit', sans-serif;">
+              <span class="input-group-text fw-bold bg-light" style="border-radius: 0 10px 10px 0; font-size: 0.88rem;">Kg</span>
+            </div>
+          </div>
+          <div class="col-1 text-center fw-bold text-muted" style="font-size: 1.2rem;">+</div>
+          <div class="col-5">
+            <div class="input-group">
+              <input type="number" id="orderEditRawGramInput" min="0" max="999" step="50" value="0" class="form-control text-center fw-bold" style="font-size: 1.25rem; border-radius: 10px 0 0 10px; font-family: 'Outfit', sans-serif;">
+              <span class="input-group-text fw-bold bg-light" style="border-radius: 0 10px 10px 0; font-size: 0.88rem;">Grams</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Steppers -->
+      <div class="d-flex flex-wrap gap-1 justify-content-center mb-3">
+        <button type="button" class="btn btn-sm btn-outline-secondary btn-order-edit-quick-raw" data-kg="0" data-g="100" style="font-size: 0.76rem; border-radius: 8px;">+100g</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary btn-order-edit-quick-raw" data-kg="0" data-g="250" style="font-size: 0.76rem; border-radius: 8px;">+250g</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary btn-order-edit-quick-raw" data-kg="0" data-g="500" style="font-size: 0.76rem; border-radius: 8px;">+500g</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary btn-order-edit-quick-raw" data-kg="1" data-g="0" style="font-size: 0.76rem; border-radius: 8px;">+1 Kg</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary btn-order-edit-quick-raw" data-kg="2" data-g="0" style="font-size: 0.76rem; border-radius: 8px;">+2 Kg</button>
+        <button type="button" class="btn btn-sm btn-outline-danger btn-order-edit-quick-raw-reset" style="font-size: 0.76rem; border-radius: 8px;">Reset</button>
+      </div>
+
+      <!-- Calculation Display -->
+      <div class="p-3 rounded-3 mb-3" style="background: #f8fafc; border: 1.5px solid #e2e8f0;">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="text-muted small fw-bold">Total Weight:</span>
+          <span class="fw-bold text-dark" id="orderEditRawTotalWeightDisplay" style="font-size: 0.95rem;">0 Kg 0 g (0.000 Kg)</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="text-muted small fw-bold">Base Price / Kg:</span>
+          <span class="text-dark font-monospace fw-bold" id="orderEditRawPerKgDisplay">₹0.00 / Kg</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="border-color: #cbd5e1 !important;">
+          <span class="text-dark fw-bold">Calculated Price:</span>
+          <span class="text-primary fw-bold font-monospace" id="orderEditRawCalculatedPrice" style="font-size: 1.35rem; font-family: 'Outfit', sans-serif;">₹0.00</span>
+        </div>
+      </div>
+    </div>
+    <div class="pos-addon-modal-footer" style="padding: 14px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; gap: 10px;">
+      <button type="button" class="btn btn-secondary fw-bold" id="cancelOrderEditRawBtn" style="border-radius: 10px; padding: 10px 18px;">
+        Cancel
+      </button>
+      <button type="button" class="btn btn-primary fw-bold text-white flex-grow-1" id="confirmOrderEditRawBtn" style="border-radius: 10px; padding: 10px 20px; background: linear-gradient(135deg, #ff5e14 0%, #ff8c42 100%); border: none;">
+        <i class="fa-solid fa-cart-plus me-1"></i> Add to Order
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Luxury Toast Notification -->
 <div class="pos-toast" id="toastNotification">
   <i class="fa-solid fa-circle-check text-success"></i>
@@ -1221,12 +1310,14 @@ function updateNewItemsTable() {
     if (newOrderItems.length === 0) {
         tbody.empty();
         emptyState.show();
+        $('#newItemsCountBadge').text('0 New Items');
         updateSummary();
         return;
     }
     
     emptyState.hide();
     tbody.empty();
+    $('#newItemsCountBadge').text(`${newOrderItems.length} New Item${newOrderItems.length > 1 ? 's' : ''}`);
     
     newOrderItems.forEach((item, index) => {
         let isStandaloneAddon = !!item.is_addon;
@@ -1293,6 +1384,22 @@ function updateNewItemsTable() {
                  <span class="addon-dot ${String(item.food_type || '').toLowerCase() === 'non-veg' ? 'nonveg' : 'veg'}"></span>
                  <strong class="text-dark" style="font-size: 0.95rem;">${escapeHtml(item.name)}</strong>
                </div>`;
+        } else if (item.is_raw_dish) {
+            let weightParts = [];
+            if (item.weight_kg && item.weight_kg > 0) weightParts.push(item.weight_kg + ' kg');
+            if (item.weight_gram && item.weight_gram > 0) weightParts.push(item.weight_gram + ' gm');
+            let weightStr = weightParts.join(' ');
+            if (!weightStr) weightStr = (item.weight_in_kg ? item.weight_in_kg + ' kg' : 'Raw Weight');
+            itemTitleHtml = `
+                <div>
+                    <div class="d-flex align-items-center gap-1">
+                        <strong class="text-dark" style="font-size: 0.95rem;">${escapeHtml(item.name)}</strong>
+                        <span class="badge ms-1" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a; font-size: 0.65rem; font-weight: 800; padding:1px 5px; border-radius:4px;">
+                            <i class="fa-solid fa-weight-scale me-1"></i>${weightStr}
+                        </span>
+                    </div>
+                </div>
+            `;
         } else {
             itemTitleHtml = `<div class="d-flex align-items-center justify-content-between">
                  <strong class="text-dark" style="font-size: 0.95rem;">${escapeHtml(item.name)}</strong>
@@ -1351,6 +1458,8 @@ function updateNewItemsTable() {
     
     updateSummary();
 }
+window.updateNewItemsTable = updateNewItemsTable;
+window.renderNewOrderTable = updateNewItemsTable;
 
 // Category and Food Item Filtering Logic
 function applyFoodFilters() {
@@ -1598,6 +1707,136 @@ $(document).ready(function() {
         pendingStandaloneAddon = null;
     });
 
+    // Raw Dish Weight Modal Logic (Edit Mode)
+    let currentOrderEditRawDish = null;
+
+    function openOrderEditRawModal(dish) {
+        currentOrderEditRawDish = dish;
+        $('#orderEditRawDishTitle').text(dish.name);
+        let isNonVeg = (String(dish.food_type).toLowerCase() === 'non-veg');
+        $('#orderEditRawFoodTypeBadge')
+            .removeClass('badge-food-veg badge-food-nonveg')
+            .addClass(isNonVeg ? 'badge-food-nonveg' : 'badge-food-veg')
+            .text(isNonVeg ? 'Non-Veg' : 'Veg');
+
+        let perKg = parseFloat(dish.price) || 0;
+        $('#orderEditRawRateText').text('Rate: ₹' + perKg.toFixed(2) + ' / Kg');
+        $('#orderEditRawPerKgDisplay').text('₹' + perKg.toFixed(2) + ' / Kg');
+
+        $('#orderEditRawKgInput').val(1);
+        $('#orderEditRawGramInput').val(0);
+        recalculateOrderEditRawModal();
+        $('#orderEditRawWeightModalBackdrop').addClass('is-open').css('display', 'flex').hide().fadeIn(150);
+    }
+
+    function closeOrderEditRawModal() {
+        $('#orderEditRawWeightModalBackdrop').removeClass('is-open').fadeOut(120, function() {
+            $(this).css('display', 'none');
+        });
+        currentOrderEditRawDish = null;
+    }
+
+    function recalculateOrderEditRawModal() {
+        if (!currentOrderEditRawDish) return;
+        let kg = parseInt($('#orderEditRawKgInput').val()) || 0;
+        let gram = parseInt($('#orderEditRawGramInput').val()) || 0;
+        if (kg < 0) { kg = 0; $('#orderEditRawKgInput').val(0); }
+        if (gram < 0) { gram = 0; $('#orderEditRawGramInput').val(0); }
+
+        let totalKg = kg + (gram / 1000);
+        let perKg = parseFloat(currentOrderEditRawDish.price) || 0;
+        let calculated = Math.round(totalKg * perKg * 100) / 100;
+
+        let weightText = `${kg > 0 ? kg + ' Kg ' : ''}${gram > 0 ? gram + ' g' : ''}`.trim();
+        if (!weightText) weightText = '0 g';
+        $('#orderEditRawTotalWeightDisplay').text(`${weightText} (${totalKg.toFixed(3)} Kg)`);
+        $('#orderEditRawCalculatedPrice').text('₹' + calculated.toFixed(2));
+    }
+
+    $(document).on('input change', '#orderEditRawKgInput, #orderEditRawGramInput', function() {
+        recalculateOrderEditRawModal();
+    });
+
+    $(document).on('click', '.btn-order-edit-quick-raw', function(e) {
+        e.preventDefault();
+        let addKg = parseInt($(this).data('kg')) || 0;
+        let addG = parseInt($(this).data('g')) || 0;
+        let curKg = parseInt($('#orderEditRawKgInput').val()) || 0;
+        let curG = parseInt($('#orderEditRawGramInput').val()) || 0;
+
+        let newG = curG + addG;
+        let carryKg = Math.floor(newG / 1000);
+        newG = newG % 1000;
+        let newKg = curKg + addKg + carryKg;
+
+        $('#orderEditRawKgInput').val(newKg);
+        $('#orderEditRawGramInput').val(newG);
+        recalculateOrderEditRawModal();
+    });
+
+    $(document).on('click', '.btn-order-edit-quick-raw-reset', function(e) {
+        e.preventDefault();
+        $('#orderEditRawKgInput').val(0);
+        $('#orderEditRawGramInput').val(0);
+        recalculateOrderEditRawModal();
+    });
+
+    $(document).on('click', '#closeOrderEditRawModalBtn, #cancelOrderEditRawBtn', function(e) {
+        e.preventDefault();
+        closeOrderEditRawModal();
+    });
+
+    $(document).on('click', '#orderEditRawWeightModalBackdrop', function(e) {
+        if (e.target === this) {
+            closeOrderEditRawModal();
+        }
+    });
+
+    $(document).on('click', '#confirmOrderEditRawBtn', function(e) {
+        e.preventDefault();
+        if (!currentOrderEditRawDish) return;
+        let kg = parseInt($('#orderEditRawKgInput').val()) || 0;
+        let gram = parseInt($('#orderEditRawGramInput').val()) || 0;
+        let totalKg = kg + (gram / 1000);
+
+        if (totalKg <= 0) {
+            alert('Please enter a weight greater than 0.');
+            return;
+        }
+
+        let perKg = parseFloat(currentOrderEditRawDish.price) || 0;
+        let calculatedPrice = Math.round(totalKg * perKg * 100) / 100;
+        let dishName = currentOrderEditRawDish.name;
+        let weightText = `${kg > 0 ? kg + ' kg ' : ''}${gram > 0 ? gram + ' gm' : ''}`.trim();
+        if (!weightText) weightText = `${totalKg.toFixed(3)} kg`;
+
+        newOrderItems.push({
+            id: currentOrderEditRawDish.id,
+            dish_id: currentOrderEditRawDish.id,
+            name: currentOrderEditRawDish.name,
+            price: calculatedPrice,
+            qty: 1,
+            is_raw_dish: true,
+            weight_in_kg: totalKg,
+            weight_kg: kg,
+            weight_gram: gram,
+            per_kg_price: perKg,
+            itemDiscount: currentOrderEditRawDish.discount || 0,
+            available_addons: currentOrderEditRawDish.addons || [],
+            addons: []
+        });
+
+        closeOrderEditRawModal();
+        showToast(`${dishName} (${weightText}) added to order`);
+        updateNewItemsTable();
+    });
+
+    // Allow clicking the dish card anywhere to trigger add
+    $(document).on('click', '.food-card', function(e) {
+        if ($(e.target).closest('.add-item-btn, .open-addon-modal-btn, button, a, input').length) return;
+        $(this).find('.add-item-btn').first().trigger('click');
+    });
+
     // Add new item button from dish card
     $(document).on('click', '.add-item-btn', function(e) {
         e.preventDefault();
@@ -1605,6 +1844,7 @@ $(document).ready(function() {
         let itemName = $(this).data('name');
         let itemPrice = parseFloat($(this).data('price'));
         let itemDiscount = parseFloat($(this).data('discount')) || 0;
+        let isRaw = parseInt($(this).data('is-raw')) === 1;
         
         let rawAddons = $(this).attr('data-addons') || $(this).data('addons');
         let availableAddons = [];
@@ -1612,6 +1852,18 @@ $(document).ready(function() {
             try { availableAddons = JSON.parse(rawAddons); } catch(e) { availableAddons = []; }
         } else if (Array.isArray(rawAddons)) {
             availableAddons = rawAddons;
+        }
+
+        if (isRaw) {
+            openOrderEditRawModal({
+                id: itemId,
+                name: itemName,
+                price: itemPrice,
+                discount: itemDiscount,
+                food_type: $(this).closest('.food-card').data('type') || 'veg',
+                addons: availableAddons
+            });
+            return;
         }
 
         let existingItem = newOrderItems.find(i => i.id == itemId && (!i.addons || i.addons.length === 0));
@@ -2160,7 +2412,11 @@ $(document).ready(function() {
                 bar_variation_id: item.bar_variation_id || null,
                 bar_variation_name: item.bar_variation_name || null,
                 bar_variation_ml: item.bar_variation_ml || null,
-                is_bar: item.is_bar ? 1 : 0
+                is_bar: item.is_bar ? 1 : 0,
+                is_raw_dish: item.is_raw_dish ? 1 : 0,
+                weight_in_kg: item.weight_in_kg || null,
+                weight_gram: item.weight_gram || null,
+                per_kg_price: item.per_kg_price || null
             }));
         }
         

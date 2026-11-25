@@ -694,4 +694,77 @@ class StaffPayrollTest extends TestCase
         // Must strictly EXCLUDE permanent staff Angela
         $this->assertNotContains($permStaff->id, $staffIdsInDropdown, 'Pure permanent worker Angela must NOT appear in hourly staff dropdown.');
     }
+
+    public function test_salary_configuration_supports_fixed_and_percentage_deductions_in_operations_and_payroll()
+    {
+        $testStaff = User::firstOrCreate(
+            ['email' => 'fixed_deduct_staff@example.com'],
+            [
+                'name' => 'Stanley Hudson',
+                'password' => bcrypt('password123'),
+                'restaurant_id' => $this->restaurant->id,
+                'role' => 'STAFF',
+                'role_type' => 'WAITER',
+                'status' => 'A',
+            ]
+        );
+
+        // Save salary from operations form: P-Tax fixed ₹200, Other fixed ₹150
+        $response = $this->actingAs($this->adminUser)
+            ->post(route('restaurant.staff.save-salary'), [
+                'user_id' => $testStaff->id,
+                'employment_type' => 'permanent',
+                'monthly_salary' => 30000.00,
+                'pf_percentage' => 10.00,  // ₹3,000
+                'esi_percentage' => 1.00,  // ₹300
+                'ptax_type' => 'fixed',
+                'ptax_value' => 200.00,    // ₹200 fixed
+                'other_deduction_type' => 'fixed',
+                'other_deduction_value' => 150.00, // ₹150 fixed
+                'weekoff_count' => 4,
+            ]);
+
+        $response->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('staff_salaries', [
+            'user_id' => $testStaff->id,
+            'employment_type' => 'permanent',
+            'monthly_salary' => 30000.00,
+            'ptax_type' => 'fixed',
+            'ptax_amount' => 200.00,
+            'other_deduction_type' => 'fixed',
+            'other_deduction_amount' => 150.00,
+        ]);
+
+        // Check Salary Management view for this month (Nov 2026, 30 days)
+        // Mark 26 present days so 0 absent days (26 present + 4 weekoffs = 30)
+        for ($i = 1; $i <= 26; $i++) {
+            StaffAttendance::create([
+                'restaurant_id' => $this->restaurant->id,
+                'user_id' => $testStaff->id,
+                'attendance_date' => sprintf('2026-11-%02d', $i),
+                'attendance_type' => 'P',
+                'employee_type' => 'permanent',
+            ]);
+        }
+
+        $res = $this->actingAs($this->adminUser)
+            ->get(route('restaurant.salary.index', ['month' => 11, 'year' => 2026]));
+
+        $res->assertStatus(200);
+        $staffList = $res->viewData('staffList');
+        $stanley = collect($staffList)->firstWhere('user_id', $testStaff->id);
+
+        $this->assertNotNull($stanley);
+        $this->assertEquals('fixed', $stanley['ptax_type']);
+        $this->assertEquals('fixed', $stanley['other_type']);
+        $this->assertEquals(200.00, (float)$stanley['ptax_amount']);
+        $this->assertEquals(150.00, (float)$stanley['other_deduction_amount']);
+        $this->assertEquals(350.00, (float)$stanley['other_deductions']); // 200 + 150 = 350
+        $this->assertEquals(3000.00, (float)$stanley['pf_amount']);
+        $this->assertEquals(300.00, (float)$stanley['esi_amount']);
+        $this->assertEquals(3650.00, (float)$stanley['total_statutory']); // 3000 + 300 + 350 = 3650
+        $this->assertEquals(26350.00, (float)$stanley['net_salary']);     // 30000 - 3650 = 26350
+        $this->assertEquals(26350.00, (float)$stanley['final_salary']);
+    }
 }

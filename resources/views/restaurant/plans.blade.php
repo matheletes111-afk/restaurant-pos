@@ -355,12 +355,41 @@
         text-decoration: none;
     }
 
-    .btn-select.disabled {
-        background: #e2e8f0;
-        color: #94a3b8 !important;
-        box-shadow: none;
-        cursor: not-allowed;
-        transform: none;
+    .btn-select.disabled,
+    .btn-select:disabled {
+        background: #94a3b8 !important;
+        color: #ffffff !important;
+        box-shadow: none !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+        pointer-events: none;
+        opacity: 0.45 !important;
+        filter: grayscale(0.85);
+    }
+
+    @keyframes planBtnActivePulse {
+        0% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(255, 106, 0, 0.6); }
+        70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(255, 106, 0, 0); }
+        100% { transform: scale(1); box-shadow: 0 6px 18px rgba(255, 106, 0, 0.35); }
+    }
+
+    .btn-select.is-active-ready {
+        animation: planBtnActivePulse 0.45s ease-out;
+        box-shadow: 0 6px 18px rgba(255, 106, 0, 0.35) !important;
+    }
+
+    .terms-card-wrapper {
+        transition: all 0.25s ease;
+        text-align: left;
+    }
+
+    .terms-card-wrapper:hover {
+        border-color: #cbd5e1 !important;
+        background: #ffffff !important;
+    }
+
+    .terms-plan-checkbox:checked + label {
+        color: #1e293b !important;
     }
 
     .empty-state {
@@ -618,12 +647,32 @@
                                                     <i class="fas fa-ban me-2"></i> Free Trial Used
                                                 </button>
                                             @else
-                                                <a href="{{ route('admin.subscriptions.create', $plan->id) }}" class="btn-select">
+                                                {{-- Terms & Conditions Acceptance Checkbox --}}
+                                                <div class="terms-card-wrapper mb-3 p-2 rounded" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                                                    <div class="form-check d-flex align-items-start gap-2 mb-0">
+                                                        <input class="form-check-input terms-plan-checkbox mt-1" type="checkbox" id="terms_rest_plan_{{ $plan->id }}" data-plan-id="{{ $plan->id }}" style="cursor: pointer; width: 1.15em; height: 1.15em; accent-color: var(--primary);">
+                                                        <label class="form-check-label text-muted mb-0" for="terms_rest_plan_{{ $plan->id }}" style="font-size: 0.8rem; cursor: pointer; line-height: 1.45;">
+                                                            I accept the <a href="{{ route('terms.conditions') }}" target="_blank" class="fw-bold text-decoration-underline text-primary">Terms &amp; Conditions</a> and <a href="{{ route('privacy.policy') }}" target="_blank" class="fw-bold text-decoration-underline text-primary">Privacy Policy</a>
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+                                                <a href="{{ route('admin.subscriptions.create', $plan->id) }}" id="btn_rest_plan_{{ $plan->id }}" class="btn-select disabled" data-plan-id="{{ $plan->id }}" aria-disabled="true">
                                                     <i class="fas fa-gift me-2"></i> Start Free Trial
                                                 </a>
                                             @endif
                                         @else
-                                            <a href="{{ route('admin.subscriptions.create', $plan->id) }}" class="btn-select">
+                                            {{-- Terms & Conditions Acceptance Checkbox --}}
+                                            <div class="terms-card-wrapper mb-3 p-2 rounded" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                                                <div class="form-check d-flex align-items-start gap-2 mb-0">
+                                                    <input class="form-check-input terms-plan-checkbox mt-1" type="checkbox" id="terms_rest_plan_{{ $plan->id }}" data-plan-id="{{ $plan->id }}" style="cursor: pointer; width: 1.15em; height: 1.15em; accent-color: var(--primary);">
+                                                    <label class="form-check-label text-muted mb-0" for="terms_rest_plan_{{ $plan->id }}" style="font-size: 0.8rem; cursor: pointer; line-height: 1.45;">
+                                                        I accept the <a href="{{ route('terms.conditions') }}" target="_blank" class="fw-bold text-decoration-underline text-primary">Terms &amp; Conditions</a> and <a href="{{ route('privacy.policy') }}" target="_blank" class="fw-bold text-decoration-underline text-primary">Privacy Policy</a>
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <a href="{{ route('admin.subscriptions.create', $plan->id) }}" id="btn_rest_plan_{{ $plan->id }}" class="btn-select disabled" data-plan-id="{{ $plan->id }}" aria-disabled="true">
                                                 <i class="fas fa-shopping-cart me-2"></i> Subscribe Now
                                             </a>
                                         @endif
@@ -697,6 +746,52 @@
 
         // Initialize with default Yearly/Annual filter on load
         applyTimeframeFilter('yearly');
+
+        // Terms & Conditions checkbox toggle for plan purchase button
+        document.querySelectorAll('.terms-plan-checkbox').forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                const planId = this.getAttribute('data-plan-id');
+                const btn = document.getElementById('btn_rest_plan_' + planId);
+                if (!btn) return;
+
+                if (this.checked) {
+                    btn.classList.remove('disabled');
+                    btn.removeAttribute('aria-disabled');
+                    btn.classList.remove('is-active-ready');
+                    void btn.offsetWidth; // trigger reflow
+                    btn.classList.add('is-active-ready');
+                } else {
+                    btn.classList.add('disabled');
+                    btn.setAttribute('aria-disabled', 'true');
+                    btn.classList.remove('is-active-ready');
+                }
+            });
+        });
+
+        // Click interceptor to prevent clicking disabled plan button
+        document.querySelectorAll('.btn-select').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                if (this.classList.contains('disabled') || this.getAttribute('aria-disabled') === 'true') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const planId = this.getAttribute('data-plan-id');
+                    const checkbox = document.getElementById('terms_rest_plan_' + planId);
+                    if (checkbox) {
+                        checkbox.focus();
+                        const wrapper = checkbox.closest('.terms-card-wrapper');
+                        if (wrapper) {
+                            wrapper.style.borderColor = '#ff6a00';
+                            wrapper.style.boxShadow = '0 0 0 3px rgba(255, 106, 0, 0.15)';
+                            setTimeout(() => { 
+                                wrapper.style.borderColor = '#e2e8f0'; 
+                                wrapper.style.boxShadow = 'none';
+                            }, 800);
+                        }
+                    }
+                    alert('Please accept the Terms & Conditions and Privacy Policy to proceed with this plan.');
+                }
+            });
+        });
     });
 </script>
 

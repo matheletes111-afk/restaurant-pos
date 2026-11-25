@@ -76,10 +76,12 @@ class RestaurantStaffController extends Controller
         $newUser->pincode       = $request->pincode;
         $newUser->status        = $request->status ?? 'A';
         $newUser->password      = Hash::make($request->password);
+        $newUser->permissions   = [];
 
         $newUser->save();
 
-        return back()->with('success','Staff added successfully!');
+        return redirect()->route('restaurant.staff.permissions', $newUser->id)
+            ->with('success', 'Staff member added successfully! Please assign permissions for this user.');
     }
 
     // UPDATE
@@ -713,8 +715,14 @@ class RestaurantStaffController extends Controller
                 'monthly_salary' => (float) $salary->monthly_salary,
                 'pf_percentage' => (float) $salary->pf_percentage,
                 'esi_percentage' => (float) $salary->esi_percentage,
+                'ptax_type' => $salary->ptax_type ?? 'percentage',
                 'ptax_percentage' => (float) $salary->ptax_percentage,
+                'ptax_amount' => (float) ($salary->ptax_amount ?? 0),
+                'ptax_value' => ($salary->ptax_type ?? 'percentage') === 'fixed' ? (float) ($salary->ptax_amount ?? 0) : (float) $salary->ptax_percentage,
+                'other_deduction_type' => $salary->other_deduction_type ?? 'percentage',
                 'other_deduction_percentage' => (float) $salary->other_deduction_percentage,
+                'other_deduction_amount' => (float) ($salary->other_deduction_amount ?? 0),
+                'other_deduction_value' => ($salary->other_deduction_type ?? 'percentage') === 'fixed' ? (float) ($salary->other_deduction_amount ?? 0) : (float) $salary->other_deduction_percentage,
                 'weekoff_count' => (int) $salary->weekoff_count,
                 'hourly_wage' => (float) $salary->hourly_wage,
                 'notes' => $salary->notes,
@@ -725,8 +733,14 @@ class RestaurantStaffController extends Controller
                 'monthly_salary' => '',
                 'pf_percentage' => 0,
                 'esi_percentage' => 0,
+                'ptax_type' => 'percentage',
                 'ptax_percentage' => 0,
+                'ptax_amount' => 0,
+                'ptax_value' => 0,
+                'other_deduction_type' => 'percentage',
                 'other_deduction_percentage' => 0,
+                'other_deduction_amount' => 0,
+                'other_deduction_value' => 0,
                 'weekoff_count' => 4,
                 'hourly_wage' => '',
                 'notes' => '',
@@ -754,8 +768,14 @@ class RestaurantStaffController extends Controller
             'monthly_salary' => 'nullable|numeric|min:0',
             'pf_percentage' => 'nullable|numeric|min:0|max:100',
             'esi_percentage' => 'nullable|numeric|min:0|max:100',
-            'ptax_percentage' => 'nullable|numeric|min:0|max:100',
-            'other_deduction_percentage' => 'nullable|numeric|min:0|max:100',
+            'ptax_type' => 'nullable|in:percentage,fixed',
+            'ptax_value' => 'nullable|numeric|min:0',
+            'ptax_percentage' => 'nullable|numeric|min:0',
+            'ptax_amount' => 'nullable|numeric|min:0',
+            'other_deduction_type' => 'nullable|in:percentage,fixed',
+            'other_deduction_value' => 'nullable|numeric|min:0',
+            'other_deduction_percentage' => 'nullable|numeric|min:0',
+            'other_deduction_amount' => 'nullable|numeric|min:0',
             'weekoff_count' => 'nullable|integer|min:0|max:31',
             'hourly_wage' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string|max:1000',
@@ -787,8 +807,33 @@ class RestaurantStaffController extends Controller
             $salaryData['monthly_salary'] = $request->filled('monthly_salary') ? (float) $request->monthly_salary : 0;
             $salaryData['pf_percentage'] = $request->filled('pf_percentage') ? (float) $request->pf_percentage : 0;
             $salaryData['esi_percentage'] = $request->filled('esi_percentage') ? (float) $request->esi_percentage : 0;
-            $salaryData['ptax_percentage'] = $request->filled('ptax_percentage') ? (float) $request->ptax_percentage : 0;
-            $salaryData['other_deduction_percentage'] = $request->filled('other_deduction_percentage') ? (float) $request->other_deduction_percentage : 0;
+
+            // P-Tax
+            $ptaxType = $request->input('ptax_type', 'percentage');
+            $salaryData['ptax_type'] = $ptaxType;
+            if ($ptaxType === 'fixed') {
+                $ptaxVal = $request->filled('ptax_value') ? (float) $request->ptax_value : ($request->filled('ptax_amount') ? (float) $request->ptax_amount : 0);
+                $salaryData['ptax_amount'] = $ptaxVal;
+                $salaryData['ptax_percentage'] = 0;
+            } else {
+                $ptaxVal = $request->filled('ptax_value') ? (float) $request->ptax_value : ($request->filled('ptax_percentage') ? (float) $request->ptax_percentage : 0);
+                $salaryData['ptax_percentage'] = min(100, $ptaxVal);
+                $salaryData['ptax_amount'] = 0;
+            }
+
+            // Other Deduction
+            $otherType = $request->input('other_deduction_type', 'percentage');
+            $salaryData['other_deduction_type'] = $otherType;
+            if ($otherType === 'fixed') {
+                $otherVal = $request->filled('other_deduction_value') ? (float) $request->other_deduction_value : ($request->filled('other_deduction_amount') ? (float) $request->other_deduction_amount : 0);
+                $salaryData['other_deduction_amount'] = $otherVal;
+                $salaryData['other_deduction_percentage'] = 0;
+            } else {
+                $otherVal = $request->filled('other_deduction_value') ? (float) $request->other_deduction_value : ($request->filled('other_deduction_percentage') ? (float) $request->other_deduction_percentage : 0);
+                $salaryData['other_deduction_percentage'] = min(100, $otherVal);
+                $salaryData['other_deduction_amount'] = 0;
+            }
+
             $salaryData['weekoff_count'] = $request->filled('weekoff_count') ? (int) $request->weekoff_count : 4;
             $salaryData['hourly_wage'] = 0;
         } else {
@@ -796,8 +841,12 @@ class RestaurantStaffController extends Controller
             $salaryData['monthly_salary'] = 0;
             $salaryData['pf_percentage'] = 0;
             $salaryData['esi_percentage'] = 0;
+            $salaryData['ptax_type'] = 'percentage';
             $salaryData['ptax_percentage'] = 0;
+            $salaryData['ptax_amount'] = 0;
+            $salaryData['other_deduction_type'] = 'percentage';
             $salaryData['other_deduction_percentage'] = 0;
+            $salaryData['other_deduction_amount'] = 0;
             $salaryData['weekoff_count'] = 0;
         }
 

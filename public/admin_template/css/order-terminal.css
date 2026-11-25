@@ -1191,6 +1191,12 @@ body {
   justify-content: center !important;
 }
 
+.pos-addon-modal-backdrop[style*="display: none"],
+.pos-addon-modal-backdrop[style*="display:none"],
+.pos-addon-modal-backdrop:not(.is-open):not([style*="display: flex"]):not([style*="display: block"]) {
+  display: none !important;
+}
+
 .pos-addon-modal-box {
   background: #ffffff !important;
   border-radius: 20px !important;

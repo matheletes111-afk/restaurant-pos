@@ -52,7 +52,12 @@ class RestaurantProfileController extends Controller
             'pincode' => 'required|string|max:10',
             'gstin' => 'nullable|string|max:50',
             'vatin' => 'nullable|string|max:50',
+            'thermal_print_size' => 'nullable|string|in:80mm,58mm',
             'fssai_number' => 'nullable|string|max:50',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'geofence_radius_meters' => 'nullable|integer|min:10|max:1000',
+            'geofence_enabled' => 'nullable',
             'gst_percentage' => 'nullable|numeric|min:0|max:100',
             'vat_percentage' => 'nullable|numeric|min:0|max:100',
             'upi_id' => 'nullable|string|max:100',
@@ -135,10 +140,25 @@ class RestaurantProfileController extends Controller
             $restaurant->pincode = $request->pincode;
             $restaurant->gstin = $request->gstin;
             $restaurant->vatin = $request->vatin ? trim($request->vatin) : null;
+            $restaurant->thermal_print_size = $request->thermal_print_size ?: '80mm';
             $restaurant->fssai_number = $request->fssai_number;
             $restaurant->gst_percentage = $request->gst_percentage ?? 0;
             $restaurant->vat_percentage = $request->vat_percentage ?? 0;
             $restaurant->upi_id = $request->upi_id;
+
+            // Location & Geofence
+            if ($request->filled('latitude') && $request->filled('longitude')) {
+                $restaurant->latitude = $request->latitude;
+                $restaurant->longitude = $request->longitude;
+            } elseif ($request->has('clear_location') || ($request->has('latitude') && empty($request->latitude))) {
+                $restaurant->latitude = null;
+                $restaurant->longitude = null;
+            }
+            if ($request->filled('geofence_radius_meters')) {
+                $restaurant->geofence_radius_meters = (int) $request->geofence_radius_meters;
+            }
+            $restaurant->geofence_enabled = $request->has('geofence_enabled') ? true : false;
+
             $restaurant->save();
             
             DB::commit();

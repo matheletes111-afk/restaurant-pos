@@ -293,10 +293,21 @@ public function store(Request $request)
         $barVariationMl = !empty($item['bar_variation_ml']) ? floatval($item['bar_variation_ml']) : null;
         $vatRate = isset($item['vat_rate']) ? floatval($item['vat_rate']) : 0;
 
-        if ($vatRate <= 0 && $subcatId) {
+        $isRawDish = !empty($item['is_raw_dish']);
+        $weightInKg = isset($item['weight_in_kg']) ? floatval($item['weight_in_kg']) : null;
+        $weightGram = isset($item['weight_gram']) ? intval($item['weight_gram']) : null;
+        $perKgPrice = isset($item['per_kg_price']) ? floatval($item['per_kg_price']) : null;
+
+        if ($subcatId) {
             $subcModel = SubCategory::find($subcatId);
             if ($subcModel && ($subcModel->food_type === 'BAR' || $subcModel->vat_rate > 0)) {
                 $vatRate = floatval($subcModel->vat_rate ?? 0);
+            }
+            if ($subcModel && $subcModel->is_raw_dish) {
+                $isRawDish = true;
+                if ($perKgPrice === null || $perKgPrice <= 0) {
+                    $perKgPrice = floatval($subcModel->price ?? 0);
+                }
             }
         }
 
@@ -397,6 +408,10 @@ public function store(Request $request)
             'sgst_amount' => $sgstAmount,
             'igst_amount' => 0,
             'total_amount' => $totalAmount,
+            'is_raw_dish' => $isRawDish,
+            'weight_in_kg' => $weightInKg,
+            'weight_gram' => $weightGram,
+            'per_kg_price' => $perKgPrice,
         ];
     }
 
@@ -459,6 +474,10 @@ public function store(Request $request)
             'sgst_amount' => $item['sgst_amount'],
             'igst_amount' => $item['igst_amount'],
             'total_amount' => $item['total_amount'],
+            'is_raw_dish' => !empty($item['is_raw_dish']),
+            'weight_in_kg' => $item['weight_in_kg'] ?? null,
+            'weight_gram' => $item['weight_gram'] ?? null,
+            'per_kg_price' => $item['per_kg_price'] ?? null,
             'order_status' => 'PENDING',
             'restaurant_id' => $request->restaurant_id,
         ]);
@@ -1212,6 +1231,20 @@ public function store(Request $request)
                     $totalAmount = $taxableAmount + $gstAmount;
                 }
 
+                $isRawDish = !empty($item['is_raw_dish']);
+                $weightInKg = isset($item['weight_in_kg']) ? floatval($item['weight_in_kg']) : null;
+                $weightGram = isset($item['weight_gram']) ? intval($item['weight_gram']) : null;
+                $perKgPrice = isset($item['per_kg_price']) ? floatval($item['per_kg_price']) : null;
+                if (!$isRawDish && $subcatId) {
+                    $checkSubc = SubCategory::find($subcatId);
+                    if ($checkSubc && $checkSubc->is_raw_dish) {
+                        $isRawDish = true;
+                        if ($perKgPrice === null || $perKgPrice <= 0) {
+                            $perKgPrice = floatval($checkSubc->price ?? 0);
+                        }
+                    }
+                }
+
                 OrderItems::create([
                     'order_id' => $order->id,
                     'subcategory_id' => $subcatId,
@@ -1232,6 +1265,10 @@ public function store(Request $request)
                     'bar_variation_name' => $barVariationName,
                     'bar_variation_ml' => $barVariationMl,
                     'total_amount' => $totalAmount,
+                    'is_raw_dish' => $isRawDish,
+                    'weight_in_kg' => $weightInKg,
+                    'weight_gram' => $weightGram,
+                    'per_kg_price' => $perKgPrice,
                     'order_status' => 'PENDING',
                     'is_new' => 1,
                     'restaurant_id' => $order->restaurant_id,
@@ -1700,6 +1737,10 @@ public function store(Request $request)
                 $orderItem->sgst_amount    = $p['sgst_amount'];
                 $orderItem->igst_amount    = $p['igst_amount'];
                 $orderItem->total_amount   = $p['total_amount'];
+                $orderItem->is_raw_dish    = $origItem->is_raw_dish;
+                $orderItem->weight_in_kg   = $origItem->weight_in_kg;
+                $orderItem->weight_gram    = $origItem->weight_gram;
+                $orderItem->per_kg_price   = $origItem->per_kg_price;
                 $orderItem->order_status   = 'PENDING';
                 $orderItem->restaurant_id  = $order->restaurant_id;
                 $orderItem->user_id        = auth()->id();

@@ -238,10 +238,31 @@
         }
 
         .btn-submit-checkout:disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
             transform: none !important;
             box-shadow: none !important;
+            background: #94a3b8 !important;
+        }
+
+        @keyframes checkoutBtnActivePulse {
+            0% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(255, 106, 0, 0.6); }
+            70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(255, 106, 0, 0); }
+            100% { transform: scale(1); box-shadow: 0 4px 15px rgba(255, 106, 0, 0.35); }
+        }
+
+        .btn-submit-checkout.is-active-ready {
+            animation: checkoutBtnActivePulse 0.45s ease-out;
+            box-shadow: 0 4px 15px rgba(255, 106, 0, 0.35) !important;
+        }
+
+        .terms-card-wrapper {
+            transition: all 0.25s ease;
+        }
+
+        .terms-card-wrapper:hover {
+            border-color: #cbd5e1 !important;
+            background: #ffffff !important;
         }
 
         .btn-cancel-checkout {
@@ -477,12 +498,22 @@
                                     @csrf
                                     <input type="hidden" name="plan_id" value="{{ $plan->id }}">
                                     
+                                    {{-- Terms & Conditions Acceptance Checkbox --}}
+                                    <div class="terms-card-wrapper mb-3 p-3 rounded" style="background: #f8fafc; border: 1px solid #e2e8f0; text-align: left; max-width: 480px; margin: 0 auto 20px;">
+                                        <div class="form-check d-flex align-items-start gap-2 mb-0">
+                                            <input class="form-check-input mt-1" type="checkbox" name="terms" id="checkout_terms_checkbox" style="cursor: pointer; width: 1.2em; height: 1.2em; accent-color: var(--primary);">
+                                            <label class="form-check-label text-muted mb-0" for="checkout_terms_checkbox" style="font-size: 0.85rem; cursor: pointer; line-height: 1.45;">
+                                                I have read and agree to the <a href="{{ route('terms.conditions') }}" target="_blank" class="fw-bold text-decoration-underline text-primary">Terms &amp; Conditions</a> and <a href="{{ route('privacy.policy') }}" target="_blank" class="fw-bold text-decoration-underline text-primary">Privacy Policy</a>
+                                            </label>
+                                        </div>
+                                    </div>
+
                                     @if(!$user->phone)
                                         <button type="button" class="btn-submit-checkout" disabled title="Please update your profile contact number to proceed.">
                                             <i class="fas fa-lock-open me-2"></i> Register Mobile Number to Pay
                                         </button>
                                     @else
-                                        <button type="submit" class="btn-submit-checkout">
+                                        <button type="submit" id="btn_submit_checkout" class="btn-submit-checkout" disabled>
                                             <i class="fas fa-shield-alt"></i> Proceed to Secure Payment
                                         </button>
                                     @endif
@@ -505,5 +536,27 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
     @include('includes.script')
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const termsCheckbox = document.getElementById('checkout_terms_checkbox');
+        const submitBtn = document.getElementById('btn_submit_checkout');
+        const hasPhone = {{ !empty($user->phone) ? 'true' : 'false' }};
+
+        if (termsCheckbox && submitBtn && hasPhone) {
+            termsCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('is-active-ready');
+                    void submitBtn.offsetWidth;
+                    submitBtn.classList.add('is-active-ready');
+                } else {
+                    submitBtn.disabled = true;
+                    submitBtn.classList.remove('is-active-ready');
+                }
+            });
+        }
+    });
+    </script>
 </body>
 </html>

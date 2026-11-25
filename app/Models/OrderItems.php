@@ -36,6 +36,10 @@ class OrderItems extends Model
         'restaurant_id',
         'user_id',
         'kot_no',
+        'is_raw_dish',
+        'weight_in_kg',
+        'weight_gram',
+        'per_kg_price',
     ];
 
     protected $casts = [
@@ -56,7 +60,34 @@ class OrderItems extends Model
         'is_bar_stock_deducted' => 'boolean',
         'is_new' => 'boolean',
         'addons' => 'array',
+        'is_raw_dish' => 'boolean',
+        'weight_in_kg' => 'decimal:3',
+        'weight_gram' => 'integer',
+        'per_kg_price' => 'decimal:2',
     ];
+
+    /**
+     * Get clean formatted weight representation (e.g. "1 kg 250 g", "500 g", "2 kg")
+     */
+    public function getFormattedWeightAttribute()
+    {
+        if (!$this->is_raw_dish && empty($this->weight_in_kg)) {
+            return null;
+        }
+        $kgVal = floatval($this->weight_in_kg ?? 0);
+        if ($kgVal <= 0) {
+            return null;
+        }
+        $wholeKg = floor($kgVal);
+        $grams = round(($kgVal - $wholeKg) * 1000);
+        if ($wholeKg > 0 && $grams > 0) {
+            return "{$wholeKg} kg {$grams} gm";
+        } elseif ($wholeKg > 0) {
+            return "{$wholeKg} kg";
+        } else {
+            return "{$grams} gm";
+        }
+    }
 
     public function order()
     {

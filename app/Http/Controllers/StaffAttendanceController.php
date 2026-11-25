@@ -160,6 +160,10 @@ class StaffAttendanceController extends Controller
             'unmarked_count' => max(0, $staffList->count() - $attendances->count()),
         ];
 
+        $activeRestaurant = $selectedOutletId && $selectedOutletId !== 'all'
+            ? RestaurantMaster::find($selectedOutletId)
+            : ($availableOutlets->first() ?: RestaurantMaster::find(auth()->user()->restaurant_id));
+
         return view('restaurant.attendance', compact(
             'attendances',
             'date',
@@ -168,8 +172,38 @@ class StaffAttendanceController extends Controller
             'stats',
             'availableOutlets',
             'selectedOutletId',
-            'isSuperAdmin'
+            'isSuperAdmin',
+            'activeRestaurant'
         ));
+    }
+
+    /**
+     * Save / Update restaurant geofence location and radius.
+     */
+    public function saveGeofence(Request $request)
+    {
+        $user = auth()->user();
+        if ($user->role !== 'SA' && !$user->hasPermission('staff', 'edit') && $user->role_type !== 'ADMIN') {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $validated = $request->validate([
+            'restaurant_id' => 'required|exists:restaurant_master,id',
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'geofence_radius_meters' => 'required|integer|min:10|max:1000',
+            'geofence_enabled' => 'nullable',
+        ]);
+
+        $restaurant = RestaurantMaster::findOrFail($validated['restaurant_id']);
+        $restaurant->update([
+            'latitude' => $validated['latitude'],
+            'longitude' => $validated['longitude'],
+            'geofence_radius_meters' => $validated['geofence_radius_meters'],
+            'geofence_enabled' => $request->has('geofence_enabled') ? true : false,
+        ]);
+
+        return back()->with('success', "Geofence location for {$restaurant->name} saved successfully with {$validated['geofence_radius_meters']}m allowed radius.");
     }
 
     /**

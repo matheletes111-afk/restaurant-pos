@@ -1481,25 +1481,43 @@
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(4px);
-      z-index: 1050;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      z-index: 100000;
       display: none;
       align-items: center;
       justify-content: center;
       padding: 16px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+
+    /* Force center-aligned flex layout even if jQuery sets display: block */
+    .modal-backdrop-custom[style*="display: block"],
+    .modal-backdrop-custom[style*="display:block"] {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
     }
 
     .modal-box-custom {
       background: #ffffff;
       width: 100%;
       max-width: 460px;
+      margin: auto !important;
       border-radius: var(--rp-radius-lg);
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
       overflow: hidden;
       animation: modalSlideIn 0.25s ease-out;
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
     }
 
     @keyframes modalSlideIn {
@@ -1740,8 +1758,16 @@
       }
       .modal-box-custom {
         max-width: 95% !important;
-        margin: 10px auto;
-        border-radius: 12px;
+        width: 95% !important;
+        margin: auto !important;
+        border-radius: 14px !important;
+      }
+      .raw-weight-input-box {
+        font-size: 1.15rem !important;
+      }
+      .raw-weight-stepper-btn {
+        font-size: 0.74rem !important;
+        padding: 4px 7px !important;
       }
     }
   </style>
@@ -1868,14 +1894,16 @@
                 $dishDiscount = floatval($dish->discount_percentage ?? $dish->discount ?? 0);
                 $dishFinalPrice = $dishDiscount > 0 ? ($dishPrice - ($dishPrice * $dishDiscount / 100)) : $dishPrice;
                 $dishAddons = ($dish->addons && $dish->addons->count() > 0) ? $dish->addons->where('status', '!=', 'D')->where('status', '!=', 'I')->values() : collect([]);
+                $isRawDish = !empty($dish->is_raw_dish);
               @endphp
-              <div class="dish-card" 
+              <div class="dish-card {{ $isRawDish ? 'raw-dish-card' : '' }}" 
                    data-id="{{ $dish->id }}"
                    data-name="{{ $dish->name }}"
                    data-price="{{ $dishPrice }}"
                    data-category-id="{{ $category->id }}"
                    data-food-type="{{ $dishFoodType }}"
                    data-discount="{{ $dishDiscount }}"
+                   data-is-raw="{{ $isRawDish ? '1' : '0' }}"
                    data-addons='@json($dishAddons)'
                    data-search-terms="{{ strtolower($dish->name . ' ' . $category->name . ' ' . ($dish->code ?? '')) }}">
                 
@@ -1883,6 +1911,11 @@
                   <div class="dish-top-meta">
                     <span class="food-symbol {{ $dishFoodType === 'non-veg' || $dishFoodType === 'nonveg' ? 'nonveg' : 'veg' }}"></span>
                     <div class="d-flex align-items-center gap-1">
+                      @if($isRawDish)
+                      <span class="badge ms-1" style="background: #fef3c7; color: #92400e; font-size: 0.65rem; font-weight: 800; border-radius: 6px; border: 1px solid #fde68a;" title="Raw Dish sold by weight (Kg/Grams)">
+                        <i class="fa-solid fa-weight-scale me-1"></i>/Kg
+                      </span>
+                      @endif
                       @if($dishAddons->count() > 0)
                       <span class="dish-addon-pill" title="{{ $dishAddons->count() }} Addon(s) Available">
                         <i class="fa-solid fa-puzzle-piece"></i> {{ $dishAddons->count() }} Addon{{ $dishAddons->count() > 1 ? 's' : '' }}
@@ -1908,9 +1941,12 @@
                     @else
                       ₹{{ number_format($dishPrice, 2) }}
                     @endif
+                    @if($isRawDish)
+                      <small class="text-muted fw-bold" style="font-size: 0.72rem;">/Kg</small>
+                    @endif
                   </div>
                   <div class="dish-add-btn">
-                    <i class="fa-solid fa-plus"></i>
+                    <i class="fa-solid {{ $isRawDish ? 'fa-scale-balanced' : 'fa-plus' }}"></i>
                   </div>
                 </div>
               </div>
@@ -2417,6 +2453,86 @@
   </div>
 </div>
 
+<!-- ===================================================
+     MODAL: RAW DISH WEIGHT ENTRY (KG & GRAMS)
+     =================================================== -->
+<div class="modal-backdrop-custom" id="rapidRawWeightModal" style="display: none; z-index: 100000;">
+  <div class="modal-box-custom" style="width: 95%; max-width: 460px; margin: auto !important; border-radius: 18px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.35);">
+    <div class="modal-header-custom" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 16px 20px;">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge" style="background:#fef3c7; color:#92400e; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 6px;">
+            <i class="fa-solid fa-weight-scale me-1"></i> Raw Dish (By Weight)
+          </span>
+          <span class="food-symbol-micro veg" id="rawModalFoodSymbol"></span>
+        </div>
+        <h5 class="m-0 text-white fw-bold" id="rawModalDishTitle" style="font-size: 1.15rem;">Dish Name</h5>
+        <small class="text-white-50" id="rawModalRateText" style="font-size: 0.82rem;">Rate: ₹0.00 / Kg</small>
+      </div>
+      <button type="button" class="btn-close btn-close-white" id="btnCloseRawModal"></button>
+    </div>
+
+    <div class="p-3 p-sm-4" style="background: #ffffff; overflow-y: auto;">
+      <div class="mb-3 text-center">
+        <label class="form-label text-muted fw-bold small text-uppercase mb-2" style="letter-spacing: 0.05em;">Enter Item Weight:</label>
+        
+        <div class="row g-2 align-items-center justify-content-center">
+          <div class="col-5">
+            <div class="input-group shadow-sm" style="border-radius: 12px; overflow: hidden; border: 1.5px solid #cbd5e1;">
+              <input type="number" id="rawModalKgInput" min="0" step="1" value="0" class="form-control text-center fw-bold border-0 px-1 py-2 raw-weight-input-box" style="font-size: 1.3rem; font-family: 'Outfit', sans-serif;">
+              <span class="input-group-text fw-bold bg-light border-0 px-2 text-dark" style="font-size: 0.88rem;">Kg</span>
+            </div>
+            <div class="text-center mt-1"><small class="text-muted fw-semibold" style="font-size: 0.72rem;">Kilograms</small></div>
+          </div>
+          <div class="col-2 text-center fw-bold text-muted" style="font-size: 1.3rem;">+</div>
+          <div class="col-5">
+            <div class="input-group shadow-sm" style="border-radius: 12px; overflow: hidden; border: 1.5px solid #cbd5e1;">
+              <input type="number" id="rawModalGramInput" min="0" max="999" step="50" value="0" class="form-control text-center fw-bold border-0 px-1 py-2 raw-weight-input-box" style="font-size: 1.3rem; font-family: 'Outfit', sans-serif;">
+              <span class="input-group-text fw-bold bg-light border-0 px-2 text-dark" style="font-size: 0.88rem;">Grams</span>
+            </div>
+            <div class="text-center mt-1"><small class="text-muted fw-semibold" style="font-size: 0.72rem;">Grams (0-999)</small></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Weight Stepper Buttons -->
+      <div class="d-flex flex-wrap gap-1.5 justify-content-center mb-3">
+        <button type="button" class="btn btn-sm btn-outline-secondary btn-quick-raw-add raw-weight-stepper-btn px-2.5 py-1 fw-semibold" data-kg="0" data-g="100" style="font-size: 0.8rem; border-radius: 8px;">+100g</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary btn-quick-raw-add raw-weight-stepper-btn px-2.5 py-1 fw-semibold" data-kg="0" data-g="250" style="font-size: 0.8rem; border-radius: 8px;">+250g</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary btn-quick-raw-add raw-weight-stepper-btn px-2.5 py-1 fw-semibold" data-kg="0" data-g="500" style="font-size: 0.8rem; border-radius: 8px;">+500g</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary btn-quick-raw-add raw-weight-stepper-btn px-2.5 py-1 fw-semibold" data-kg="1" data-g="0" style="font-size: 0.8rem; border-radius: 8px;">+1 Kg</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary btn-quick-raw-add raw-weight-stepper-btn px-2.5 py-1 fw-semibold" data-kg="2" data-g="0" style="font-size: 0.8rem; border-radius: 8px;">+2 Kg</button>
+        <button type="button" class="btn btn-sm btn-outline-danger btn-quick-raw-reset raw-weight-stepper-btn px-2.5 py-1 fw-semibold" style="font-size: 0.8rem; border-radius: 8px;" title="Reset Weight"><i class="fa-solid fa-rotate-left me-1"></i>Reset</button>
+      </div>
+
+      <!-- Live Calculation Display Card -->
+      <div class="p-3 rounded-3 mb-3 shadow-sm" style="background: #f8fafc; border: 1.5px solid #e2e8f0;">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="text-muted small fw-bold">Total Weight:</span>
+          <span class="fw-bold text-dark" id="rawModalTotalWeightDisplay" style="font-size: 0.95rem;">0 Kg 0 g (0.000 Kg)</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="text-muted small fw-bold">Base Price / Kg:</span>
+          <span class="text-dark font-monospace fw-bold" id="rawModalPerKgDisplay">₹0.00 / Kg</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="border-color: #cbd5e1 !important;">
+          <span class="text-dark fw-bold">Calculated Price:</span>
+          <span class="text-primary fw-bold font-monospace" id="rawModalCalculatedPrice" style="font-size: 1.35rem; font-family: 'Outfit', sans-serif;">₹0.00</span>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-light fw-bold border text-muted px-3 py-2" id="btnCancelRawModal" style="border-radius: 10px;">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary fw-bold text-white flex-grow-1 py-2" id="btnConfirmRawWeight" style="border-radius: 10px; background: linear-gradient(135deg, #ff5e14 0%, #ff8c42 100%); border: none; box-shadow: 0 4px 12px rgba(255, 94, 20, 0.3);">
+          <i class="fa-solid fa-cart-plus me-1"></i> Add to Bill
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 @include('includes.footer')
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -2889,6 +3005,122 @@ $(document).ready(function() {
     }
   });
 
+  // Raw Dish Weight Modal Logic
+  let currentRapidRawDish = null;
+
+  function openRapidRawModal(dish) {
+    currentRapidRawDish = dish;
+    $('#rawModalDishTitle').text(dish.name);
+    let isNonVeg = (dish.food_type === 'non-veg' || dish.food_type === 'nonveg');
+    $('#rawModalFoodSymbol').removeClass('veg nonveg').addClass(isNonVeg ? 'nonveg' : 'veg');
+    let perKg = parseFloat(dish.price) || 0;
+    $('#rawModalRateText').text('Rate: ₹' + perKg.toFixed(2) + ' / Kg');
+    $('#rawModalPerKgDisplay').text('₹' + perKg.toFixed(2) + ' / Kg');
+    
+    // Default 1 kg 0 grams
+    $('#rawModalKgInput').val(1);
+    $('#rawModalGramInput').val(0);
+    recalculateRawModal();
+    $('#rapidRawWeightModal').css('display', 'flex').hide().fadeIn(150);
+  }
+
+  function recalculateRawModal() {
+    if (!currentRapidRawDish) return;
+    let kg = parseInt($('#rawModalKgInput').val()) || 0;
+    let gram = parseInt($('#rawModalGramInput').val()) || 0;
+    if (kg < 0) { kg = 0; $('#rawModalKgInput').val(0); }
+    if (gram < 0) { gram = 0; $('#rawModalGramInput').val(0); }
+    
+    let totalKg = kg + (gram / 1000);
+    let perKg = parseFloat(currentRapidRawDish.price) || 0;
+    let calculated = Math.round(totalKg * perKg * 100) / 100;
+
+    let weightText = `${kg > 0 ? kg + ' Kg ' : ''}${gram > 0 ? gram + ' g' : ''}`.trim();
+    if (!weightText) weightText = '0 g';
+    $('#rawModalTotalWeightDisplay').text(`${weightText} (${totalKg.toFixed(3)} Kg)`);
+    $('#rawModalCalculatedPrice').text('₹' + calculated.toFixed(2));
+  }
+
+  $(document).on('input change', '#rawModalKgInput, #rawModalGramInput', function() {
+    recalculateRawModal();
+  });
+
+  $(document).on('click', '.btn-quick-raw-add', function(e) {
+    e.preventDefault();
+    let addKg = parseInt($(this).data('kg')) || 0;
+    let addG = parseInt($(this).data('g')) || 0;
+    let curKg = parseInt($('#rawModalKgInput').val()) || 0;
+    let curG = parseInt($('#rawModalGramInput').val()) || 0;
+
+    let newG = curG + addG;
+    let carryKg = Math.floor(newG / 1000);
+    newG = newG % 1000;
+    let newKg = curKg + addKg + carryKg;
+
+    $('#rawModalKgInput').val(newKg);
+    $('#rawModalGramInput').val(newG);
+    recalculateRawModal();
+  });
+
+  $(document).on('click', '.btn-quick-raw-reset', function(e) {
+    e.preventDefault();
+    $('#rawModalKgInput').val(0);
+    $('#rawModalGramInput').val(0);
+    recalculateRawModal();
+  });
+
+  $(document).on('click', '#btnCloseRawModal, #btnCancelRawModal', function(e) {
+    e.preventDefault();
+    $('#rapidRawWeightModal').fadeOut(120);
+    currentRapidRawDish = null;
+  });
+
+  $(document).on('click', '#rapidRawWeightModal', function(e) {
+    if ($(e.target).is('#rapidRawWeightModal')) {
+      $('#rapidRawWeightModal').fadeOut(120);
+      currentRapidRawDish = null;
+    }
+  });
+
+  $(document).on('click', '#btnConfirmRawWeight', function(e) {
+    e.preventDefault();
+    if (!currentRapidRawDish) return;
+    let kg = parseInt($('#rawModalKgInput').val()) || 0;
+    let gram = parseInt($('#rawModalGramInput').val()) || 0;
+    let totalKg = kg + (gram / 1000);
+
+    if (totalKg <= 0) {
+      alert('Please enter a weight greater than 0.');
+      return;
+    }
+
+    let perKg = parseFloat(currentRapidRawDish.price) || 0;
+    let calculatedPrice = Math.round(totalKg * perKg * 100) / 100;
+    let cartKey = 'raw_' + currentRapidRawDish.id + '_' + Date.now();
+
+    cart[cartKey] = {
+      id: currentRapidRawDish.id,
+      cart_key: cartKey,
+      name: currentRapidRawDish.name,
+      base_price: calculatedPrice,
+      price: calculatedPrice,
+      qty: 1,
+      is_raw_dish: true,
+      weight_in_kg: totalKg,
+      weight_kg: kg,
+      weight_gram: gram,
+      per_kg_price: perKg,
+      discount_percent: currentRapidRawDish.discount || 0,
+      food_type: currentRapidRawDish.food_type,
+      available_addons: currentRapidRawDish.addons || [],
+      addons: []
+    };
+
+    $('#rapidRawWeightModal').fadeOut(120);
+    currentRapidRawDish = null;
+    renderCart();
+  });
+
   // Add Dish or Map Add-on to Cart
   $(document).on('click', '.dish-card', function(e) {
     if ($(this).hasClass('bar-dish-card')) {
@@ -2935,6 +3167,7 @@ $(document).ready(function() {
       return;
     }
 
+    let isRaw = parseInt($(this).data('is-raw')) === 1;
     let dishId = $(this).data('id');
     let dishName = $(this).data('name');
     let dishPrice = parseFloat($(this).data('price')) || 0;
@@ -2947,6 +3180,18 @@ $(document).ready(function() {
       try { availableAddons = JSON.parse(rawAddons); } catch (err) { availableAddons = []; }
     } else if (Array.isArray(rawAddons)) {
       availableAddons = rawAddons;
+    }
+
+    if (isRaw) {
+      openRapidRawModal({
+        id: dishId,
+        name: dishName,
+        price: dishPrice,
+        discount: dishDiscount,
+        food_type: foodType,
+        addons: availableAddons
+      });
+      return;
     }
 
     if (cart[dishId]) {
@@ -3504,11 +3749,14 @@ $(document).ready(function() {
 
     let html = '';
     items.forEach(function(item) {
+      let cartKey = item.cart_key || item.id;
+
       // Highlight card
       let card = $(`.dish-card[data-id="${item.id}"]`);
       if (card.length) {
         card.addClass('in-cart');
-        card.find('.dish-cart-badge').text(item.qty).show();
+        let currentBadgeVal = parseInt(card.find('.dish-cart-badge').text()) || 0;
+        card.find('.dish-cart-badge').text(currentBadgeVal + item.qty).show();
       }
 
       let basePrice = item.base_price !== undefined ? parseFloat(item.base_price) : parseFloat(item.price);
@@ -3545,7 +3793,7 @@ $(document).ready(function() {
       if (hasAvailableAddons) {
         let btnClass = totalAddonsQtyCount > 0 ? 'btn-customize-addons active' : 'btn-customize-addons';
         let btnText = totalAddonsQtyCount > 0 ? `<i class="fa-solid fa-sliders"></i> ${totalAddonsQtyCount} Add-on${totalAddonsQtyCount > 1 ? 's' : ''}` : `<i class="fa-solid fa-plus"></i> Add-ons`;
-        customizeBtnHtml = `<button type="button" class="${btnClass}" data-id="${item.id}" title="Customize Add-ons">${btnText}</button>`;
+        customizeBtnHtml = `<button type="button" class="${btnClass}" data-id="${cartKey}" title="Customize Add-ons">${btnText}</button>`;
       }
 
       let addonsSubTableHtml = '';
@@ -3566,14 +3814,14 @@ $(document).ready(function() {
               <td class="addon-td-rate">₹${aPrice.toFixed(0)}</td>
               <td class="addon-td-qty">
                 <div class="nested-addon-qty-ctrl">
-                  <button type="button" class="btn-addon-chip-dec" data-dish-id="${item.id}" data-addon-id="${a.id}" title="Decrease quantity">-</button>
+                  <button type="button" class="btn-addon-chip-dec" data-dish-id="${cartKey}" data-addon-id="${a.id}" title="Decrease quantity">-</button>
                   <span class="nested-addon-qty-num">${aQty}</span>
-                  <button type="button" class="btn-addon-chip-inc" data-dish-id="${item.id}" data-addon-id="${a.id}" title="Increase quantity">+</button>
+                  <button type="button" class="btn-addon-chip-inc" data-dish-id="${cartKey}" data-addon-id="${a.id}" title="Increase quantity">+</button>
                 </div>
               </td>
               <td class="addon-td-total">₹${aTotal.toFixed(2)}</td>
               <td class="addon-td-del">
-                <button type="button" class="btn-remove-addon" data-dish-id="${item.id}" data-addon-id="${a.id}" title="Remove ${a.name}">
+                <button type="button" class="btn-remove-addon" data-dish-id="${cartKey}" data-addon-id="${a.id}" title="Remove ${a.name}">
                   <i class="fa-solid fa-xmark"></i>
                 </button>
               </td>
@@ -3587,7 +3835,7 @@ $(document).ready(function() {
               <span class="addons-panel-title">
                 <i class="fa-solid fa-puzzle-piece"></i> Mapped Add-ons
               </span>
-              <button type="button" class="btn-clear-all-addons" data-dish-id="${item.id}" title="Clear all add-ons from this dish">
+              <button type="button" class="btn-clear-all-addons" data-dish-id="${cartKey}" title="Clear all add-ons from this dish">
                 Clear all
               </button>
             </div>
@@ -3627,6 +3875,23 @@ $(document).ready(function() {
             Rate: ₹${basePrice.toFixed(2)} / portion
           </div>
         `;
+      } else if (item.is_raw_dish) {
+        let weightParts = [];
+        if (item.weight_kg && item.weight_kg > 0) weightParts.push(item.weight_kg + ' kg');
+        if (item.weight_gram && item.weight_gram > 0) weightParts.push(item.weight_gram + ' gm');
+        let weightStr = weightParts.join(' ');
+        if (!weightStr) weightStr = (item.weight_in_kg ? item.weight_in_kg + ' kg' : 'Raw Weight');
+        itemHeaderHtml = `
+          <div class="d-flex align-items-center gap-1 min-w-0" style="min-width: 0;">
+            <span class="food-symbol-micro ${foodTypeDot}"></span>
+            <span class="cart-item-title text-truncate" title="${item.name}">${item.name}</span>
+            <span class="badge ms-1" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a; font-size: 0.6rem; font-weight: 800; padding: 1px 4px; border-radius: 4px; flex-shrink: 0;"><i class="fa-solid fa-weight-scale me-1"></i>${weightStr}</span>
+            ${customizeBtnHtml}
+          </div>
+          <div class="cart-item-price-meta">
+            <span class="badge bg-light text-dark border me-1"><i class="fa-solid fa-scale-balanced me-1 text-warning"></i>${weightStr}</span>
+          </div>
+        `;
       } else {
         itemHeaderHtml = `
           <div class="d-flex align-items-center gap-1 min-w-0" style="min-width: 0;">
@@ -3641,7 +3906,7 @@ $(document).ready(function() {
       }
 
       html += `
-        <div class="cart-item-card" data-id="${item.id}">
+        <div class="cart-item-card" data-id="${cartKey}">
           <div class="cart-item-main-row">
             <div class="cart-item-info">
               ${itemHeaderHtml}
@@ -3649,14 +3914,14 @@ $(document).ready(function() {
             
             <div class="cart-item-actions-wrap">
               <div class="qty-control">
-                <button type="button" class="btn-qty btn-dec-qty" data-id="${item.id}">-</button>
+                <button type="button" class="btn-qty btn-dec-qty" data-id="${cartKey}">-</button>
                 <div class="qty-display">${item.qty}</div>
-                <button type="button" class="btn-qty btn-inc-qty" data-id="${item.id}">+</button>
+                <button type="button" class="btn-qty btn-inc-qty" data-id="${cartKey}">+</button>
               </div>
 
               <div class="item-disc-wrap" title="Discount % for this item">
                 <span class="item-disc-label">Disc</span>
-                <input type="number" class="item-disc-input" data-id="${item.id}" min="0" max="100" step="any" value="${discPercent}" placeholder="0" inputmode="decimal" onkeydown="if(['e','E','+','-'].includes(event.key)) event.preventDefault();">
+                <input type="number" class="item-disc-input" data-id="${cartKey}" min="0" max="100" step="any" value="${discPercent}" placeholder="0" inputmode="decimal" onkeydown="if(['e','E','+','-'].includes(event.key)) event.preventDefault();">
                 <span class="item-disc-unit">%</span>
               </div>
 
@@ -3666,7 +3931,7 @@ $(document).ready(function() {
                 <div class="item-disc-tag" style="${discAmt > 0 ? '' : 'display: none;'}">-₹${discAmt.toFixed(2)}</div>
               </div>
 
-              <button type="button" class="btn-remove-item" data-id="${item.id}" title="Remove item">
+              <button type="button" class="btn-remove-item" data-id="${cartKey}" title="Remove item">
                 <i class="fa-solid fa-xmark"></i>
               </button>
             </div>
@@ -4027,6 +4292,10 @@ $(document).ready(function() {
           bar_variation_name: i.bar_variation_name || null,
           bar_variation_ml: i.bar_variation_ml || null,
           is_bar: i.is_bar ? 1 : 0,
+          is_raw_dish: i.is_raw_dish ? 1 : 0,
+          weight_in_kg: i.weight_in_kg || null,
+          weight_gram: i.weight_gram || null,
+          per_kg_price: i.per_kg_price || null,
           addons: (i.addons || []).map(function(a) {
             return {
               id: a.id,

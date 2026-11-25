@@ -478,6 +478,8 @@ Route::prefix('attendance')->group(function () {
         ->name('restaurant.attendance.delete');
     Route::get('/export', [\App\Http\Controllers\StaffAttendanceController::class, 'export'])
         ->name('restaurant.attendance.export');
+    Route::post('/save-geofence', [\App\Http\Controllers\StaffAttendanceController::class, 'saveGeofence'])
+        ->name('restaurant.attendance.save-geofence');
 });
 
 // Staff Leave Management
@@ -486,6 +488,14 @@ Route::prefix('leave-management')->group(function () {
         ->name('restaurant.leaves.index');
     Route::post('/store', [\App\Http\Controllers\StaffLeaveController::class, 'store'])
         ->name('restaurant.leaves.store');
+    Route::post('/approve/{leave_id}', [\App\Http\Controllers\StaffLeaveController::class, 'approve'])
+        ->name('restaurant.leaves.approve');
+    Route::post('/reject/{leave_id}', [\App\Http\Controllers\StaffLeaveController::class, 'reject'])
+        ->name('restaurant.leaves.reject');
+    Route::get('/details/{leave_id}', [\App\Http\Controllers\StaffLeaveController::class, 'details'])
+        ->name('restaurant.leaves.details');
+    Route::post('/update/{leave_id}', [\App\Http\Controllers\StaffLeaveController::class, 'update'])
+        ->name('restaurant.leaves.update');
     Route::post('/cancel/{leave_id}', [\App\Http\Controllers\StaffLeaveController::class, 'cancel'])
         ->name('restaurant.leaves.cancel');
     Route::get('/quota/{user_id}', [\App\Http\Controllers\StaffLeaveController::class, 'getStaffQuota'])
@@ -894,5 +904,20 @@ Route::get('/customer-list', function() {
 })->name('restaurant.customer-list')->middleware('auth');
 Route::get('/admin/customers', function() {
     return redirect()->route('restaurant.customers.index');
+})->middleware('auth');
+
+// User HRM (Staff Self-Service Portal)
+Route::prefix('user-hrm')->name('user.hrm.')->middleware('auth')->group(function () {
+    Route::get('/', [\App\Http\Controllers\UserHrmController::class, 'index'])->name('index');
+    Route::get('/attendance/export', [\App\Http\Controllers\UserHrmController::class, 'exportAttendance'])->name('attendance.export');
+    Route::get('/salary/slip/{id}', [\App\Http\Controllers\UserHrmController::class, 'getSalarySlipData'])->name('salary.slip');
+    Route::get('/salary/slip/{id}/print', [\App\Http\Controllers\UserHrmController::class, 'printSalarySlip'])->name('salary.slip.print');
+    Route::post('/leaves/apply', [\App\Http\Controllers\UserHrmController::class, 'applyLeave'])->name('leaves.apply');
+    Route::post('/attendance/clock-in', [\App\Http\Controllers\UserHrmController::class, 'clockIn'])->name('attendance.clock-in');
+    Route::post('/attendance/clock-out', [\App\Http\Controllers\UserHrmController::class, 'clockOut'])->name('attendance.clock-out');
+});
+
+Route::get('/admin/user-hrm', function() {
+    return redirect()->route('user.hrm.index');
 })->middleware('auth');
 

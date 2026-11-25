@@ -537,6 +537,25 @@ class OrderManagementController extends Controller
             $itemCalc['bar_variation_id'] = $item['bar_variation_id'] ?? null;
             $itemCalc['bar_variation_name'] = $item['bar_variation_name'] ?? null;
             $itemCalc['bar_variation_ml'] = $item['bar_variation_ml'] ?? null;
+
+            $isRawDish = !empty($item['is_raw_dish']);
+            $weightInKg = isset($item['weight_in_kg']) ? floatval($item['weight_in_kg']) : null;
+            $weightGram = isset($item['weight_gram']) ? intval($item['weight_gram']) : null;
+            $perKgPrice = isset($item['per_kg_price']) ? floatval($item['per_kg_price']) : null;
+            if (!$isRawDish && is_numeric($item['id'] ?? null)) {
+                $checkSubc = SubCategory::find($item['id']);
+                if ($checkSubc && $checkSubc->is_raw_dish) {
+                    $isRawDish = true;
+                    if ($perKgPrice === null || $perKgPrice <= 0) {
+                        $perKgPrice = floatval($checkSubc->price ?? 0);
+                    }
+                }
+            }
+            $itemCalc['is_raw_dish'] = $isRawDish;
+            $itemCalc['weight_in_kg'] = $weightInKg;
+            $itemCalc['weight_gram'] = $weightGram;
+            $itemCalc['per_kg_price'] = $perKgPrice;
+
             $calculatedItems[] = $itemCalc;
         }
         
@@ -696,6 +715,10 @@ class OrderManagementController extends Controller
                 $orderItem->igst_amount = $calc['igst_amount'];
                 $orderItem->total_amount = $calc['total_amount'];
                 $orderItem->addons = !empty($calc['addons']) ? $calc['addons'] : null;
+                $orderItem->is_raw_dish = !empty($calc['is_raw_dish']);
+                $orderItem->weight_in_kg = $calc['weight_in_kg'] ?? null;
+                $orderItem->weight_gram = $calc['weight_gram'] ?? null;
+                $orderItem->per_kg_price = $calc['per_kg_price'] ?? null;
 
                 $isBarItem = !empty($orderItem->bar_variation_id) || $orderItem->vat_rate > 0;
                 if (!$isBarItem && $isNumericSubcat) {
@@ -931,6 +954,20 @@ class OrderManagementController extends Controller
                         }
                     }
 
+                    $isRawDish = !empty($item['is_raw_dish']);
+                    $weightInKg = isset($item['weight_in_kg']) ? floatval($item['weight_in_kg']) : null;
+                    $weightGram = isset($item['weight_gram']) ? intval($item['weight_gram']) : null;
+                    $perKgPrice = isset($item['per_kg_price']) ? floatval($item['per_kg_price']) : null;
+                    if (!$isRawDish && $isNumericSubcat) {
+                        $checkSubc = SubCategory::find(intval($item['id']));
+                        if ($checkSubc && $checkSubc->is_raw_dish) {
+                            $isRawDish = true;
+                            if ($perKgPrice === null || $perKgPrice <= 0) {
+                                $perKgPrice = floatval($checkSubc->price ?? 0);
+                            }
+                        }
+                    }
+
                     $isDoneOrPaid = ($order->order_complete === 'DONE' || $order->payment_status === 'PAID');
                     
                     $newItem = OrderItems::create([
@@ -952,6 +989,10 @@ class OrderManagementController extends Controller
                         'sgst_amount' => $calc['sgst_amount'],
                         'igst_amount' => $calc['igst_amount'],
                         'total_amount' => $calc['total_amount'],
+                        'is_raw_dish' => $isRawDish,
+                        'weight_in_kg' => $weightInKg,
+                        'weight_gram' => $weightGram,
+                        'per_kg_price' => $perKgPrice,
                         'restaurant_id' => auth()->user()->restaurant_id,
                         'user_id' => auth()->user()->id,
                         'order_status' => $isDoneOrPaid ? ($isBarItem ? 'SERVED' : 'DONE') : 'PENDING',
@@ -1582,11 +1623,18 @@ public function deletePayment($payment_id)
         $order = OrderManage::with(['orderItems.subcategory', 'table', 'restaurant'])->findOrFail($order_id);
         $data = $this->prepareReceiptData($order);
 
+        $restaurant = $data['restaurant_details'] ?? $order->restaurant;
+        $printSize = $restaurant->thermal_print_size ?? '80mm';
+        $is58mm = ($printSize === '58mm');
+
+        $data['thermal_print_size'] = $printSize;
+
         $itemCount = count($order->orderItems ?? []);
-        $paperHeight = max(680, 440 + ($itemCount * 45));
+        $paperWidth = $is58mm ? 164 : 226;
+        $paperHeight = max($is58mm ? 560 : 680, ($is58mm ? 360 : 440) + ($itemCount * ($is58mm ? 40 : 45)));
 
         $pdf = Pdf::loadView('receipt', $data)
-            ->setPaper([0, 0, 226, $paperHeight]);
+            ->setPaper([0, 0, $paperWidth, $paperHeight]);
 
         return $pdf->stream('receipt_' . ($order->order_id ?? $order->id) . '.pdf');
     }
@@ -1608,17 +1656,22 @@ public function deletePayment($payment_id)
                 ->get();
         }
 
+        $printSize = $restaurant_details->thermal_print_size ?? '80mm';
+        $is58mm = ($printSize === '58mm');
+
         $data = [
             'item' => $item,
             'items' => $kotItems,
             'restaurant_details' => $restaurant_details,
+            'thermal_print_size' => $printSize,
         ];
 
         $itemCount = $kotItems ? $kotItems->count() : 1;
-        $paperHeight = max(350, 200 + ($itemCount * 45));
+        $paperWidth = $is58mm ? 164 : 226;
+        $paperHeight = max($is58mm ? 300 : 350, ($is58mm ? 160 : 200) + ($itemCount * ($is58mm ? 38 : 45)));
 
         $pdf = Pdf::loadView('invoice_kot', $data)
-            ->setPaper([0, 0, 226, $paperHeight]);
+            ->setPaper([0, 0, $paperWidth, $paperHeight]);
 
         return $pdf->stream('kot_' . ($item->kot_no ?? $item->id) . '.pdf');
     }

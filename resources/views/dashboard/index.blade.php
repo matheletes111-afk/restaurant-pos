@@ -480,6 +480,64 @@
         margin-left: 8px !important;
         background: #ffffff !important;
     }
+
+    /* Staff Welcome State */
+    .staff-welcome-card {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 32px 28px;
+        box-shadow: 0 4px 24px rgba(15, 23, 42, 0.04);
+        border: 1px solid var(--dash-border-light);
+        position: relative;
+        overflow: hidden;
+    }
+    .staff-welcome-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 6px;
+        height: 100%;
+        background: linear-gradient(135deg, #ff5e14 0%, #ff8c42 100%);
+    }
+    .staff-welcome-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #ff5e14 0%, #ff8c42 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        box-shadow: 0 8px 20px rgba(255, 94, 20, 0.25);
+        flex-shrink: 0;
+    }
+    .staff-hrm-card {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 24px;
+        border: 1px solid var(--dash-border-light);
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .staff-hrm-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+    }
+    .staff-hrm-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+    }
 </style>
 @endsection
 
@@ -493,380 +551,577 @@
         {{-- Flash messages --}}
         @include('includes.message')
 
-        {{-- 1. Welcome Header Deck --}}
-        <div class="dash-welcome-deck">
-            <div class="dash-welcome-left">
-                <div class="dash-welcome-icon">
-                    <i class="fa-solid fa-utensils"></i>
-                </div>
-                <div>
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <span class="text-uppercase fw-bold text-muted small" style="letter-spacing: 0.06em;">Restaurant Control Center</span>
-                        <div class="dash-live-badge">
-                            <span class="dash-live-dot"></span> POS Online
-                        </div>
+        @if(!empty($hasNoPermissions))
+            {{-- ======================================================== --}}
+            {{-- 1. Staff Welcome Only State (No Permissions Assigned)   --}}
+            {{-- ======================================================== --}}
+            <div class="staff-welcome-card mb-4">
+                <div class="d-flex align-items-center gap-4 flex-wrap">
+                    <div class="staff-welcome-avatar">
+                        <i class="fa-solid fa-user-shield"></i>
                     </div>
-                    <h1 class="dash-welcome-title">Executive Dashboard</h1>
-                    <p class="dash-welcome-sub">Real-time revenue stream, live orders, kitchen metrics & inventory overview.</p>
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                            <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-1 rounded-pill fw-bold border border-warning">
+                                <i class="fa-solid fa-hourglass-half me-1"></i> Permissions Pending Configuration
+                            </span>
+                            <span class="badge bg-light text-dark px-3 py-1 rounded-pill fw-bold border">
+                                Role: {{ auth()->user()->role_type ?: 'Staff Member' }}
+                            </span>
+                        </div>
+                        <h2 class="fw-bold mb-1" style="font-family: 'Outfit', sans-serif; font-size: 1.75rem; color: #0f172a;">
+                            Welcome, {{ auth()->user()->name }}!
+                        </h2>
+                        <p class="text-muted mb-0" style="font-size: 0.95rem; max-width: 760px; line-height: 1.6;">
+                            Your staff account is currently active. Your restaurant manager has not yet assigned menu operational permissions. While you await setup, you have full access to your personalized HRM portal below to mark daily attendance, submit leave requests, and view your salary records.
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <a href="{{ route('order.create') }}" class="btn-dash-action btn-dash-primary">
-                    <i class="fa-solid fa-cash-register"></i> New POS Order
-                </a>
-                <a href="{{ route('order.management.dashboard') }}" class="btn-dash-action btn-dash-secondary">
-                    <i class="fa-solid fa-table-cells-large"></i> Live Tables & KOT
-                </a>
-                <a href="{{ route('inventory.live') }}" class="btn-dash-action btn-dash-secondary">
-                    <i class="fa-solid fa-boxes-stacked"></i> Live Stocks
-                </a>
-            </div>
-        </div>
-
-        {{-- 2. Performance Stats Grid (6 Key Metrics) --}}
-        <div class="row g-3 mb-4">
-            {{-- Metric 1: Today Revenue --}}
-            <div class="col-xl-2 col-lg-4 col-md-6 col-6">
-                <div class="dash-stat-card stat-rev-today">
-                    <div class="dash-stat-head">
-                        <span class="dash-stat-label">Today's Revenue</span>
-                        <div class="dash-stat-icon-wrap">
-                            <i class="fa-solid fa-indian-rupee-sign"></i>
+            {{-- User HRM Action Cards --}}
+            <div class="row g-4 mb-4">
+                {{-- Card 1: Attendance --}}
+                <div class="col-lg-4 col-md-6">
+                    <div class="staff-hrm-card">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="staff-hrm-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                                    <i class="fa-solid fa-fingerprint"></i>
+                                </div>
+                                @if($todayAttendance)
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3 py-1 fw-bold">
+                                        <i class="fa-solid fa-check-circle me-1"></i> Checked In
+                                    </span>
+                                @else
+                                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning rounded-pill px-3 py-1 fw-bold">
+                                        <i class="fa-solid fa-clock me-1"></i> Not Marked
+                                    </span>
+                                @endif
+                            </div>
+                            <h4 class="fw-bold text-dark mb-2" style="font-family: 'Outfit', sans-serif;">Daily Attendance</h4>
+                            <p class="text-muted small mb-3">
+                                @if($todayAttendance)
+                                    Checked in at <strong>{{ \Carbon\Carbon::parse($todayAttendance->login_time)->format('h:i A') }}</strong>. You can record check-out or view your attendance history.
+                                @else
+                                    Punch in your shift attendance today and log your clock-in / clock-out times.
+                                @endif
+                            </p>
                         </div>
+                        <a href="{{ route('user.hrm.index', ['tab' => 'attendance']) }}" class="btn btn-outline-success w-100 rounded-pill fw-bold py-2">
+                            <i class="fa-solid fa-fingerprint me-2"></i> Open Attendance
+                        </a>
+                    </div>
+                </div>
+
+                {{-- Card 2: Leaves --}}
+                <div class="col-lg-4 col-md-6">
+                    <div class="staff-hrm-card">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="staff-hrm-icon" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;">
+                                    <i class="fa-solid fa-plane-departure"></i>
+                                </div>
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary rounded-pill px-3 py-1 fw-bold">
+                                    Leaves
+                                </span>
+                            </div>
+                            <h4 class="fw-bold text-dark mb-2" style="font-family: 'Outfit', sans-serif;">Leave Requests</h4>
+                            <p class="text-muted small mb-3">
+                                Submit leave applications, check annual leave balance, and view manager approval status.
+                            </p>
+                        </div>
+                        <a href="{{ route('user.hrm.index', ['tab' => 'leaves']) }}" class="btn btn-outline-primary w-100 rounded-pill fw-bold py-2">
+                            <i class="fa-solid fa-calendar-plus me-2"></i> Apply / View Leaves
+                        </a>
+                    </div>
+                </div>
+
+                {{-- Card 3: Salary --}}
+                <div class="col-lg-4 col-md-12">
+                    <div class="staff-hrm-card">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="staff-hrm-icon" style="background: rgba(255, 94, 20, 0.1); color: var(--dash-primary);">
+                                    <i class="fa-solid fa-money-check-dollar"></i>
+                                </div>
+                                <span class="badge bg-light text-muted border rounded-pill px-3 py-1 fw-bold">
+                                    Payroll
+                                </span>
+                            </div>
+                            <h4 class="fw-bold text-dark mb-2" style="font-family: 'Outfit', sans-serif;">Salary &amp; Payslips</h4>
+                            <p class="text-muted small mb-3">
+                                View your salary breakdown, allowances, deductions, and download monthly payslip statements.
+                            </p>
+                        </div>
+                        <a href="{{ route('user.hrm.index', ['tab' => 'salary']) }}" class="btn btn-outline-dark w-100 rounded-pill fw-bold py-2">
+                            <i class="fa-solid fa-file-invoice-dollar me-2"></i> View My Salary
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @else
+            {{-- ======================================================== --}}
+            {{-- 2. Standard Dashboard (Admin or Permitted Staff)        --}}
+            {{-- ======================================================== --}}
+
+            {{-- 1. Welcome Header Deck --}}
+            <div class="dash-welcome-deck">
+                <div class="dash-welcome-left">
+                    <div class="dash-welcome-icon">
+                        <i class="fa-solid fa-utensils"></i>
                     </div>
                     <div>
-                        <div class="dash-stat-val text-primary" title="₹{{ number_format($totalRevenueToday, 2) }}">₹{{ number_format($totalRevenueToday, 2) }}</div>
-                        <div class="dash-stat-footer">
-                            <i class="fa-solid fa-chart-line text-success"></i>
-                            <span>Avg Order: ₹{{ number_format($avgOrderValue, 0) }}</span>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="text-uppercase fw-bold text-muted small" style="letter-spacing: 0.06em;">Restaurant Control Center</span>
+                            <div class="dash-live-badge">
+                                <span class="dash-live-dot"></span> POS Online
+                            </div>
                         </div>
+                        <h1 class="dash-welcome-title">{{ auth()->user()->isStaff() ? (auth()->user()->role_type . ' Dashboard') : 'Executive Dashboard' }}</h1>
+                        <p class="dash-welcome-sub">Real-time revenue stream, live orders, kitchen metrics & inventory overview.</p>
                     </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    @if(auth()->user()->isOwner() || auth()->user()->hasPermission('order_master'))
+                        <a href="{{ route('order.create') }}" class="btn-dash-action btn-dash-primary">
+                            <i class="fa-solid fa-cash-register"></i> New POS Order
+                        </a>
+                    @endif
+                    @if(auth()->user()->isOwner() || auth()->user()->hasPermission('rapid_bill'))
+                        <a href="{{ route('rapid.bill') }}" class="btn-dash-action btn-dash-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                            <i class="fa-solid fa-bolt"></i> Rapid Bill
+                        </a>
+                    @endif
+                    @if(auth()->user()->isOwner() || auth()->user()->hasPermission('table_master') || auth()->user()->hasPermission('kitchen_order'))
+                        <a href="{{ route('order.management.dashboard') }}" class="btn-dash-action btn-dash-secondary">
+                            <i class="fa-solid fa-table-cells-large"></i> Live Tables & KOT
+                        </a>
+                    @endif
+                    @if(auth()->user()->isOwner() || auth()->user()->hasPermission('inventory_setting'))
+                        <a href="{{ route('inventory.live') }}" class="btn-dash-action btn-dash-secondary">
+                            <i class="fa-solid fa-boxes-stacked"></i> Live Stocks
+                        </a>
+                    @endif
+                    @if(auth()->user()->isStaff())
+                        <a href="{{ route('user.hrm.index') }}" class="btn-dash-action btn-dash-secondary">
+                            <i class="fa-solid fa-fingerprint"></i> My Attendance & HRM
+                        </a>
+                    @endif
                 </div>
             </div>
 
-            {{-- Metric 2: Today Orders --}}
-            <div class="col-xl-2 col-lg-4 col-md-6 col-6">
-                <div class="dash-stat-card stat-ord-today">
-                    <div class="dash-stat-head">
-                        <span class="dash-stat-label">Orders Today</span>
-                        <div class="dash-stat-icon-wrap">
-                            <i class="fa-solid fa-bag-shopping"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="dash-stat-val text-success" title="{{ number_format($totalOrdersToday) }} Orders">{{ number_format($totalOrdersToday) }}</div>
-                        <div class="dash-stat-footer">
-                            <i class="fa-solid fa-circle-check text-success"></i>
-                            <span>Total Bills Generated</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Metric 3: Monthly Revenue --}}
-            <div class="col-xl-2 col-lg-4 col-md-6 col-6">
-                <div class="dash-stat-card stat-rev-month">
-                    <div class="dash-stat-head">
-                        <span class="dash-stat-label">This Month Sale</span>
-                        <div class="dash-stat-icon-wrap">
-                            <i class="fa-solid fa-calendar-check"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="dash-stat-val" style="color: #6366f1;" title="₹{{ number_format($totalRevenueMonth, 2) }}">₹{{ number_format($totalRevenueMonth, 2) }}</div>
-                        <div class="dash-stat-footer">
-                            <i class="fa-solid fa-file-invoice text-muted"></i>
-                            <span>{{ number_format($totalOrdersMonth) }} paid orders</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Metric 4: Table Occupancy --}}
-            <div class="col-xl-2 col-lg-4 col-md-6 col-6">
-                <div class="dash-stat-card stat-tables">
-                    <div class="dash-stat-head">
-                        <span class="dash-stat-label">Table Occupancy</span>
-                        <div class="dash-stat-icon-wrap">
-                            <i class="fa-solid fa-chair"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="dash-stat-val" style="color: #0284c7;" title="{{ $occupiedTables }} of {{ $totalTables }} Occupied">{{ $occupiedTables }} / {{ $totalTables }}</div>
-                        <div class="dash-stat-footer">
-                            <i class="fa-solid fa-circle-dot text-info"></i>
-                            <span>{{ $totalTables > 0 ? round(($occupiedTables / $totalTables) * 100) : 0 }}% tables occupied</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Metric 5: Active Menu Dishes --}}
-            <div class="col-xl-2 col-lg-4 col-md-6 col-6">
-                <div class="dash-stat-card stat-dishes">
-                    <div class="dash-stat-head">
-                        <span class="dash-stat-label">Active Dishes</span>
-                        <div class="dash-stat-icon-wrap">
-                            <i class="fa-solid fa-bowl-food"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="dash-stat-val" style="color: #8b5cf6;" title="{{ number_format($totalDishes) }} Active Dishes">{{ number_format($totalDishes) }}</div>
-                        <div class="dash-stat-footer">
-                            <span class="badge bg-success bg-opacity-10 text-success p-1 rounded font-monospace">{{ $totalVeg }} Veg</span>
-                            <span class="badge bg-danger bg-opacity-10 text-danger p-1 rounded font-monospace">{{ $totalNonVeg }} Non-Veg</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Metric 6: Active Staff --}}
-            <div class="col-xl-2 col-lg-4 col-md-6 col-6">
-                <div class="dash-stat-card stat-staff">
-                    <div class="dash-stat-head">
-                        <span class="dash-stat-label">Active Staff</span>
-                        <div class="dash-stat-icon-wrap">
-                            <i class="fa-solid fa-users-gear"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="dash-stat-val" style="color: #d97706;" title="{{ number_format($totalStaff) }} Team Members">{{ number_format($totalStaff) }}</div>
-                        <div class="dash-stat-footer">
-                            <i class="fa-solid fa-shield-halved text-success"></i>
-                            <span>Authorized Team</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- 3. Top Products Analytics & Hot Dishes Row --}}
-        <div class="row g-4 mb-4">
-            {{-- Left: Top Products Chart --}}
-            <div class="col-lg-8">
-                <div class="dash-card h-100">
-                    <div class="dash-card-header">
-                        <div class="dash-card-title-group">
-                            <div class="dash-card-icon" style="background: rgba(255, 94, 20, 0.1); color: var(--dash-primary);">
-                                <i class="fa-solid fa-chart-simple"></i>
+            {{-- 2. Performance Stats Grid --}}
+            <div class="row g-3 mb-4">
+                {{-- Metric: Today Revenue (Admin/Owner or Reports Permission) --}}
+                @if(auth()->user()->isOwner() || auth()->user()->hasPermission('reports') || auth()->user()->hasPermission('master_report'))
+                    <div class="col-xl-2 col-lg-4 col-md-6 col-6">
+                        <div class="dash-stat-card stat-rev-today">
+                            <div class="dash-stat-head">
+                                <span class="dash-stat-label">Today's Revenue</span>
+                                <div class="dash-stat-icon-wrap">
+                                    <i class="fa-solid fa-indian-rupee-sign"></i>
+                                </div>
                             </div>
                             <div>
-                                <h3 class="dash-card-title">Top Selling Menu Items</h3>
-                                <p class="dash-card-sub">Highest order volume ranked by selected timeframe</p>
+                                <div class="dash-stat-val text-primary" title="₹{{ number_format($totalRevenueToday, 2) }}">₹{{ number_format($totalRevenueToday, 2) }}</div>
+                                <div class="dash-stat-footer">
+                                    <i class="fa-solid fa-chart-line text-success"></i>
+                                    <span>Avg Order: ₹{{ number_format($avgOrderValue, 0) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Metric: Today Orders --}}
+                @if(auth()->user()->isOwner() || auth()->user()->hasPermission('order_master') || auth()->user()->hasPermission('rapid_bill') || auth()->user()->hasPermission('kitchen_order') || auth()->user()->hasPermission('reports') || auth()->user()->hasPermission('master_report'))
+                    <div class="col-xl-2 col-lg-4 col-md-6 col-6">
+                        <div class="dash-stat-card stat-ord-today">
+                            <div class="dash-stat-head">
+                                <span class="dash-stat-label">Orders Today</span>
+                                <div class="dash-stat-icon-wrap">
+                                    <i class="fa-solid fa-bag-shopping"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="dash-stat-val text-success" title="{{ number_format($totalOrdersToday) }} Orders">{{ number_format($totalOrdersToday) }}</div>
+                                <div class="dash-stat-footer">
+                                    <i class="fa-solid fa-circle-check text-success"></i>
+                                    <span>Total Bills Generated</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Metric: Monthly Revenue --}}
+                @if(auth()->user()->isOwner() || auth()->user()->hasPermission('reports') || auth()->user()->hasPermission('master_report'))
+                    <div class="col-xl-2 col-lg-4 col-md-6 col-6">
+                        <div class="dash-stat-card stat-rev-month">
+                            <div class="dash-stat-head">
+                                <span class="dash-stat-label">This Month Sale</span>
+                                <div class="dash-stat-icon-wrap">
+                                    <i class="fa-solid fa-calendar-check"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="dash-stat-val" style="color: #6366f1;" title="₹{{ number_format($totalRevenueMonth, 2) }}">₹{{ number_format($totalRevenueMonth, 2) }}</div>
+                                <div class="dash-stat-footer">
+                                    <i class="fa-solid fa-file-invoice text-muted"></i>
+                                    <span>{{ number_format($totalOrdersMonth) }} paid orders</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Metric: Table Occupancy --}}
+                @if(auth()->user()->isOwner() || auth()->user()->hasPermission('table_master') || auth()->user()->hasPermission('order_master') || auth()->user()->hasPermission('rapid_bill'))
+                    <div class="col-xl-2 col-lg-4 col-md-6 col-6">
+                        <div class="dash-stat-card stat-tables">
+                            <div class="dash-stat-head">
+                                <span class="dash-stat-label">Table Occupancy</span>
+                                <div class="dash-stat-icon-wrap">
+                                    <i class="fa-solid fa-chair"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="dash-stat-val" style="color: #0284c7;" title="{{ $occupiedTables }} of {{ $totalTables }} Occupied">{{ $occupiedTables }} / {{ $totalTables }}</div>
+                                <div class="dash-stat-footer">
+                                    <i class="fa-solid fa-circle-dot text-info"></i>
+                                    <span>{{ $totalTables > 0 ? round(($occupiedTables / $totalTables) * 100) : 0 }}% tables occupied</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Metric: Active Menu Dishes --}}
+                @if(auth()->user()->isOwner() || auth()->user()->hasPermission('menu_master') || auth()->user()->hasPermission('menu_availability'))
+                    <div class="col-xl-2 col-lg-4 col-md-6 col-6">
+                        <div class="dash-stat-card stat-dishes">
+                            <div class="dash-stat-head">
+                                <span class="dash-stat-label">Active Dishes</span>
+                                <div class="dash-stat-icon-wrap">
+                                    <i class="fa-solid fa-bowl-food"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="dash-stat-val" style="color: #8b5cf6;" title="{{ number_format($totalDishes) }} Active Dishes">{{ number_format($totalDishes) }}</div>
+                                <div class="dash-stat-footer">
+                                    <span class="badge bg-success bg-opacity-10 text-success p-1 rounded font-monospace">{{ $totalVeg }} Veg</span>
+                                    <span class="badge bg-danger bg-opacity-10 text-danger p-1 rounded font-monospace">{{ $totalNonVeg }} Non-Veg</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Metric: Active Staff --}}
+                @if(auth()->user()->isOwner() || auth()->user()->hasPermission('staff'))
+                    <div class="col-xl-2 col-lg-4 col-md-6 col-6">
+                        <div class="dash-stat-card stat-staff">
+                            <div class="dash-stat-head">
+                                <span class="dash-stat-label">Active Staff</span>
+                                <div class="dash-stat-icon-wrap">
+                                    <i class="fa-solid fa-users-gear"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="dash-stat-val" style="color: #d97706;" title="{{ number_format($totalStaff) }} Team Members">{{ number_format($totalStaff) }}</div>
+                                <div class="dash-stat-footer">
+                                    <i class="fa-solid fa-shield-halved text-success"></i>
+                                    <span>Authorized Team</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Metric (Staff / Kitchen): Kitchen Pending Items --}}
+                @if(!auth()->user()->isOwner() && auth()->user()->hasPermission('kitchen_order'))
+                    <div class="col-xl-2 col-lg-4 col-md-6 col-6">
+                        <div class="dash-stat-card stat-dishes">
+                            <div class="dash-stat-head">
+                                <span class="dash-stat-label">Kitchen Pending</span>
+                                <div class="dash-stat-icon-wrap" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                                    <i class="fa-solid fa-fire-burner"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="dash-stat-val text-danger" title="{{ $kitchenPendingCount }} Items Pending in Kitchen">{{ $kitchenPendingCount }}</div>
+                                <div class="dash-stat-footer">
+                                    <a href="{{ route('order.kitchen') }}" class="text-decoration-none text-muted">
+                                        <i class="fa-solid fa-arrow-right text-danger me-1"></i> Open Kitchen KOT
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Metric (Staff): My Attendance Today --}}
+                @if(auth()->user()->isStaff() && !auth()->user()->hasPermission('reports') && !auth()->user()->hasPermission('master_report'))
+                    <div class="col-xl-2 col-lg-4 col-md-6 col-6">
+                        <div class="dash-stat-card stat-staff">
+                            <div class="dash-stat-head">
+                                <span class="dash-stat-label">My Attendance</span>
+                                <div class="dash-stat-icon-wrap" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                                    <i class="fa-solid fa-fingerprint"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="dash-stat-val {{ $todayAttendance ? 'text-success' : 'text-warning' }}" style="font-size: 1.15rem;">
+                                    {{ $todayAttendance ? 'Checked In' : 'Not Marked' }}
+                                </div>
+                                <div class="dash-stat-footer">
+                                    <a href="{{ route('user.hrm.index', ['tab' => 'attendance']) }}" class="text-decoration-none text-muted">
+                                        <i class="fa-solid fa-clock text-success me-1"></i> {{ $todayAttendance ? \Carbon\Carbon::parse($todayAttendance->login_time)->format('h:i A') : 'Clock In Now' }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </div>
+
+            {{-- 3. Top Products Analytics & Hot Dishes Row --}}
+            @if(auth()->user()->isOwner() || auth()->user()->hasPermission('menu_master') || auth()->user()->hasPermission('order_master') || auth()->user()->hasPermission('reports') || auth()->user()->hasPermission('master_report'))
+                <div class="row g-4 mb-4">
+                    {{-- Left: Top Products Chart --}}
+                    <div class="col-lg-8">
+                        <div class="dash-card h-100">
+                            <div class="dash-card-header">
+                                <div class="dash-card-title-group">
+                                    <div class="dash-card-icon" style="background: rgba(255, 94, 20, 0.1); color: var(--dash-primary);">
+                                        <i class="fa-solid fa-chart-simple"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="dash-card-title">Top Selling Menu Items</h3>
+                                        <p class="dash-card-sub">Highest order volume ranked by selected timeframe</p>
+                                    </div>
+                                </div>
+
+                                <div class="period-filter-pills">
+                                    <button type="button" class="period-tab-btn active" id="tab-daily">Daily</button>
+                                    <button type="button" class="period-tab-btn" id="tab-monthly">Monthly</button>
+                                    <button type="button" class="period-tab-btn" id="tab-yearly">Yearly</button>
+                                </div>
+                            </div>
+
+                            <div class="dash-card-body">
+                                <div style="position: relative; height: 280px; width: 100%;">
+                                    <canvas id="topProductsChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Right: Hot Dishes Today --}}
+                    <div class="col-lg-4">
+                        <div class="dash-card h-100">
+                            <div class="dash-card-header">
+                                <div class="dash-card-title-group">
+                                    <div class="dash-card-icon" style="background: #fff1f2; color: #f43f5e;">
+                                        <i class="fa-solid fa-fire-flame-curved"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="dash-card-title">Hot Items Today</h3>
+                                        <p class="dash-card-sub">Real-time bestsellers right now</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="dash-card-body p-3">
+                                @forelse($hotDaily ?? [] as $index => $hot)
+                                    @php
+                                        $rankClass = match($index) {
+                                            0 => 'rank-1',
+                                            1 => 'rank-2',
+                                            2 => 'rank-3',
+                                            default => 'rank-other',
+                                        };
+                                        $medal = match($index) {
+                                            0 => '🥇',
+                                            1 => '🥈',
+                                            2 => '🥉',
+                                            default => '#' . ($index + 1),
+                                        };
+                                    @endphp
+                                    <div class="hot-dish-row">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="hot-rank-badge {{ $rankClass }}">
+                                                {{ $medal }}
+                                            </div>
+                                            <div>
+                                                <div class="hot-dish-title">{{ $hot->subcategory->name ?? 'Dish Item' }}</div>
+                                                <small class="text-muted">{{ $hot->subcategory->food_type ?? 'Menu' }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="hot-dish-qty-pill">
+                                            {{ $hot->total }} Sold
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-center py-5 text-muted">
+                                        <i class="fa-solid fa-fire fa-2x mb-2 opacity-50 text-warning"></i>
+                                        <p class="small mb-0">No sales recorded yet today.</p>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- 4. Dish Monthly Performance Trend Section --}}
+            @if(auth()->user()->isOwner() || auth()->user()->hasPermission('menu_master') || auth()->user()->hasPermission('reports') || auth()->user()->hasPermission('master_report'))
+                <div class="dash-card mb-4">
+                    <div class="dash-card-header">
+                        <div class="dash-card-title-group">
+                            <div class="dash-card-icon" style="background: #eef2ff; color: #6366f1;">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </div>
+                            <div>
+                                <h3 class="dash-card-title">Dish Performance Trend (12 Months)</h3>
+                                <p class="dash-card-sub">Select any dish to visualize its monthly sales trajectory and seasonal demand</p>
                             </div>
                         </div>
 
-                        <div class="period-filter-pills">
-                            <button type="button" class="period-tab-btn active" id="tab-daily">Daily</button>
-                            <button type="button" class="period-tab-btn" id="tab-monthly">Monthly</button>
-                            <button type="button" class="period-tab-btn" id="tab-yearly">Yearly</button>
+                        <div style="min-width: 260px;">
+                            <select id="dishSelect" class="form-select trend-dish-select">
+                                <option value="">-- Choose a Dish to Inspect --</option>
+                                @foreach($dishes ?? [] as $d)
+                                    <option value="{{ $d->id }}">{{ $d->name }} ({{ $d->food_type ?? 'Dish' }})</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
 
                     <div class="dash-card-body">
-                        <div style="position: relative; height: 280px; width: 100%;">
-                            <canvas id="topProductsChart"></canvas>
+                        <div style="position: relative; height: 260px; width: 100%;">
+                            <canvas id="dishMonthlyChart"></canvas>
                         </div>
                     </div>
                 </div>
-            </div>
+            @endif
 
-            {{-- Right: Hot Dishes Today --}}
-            <div class="col-lg-4">
-                <div class="dash-card h-100">
+            {{-- 5. Recent Orders Table Card --}}
+            @if(auth()->user()->isOwner() || auth()->user()->hasPermission('order_master') || auth()->user()->hasPermission('kitchen_order') || auth()->user()->hasPermission('pending_order') || auth()->user()->hasPermission('rapid_bill') || auth()->user()->hasPermission('reports') || auth()->user()->hasPermission('master_report'))
+                <div class="dash-card">
                     <div class="dash-card-header">
                         <div class="dash-card-title-group">
-                            <div class="dash-card-icon" style="background: #fff1f2; color: #f43f5e;">
-                                <i class="fa-solid fa-fire-flame-curved"></i>
+                            <div class="dash-card-icon" style="background: #ecfdf5; color: #10b981;">
+                                <i class="fa-solid fa-receipt"></i>
                             </div>
                             <div>
-                                <h3 class="dash-card-title">Hot Items Today</h3>
-                                <p class="dash-card-sub">Real-time bestsellers right now</p>
+                                <h3 class="dash-card-title">Recent Orders</h3>
+                                <p class="dash-card-sub">Latest transactions and dine-in activities processed</p>
                             </div>
+                        </div>
+
+                        <div>
+                            @if(auth()->user()->isOwner() || auth()->user()->hasPermission('reports') || auth()->user()->hasPermission('master_report'))
+                                <a href="{{ route('order.report') }}" class="btn btn-sm btn-light border rounded-pill px-3 fw-bold text-dark">
+                                    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> View All Orders
+                                </a>
+                            @endif
                         </div>
                     </div>
 
-                    <div class="dash-card-body p-3">
-                        @forelse($hotDaily ?? [] as $index => $hot)
-                            @php
-                                $rankClass = match($index) {
-                                    0 => 'rank-1',
-                                    1 => 'rank-2',
-                                    2 => 'rank-3',
-                                    default => 'rank-other',
-                                };
-                                $medal = match($index) {
-                                    0 => '🥇',
-                                    1 => '🥈',
-                                    2 => '🥉',
-                                    default => '#' . ($index + 1),
-                                };
-                            @endphp
-                            <div class="hot-dish-row">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="hot-rank-badge {{ $rankClass }}">
-                                        {{ $medal }}
-                                    </div>
-                                    <div>
-                                        <div class="hot-dish-title">{{ $hot->subcategory->name ?? 'Dish Item' }}</div>
-                                        <small class="text-muted">{{ $hot->subcategory->food_type ?? 'Menu' }}</small>
-                                    </div>
-                                </div>
-                                <div class="hot-dish-qty-pill">
-                                    {{ $hot->total }} Sold
-                                </div>
-                            </div>
-                        @empty
-                            <div class="text-center py-5 text-muted">
-                                <i class="fa-solid fa-fire fa-2x mb-2 opacity-50 text-warning"></i>
-                                <p class="small mb-0">No sales recorded yet today.</p>
-                            </div>
-                        @endforelse
+                    <div class="dash-card-body p-0">
+                        <div class="table-responsive">
+                            <table id="dashboardOrdersTable" class="table align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">#</th>
+                                        <th>Order ID</th>
+                                        <th>Table / Mode</th>
+                                        <th>Customer</th>
+                                        <th>Items Ordered</th>
+                                        <th class="text-end">Subtotal</th>
+                                        <th class="text-end">Total Paid</th>
+                                        <th>Status</th>
+                                        <th>Time</th>
+                                        <th class="text-center" style="width: 100px;">Invoice</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($orders ?? [] as $key => $o)
+                                        @php
+                                            $paymentStatus = strtoupper($o->payment_status ?? 'PENDING');
+                                            $statusPillClass = match($paymentStatus) {
+                                                'PAID' => 'pill-paid',
+                                                'CANCELLED', 'REJECTED' => 'pill-cancelled',
+                                                default => 'pill-pending',
+                                            };
+                                            $tableName = $o->table ? $o->table->table_name : ($o->order_type ?? 'Dine-In');
+                                            $itemsCount = $o->orderItems ? $o->orderItems->count() : 0;
+                                        @endphp
+                                        <tr>
+                                            <td class="text-muted fw-bold">{{ $key + 1 }}</td>
+                                            <td>
+                                                <span class="fw-bold font-monospace text-dark" style="font-size: 0.9rem;">
+                                                    {{ $o->order_id ?? ('#' . $o->id) }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border px-2 py-1 rounded-pill">
+                                                    <i class="fa-solid fa-chair me-1 text-primary"></i> {{ $tableName }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="fw-bold text-dark">{{ $o->customer_name ?: 'Walk-in Guest' }}</div>
+                                                @if($o->customer_phone)
+                                                    <small class="text-muted font-monospace">{{ $o->customer_phone }}</small>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1 rounded-pill">
+                                                    {{ $itemsCount }} Item(s)
+                                                </span>
+                                            </td>
+                                            <td class="text-end font-monospace text-muted">
+                                                ₹{{ number_format($o->total_amount ?? 0, 2) }}
+                                            </td>
+                                            <td class="text-end">
+                                                <strong class="text-dark font-monospace" style="font-size: 0.95rem;">
+                                                    ₹{{ number_format($o->grand_total ?? 0, 2) }}
+                                                </strong>
+                                            </td>
+                                            <td>
+                                                <span class="order-status-pill {{ $statusPillClass }}">
+                                                    @if($paymentStatus === 'PAID')
+                                                        <i class="fa-solid fa-circle-check"></i> Paid
+                                                    @elseif($paymentStatus === 'CANCELLED')
+                                                        <i class="fa-solid fa-circle-xmark"></i> Cancelled
+                                                    @else
+                                                        <i class="fa-solid fa-clock"></i> Pending
+                                                    @endif
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="small text-muted">{{ \Carbon\Carbon::parse($o->created_at)->format('h:i A') }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <a href="{{ route('order.invoice', $o->id) }}" 
+                                                   class="btn btn-sm btn-light border rounded-pill px-2 py-1" 
+                                                   title="View Invoice"
+                                                   target="_blank">
+                                                    <i class="fa-solid fa-file-invoice text-primary"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        {{-- 4. Dish Monthly Performance Trend Section --}}
-        <div class="dash-card mb-4">
-            <div class="dash-card-header">
-                <div class="dash-card-title-group">
-                    <div class="dash-card-icon" style="background: #eef2ff; color: #6366f1;">
-                        <i class="fa-solid fa-chart-line"></i>
-                    </div>
-                    <div>
-                        <h3 class="dash-card-title">Dish Performance Trend (12 Months)</h3>
-                        <p class="dash-card-sub">Select any dish to visualize its monthly sales trajectory and seasonal demand</p>
-                    </div>
-                </div>
-
-                <div style="min-width: 260px;">
-                    <select id="dishSelect" class="form-select trend-dish-select">
-                        <option value="">-- Choose a Dish to Inspect --</option>
-                        @foreach($dishes ?? [] as $d)
-                            <option value="{{ $d->id }}">{{ $d->name }} ({{ $d->food_type ?? 'Dish' }})</option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-
-            <div class="dash-card-body">
-                <div style="position: relative; height: 260px; width: 100%;">
-                    <canvas id="dishMonthlyChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        {{-- 5. Recent Orders Table Card --}}
-        <div class="dash-card">
-            <div class="dash-card-header">
-                <div class="dash-card-title-group">
-                    <div class="dash-card-icon" style="background: #ecfdf5; color: #10b981;">
-                        <i class="fa-solid fa-receipt"></i>
-                    </div>
-                    <div>
-                        <h3 class="dash-card-title">Recent Orders</h3>
-                        <p class="dash-card-sub">Latest transactions and dine-in activities processed</p>
-                    </div>
-                </div>
-
-                <div>
-                    <a href="{{ route('order.report') }}" class="btn btn-sm btn-light border rounded-pill px-3 fw-bold text-dark">
-                        <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> View All Orders
-                    </a>
-                </div>
-            </div>
-
-            <div class="dash-card-body p-0">
-                <div class="table-responsive">
-                    <table id="dashboardOrdersTable" class="table align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th style="width: 50px;">#</th>
-                                <th>Order ID</th>
-                                <th>Table / Mode</th>
-                                <th>Customer</th>
-                                <th>Items Ordered</th>
-                                <th class="text-end">Subtotal</th>
-                                <th class="text-end">Total Paid</th>
-                                <th>Status</th>
-                                <th>Time</th>
-                                <th class="text-center" style="width: 100px;">Invoice</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($orders ?? [] as $key => $o)
-                                @php
-                                    $paymentStatus = strtoupper($o->payment_status ?? 'PENDING');
-                                    $statusPillClass = match($paymentStatus) {
-                                        'PAID' => 'pill-paid',
-                                        'CANCELLED', 'REJECTED' => 'pill-cancelled',
-                                        default => 'pill-pending',
-                                    };
-                                    $tableName = $o->table ? $o->table->table_name : ($o->order_type ?? 'Dine-In');
-                                    $itemsCount = $o->orderItems ? $o->orderItems->count() : 0;
-                                @endphp
-                                <tr>
-                                    <td class="text-muted fw-bold">{{ $key + 1 }}</td>
-                                    <td>
-                                        <span class="fw-bold font-monospace text-dark" style="font-size: 0.9rem;">
-                                            {{ $o->order_id ?? ('#' . $o->id) }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-light text-dark border px-2 py-1 rounded-pill">
-                                            <i class="fa-solid fa-chair me-1 text-primary"></i> {{ $tableName }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold text-dark">{{ $o->customer_name ?: 'Walk-in Guest' }}</div>
-                                        @if($o->customer_phone)
-                                            <small class="text-muted font-monospace">{{ $o->customer_phone }}</small>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1 rounded-pill">
-                                            {{ $itemsCount }} Item(s)
-                                        </span>
-                                    </td>
-                                    <td class="text-end font-monospace text-muted">
-                                        ₹{{ number_format($o->total_amount ?? 0, 2) }}
-                                    </td>
-                                    <td class="text-end">
-                                        <strong class="text-dark font-monospace" style="font-size: 0.95rem;">
-                                            ₹{{ number_format($o->grand_total ?? 0, 2) }}
-                                        </strong>
-                                    </td>
-                                    <td>
-                                        <span class="order-status-pill {{ $statusPillClass }}">
-                                            @if($paymentStatus === 'PAID')
-                                                <i class="fa-solid fa-circle-check"></i> Paid
-                                            @elseif($paymentStatus === 'CANCELLED')
-                                                <i class="fa-solid fa-circle-xmark"></i> Cancelled
-                                            @else
-                                                <i class="fa-solid fa-clock"></i> Pending
-                                            @endif
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="small text-muted">{{ \Carbon\Carbon::parse($o->created_at)->format('h:i A') }}</span>
-                                    </td>
-                                    <td class="text-center">
-                                        <a href="{{ route('order.invoice', $o->id) }}" 
-                                           class="btn btn-sm btn-light border rounded-pill px-2 py-1" 
-                                           title="View Invoice"
-                                           target="_blank">
-                                            <i class="fa-solid fa-file-invoice text-primary"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+            @endif
+        @endif
 
     </div>
 
@@ -884,173 +1139,178 @@
 
 <script>
 $(document).ready(function() {
-    // 1. Initialize DataTable for Recent Orders
-    $("#dashboardOrdersTable").DataTable({
-        "pageLength": 10,
-        "ordering": false,
-        "dom": '<"dataTables-toolbar-deck d-flex flex-wrap justify-content-between align-items-center gap-2"f>rt<"dataTables-footer-deck d-flex flex-wrap justify-content-between align-items-center gap-2"ip>',
-        "language": {
-            "emptyTable": '<div class="py-4 text-center text-muted"><i class="fa-solid fa-receipt fa-2x mb-2 opacity-50"></i><div>No recent orders found.</div></div>',
-            "search": "_INPUT_",
-            "searchPlaceholder": "Filter recent orders...",
-            "info": "Showing _START_ to _END_ of _TOTAL_ orders",
-            "infoEmpty": "Showing 0 to 0 of 0 orders"
-        }
-    });
-
-    // 2. Chart Configurations & Colors
-    const primaryColor = '#ff5e14';
-    const primaryGradientStart = '#ff5e14';
-    const primaryGradientEnd = '#ff8c42';
-
-    const topDaily   = @json($topDailySeries ?? []);
-    const topMonthly = @json($topMonthlySeries ?? []);
-    const topYearly  = @json($topYearlySeries ?? []);
-
-    function formatData(series) {
-        if (!series || !series.length) {
-            return { labels: ['No Sales Data'], data: [0] };
-        }
-        return {
-            labels: series.map(s => s.subcategory?.name ?? "Dish"),
-            data: series.map(s => Number(s.total ?? 0))
-        };
+    // 1. Initialize DataTable for Recent Orders if table is present
+    if ($("#dashboardOrdersTable").length) {
+        $("#dashboardOrdersTable").DataTable({
+            "pageLength": 10,
+            "ordering": false,
+            "dom": '<"dataTables-toolbar-deck d-flex flex-wrap justify-content-between align-items-center gap-2"f>rt<"dataTables-footer-deck d-flex flex-wrap justify-content-between align-items-center gap-2"ip>',
+            "language": {
+                "emptyTable": '<div class="py-4 text-center text-muted"><i class="fa-solid fa-receipt fa-2x mb-2 opacity-50"></i><div>No recent orders found.</div></div>',
+                "search": "_INPUT_",
+                "searchPlaceholder": "Filter recent orders...",
+                "info": "Showing _START_ to _END_ of _TOTAL_ orders",
+                "infoEmpty": "Showing 0 to 0 of 0 orders"
+            }
+        });
     }
 
-    // Top Products Chart
-    const ctxTop = document.getElementById("topProductsChart").getContext("2d");
-    const gradientTop = ctxTop.createLinearGradient(0, 0, 0, 260);
-    gradientTop.addColorStop(0, '#ff5e14');
-    gradientTop.addColorStop(1, '#ff9e66');
+    // 2. Top Products Chart if canvas is present
+    if ($("#topProductsChart").length) {
+        const primaryColor = '#ff5e14';
+        const primaryGradientStart = '#ff5e14';
+        const primaryGradientEnd = '#ff8c42';
 
-    let initialTopData = formatData(topDaily);
-    let topChart = new Chart(ctxTop, {
-        type: "bar",
-        data: { 
-            labels: initialTopData.labels, 
-            datasets: [{
-                label: "Units Sold",
-                data: initialTopData.data,
-                backgroundColor: gradientTop,
-                borderRadius: 12,
-                barPercentage: 0.55,
-                categoryPercentage: 0.75
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    titleFont: { size: 13, family: 'Plus Jakarta Sans', weight: 'bold' },
-                    bodyFont: { size: 12, family: 'Plus Jakarta Sans' },
-                    padding: 12,
-                    cornerRadius: 10,
-                    callbacks: {
-                        label: function(context) {
-                            return ` Total Sold: ${context.raw} units`;
+        const topDaily   = @json($topDailySeries ?? []);
+        const topMonthly = @json($topMonthlySeries ?? []);
+        const topYearly  = @json($topYearlySeries ?? []);
+
+        function formatData(series) {
+            if (!series || !series.length) {
+                return { labels: ['No Sales Data'], data: [0] };
+            }
+            return {
+                labels: series.map(s => s.subcategory?.name ?? "Dish"),
+                data: series.map(s => Number(s.total ?? 0))
+            };
+        }
+
+        const ctxTop = document.getElementById("topProductsChart").getContext("2d");
+        const gradientTop = ctxTop.createLinearGradient(0, 0, 0, 260);
+        gradientTop.addColorStop(0, '#ff5e14');
+        gradientTop.addColorStop(1, '#ff9e66');
+
+        let initialTopData = formatData(topDaily);
+        let topChart = new Chart(ctxTop, {
+            type: "bar",
+            data: { 
+                labels: initialTopData.labels, 
+                datasets: [{
+                    label: "Units Sold",
+                    data: initialTopData.data,
+                    backgroundColor: gradientTop,
+                    borderRadius: 12,
+                    barPercentage: 0.55,
+                    categoryPercentage: 0.75
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        titleFont: { size: 13, family: 'Plus Jakarta Sans', weight: 'bold' },
+                        bodyFont: { size: 12, family: 'Plus Jakarta Sans' },
+                        padding: 12,
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: function(context) {
+                                return ` Total Sold: ${context.raw} units`;
+                            }
                         }
                     }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: '#f1f5f9' },
-                    ticks: { font: { family: 'Outfit', size: 12 }, precision: 0 }
                 },
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' } }
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { font: { family: 'Outfit', size: 12 }, precision: 0 }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' } }
+                    }
                 }
             }
-        }
-    });
-
-    // Switch Chart Periods
-    $(".period-tab-btn").click(function() {
-        $(".period-tab-btn").removeClass("active");
-        $(this).addClass("active");
-        
-        let tabId = $(this).attr("id").replace("tab-", "");
-        let seriesData = tabId === "daily" ? topDaily : (tabId === "monthly" ? topMonthly : topYearly);
-        let formatted = formatData(seriesData);
-        
-        topChart.data.labels = formatted.labels;
-        topChart.data.datasets[0].data = formatted.data;
-        topChart.update();
-    });
-
-    // 3. Dish Monthly Trend Chart
-    const ctxMonthly = document.getElementById("dishMonthlyChart").getContext("2d");
-    const gradientMonthly = ctxMonthly.createLinearGradient(0, 0, 0, 240);
-    gradientMonthly.addColorStop(0, 'rgba(99, 102, 241, 0.25)');
-    gradientMonthly.addColorStop(1, 'rgba(99, 102, 241, 0.00)');
-
-    let dishChart = new Chart(ctxMonthly, {
-        type: "line",
-        data: { 
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], 
-            datasets: [{
-                label: "Units Sold",
-                data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                borderColor: '#6366f1',
-                backgroundColor: gradientMonthly,
-                borderWidth: 3,
-                pointBackgroundColor: '#6366f1',
-                pointBorderColor: '#ffffff',
-                pointBorderWidth: 2,
-                pointRadius: 5,
-                pointHoverRadius: 8,
-                fill: true,
-                tension: 0.35
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    titleFont: { size: 13, family: 'Plus Jakarta Sans', weight: 'bold' },
-                    bodyFont: { size: 12, family: 'Plus Jakarta Sans' },
-                    padding: 12,
-                    cornerRadius: 10
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: '#f1f5f9' },
-                    ticks: { font: { family: 'Outfit', size: 12 }, precision: 0 }
-                },
-                x: {
-                    grid: { color: '#f8fafc' },
-                    ticks: { font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' } }
-                }
-            }
-        }
-    });
-
-    // Load Dish Data via Ajax
-    $("#dishSelect").change(function () {
-        let id = $(this).val();
-        if (!id) return;
-
-        let url = "{{ route('dashboard.dish.monthly', ':id') }}".replace(":id", id);
-        $.getJSON(url, function (res) {
-            dishChart.data.labels = res.labels;
-            dishChart.data.datasets[0].data = res.data;
-            dishChart.update();
         });
-    });
 
-    // Auto-select first dish if available
-    if ($("#dishSelect option").length > 1) {
-        $("#dishSelect").prop('selectedIndex', 1).trigger('change');
+        // Switch Chart Periods
+        $(".period-tab-btn").click(function() {
+            $(".period-tab-btn").removeClass("active");
+            $(this).addClass("active");
+            
+            let tabId = $(this).attr("id").replace("tab-", "");
+            let seriesData = tabId === "daily" ? topDaily : (tabId === "monthly" ? topMonthly : topYearly);
+            let formatted = formatData(seriesData);
+            
+            topChart.data.labels = formatted.labels;
+            topChart.data.datasets[0].data = formatted.data;
+            topChart.update();
+        });
+    }
+
+    // 3. Dish Monthly Trend Chart if canvas is present
+    if ($("#dishMonthlyChart").length) {
+        const ctxMonthly = document.getElementById("dishMonthlyChart").getContext("2d");
+        const gradientMonthly = ctxMonthly.createLinearGradient(0, 0, 0, 240);
+        gradientMonthly.addColorStop(0, 'rgba(99, 102, 241, 0.25)');
+        gradientMonthly.addColorStop(1, 'rgba(99, 102, 241, 0.00)');
+
+        let dishChart = new Chart(ctxMonthly, {
+            type: "line",
+            data: { 
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], 
+                datasets: [{
+                    label: "Units Sold",
+                    data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    borderColor: '#6366f1',
+                    backgroundColor: gradientMonthly,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#6366f1',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 8,
+                    fill: true,
+                    tension: 0.35
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        titleFont: { size: 13, family: 'Plus Jakarta Sans', weight: 'bold' },
+                        bodyFont: { size: 12, family: 'Plus Jakarta Sans' },
+                        padding: 12,
+                        cornerRadius: 10
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { font: { family: 'Outfit', size: 12 }, precision: 0 }
+                    },
+                    x: {
+                        grid: { color: '#f8fafc' },
+                        ticks: { font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' } }
+                    }
+                }
+            }
+        });
+
+        // Load Dish Data via Ajax
+        $("#dishSelect").change(function () {
+            let id = $(this).val();
+            if (!id) return;
+
+            let url = "{{ route('dashboard.dish.monthly', ':id') }}".replace(":id", id);
+            $.getJSON(url, function (res) {
+                dishChart.data.labels = res.labels;
+                dishChart.data.datasets[0].data = res.data;
+                dishChart.update();
+            });
+        });
+
+        // Auto-select first dish if available
+        if ($("#dishSelect option").length > 1) {
+            $("#dishSelect").prop('selectedIndex', 1).trigger('change');
+        }
     }
 });
 </script>

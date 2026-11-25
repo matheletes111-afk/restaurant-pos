@@ -1236,6 +1236,11 @@
                                             @endif
                                             <div>
                                                 <strong class="text-dark">{{ $item->subcategory->name ?? 'Custom Item' }}</strong>
+                                                @if($item->is_raw_dish || !empty($item->formatted_weight))
+                                                    <span class="badge bg-light text-primary border border-primary-subtle ms-1" style="font-size: 0.72rem; font-weight: 600;">
+                                                        <i class="fa-solid fa-weight-scale me-1"></i>{{ $item->formatted_weight }}
+                                                    </span>
+                                                @endif
 
                                                 @if($hasAddons)
                                                     <div class="inv-item-addons-box">
@@ -1793,7 +1798,11 @@ function generateWhatsappMessage() {
     msg += `📋 *Ordered Items:*\n`;
     @if($order->orderItems && count($order->orderItems) > 0)
         @foreach($order->orderItems as $item)
-            msg += `• {{ $item->quantity }}x {{ addslashes($item->subcategory->name ?? 'Item') }} - {{ number_format($item->total_amount ?? ($item->price * $item->quantity), 2) }}\n`;
+            @if($item->is_raw_dish || !empty($item->formatted_weight))
+                msg += `• {{ addslashes($item->subcategory->name ?? 'Item') }} [{{ $item->formatted_weight }}] - ₹{{ number_format($item->total_amount ?? ($item->price * $item->quantity), 2) }}\n`;
+            @else
+                msg += `• {{ $item->quantity }}x {{ addslashes($item->subcategory->name ?? 'Item') }} - ₹{{ number_format($item->total_amount ?? ($item->price * $item->quantity), 2) }}\n`;
+            @endif
             @if(!empty($item->addons_list) && !empty($item->subcategory_id))
                 @foreach($item->addons_list as $a)
                     @php

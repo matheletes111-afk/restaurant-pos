@@ -908,6 +908,11 @@
                                 <span class="dish-qty-chip">{{ $itm->quantity }}x</span>
                                 <span class="dish-name-text">
                                     {{ $itmName }}
+                                    @if($itm->is_raw_dish || !empty($itm->formatted_weight))
+                                        <span class="badge bg-light text-primary border border-primary-subtle" style="font-size: 0.72rem; padding: 2px 7px; border-radius: 6px; font-weight: 700; margin-left: 5px;">
+                                            <i class="fa-solid fa-weight-scale me-1"></i>{{ $itm->formatted_weight }}
+                                        </span>
+                                    @endif
                                     @if(!empty($itm->bar_variation_name) || !empty($itm->bar_variation_ml))
                                         <span class="badge" style="background: linear-gradient(135deg, #1e293b, #334155); color: #f8fafc; font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; font-weight: 600; margin-left: 6px; letter-spacing: 0.3px; border: 1px solid rgba(255,255,255,0.15); display: inline-flex; align-items: center; gap: 4px;">
                                             <i class="fas fa-wine-glass-alt text-warning"></i> {{ $itm->bar_variation_name ?: ($itm->bar_variation_ml . ' ml') }}

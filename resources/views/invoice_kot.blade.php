@@ -4,7 +4,15 @@
     <meta charset="UTF-8">
     <title>KOT #{{ $item->kot_no ?? $item->id }}</title>
     <link rel="shortcut icon" href="{{ asset('fav_web.png') }}">
+    @php
+        $thermalPrintSize = $thermal_print_size ?? $restaurant_details->thermal_print_size ?? '80mm';
+        $is58mm = ($thermalPrintSize === '58mm');
+    @endphp
     <style>
+        @page {
+            size: {{ $is58mm ? '58mm' : '80mm' }} auto;
+            margin: 0;
+        }
         * {
             margin: 0;
             padding: 0;
@@ -12,16 +20,16 @@
         }
         body {
             font-family: 'Courier New', Courier, monospace;
-            font-size: 11px;
+            font-size: {{ $is58mm ? '9px' : '11px' }};
             width: 100%;
             margin: 0;
-            padding: 5px;
+            padding: {{ $is58mm ? '2px 4px' : '5px' }};
             background: #fff;
             color: #000;
         }
         .kot-receipt {
             width: 100%;
-            max-width: 280px;
+            max-width: {{ $is58mm ? '195px' : '280px' }};
             margin: 0 auto;
             background: white;
         }
@@ -126,6 +134,37 @@
             font-size: 10px;
             text-transform: uppercase;
         }
+
+        /* Print Optimization */
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .kot-receipt {
+                margin: 0;
+                padding: 0;
+                width: 100% !important;
+                max-width: {{ $is58mm ? '58mm' : '80mm' }} !important;
+            }
+        }
+
+        @if($is58mm)
+        /* 58mm Compact Overrides */
+        .restaurant-name { font-size: 11px !important; }
+        .kot-title { font-size: 11px !important; padding: 2px !important; letter-spacing: 0px !important; margin: 3px 0 !important; }
+        .info-row { font-size: 8px !important; margin: 2px 0 !important; }
+        .items-table th { font-size: 8px !important; padding: 2px 0 !important; }
+        .items-table td { font-size: 8.5px !important; padding: 3px 0 !important; }
+        .item-name { font-size: 8.5px !important; }
+        .item-qty { font-size: 10px !important; }
+        .note-section { margin: 4px 0 !important; padding: 4px !important; }
+        .note-title { font-size: 7.5px !important; }
+        .note-text { font-size: 8px !important; }
+        .status-text { font-size: 8px !important; }
+        .line { margin: 3px 0 !important; }
+        .line-double { margin: 3px 0 !important; }
+        @endif
     </style>
 </head>
 <body>
@@ -191,6 +230,9 @@
                         <tr>
                             <td>
                                 <span class="item-name">{{ $kotItem->subcategory->name ?? 'Unknown' }}</span>
+                                @if($kotItem->is_raw_dish || !empty($kotItem->formatted_weight))
+                                    <span style="font-size: 9px; font-weight: bold; color: #000; background: #eee; padding: 1px 4px; border: 1px solid #999; margin-left: 4px;">[{{ $kotItem->formatted_weight }}]</span>
+                                @endif
                                 <br>
                                 <small style="font-size: 8px;">Category: {{ $kotItem->subcategory->category->name ?? 'N/A' }} ({{ $kotItem->subcategory->food_type ?? '' }})</small>
                                 @if(!empty($addons) && !empty($kotItem->subcategory_id))
@@ -214,6 +256,9 @@
                     <tr>
                         <td>
                             <span class="item-name">{{ $item->subcategory->name }}</span>
+                            @if($item->is_raw_dish || !empty($item->formatted_weight))
+                                <span style="font-size: 9px; font-weight: bold; color: #000; background: #eee; padding: 1px 4px; border: 1px solid #999; margin-left: 4px;">[{{ $item->formatted_weight }}]</span>
+                            @endif
                             <br>
                             <small style="font-size: 8px;">Category: {{ $item->subcategory->category->name ?? 'N/A' }} ({{ $item->subcategory->food_type }})</small>
                             @if(!empty($addons) && !empty($item->subcategory_id))

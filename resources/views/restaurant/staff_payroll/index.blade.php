@@ -537,6 +537,10 @@
                                     data-absent-days="{{ $row['absent_days'] }}"
                                     data-pf-pct="{{ $row['pf_percentage'] }}"
                                     data-esi-pct="{{ $row['esi_percentage'] }}"
+                                    data-ptax-type="{{ $row['ptax_type'] ?? 'percentage' }}"
+                                    data-ptax-val="{{ $row['ptax_val'] ?? 0 }}"
+                                    data-other-type="{{ $row['other_type'] ?? 'percentage' }}"
+                                    data-other-val="{{ $row['other_val'] ?? 0 }}"
                                     data-other-pct="{{ $row['other_deductions_percentage'] }}"
                                     data-extra-earn="{{ $row['extra_earnings'] }}"
                                     data-extra-penalty="{{ $row['extra_deductions'] }}"
@@ -654,7 +658,7 @@
                                                     -₹{{ number_format($row['total_statutory'], 2) }}
                                                 </div>
                                                 <div class="text-muted" style="font-size: 0.68rem;">
-                                                    PF: ₹{{ number_format($row['pf_amount'], 0) }} | ESI: ₹{{ number_format($row['esi_amount'], 0) }}
+                                                    PF: ₹{{ number_format($row['pf_amount'], 0) }} | ESI: ₹{{ number_format($row['esi_amount'], 0) }} | Other: ₹{{ number_format($row['other_deductions'], 0) }}
                                                 </div>
                                             @else
                                                 <span class="text-muted small">₹0.00</span>
@@ -1632,7 +1636,11 @@
         const absentDays = parseFloat(row.getAttribute('data-absent-days')) || 0;
         const pfPct = parseFloat(row.getAttribute('data-pf-pct')) || 0;
         const esiPct = parseFloat(row.getAttribute('data-esi-pct')) || 0;
-        const otherPct = parseFloat(row.getAttribute('data-other-pct')) || 0;
+        const ptaxType = row.getAttribute('data-ptax-type') || 'percentage';
+        const ptaxVal = parseFloat(row.getAttribute('data-ptax-val')) || 0;
+        const otherType = row.getAttribute('data-other-type') || 'percentage';
+        const otherVal = parseFloat(row.getAttribute('data-other-val')) || 0;
+
         const extraEarn = parseFloat(row.getAttribute('data-extra-earn')) || 0;
         const extraPenalty = parseFloat(row.getAttribute('data-extra-penalty')) || 0;
         const extraAdvance = parseFloat(row.getAttribute('data-extra-advance')) || 0;
@@ -1646,8 +1654,10 @@
 
         const pfAmount = Math.round((earnedSalary * pfPct / 100) * 100) / 100;
         const esiAmount = Math.round((earnedSalary * esiPct / 100) * 100) / 100;
-        const otherAmount = Math.round((earnedSalary * otherPct / 100) * 100) / 100;
-        const totalStatutory = Math.round((pfAmount + esiAmount + otherAmount) * 100) / 100;
+        const ptaxAmount = ptaxType === 'fixed' ? ptaxVal : Math.round((earnedSalary * ptaxVal / 100) * 100) / 100;
+        const otherDedAmount = otherType === 'fixed' ? otherVal : Math.round((earnedSalary * otherVal / 100) * 100) / 100;
+        const otherDeductions = Math.round((ptaxAmount + otherDedAmount) * 100) / 100;
+        const totalStatutory = Math.round((pfAmount + esiAmount + otherDeductions) * 100) / 100;
 
         const netSalary = Math.max(0, Math.round((earnedSalary - totalStatutory) * 100) / 100);
         const finalSalary = Math.max(0, Math.round((netSalary + extraEarn - extraPenalty - extraAdvance) * 100) / 100);
@@ -1667,7 +1677,7 @@
             if (totalStatutory > 0) {
                 statLabel.innerHTML = `
                     <div class="text-danger fw-bold" style="font-size: 0.86rem;">-₹${totalStatutory.toFixed(2)}</div>
-                    <div class="text-muted" style="font-size: 0.68rem;">PF: ₹${pfAmount.toFixed(0)} | ESI: ₹${esiAmount.toFixed(0)}</div>
+                    <div class="text-muted" style="font-size: 0.68rem;">PF: ₹${pfAmount.toFixed(0)} | ESI: ₹${esiAmount.toFixed(0)} | Other: ₹${otherDeductions.toFixed(0)}</div>
                 `;
             } else {
                 statLabel.innerHTML = `<span class="text-muted small">₹0.00</span>`;

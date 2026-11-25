@@ -184,6 +184,17 @@
                     <i class="fas fa-file-alt"></i>
                 </div>
             </div>
+            <a href="{{ route('restaurant.leaves.index', array_filter(['status' => 'pending', 'from_date' => $fromDate, 'to_date' => $toDate, 'restaurant_id' => request('restaurant_id', $selectedOutletId ?? null)])) }}" class="text-decoration-none">
+                <div class="leave-stat-card" style="{{ ($statusFilter ?? 'all') === 'pending' ? 'background: #fffbeb; border: 2px solid #f59e0b !important;' : '' }}">
+                    <div>
+                        <div class="leave-stat-label text-warning">Pending Requests</div>
+                        <div class="leave-stat-num text-warning">{{ $stats['pending_count'] ?? 0 }}</div>
+                    </div>
+                    <div class="leave-stat-icon-wrap" style="background: #fef3c7; color: #b45309;">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                </div>
+            </a>
             <div class="leave-stat-card">
                 <div>
                     <div class="leave-stat-label">Approved Leaves</div>
@@ -205,7 +216,7 @@
             <div class="leave-stat-card">
                 <div>
                     <div class="leave-stat-label">Cancelled / Deleted</div>
-                    <div class="leave-stat-num text-danger">{{ $stats['cancelled_count'] }}</div>
+                    <div class="leave-stat-num text-danger">{{ ($stats['cancelled_count'] ?? 0) + ($stats['rejected_count'] ?? 0) }}</div>
                 </div>
                 <div class="leave-stat-icon-wrap" style="background: #fee2e2; color: #dc2626;">
                     <i class="fas fa-ban"></i>
@@ -351,14 +362,34 @@
             <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
                 <div>
                     <h5 class="fw-bold mb-0" style="font-family: 'Outfit', sans-serif; color: #0f172a;">
-                        <i class="fas fa-list text-primary me-2"></i>Leave Applications Log — {{ date('d M Y', strtotime($fromDate)) }} to {{ date('d M Y', strtotime($toDate)) }}
+                        <i class="fas fa-list text-primary me-2"></i>Leave Applications &amp; Requests — {{ date('d M Y', strtotime($fromDate)) }} to {{ date('d M Y', strtotime($toDate)) }}
                     </h5>
-                    <small class="text-muted">Showing {{ $leaves->count() }} leave applications. Deleted entries remain preserved with cancellation remarks.</small>
+                    <small class="text-muted">Showing {{ $leaves->count() }} leave applications. Manage approvals, edits, and cancellations seamlessly.</small>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">Active: {{ $stats['approved_count'] }}</span>
-                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1">Cancelled: {{ $stats['cancelled_count'] }}</span>
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1">Days: {{ number_format($stats['total_days_taken'], 1) }}</span>
+                    @php $currStatus = $statusFilter ?? 'all'; @endphp
+                    <div class="btn-group btn-group-sm" role="group">
+                        <a href="{{ route('restaurant.leaves.index', array_filter(['status' => 'all', 'from_date' => $fromDate, 'to_date' => $toDate, 'restaurant_id' => request('restaurant_id', $selectedOutletId ?? null)])) }}" 
+                           class="btn {{ $currStatus === 'all' ? 'btn-primary' : 'btn-outline-secondary' }}">
+                            All ({{ $stats['total_applications'] }})
+                        </a>
+                        <a href="{{ route('restaurant.leaves.index', array_filter(['status' => 'pending', 'from_date' => $fromDate, 'to_date' => $toDate, 'restaurant_id' => request('restaurant_id', $selectedOutletId ?? null)])) }}" 
+                           class="btn {{ $currStatus === 'pending' ? 'btn-warning text-dark' : 'btn-outline-warning' }}">
+                            Pending ({{ $stats['pending_count'] }})
+                        </a>
+                        <a href="{{ route('restaurant.leaves.index', array_filter(['status' => 'approved', 'from_date' => $fromDate, 'to_date' => $toDate, 'restaurant_id' => request('restaurant_id', $selectedOutletId ?? null)])) }}" 
+                           class="btn {{ $currStatus === 'approved' ? 'btn-success' : 'btn-outline-success' }}">
+                            Approved ({{ $stats['approved_count'] }})
+                        </a>
+                        <a href="{{ route('restaurant.leaves.index', array_filter(['status' => 'rejected', 'from_date' => $fromDate, 'to_date' => $toDate, 'restaurant_id' => request('restaurant_id', $selectedOutletId ?? null)])) }}" 
+                           class="btn {{ $currStatus === 'rejected' ? 'btn-danger' : 'btn-outline-danger' }}">
+                            Rejected ({{ $stats['rejected_count'] }})
+                        </a>
+                        <a href="{{ route('restaurant.leaves.index', array_filter(['status' => 'cancelled', 'from_date' => $fromDate, 'to_date' => $toDate, 'restaurant_id' => request('restaurant_id', $selectedOutletId ?? null)])) }}" 
+                           class="btn {{ $currStatus === 'cancelled' ? 'btn-secondary' : 'btn-outline-secondary' }}">
+                            Cancelled ({{ $stats['cancelled_count'] }})
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -367,8 +398,8 @@
                     <div class="mb-3" style="width: 64px; height: 64px; margin: 0 auto; border-radius: 50%; background: #f8fafc; border: 1px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #94a3b8;">
                         <i class="fas fa-calendar-times"></i>
                     </div>
-                    <h6 class="fw-bold text-dark mb-1">No Leave Records Found for This Period</h6>
-                    <p class="text-muted small mb-0">Use the form above to record staff leave applications between {{ date('d M Y', strtotime($fromDate)) }} and {{ date('d M Y', strtotime($toDate)) }}.</p>
+                    <h6 class="fw-bold text-dark mb-1">No Leave Records Found</h6>
+                    <p class="text-muted small mb-0">No records match the current filter criteria between {{ date('d M Y', strtotime($fromDate)) }} and {{ date('d M Y', strtotime($toDate)) }}.</p>
                 </div>
             @else
                 <div class="table-responsive">
@@ -380,9 +411,9 @@
                                 <th style="min-width: 140px;">Leave Type</th>
                                 <th style="min-width: 170px;">Date Range</th>
                                 <th style="min-width: 100px;" class="text-center">Duration</th>
-                                <th style="min-width: 180px;">Reason</th>
+                                <th style="min-width: 180px;">Reason &amp; Remarks</th>
                                 <th style="min-width: 140px;" class="text-center">Status</th>
-                                <th style="width: 120px;" class="text-end">Actions</th>
+                                <th style="min-width: 170px;" class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -390,6 +421,10 @@
                                 @php
                                     $staff = $leave->user;
                                     $isCancelled = ($leave->status === 'cancelled');
+                                    $isPending = ($leave->status === 'pending');
+                                    $isApproved = ($leave->status === 'approved');
+                                    $isRejected = ($leave->status === 'rejected');
+
                                     $initials = '';
                                     if ($staff) {
                                         $parts = explode(' ', trim($staff->name));
@@ -399,11 +434,11 @@
                                     }
                                     if (empty($initials)) $initials = 'ST';
                                 @endphp
-                                <tr class="{{ $isCancelled ? 'leave-row-cancelled' : '' }}">
+                                <tr class="{{ $isCancelled ? 'leave-row-cancelled' : '' }}" style="{{ $isPending ? 'background-color: #fffdf5;' : '' }}">
                                     <td class="text-center fw-bold text-muted">{{ $idx + 1 }}</td>
                                     <td>
                                         <div class="d-flex align-items-center gap-2">
-                                            <div style="width: 38px; height: 38px; border-radius: 10px; background: {{ $isCancelled ? '#94a3b8' : '#4f46e5' }}; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0;">
+                                            <div style="width: 38px; height: 38px; border-radius: 10px; background: {{ $isCancelled ? '#94a3b8' : ($isPending ? '#f59e0b' : '#4f46e5') }}; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0;">
                                                 {{ $initials }}
                                             </div>
                                             <div>
@@ -436,6 +471,11 @@
                                     </td>
                                     <td>
                                         <div class="small text-dark">{{ $leave->reason ?: 'No reason stated' }}</div>
+                                        @if(!empty($leave->admin_remarks))
+                                            <div class="p-2 mt-1 rounded border border-warning-subtle bg-warning-subtle text-dark small" style="font-size: 0.76rem;">
+                                                <i class="fas fa-comment-dots text-warning me-1"></i><strong>Admin Remarks:</strong> {{ $leave->admin_remarks }}
+                                            </div>
+                                        @endif
                                         @if($isCancelled && !empty($leave->cancellation_remarks))
                                             <div class="p-2 mt-1 rounded border border-danger-subtle bg-danger-subtle text-danger small">
                                                 <i class="fas fa-comment-slash me-1 fw-bold"></i><strong>Cancellation Remarks:</strong> {{ $leave->cancellation_remarks }}
@@ -446,32 +486,74 @@
                                         @endif
                                     </td>
                                     <td class="text-center">
-                                        @if(!$isCancelled)
+                                        @if($isApproved)
                                             <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 fw-bold">
                                                 <i class="fas fa-check-circle me-1"></i> Approved
                                             </span>
-                                        @else
+                                            @if($leave->approver)
+                                                <div class="text-muted small mt-1" style="font-size: 0.68rem;">
+                                                    By {{ $leave->approver->name }}
+                                                </div>
+                                            @endif
+                                        @elseif($isPending)
+                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-1 fw-bold">
+                                                <i class="fas fa-hourglass-half me-1"></i> Pending Approval
+                                            </span>
+                                        @elseif($isRejected)
                                             <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 fw-bold">
+                                                <i class="fas fa-times-circle me-1"></i> Rejected
+                                            </span>
+                                        @elseif($isCancelled)
+                                            <span class="badge bg-secondary-subtle text-secondary border px-3 py-1 fw-bold">
                                                 <i class="fas fa-ban me-1"></i> Cancelled / Deleted
                                             </span>
                                         @endif
                                     </td>
                                     <td class="text-end">
-                                        @if(!$isCancelled)
+                                        <div class="d-flex align-items-center justify-content-end gap-1 flex-wrap">
+                                            @if($isPending)
+                                                {{-- Accept / Approve Button --}}
+                                                <button type="button" 
+                                                        class="btn btn-success btn-sm rounded-pill btn-approve-leave px-2 py-1" 
+                                                        data-id="{{ $leave->id }}"
+                                                        data-staff="{{ $staff ? $staff->name : 'Staff' }}"
+                                                        data-days="{{ $leave->days_count }}"
+                                                        data-type="{{ $leave->leave_type_name }}"
+                                                        title="Accept & Deduct Quota">
+                                                    <i class="fas fa-check me-1"></i> Accept
+                                                </button>
+
+                                                {{-- Reject Button --}}
+                                                <button type="button" 
+                                                        class="btn btn-outline-danger btn-sm rounded-pill btn-reject-leave px-2 py-1" 
+                                                        data-id="{{ $leave->id }}"
+                                                        data-staff="{{ $staff ? $staff->name : 'Staff' }}"
+                                                        title="Reject Request">
+                                                    <i class="fas fa-times me-1"></i> Reject
+                                                </button>
+                                            @endif
+
+                                            {{-- Edit Button (Accessible for pending, approved, rejected, cancelled) --}}
                                             <button type="button" 
-                                                    class="btn btn-outline-danger btn-sm rounded-pill btn-cancel-leave px-3" 
+                                                    class="btn btn-outline-primary btn-sm rounded-pill btn-edit-leave px-2 py-1" 
                                                     data-id="{{ $leave->id }}"
-                                                    data-staff="{{ $staff ? $staff->name : 'Staff' }}"
-                                                    data-days="{{ $leave->days_count }}"
-                                                    data-type="{{ $leave->leave_type_name }}"
-                                                    title="Cancel / Delete Leave Record">
-                                                <i class="fas fa-trash-alt me-1"></i> Delete
+                                                    title="Edit Leave Application">
+                                                <i class="fas fa-edit me-1"></i> Edit
                                             </button>
-                                        @else
-                                            <span class="badge bg-light text-muted border px-2 py-1" style="font-size: 0.75rem;">
-                                                <i class="fas fa-archive me-1"></i> Archived
-                                            </span>
-                                        @endif
+
+                                            @if($isApproved)
+                                                {{-- Cancel / Delete Button --}}
+                                                <button type="button" 
+                                                        class="btn btn-outline-danger btn-sm rounded-pill btn-cancel-leave px-2 py-1" 
+                                                        data-id="{{ $leave->id }}"
+                                                        data-staff="{{ $staff ? $staff->name : 'Staff' }}"
+                                                        data-days="{{ $leave->days_count }}"
+                                                        data-type="{{ $leave->leave_type_name }}"
+                                                        title="Cancel / Delete & Restore Quota">
+                                                    <i class="fas fa-trash-alt me-1"></i> Delete
+                                                </button>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -523,6 +605,166 @@
                     <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Close</button>
                     <button type="submit" class="btn btn-danger rounded-pill px-4" style="font-weight: 600;">
                         <i class="fas fa-check me-1"></i> Confirm Cancellation &amp; Restore Quota
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- 6. Approve Leave Request Modal --}}
+<div class="modal fade" id="approveLeaveModal" tabindex="-1" aria-labelledby="approveLeaveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="" method="POST" id="approveLeaveForm">
+                @csrf
+                <input type="hidden" name="from_date" value="{{ $fromDate }}">
+                <input type="hidden" name="to_date" value="{{ $toDate }}">
+                @if(request('restaurant_id'))
+                    <input type="hidden" name="restaurant_id" value="{{ request('restaurant_id') }}">
+                @elseif(isset($selectedOutletId))
+                    <input type="hidden" name="restaurant_id" value="{{ $selectedOutletId }}">
+                @endif
+
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold text-white" id="approveLeaveModalLabel">
+                        <i class="fas fa-check-circle me-2"></i>Accept &amp; Approve Leave Request
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-success small mb-3">
+                        <i class="fas fa-info-circle me-1"></i> 
+                        Accepting will change status to <strong>Approved</strong> and deduct <strong id="approveModalDays"></strong> day(s) (<strong id="approveModalType"></strong>) from <strong id="approveModalStaff"></strong>'s annual leave quota balance.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">
+                            Approval Remarks / Notes <span class="text-muted fw-normal">(Optional)</span>
+                        </label>
+                        <input type="text" name="admin_remarks" id="approve_admin_remarks" class="form-control" placeholder="E.g. Approved by Branch Manager, coverage arranged...">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">
+                        <i class="fas fa-check me-1"></i> Accept &amp; Deduct Quota
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- 7. Reject Leave Request Modal --}}
+<div class="modal fade" id="rejectLeaveModal" tabindex="-1" aria-labelledby="rejectLeaveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="" method="POST" id="rejectLeaveForm">
+                @csrf
+                <input type="hidden" name="from_date" value="{{ $fromDate }}">
+                <input type="hidden" name="to_date" value="{{ $toDate }}">
+                @if(request('restaurant_id'))
+                    <input type="hidden" name="restaurant_id" value="{{ request('restaurant_id') }}">
+                @elseif(isset($selectedOutletId))
+                    <input type="hidden" name="restaurant_id" value="{{ $selectedOutletId }}">
+                @endif
+
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold text-white" id="rejectLeaveModalLabel">
+                        <i class="fas fa-times-circle me-2"></i>Reject Leave Request
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-danger small mb-3">
+                        <i class="fas fa-exclamation-triangle me-1"></i> 
+                        Rejecting leave request for <strong id="rejectModalStaff"></strong>. No quota will be deducted from their balance.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">
+                            Rejection Reason / Remarks <span class="text-danger">*</span>
+                        </label>
+                        <textarea name="admin_remarks" id="reject_admin_remarks" class="form-control" rows="3" required placeholder="Specify why the leave request is rejected (e.g. Peak business hours, inadequate shift coverage, etc.)"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">
+                        <i class="fas fa-times me-1"></i> Confirm Rejection
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- 8. Edit Leave Application Modal --}}
+<div class="modal fade" id="editLeaveModal" tabindex="-1" aria-labelledby="editLeaveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <form action="" method="POST" id="editLeaveForm">
+                @csrf
+                <input type="hidden" name="from_date" value="{{ $fromDate }}">
+                <input type="hidden" name="to_date" value="{{ $toDate }}">
+                @if(request('restaurant_id'))
+                    <input type="hidden" name="restaurant_id" value="{{ request('restaurant_id') }}">
+                @elseif(isset($selectedOutletId))
+                    <input type="hidden" name="restaurant_id" value="{{ $selectedOutletId }}">
+                @endif
+
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold text-white" id="editLeaveModalLabel">
+                        <i class="fas fa-edit me-2"></i>Edit Leave Request
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-dark">Staff Member</label>
+                            <input type="text" id="edit_staff_name" class="form-control bg-light" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-dark">Leave Type <span class="text-danger">*</span></label>
+                            <select name="leave_type" id="edit_leave_type" class="form-select" required>
+                                @foreach($leaveDefinitions as $typeKey => $def)
+                                    <option value="{{ $typeKey }}">{{ $def['name'] }} ({{ $def['code'] }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small text-dark">Start Date <span class="text-danger">*</span></label>
+                            <input type="date" name="start_date" id="edit_start_date" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small text-dark">End Date <span class="text-danger">*</span></label>
+                            <input type="date" name="end_date" id="edit_end_date" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small text-dark">Status <span class="text-danger">*</span></label>
+                            <select name="status" id="edit_status" class="form-select fw-bold" required>
+                                <option value="pending" class="text-warning">Pending Approval</option>
+                                <option value="approved" class="text-success">Approved</option>
+                                <option value="rejected" class="text-danger">Rejected</option>
+                                <option value="cancelled" class="text-secondary">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold small text-dark">Reason / Remarks from Staff</label>
+                            <textarea name="reason" id="edit_reason" rows="2" class="form-control" placeholder="Staff reason..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold small text-dark">Admin Remarks / Notes</label>
+                            <textarea name="admin_remarks" id="edit_admin_remarks" rows="2" class="form-control" placeholder="Manager/Admin remarks..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">
+                        <i class="fas fa-save me-1"></i> Update Leave Record
                     </button>
                 </div>
             </form>
@@ -636,7 +878,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         calculateDurationAndQuota();
 
-        // Cancellation Modal Handler
+        // 1. Cancellation Modal Handler
         const cancelButtons = document.querySelectorAll('.btn-cancel-leave');
         const cancelModal = new bootstrap.Modal(document.getElementById('cancelLeaveModal'));
         const cancelForm = document.getElementById('cancelLeaveForm');
@@ -653,6 +895,80 @@
 
                 cancelForm.action = '{{ url("admin/leave-management/cancel") }}/' + id;
                 cancelModal.show();
+            });
+        });
+
+        // 2. Approve Modal Handler
+        const approveButtons = document.querySelectorAll('.btn-approve-leave');
+        const approveModal = new bootstrap.Modal(document.getElementById('approveLeaveModal'));
+        const approveForm = document.getElementById('approveLeaveForm');
+
+        approveButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const staffName = this.dataset.staff;
+                const days = this.dataset.days;
+                const typeName = this.dataset.type;
+
+                document.getElementById('approveModalStaff').textContent = staffName;
+                document.getElementById('approveModalDays').textContent = days;
+                document.getElementById('approveModalType').textContent = typeName;
+                document.getElementById('approve_admin_remarks').value = '';
+
+                approveForm.action = '{{ url("admin/leave-management/approve") }}/' + id;
+                approveModal.show();
+            });
+        });
+
+        // 3. Reject Modal Handler
+        const rejectButtons = document.querySelectorAll('.btn-reject-leave');
+        const rejectModal = new bootstrap.Modal(document.getElementById('rejectLeaveModal'));
+        const rejectForm = document.getElementById('rejectLeaveForm');
+
+        rejectButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const staffName = this.dataset.staff;
+
+                document.getElementById('rejectModalStaff').textContent = staffName;
+                document.getElementById('reject_admin_remarks').value = '';
+
+                rejectForm.action = '{{ url("admin/leave-management/reject") }}/' + id;
+                rejectModal.show();
+            });
+        });
+
+        // 4. Edit Modal Handler
+        const editButtons = document.querySelectorAll('.btn-edit-leave');
+        const editModal = new bootstrap.Modal(document.getElementById('editLeaveModal'));
+        const editForm = document.getElementById('editLeaveForm');
+
+        editButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                editForm.action = '{{ url("admin/leave-management/update") }}/' + id;
+
+                fetch('{{ url("admin/leave-management/details") }}/' + id)
+                    .then(res => res.json())
+                    .then(response => {
+                        if (response.success && response.data) {
+                            const data = response.data;
+                            document.getElementById('edit_staff_name').value = data.staff_name;
+                            document.getElementById('edit_leave_type').value = data.leave_type;
+                            document.getElementById('edit_start_date').value = data.start_date;
+                            document.getElementById('edit_end_date').value = data.end_date;
+                            document.getElementById('edit_status').value = data.status;
+                            document.getElementById('edit_reason').value = data.reason || '';
+                            document.getElementById('edit_admin_remarks').value = data.admin_remarks || '';
+                            editModal.show();
+                        } else {
+                            alert('Unable to load leave details.');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert('Error fetching leave details.');
+                    });
             });
         });
     });

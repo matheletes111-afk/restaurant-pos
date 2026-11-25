@@ -9,14 +9,48 @@ use App\Models\OrderManage;
 use App\Models\OrderItems;
 use App\Models\User;
 use App\Models\TableManage;
+use App\Models\StaffAttendance;
 use DB;
 
 class Dashboard extends Controller
 {
     public function index(Request $request)
     {
-        $restaurantId = auth()->user()->restaurant_id;
+        $user = auth()->user();
+        $restaurantId = $user->restaurant_id;
         $today = Carbon::today();
+
+        $isStaff = $user->isStaff();
+        $hasAnyPerm = $user->hasAnyPermission();
+
+        // 1. If staff user has NO permissions assigned yet, show ONLY the welcome dashboard
+        if ($isStaff && !$hasAnyPerm) {
+            $todayAttendance = StaffAttendance::where('user_id', $user->id)
+                ->whereDate('attendance_date', $today)
+                ->first();
+
+            return view("dashboard.index", [
+                'hasNoPermissions' => true,
+                'todayAttendance' => $todayAttendance,
+                'totalDishes' => 0, 'totalVeg' => 0, 'totalNonVeg' => 0, 'totalStaff' => 0,
+                'totalTables' => 0, 'occupiedTables' => 0,
+                'totalOrdersToday' => 0, 'totalRevenueToday' => 0, 'avgOrderValue' => 0,
+                'totalOrdersMonth' => 0, 'totalRevenueMonth' => 0, 'pendingOrders' => 0,
+                'kitchenPendingCount' => 0,
+                'hotDaily' => collect([]), 'hotMonthly' => collect([]), 'hotYearly' => collect([]),
+                'topDailySeries' => collect([]), 'topMonthlySeries' => collect([]), 'topYearlySeries' => collect([]),
+                'dishes' => collect([]), 'orders' => collect([])
+            ]);
+        }
+
+        $hasNoPermissions = false;
+        $todayAttendance = StaffAttendance::where('user_id', $user->id)
+            ->whereDate('attendance_date', $today)
+            ->first();
+
+        $kitchenPendingCount = OrderItems::where('restaurant_id', $restaurantId)
+            ->whereIn('order_status', ['PENDING', 'COOKING'])
+            ->count();
 
         // COUNTERS - Menu & Staff
         $totalDishes = SubCategory::where('status', '!=', 'D')
@@ -125,6 +159,7 @@ class Dashboard extends Controller
             ->get();
 
         return view("dashboard.index", compact(
+            "hasNoPermissions", "todayAttendance", "kitchenPendingCount",
             "totalDishes", "totalVeg", "totalNonVeg", "totalStaff",
             "totalTables", "occupiedTables",
             "totalOrdersToday", "totalRevenueToday", "avgOrderValue",

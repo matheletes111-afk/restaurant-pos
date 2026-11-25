@@ -24,6 +24,9 @@ class StaffLeave extends Model
         'cancellation_remarks',
         'cancelled_by',
         'cancelled_at',
+        'approved_by',
+        'approved_at',
+        'admin_remarks',
         'created_by',
     ];
 
@@ -32,6 +35,7 @@ class StaffLeave extends Model
         'end_date' => 'date:Y-m-d',
         'days_count' => 'decimal:2',
         'cancelled_at' => 'datetime',
+        'approved_at' => 'datetime',
     ];
 
     public function user()
@@ -52,6 +56,11 @@ class StaffLeave extends Model
     public function canceller()
     {
         return $this->belongsTo(User::class, 'cancelled_by');
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     /**

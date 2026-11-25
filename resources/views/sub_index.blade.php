@@ -1088,6 +1088,11 @@
               <div class="product-pricing-bar">
                 <span class="price-currency-tag">₹</span>
                 <span class="price-amount-text">{{ number_format($value->price, 2) }}</span>
+                @if($value->is_raw_dish)
+                <span class="badge ms-1" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 6px;">
+                  <i class="fa-solid fa-weight-scale me-1"></i>/Kg (Raw)
+                </span>
+                @endif
                 
                 @if(isset($value->gst_rate) && $value->gst_rate > 0)
                 <span class="gst-rate-tag">{{ $value->gst_rate }}% GST</span>
@@ -1114,6 +1119,7 @@
                       data-price="{{ $value->price }}"
                       data-type="{{ $value->food_type }}"
                       data-image="{{ $value->image }}"
+                      data-is-raw="{{ $value->is_raw_dish ? 1 : 0 }}"
                       data-addons="{{ $value->addons ? $value->addons->pluck('id')->join(',') : '' }}"
                       title="Edit Food Item">
                 <i class="fa-solid fa-pen-to-square"></i>
@@ -1218,10 +1224,10 @@
 
             <div class="row">
               <div class="col-md-6 form-group mb-3">
-                <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
+                <label class="form-label font-weight-bold" id="add_price_label" style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
                   Base Price (₹) <span class="text-danger">*</span>
                 </label>
-                <input type="number" step="0.01" min="0" name="price" class="form-control-custom" required placeholder="0.00">
+                <input type="number" step="0.01" min="0" name="price" id="add_price_input" class="form-control-custom" required placeholder="0.00">
               </div>
 
               <div class="col-md-6 form-group mb-3">
@@ -1232,6 +1238,19 @@
                   <option value="VEG">🟢 VEG</option>
                   <option value="NON-VEG">🔴 NON-VEG</option>
                 </select>
+              </div>
+            </div>
+
+            <!-- Raw Dish Toggle Switch -->
+            <div class="form-group mb-3 p-2 px-3 rounded" style="background: #f8fafc; border: 1.5px dashed #cbd5e1;">
+              <div class="form-check form-switch d-flex align-items-center mb-0" style="padding-left: 0;">
+                <input class="form-check-input me-3" type="checkbox" name="is_raw_dish" id="add_is_raw_dish" value="1" style="width: 2.6em; height: 1.4em; cursor: pointer; margin-left: 0;">
+                <div>
+                  <label class="form-check-label fw-bold mb-0 text-dark" for="add_is_raw_dish" style="font-size: 0.86rem; cursor: pointer;">
+                    Raw Dish <span class="badge bg-warning text-dark ms-1" style="font-size: 0.7rem; font-weight: 700;">Sold by Weight / Kg</span>
+                  </label>
+                  <div class="text-muted" style="font-size: 0.74rem;">Enable if this dish is sold per Kilogram &amp; Grams (e.g. raw chicken, fish, paneer, veggies).</div>
+                </div>
               </div>
             </div>
 
@@ -1371,7 +1390,7 @@
 
             <div class="row">
               <div class="col-md-6 form-group mb-3">
-                <label class="form-label font-weight-bold" style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
+                <label class="form-label font-weight-bold" id="edit_price_label" style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
                   Base Price (₹) <span class="text-danger">*</span>
                 </label>
                 <input type="number" step="0.01" min="0" name="price" id="edit_price" class="form-control-custom" required placeholder="0.00">
@@ -1385,6 +1404,19 @@
                   <option value="VEG">🟢 VEG</option>
                   <option value="NON-VEG">🔴 NON-VEG</option>
                 </select>
+              </div>
+            </div>
+
+            <!-- Raw Dish Toggle Switch for Edit -->
+            <div class="form-group mb-3 p-2 px-3 rounded" style="background: #f8fafc; border: 1.5px dashed #cbd5e1;">
+              <div class="form-check form-switch d-flex align-items-center mb-0" style="padding-left: 0;">
+                <input class="form-check-input me-3" type="checkbox" name="is_raw_dish" id="edit_is_raw_dish" value="1" style="width: 2.6em; height: 1.4em; cursor: pointer; margin-left: 0;">
+                <div>
+                  <label class="form-check-label fw-bold mb-0 text-dark" for="edit_is_raw_dish" style="font-size: 0.86rem; cursor: pointer;">
+                    Raw Dish <span class="badge bg-warning text-dark ms-1" style="font-size: 0.7rem; font-weight: 700;">Sold by Weight / Kg</span>
+                  </label>
+                  <div class="text-muted" style="font-size: 0.74rem;">Enable if this dish is sold per Kilogram &amp; Grams (e.g. raw chicken, fish, paneer, veggies).</div>
+                </div>
               </div>
             </div>
 
@@ -1720,6 +1752,7 @@
         let price = $(this).data('price');
         let type = $(this).data('type');
         let image = $(this).data('image');
+        let isRaw = parseInt($(this).data('is-raw')) === 1;
         let addonIdsRaw = String($(this).data('addons') || '');
         let mappedAddonIds = addonIdsRaw ? addonIdsRaw.split(',').map(function(s) { return s.trim(); }) : [];
 
@@ -1727,6 +1760,7 @@
         $('#edit_name').val(name);
         $('#edit_price').val(price);
         $('#edit_food_type').val(type);
+        $('#edit_is_raw_dish').prop('checked', isRaw).trigger('change');
 
         // Pre-check mapped addons for this dish
         $('#edit_addon_list .addon-checkbox').each(function() {
@@ -1752,7 +1786,28 @@
         }
       });
 
-      // 4. Live Image Preview for Add Modal
+      // 4. Raw Dish switch handlers: dynamic Base Price label switching
+      function updatePriceLabel(isRaw, labelSelector) {
+        if (isRaw) {
+          $(labelSelector).html('Base Price (₹) */Kg <span class="text-danger">*</span>');
+        } else {
+          $(labelSelector).html('Base Price (₹) <span class="text-danger">*</span>');
+        }
+      }
+
+      $('#add_is_raw_dish').on('change', function() {
+        updatePriceLabel($(this).is(':checked'), '#add_price_label');
+      });
+
+      $('#edit_is_raw_dish').on('change', function() {
+        updatePriceLabel($(this).is(':checked'), '#edit_price_label');
+      });
+
+      $('#addProductModal').on('show.bs.modal', function() {
+        $('#add_is_raw_dish').prop('checked', false).trigger('change');
+      });
+
+      // 5. Live Image Preview for Add Modal
       $('#add_dish_image_input').on('change', function() {
         const file = this.files[0];
         if (file) {

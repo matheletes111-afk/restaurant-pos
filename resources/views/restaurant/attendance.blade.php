@@ -10,7 +10,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ asset('admin_template/css/restaurant-staff.css') }}">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <style>
+    #geofenceMap {
+        height: 350px;
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid #cbd5e1;
+        z-index: 1;
+    }
     .att-stat-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -185,6 +193,13 @@
                 <a href="{{ route('restaurant.attendance.export', array_filter(['date' => $date, 'restaurant_id' => request('restaurant_id', $selectedOutletId ?? null)])) }}" class="btn btn-outline-success btn-sm rounded-pill px-3" style="font-weight: 600;">
                     <i class="fas fa-file-excel me-1"></i> Download Excel
                 </a>
+
+                {{-- Outlet Geofence & Location Setup --}}
+                @if(isset($activeRestaurant))
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#outletGeofenceModal" style="font-weight: 600;">
+                    <i class="fas fa-map-marked-alt me-1"></i> Outlet Geofence ({{ $activeRestaurant->geofence_radius_meters ?? 50 }}m)
+                </button>
+                @endif
 
                 {{-- Manage Staff --}}
                 <a href="{{ route('restaurant.staff.index', array_filter(['restaurant_id' => request('restaurant_id', $selectedOutletId ?? null)])) }}" class="btn-staff-secondary btn-sm">
@@ -645,11 +660,216 @@
     </div>
 </div>
 
+@if(isset($activeRestaurant))
+{{-- 5. Outlet Geofence & Location Modal --}}
+<div class="modal fade" id="outletGeofenceModal" tabindex="-1" aria-labelledby="outletGeofenceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <form action="{{ route('restaurant.attendance.save-geofence') }}" method="POST" id="outletGeofenceForm">
+                @csrf
+                <input type="hidden" name="restaurant_id" value="{{ $activeRestaurant->id }}">
+
+                <div class="modal-header bg-dark text-white py-3 px-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-map-marked-alt text-primary fs-5"></i>
+                        <div>
+                            <h5 class="modal-title fw-bold text-white mb-0" id="outletGeofenceModalLabel">Outlet Geofence &amp; GPS Location</h5>
+                            <small class="text-white-50">{{ $activeRestaurant->name }} &bull; Staff can only clock in within allowed radius</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                        <button type="button" class="btn btn-primary rounded-pill px-3 fw-bold" id="btnAutoCaptureLocation">
+                            <i class="fas fa-crosshairs me-1"></i> Auto Capture Current Location
+                        </button>
+                        <span id="geofenceStatusPill" class="badge bg-light text-secondary border px-3 py-2">
+                            <i class="fas fa-info-circle me-1"></i> Drag pin or click button to capture GPS
+                        </span>
+                    </div>
+
+                    {{-- Leaflet Interactive Map Container --}}
+                    <div id="geofenceMap" class="mb-3"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark small mb-1">Latitude <span class="text-danger">*</span></label>
+                            <input type="number" step="any" name="latitude" id="geo_latitude" class="form-control fw-bold" value="{{ $activeRestaurant->latitude ?? '22.5726' }}" required placeholder="e.g. 22.5726">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark small mb-1">Longitude <span class="text-danger">*</span></label>
+                            <input type="number" step="any" name="longitude" id="geo_longitude" class="form-control fw-bold" value="{{ $activeRestaurant->longitude ?? '88.3639' }}" required placeholder="e.g. 88.3639">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-dark small mb-1">Allowed Radius (Meters) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" name="geofence_radius_meters" id="geo_radius" class="form-control fw-bold" value="{{ $activeRestaurant->geofence_radius_meters ?? 50 }}" min="10" max="1000" required>
+                                <span class="input-group-text bg-light text-muted">meters</span>
+                            </div>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="geofence_enabled" id="geo_enabled" value="1" {{ ($activeRestaurant->geofence_enabled ?? true) ? 'checked' : '' }}>
+                                <label class="form-check-label fw-bold text-dark small" for="geo_enabled">
+                                    Enforce Geofence Verification (reject attendance if staff device is beyond allowed radius)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light px-4 py-3">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">
+                        <i class="fas fa-save me-1"></i> Save Geofence Location
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
+
 @endsection
 
 @section('script')
 @include('includes.script')
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
+    // Leaflet Geofence Map Logic
+    let geofenceMap = null;
+    let geofenceMarker = null;
+    let geofenceCircle = null;
+
+    function initGeofenceMap() {
+        const latInput = document.getElementById('geo_latitude');
+        const lngInput = document.getElementById('geo_longitude');
+        const radiusInput = document.getElementById('geo_radius');
+        if (!latInput || !lngInput) return;
+
+        let lat = parseFloat(latInput.value) || 22.5726;
+        let lng = parseFloat(lngInput.value) || 88.3639;
+        let radius = parseInt(radiusInput.value) || 50;
+
+        if (!geofenceMap) {
+            geofenceMap = L.map('geofenceMap').setView([lat, lng], 17);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(geofenceMap);
+
+            // Draggable Marker
+            geofenceMarker = L.marker([lat, lng], { draggable: true }).addTo(geofenceMap);
+            geofenceMarker.bindPopup('<b>{{ $activeRestaurant->name ?? "Restaurant" }}</b><br>Drag to fine-tune location.').openPopup();
+
+            // 50m Circle
+            geofenceCircle = L.circle([lat, lng], {
+                radius: radius,
+                color: '#16a34a',
+                fillColor: '#22c55e',
+                fillOpacity: 0.25,
+                weight: 2
+            }).addTo(geofenceMap);
+
+            // When marker is dragged
+            geofenceMarker.on('dragend', function(e) {
+                const pos = e.target.getLatLng();
+                latInput.value = pos.lat.toFixed(8);
+                lngInput.value = pos.lng.toFixed(8);
+                geofenceCircle.setLatLng(pos);
+                updatePillText('Custom location pinned: ' + pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5), 'success');
+            });
+
+            // When map is clicked
+            geofenceMap.on('click', function(e) {
+                geofenceMarker.setLatLng(e.latlng);
+                geofenceCircle.setLatLng(e.latlng);
+                latInput.value = e.latlng.lat.toFixed(8);
+                lngInput.value = e.latlng.lng.toFixed(8);
+                updatePillText('Location updated by map click', 'success');
+            });
+
+            // When radius input changes
+            radiusInput.addEventListener('input', function() {
+                const r = parseInt(this.value) || 50;
+                geofenceCircle.setRadius(r);
+            });
+        } else {
+            geofenceMap.invalidateSize();
+        }
+    }
+
+    function updatePillText(text, type) {
+        const pill = document.getElementById('geofenceStatusPill');
+        if (pill) {
+            pill.innerHTML = `<i class="fas fa-check-circle me-1"></i> ${text}`;
+            pill.className = `badge bg-${type}-subtle text-${type} border border-${type}-subtle px-3 py-2`;
+        }
+    }
+
+    // Auto capture via HTML5 Geolocation API
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnAutoCapture = document.getElementById('btnAutoCaptureLocation');
+        if (btnAutoCapture) {
+            btnAutoCapture.addEventListener('click', function() {
+                if (!navigator.geolocation) {
+                    alert('Geolocation is not supported by your browser.');
+                    return;
+                }
+
+                btnAutoCapture.disabled = true;
+                btnAutoCapture.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Detecting GPS...';
+                updatePillText('Querying browser GPS hardware...', 'info');
+
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        btnAutoCapture.disabled = false;
+                        btnAutoCapture.innerHTML = '<i class="fas fa-crosshairs me-1"></i> Auto Capture Current Location';
+
+                        const userLat = position.coords.latitude;
+                        const userLng = position.coords.longitude;
+                        const accuracy = position.coords.accuracy ? Math.round(position.coords.accuracy) : null;
+
+                        document.getElementById('geo_latitude').value = userLat.toFixed(8);
+                        document.getElementById('geo_longitude').value = userLng.toFixed(8);
+
+                        if (geofenceMap && geofenceMarker && geofenceCircle) {
+                            geofenceMap.flyTo([userLat, userLng], 18);
+                            geofenceMarker.setLatLng([userLat, userLng]);
+                            geofenceCircle.setLatLng([userLat, userLng]);
+                        }
+
+                        updatePillText(`GPS Captured! Lat: ${userLat.toFixed(5)}, Lng: ${userLng.toFixed(5)} (${accuracy ? '±' + accuracy + 'm' : 'Exact'})`, 'success');
+                    },
+                    function(error) {
+                        btnAutoCapture.disabled = false;
+                        btnAutoCapture.innerHTML = '<i class="fas fa-crosshairs me-1"></i> Auto Capture Current Location';
+                        let msg = 'Unable to retrieve location.';
+                        if (error.code === error.PERMISSION_DENIED) {
+                            msg = 'Location access denied. Please allow location access in your browser.';
+                        } else if (error.code === error.POSITION_UNAVAILABLE) {
+                            msg = 'Location information is unavailable.';
+                        } else if (error.code === error.TIMEOUT) {
+                            msg = 'Location request timed out.';
+                        }
+                        alert(msg);
+                        updatePillText(msg, 'danger');
+                    },
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                );
+            });
+        }
+
+        const geofenceModal = document.getElementById('outletGeofenceModal');
+        if (geofenceModal) {
+            geofenceModal.addEventListener('shown.bs.modal', function () {
+                setTimeout(initGeofenceMap, 200);
+            });
+        }
+    });
+
     function updateTypeSelection(type) {
         document.querySelectorAll('.att-type-card').forEach(c => c.classList.remove('selected'));
         const card = document.getElementById('card_type_' + type);

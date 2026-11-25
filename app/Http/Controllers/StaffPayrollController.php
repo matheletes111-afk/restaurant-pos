@@ -308,11 +308,32 @@ class StaffPayrollController extends Controller
             // 3. Statutory Deductions
             $pfPct = (float) ($salary->pf_percentage ?? 0);
             $esiPct = (float) ($salary->esi_percentage ?? 0);
-            $otherPct = (float) (($salary->ptax_percentage ?? 0) + ($salary->other_deduction_percentage ?? 0));
 
             $pfAmount = round(($earnedGross * $pfPct) / 100, 2);
             $esiAmount = round(($earnedGross * $esiPct) / 100, 2);
-            $otherDeductions = round(($earnedGross * $otherPct) / 100, 2);
+
+            // P-Tax (Percentage or Fixed)
+            $ptaxType = $salary ? ($salary->ptax_type ?? 'percentage') : 'percentage';
+            if ($ptaxType === 'fixed') {
+                $ptaxVal = (float) ($salary->ptax_amount ?? 0);
+                $ptaxAmount = round($ptaxVal, 2);
+            } else {
+                $ptaxVal = (float) ($salary->ptax_percentage ?? 0);
+                $ptaxAmount = round(($earnedGross * $ptaxVal) / 100, 2);
+            }
+
+            // Other Deduction (Percentage or Fixed)
+            $otherType = $salary ? ($salary->other_deduction_type ?? 'percentage') : 'percentage';
+            if ($otherType === 'fixed') {
+                $otherVal = (float) ($salary->other_deduction_amount ?? 0);
+                $otherDedAmount = round($otherVal, 2);
+            } else {
+                $otherVal = (float) ($salary->other_deduction_percentage ?? 0);
+                $otherDedAmount = round(($earnedGross * $otherVal) / 100, 2);
+            }
+
+            $otherDeductions = round($ptaxAmount + $otherDedAmount, 2);
+            $otherPct = (float) (($ptaxType === 'percentage' ? $ptaxVal : 0) + ($otherType === 'percentage' ? $otherVal : 0));
             $totalStatutory = round($pfAmount + $esiAmount + $otherDeductions, 2);
 
             // Net Salary before extras
@@ -382,6 +403,12 @@ class StaffPayrollController extends Controller
                 'pf_amount' => $pfAmount,
                 'esi_percentage' => $esiPct,
                 'esi_amount' => $esiAmount,
+                'ptax_type' => $ptaxType,
+                'ptax_val' => $ptaxVal,
+                'ptax_amount' => $ptaxAmount,
+                'other_type' => $otherType,
+                'other_val' => $otherVal,
+                'other_deduction_amount' => $otherDedAmount,
                 'other_deductions_percentage' => $otherPct,
                 'other_deductions' => $otherDeductions,
                 'total_statutory' => $totalStatutory,

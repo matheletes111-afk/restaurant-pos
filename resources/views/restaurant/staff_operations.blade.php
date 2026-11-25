@@ -260,8 +260,10 @@
             $monthlySalary = old('monthly_salary', $salary && $salary->monthly_salary > 0 ? $salary->monthly_salary : '');
             $pfPct = old('pf_percentage', $salary ? $salary->pf_percentage : 0);
             $esiPct = old('esi_percentage', $salary ? $salary->esi_percentage : 0);
-            $ptaxPct = old('ptax_percentage', $salary ? $salary->ptax_percentage : 0);
-            $otherPct = old('other_deduction_percentage', $salary ? $salary->other_deduction_percentage : 0);
+            $ptaxType = old('ptax_type', $salary ? ($salary->ptax_type ?? 'percentage') : 'percentage');
+            $ptaxVal = old('ptax_value', $salary ? ($salary->ptax_type === 'fixed' ? $salary->ptax_amount : $salary->ptax_percentage) : 0);
+            $otherType = old('other_deduction_type', $salary ? ($salary->other_deduction_type ?? 'percentage') : 'percentage');
+            $otherVal = old('other_deduction_value', $salary ? ($salary->other_deduction_type === 'fixed' ? $salary->other_deduction_amount : $salary->other_deduction_percentage) : 0);
             $weekoffCount = old('weekoff_count', $salary ? $salary->weekoff_count : 4);
             $hourlyWage = old('hourly_wage', $salary && $salary->hourly_wage > 0 ? $salary->hourly_wage : '');
             $notes = old('notes', $salary ? $salary->notes : '');
@@ -500,13 +502,17 @@
                                     {{-- P-Tax --}}
                                     <div class="col-md-3 col-sm-6">
                                         <div class="deduction-item-card">
-                                            <label>
-                                                <span>P-Tax (Professional Tax)</span>
+                                            <label class="d-flex justify-content-between align-items-center mb-1">
+                                                <span>P-Tax (Prof. Tax)</span>
                                                 <span class="deduct-val-preview" id="ptax_amount_preview">- ₹0.00</span>
                                             </label>
                                             <div class="input-group">
-                                                <input type="number" step="0.01" min="0" max="100" class="form-control deduction-input" id="op_ptax_percentage" name="ptax_percentage" value="{{ $ptaxPct }}" placeholder="0.00">
-                                                <span class="input-group-text bg-light">%</span>
+                                                <select class="form-select deduction-type-select px-2" name="ptax_type" id="op_ptax_type" style="max-width: 90px; font-weight: 600; font-size: 0.78rem;">
+                                                    <option value="percentage" {{ $ptaxType === 'percentage' ? 'selected' : '' }}>% Pct</option>
+                                                    <option value="fixed" {{ $ptaxType === 'fixed' ? 'selected' : '' }}>₹ Fixed</option>
+                                                </select>
+                                                <input type="number" step="0.01" min="0" {!! $ptaxType === 'percentage' ? 'max="100"' : '' !!} class="form-control deduction-input" id="op_ptax_value" name="ptax_value" value="{{ $ptaxVal }}" placeholder="0.00">
+                                                <span class="input-group-text bg-light text-muted fw-bold" id="ptax_addon_symbol" style="font-size: 0.75rem;">{{ $ptaxType === 'fixed' ? '₹' : '%' }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -514,13 +520,17 @@
                                     {{-- Other Deduction --}}
                                     <div class="col-md-3 col-sm-6">
                                         <div class="deduction-item-card">
-                                            <label>
+                                            <label class="d-flex justify-content-between align-items-center mb-1">
                                                 <span>Other Deduction</span>
                                                 <span class="deduct-val-preview" id="other_amount_preview">- ₹0.00</span>
                                             </label>
                                             <div class="input-group">
-                                                <input type="number" step="0.01" min="0" max="100" class="form-control deduction-input" id="op_other_percentage" name="other_deduction_percentage" value="{{ $otherPct }}" placeholder="0.00">
-                                                <span class="input-group-text bg-light">%</span>
+                                                <select class="form-select deduction-type-select px-2" name="other_deduction_type" id="op_other_type" style="max-width: 90px; font-weight: 600; font-size: 0.78rem;">
+                                                    <option value="percentage" {{ $otherType === 'percentage' ? 'selected' : '' }}>% Pct</option>
+                                                    <option value="fixed" {{ $otherType === 'fixed' ? 'selected' : '' }}>₹ Fixed</option>
+                                                </select>
+                                                <input type="number" step="0.01" min="0" {!! $otherType === 'percentage' ? 'max="100"' : '' !!} class="form-control deduction-input" id="op_other_value" name="other_deduction_value" value="{{ $otherVal }}" placeholder="0.00">
+                                                <span class="input-group-text bg-light text-muted fw-bold" id="other_addon_symbol" style="font-size: 0.75rem;">{{ $otherType === 'fixed' ? '₹' : '%' }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1644,16 +1654,18 @@
                 const gross = parseFloat(document.getElementById('op_monthly_salary')?.value) || 0;
                 const pfPct = parseFloat(document.getElementById('op_pf_percentage')?.value) || 0;
                 const esiPct = parseFloat(document.getElementById('op_esi_percentage')?.value) || 0;
-                const ptaxPct = parseFloat(document.getElementById('op_ptax_percentage')?.value) || 0;
-                const otherPct = parseFloat(document.getElementById('op_other_percentage')?.value) || 0;
+
+                const ptaxType = document.getElementById('op_ptax_type')?.value || 'percentage';
+                const ptaxVal = parseFloat(document.getElementById('op_ptax_value')?.value) || 0;
+                const otherType = document.getElementById('op_other_type')?.value || 'percentage';
+                const otherVal = parseFloat(document.getElementById('op_other_value')?.value) || 0;
 
                 const pfAmt = (gross * pfPct) / 100;
                 const esiAmt = (gross * esiPct) / 100;
-                const ptaxAmt = (gross * ptaxPct) / 100;
-                const otherAmt = (gross * otherPct) / 100;
+                const ptaxAmt = ptaxType === 'fixed' ? ptaxVal : (gross * ptaxVal) / 100;
+                const otherAmt = otherType === 'fixed' ? otherVal : (gross * otherVal) / 100;
 
                 const totalDeduct = pfAmt + esiAmt + ptaxAmt + otherAmt;
-                const totalPct = pfPct + esiPct + ptaxPct + otherPct;
                 const net = Math.max(0, gross - totalDeduct);
 
                 const pfEl = document.getElementById('pf_amount_preview');
@@ -1674,7 +1686,7 @@
                 if (bgGross) bgGross.textContent = formatINR(gross);
                 if (bgDeduct) bgDeduct.textContent = '- ' + formatINR(totalDeduct);
                 if (bgNet) bgNet.textContent = formatINR(net);
-                if (pctPill) pctPill.textContent = 'Total Deductions: ' + totalPct.toFixed(2) + '%';
+                if (pctPill) pctPill.textContent = 'Total Deductions: -' + formatINR(totalDeduct);
             } else {
                 const wage = parseFloat(document.getElementById('op_hourly_wage')?.value) || 0;
                 const daily = wage * 8;
@@ -1692,8 +1704,8 @@
             'op_monthly_salary',
             'op_pf_percentage',
             'op_esi_percentage',
-            'op_ptax_percentage',
-            'op_other_percentage',
+            'op_ptax_value',
+            'op_other_value',
             'op_hourly_wage'
         ];
         salaryCalcInputs.forEach(id => {
@@ -1704,6 +1716,39 @@
                 inputEl.addEventListener('keyup', recalculateSalary);
             }
         });
+
+        // Type select listeners for P-Tax & Other Deduction
+        const ptaxTypeEl = document.getElementById('op_ptax_type');
+        if (ptaxTypeEl) {
+            ptaxTypeEl.addEventListener('change', function() {
+                const symbolEl = document.getElementById('ptax_addon_symbol');
+                const valInput = document.getElementById('op_ptax_value');
+                if (this.value === 'fixed') {
+                    if (symbolEl) symbolEl.textContent = '₹';
+                    if (valInput) valInput.removeAttribute('max');
+                } else {
+                    if (symbolEl) symbolEl.textContent = '%';
+                    if (valInput) valInput.setAttribute('max', '100');
+                }
+                recalculateSalary();
+            });
+        }
+
+        const otherTypeEl = document.getElementById('op_other_type');
+        if (otherTypeEl) {
+            otherTypeEl.addEventListener('change', function() {
+                const symbolEl = document.getElementById('other_addon_symbol');
+                const valInput = document.getElementById('op_other_value');
+                if (this.value === 'fixed') {
+                    if (symbolEl) symbolEl.textContent = '₹';
+                    if (valInput) valInput.removeAttribute('max');
+                } else {
+                    if (symbolEl) symbolEl.textContent = '%';
+                    if (valInput) valInput.setAttribute('max', '100');
+                }
+                recalculateSalary();
+            });
+        }
 
         // Initial salary calculation
         recalculateSalary();

@@ -4,7 +4,15 @@
     <meta charset="UTF-8">
     <title>Receipt #{{ $order->order_id }}</title>
     <link rel="shortcut icon" href="{{ asset('fav_web.png') }}">
+    @php
+        $thermalPrintSize = $thermal_print_size ?? $restaurant_details->thermal_print_size ?? '80mm';
+        $is58mm = ($thermalPrintSize === '58mm');
+    @endphp
     <style>
+        @page {
+            size: {{ $is58mm ? '58mm' : '80mm' }} auto;
+            margin: 0;
+        }
         * {
             margin: 0;
             padding: 0;
@@ -12,15 +20,15 @@
         }
         body {
             font-family: 'Courier New', Courier, monospace;
-            font-size: 11px;
+            font-size: {{ $is58mm ? '9px' : '11px' }};
             width: 100%;
             margin: 0;
-            padding: 5px;
+            padding: {{ $is58mm ? '2px 4px' : '5px' }};
             background: #fff;
         }
         .receipt {
             width: 100%;
-            max-width: 280px;
+            max-width: {{ $is58mm ? '195px' : '280px' }};
             margin: 0 auto;
             background: white;
         }
@@ -164,8 +172,30 @@
             .receipt {
                 margin: 0;
                 padding: 0;
+                width: 100% !important;
+                max-width: {{ $is58mm ? '58mm' : '80mm' }} !important;
             }
         }
+
+        @if($is58mm)
+        /* 58mm Compact Overrides */
+        .restaurant-name { font-size: 11px !important; }
+        .restaurant-details { font-size: 7.5px !important; line-height: 1.15 !important; }
+        .info-row { font-size: 8px !important; margin: 2px 0 !important; }
+        .items-table th { font-size: 8px !important; padding: 2px 0 !important; }
+        .items-table td { font-size: 8px !important; padding: 2px 0 !important; }
+        .item-name { font-size: 8px !important; max-width: 85px !important; }
+        .item-discount { font-size: 7px !important; }
+        .gst-note { font-size: 7px !important; }
+        .totals-table td { padding: 1.5px 0 !important; font-size: 8px !important; }
+        .total-row { font-size: 10px !important; }
+        .total-row td { padding-top: 3px !important; }
+        .gst-info, .non-gst-info { font-size: 7px !important; padding: 3px !important; margin: 3px 0 !important; }
+        .payment-info { margin: 4px 0 !important; padding: 3px !important; font-size: 7.5px !important; }
+        .footer { font-size: 7.5px !important; margin-top: 5px !important; }
+        .line { margin: 3px 0 !important; }
+        .line-dotted { margin: 2px 0 !important; }
+        @endif
     </style>
 </head>
 <body>
@@ -277,7 +307,12 @@
                     @endphp
                     <tr>
                         <td class="item-name">
-                            {{ \Illuminate\Support\Str::limit($item->subcategory->name ?? 'Item', 24) }}
+                            {{ \Illuminate\Support\Str::limit($item->subcategory->name ?? 'Item', $is58mm ? 15 : 24) }}
+                            @if($item->is_raw_dish || !empty($item->formatted_weight))
+                                <div style="font-size: 8px; color: #2563eb; font-weight: 700;">
+                                    [{{ $item->formatted_weight }}]
+                                </div>
+                            @endif
                             @if(!empty($addons) && !$isAddonItem)
                                 @foreach($addons as $a)
                                     @php
@@ -330,7 +365,7 @@
                     @endphp
                     <tr>
                         <td class="item-name">
-                            {{ \Illuminate\Support\Str::limit($bItem->subcategory->name ?? 'Liquor Item', 24) }}
+                            {{ \Illuminate\Support\Str::limit($bItem->subcategory->name ?? 'Liquor Item', $is58mm ? 15 : 24) }}
                             <div style="font-size: 8px; color: #1e293b; font-weight: bold; padding-left: 2px;">
                                 [Peg: {{ $varTitle ?: 'Standard' }}@if($varMl) • {{ $varMl }}ml @endif]
                             </div>

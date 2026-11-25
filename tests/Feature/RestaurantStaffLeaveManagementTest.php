@@ -324,5 +324,170 @@ class RestaurantStaffLeaveManagementTest extends TestCase
         $this->assertTrue($response->headers->has('content-disposition'));
         $this->assertStringContainsString('leave_management_', $response->headers->get('content-disposition'));
     }
+
+    public function test_admin_can_approve_pending_leave_request_and_quota_is_deducted()
+    {
+        [$restaurant, $admin] = $this->setupRestaurantAndAdmin();
+        $staff = $this->createStaffMember($restaurant);
+
+        $policy = StaffLeavePolicy::create([
+            'restaurant_id' => $restaurant->id,
+            'user_id' => $staff->id,
+            'year' => 2026,
+            'leave_type' => 'sick_leave',
+            'annual_quota' => 8.00,
+            'used_count' => 0.00,
+            'carried_forward' => 0.00,
+            'is_carry_forward' => false
+        ]);
+
+        // Staff submitted request
+        $leave = StaffLeave::create([
+            'restaurant_id' => $restaurant->id,
+            'user_id' => $staff->id,
+            'leave_type' => 'sick_leave',
+            'start_date' => '2026-11-10',
+            'end_date' => '2026-11-11',
+            'days_count' => 2.00,
+            'reason' => 'Viral flu',
+            'status' => 'pending',
+            'created_by' => $staff->id,
+        ]);
+
+        // Prior to approval, policy used_count is 0
+        $this->assertEquals(0.00, $policy->fresh()->used_count);
+
+        // Admin approves
+        $response = $this->actingAs($admin)
+            ->post(route('restaurant.leaves.approve', $leave->id), [
+                'admin_remarks' => 'Approved by manager, rest well',
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $leave->refresh();
+        $this->assertEquals('approved', $leave->status);
+        $this->assertEquals($admin->id, $leave->approved_by);
+        $this->assertNotNull($leave->approved_at);
+        $this->assertEquals('Approved by manager, rest well', $leave->admin_remarks);
+
+        // Policy is now deducted
+        $this->assertEquals(2.00, $policy->fresh()->used_count);
+        $this->assertEquals(6.00, $policy->fresh()->remaining_balance);
+    }
+
+    public function test_admin_can_reject_leave_request_with_remarks_and_quota_is_not_deducted()
+    {
+        [$restaurant, $admin] = $this->setupRestaurantAndAdmin();
+        $staff = $this->createStaffMember($restaurant);
+
+        $policy = StaffLeavePolicy::create([
+            'restaurant_id' => $restaurant->id,
+            'user_id' => $staff->id,
+            'year' => 2026,
+            'leave_type' => 'paid_leave',
+            'annual_quota' => 10.00,
+            'used_count' => 0.00,
+            'carried_forward' => 0.00,
+            'is_carry_forward' => false
+        ]);
+
+        $leave = StaffLeave::create([
+            'restaurant_id' => $restaurant->id,
+            'user_id' => $staff->id,
+            'leave_type' => 'paid_leave',
+            'start_date' => '2026-11-12',
+            'end_date' => '2026-11-13',
+            'days_count' => 2.00,
+            'reason' => 'Personal work',
+            'status' => 'pending',
+            'created_by' => $staff->id,
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->post(route('restaurant.leaves.reject', $leave->id), [
+                'admin_remarks' => 'Coverage not available on weekend rush',
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $leave->refresh();
+        $this->assertEquals('rejected', $leave->status);
+        $this->assertEquals('Coverage not available on weekend rush', $leave->admin_remarks);
+
+        // Quota was NOT deducted
+        $this->assertEquals(0.00, $policy->fresh()->used_count);
+        $this->assertEquals(10.00, $policy->fresh()->remaining_balance);
+    }
+
+    public function test_admin_can_fetch_leave_details_and_update_leave_request()
+    {
+        [$restaurant, $admin] = $this->setupRestaurantAndAdmin();
+        $staff = $this->createStaffMember($restaurant);
+
+        $policy = StaffLeavePolicy::create([
+            'restaurant_id' => $restaurant->id,
+            'user_id' => $staff->id,
+            'year' => 2026,
+            'leave_type' => 'paid_leave',
+            'annual_quota' => 12.00,
+            'used_count' => 0.00,
+            'carried_forward' => 0.00,
+            'is_carry_forward' => false
+        ]);
+
+        $leave = StaffLeave::create([
+            'restaurant_id' => $restaurant->id,
+            'user_id' => $staff->id,
+            'leave_type' => 'paid_leave',
+            'start_date' => '2026-11-14',
+            'end_date' => '2026-11-14',
+            'days_count' => 1.00,
+            'reason' => 'Original reason',
+            'status' => 'pending',
+            'created_by' => $staff->id,
+        ]);
+
+        // Test details endpoint
+        $detailsResponse = $this->actingAs($admin)
+            ->get(route('restaurant.leaves.details', $leave->id));
+
+        $detailsResponse->assertStatus(200);
+        $detailsResponse->assertJson([
+            'success' => true,
+            'data' => [
+                'id' => $leave->id,
+                'leave_type' => 'paid_leave',
+                'days_count' => 1.00,
+                'status' => 'pending',
+            ]
+        ]);
+
+        // Test update endpoint (Change to approved and 2 days)
+        $updateResponse = $this->actingAs($admin)
+            ->post(route('restaurant.leaves.update', $leave->id), [
+                'leave_type' => 'paid_leave',
+                'start_date' => '2026-11-14',
+                'end_date' => '2026-11-15',
+                'status' => 'approved',
+                'reason' => 'Updated extended reason',
+                'admin_remarks' => 'Modified dates and approved',
+            ]);
+
+        $updateResponse->assertRedirect();
+        $updateResponse->assertSessionHas('success');
+
+        $leave->refresh();
+        $this->assertEquals('approved', $leave->status);
+        $this->assertEquals(2.00, (float) $leave->days_count);
+        $this->assertEquals('Updated extended reason', $leave->reason);
+        $this->assertEquals('Modified dates and approved', $leave->admin_remarks);
+
+        // Policy is adjusted to 2 days
+        $this->assertEquals(2.00, $policy->fresh()->used_count);
+        $this->assertEquals(10.00, $policy->fresh()->remaining_balance);
+    }
 }
 
