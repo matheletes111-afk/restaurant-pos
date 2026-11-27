@@ -179,6 +179,7 @@ class LoginController extends Controller
                     'updated_at'  => now(),
                 ]
             );
+            $user->update(['fcm_token' => $fcmToken]);
             \Illuminate\Support\Facades\Log::info("Web FCM Token saved during Login for User #{$user->id} ({$user->name})");
         }
 

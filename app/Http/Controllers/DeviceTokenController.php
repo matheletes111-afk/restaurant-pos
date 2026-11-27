@@ -38,6 +38,9 @@ class DeviceTokenController extends Controller
             ]
         );
 
+        // Also sync to users table column
+        $user->update(['fcm_token' => $request->token]);
+
         Log::info("FCM Token saved successfully for User #{$user->id} ({$user->name})", [
             'device_type' => $request->input('device_type', 'web'),
             'ip'          => $request->ip()
