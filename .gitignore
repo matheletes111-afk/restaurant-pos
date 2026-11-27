@@ -18,6 +18,7 @@ yarn-error.log
 public/*
 !public/admin_template/
 !public/admin_template/**
+!public/firebase-messaging-sw.js
 
 public/firebase/firebase-credentials.json
 storage/app/firebase/*.json
