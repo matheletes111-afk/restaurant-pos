@@ -19,5 +19,6 @@ public/*
 !public/admin_template/
 !public/admin_template/**
 
-public/firebase/firebase-credentials.jsonstorage/app/firebase/*.json
+public/firebase/firebase-credentials.json
+storage/app/firebase/*.json
 storage/firebase/*.json
