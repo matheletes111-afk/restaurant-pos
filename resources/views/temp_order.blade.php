@@ -11,7 +11,19 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+  <!-- Leaflet Map CSS for Delivery Location Pin -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
   <style>
+    .pac-container {
+      z-index: 99999999 !important;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .custom-map-pin {
+      background: transparent !important;
+      border: none !important;
+    }
     :root {
       --primary: #ff5e14;
       --primary-hover: #e04b08;
@@ -2616,6 +2628,36 @@
       @endif
     </div>
     <div class="row mt-3">
+      <div class="col-12 mb-3">
+        <label class="input-label-clean d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-concierge-bell text-primary me-1"></i> Dining Preference <span class="text-danger">*</span></span>
+          <span class="badge badge-light text-muted border px-2 py-1" id="orderTypeBadgeText" style="font-size: 0.75rem;">Dine In Table</span>
+        </label>
+        <div class="order-type-switch-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="order-type-option active" id="qrOptDineIn" onclick="selectQrOrderType('DINE_IN')" style="border: 2px solid var(--primary); background: rgba(255, 94, 20, 0.06); border-radius: 14px; padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.2s ease;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: var(--gradient-primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;">
+              <i class="fas fa-chair"></i>
+            </div>
+            <div style="flex: 1;">
+              <div style="font-weight: 800; font-size: 0.95rem; color: var(--text-main);">Dine In</div>
+              <small class="text-muted" style="font-size: 0.78rem;">Serving at {{ $table_details->name ?? 'Table' }}</small>
+            </div>
+            <i class="fas fa-check-circle text-primary qr-type-check" style="font-size: 1.2rem;"></i>
+          </div>
+
+          <div class="order-type-option" id="qrOptDelivery" onclick="selectQrOrderType('DELIVERY')" style="border: 2px solid var(--border); background: #ffffff; border-radius: 14px; padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.2s ease;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: #64748b; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;" id="qrDeliveryIconWrap">
+              <i class="fas fa-motorcycle"></i>
+            </div>
+            <div style="flex: 1;">
+              <div style="font-weight: 800; font-size: 0.95rem; color: var(--text-main);">Home Delivery</div>
+              <small class="text-muted" style="font-size: 0.78rem;">Deliver to doorstep</small>
+            </div>
+            <i class="fas fa-check-circle text-muted qr-type-check" style="font-size: 1.2rem; opacity: 0.3;"></i>
+          </div>
+        </div>
+      </div>
+
       <div class="col-md-6 mb-3 mb-md-0">
         <label class="input-label-clean">Full Name <span class="text-danger">*</span></label>
         <div class="input-icon-group">
@@ -2635,6 +2677,46 @@
             oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
             value="{{ $activeOrder->customer_phone ?? (session('customer_phone') ?? '') }}" @if(isset($activeOrder) && $activeOrder) readonly style="background: #f1f5f9; cursor: not-allowed;" @endif>
           <i class="fas fa-phone-alt"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Home Delivery Address & Interactive Google Map Section -->
+    <div id="qrDeliverySection" style="display: none; margin-top: 20px; padding-top: 18px; border-top: 1.5px dashed var(--border);">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <label class="input-label-clean mb-0"><i class="fas fa-map-marker-alt text-danger me-1"></i> Delivery Address &amp; Location <span class="text-danger">*</span></label>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="btnDetectQrLocation" style="border-radius: 9999px; font-size: 0.76rem; font-weight: 700; padding: 4px 12px;">
+          <i class="fas fa-crosshairs me-1"></i> Locate Me (GPS)
+        </button>
+      </div>
+
+      <div class="mb-3">
+        <div class="input-group">
+          <input type="text" id="qr_address_input" class="form-control" placeholder="Search locality, street or landmark..." style="border-radius: 12px 0 0 12px; height: 44px; font-size: 0.9rem;" autocomplete="off">
+          <button type="button" class="btn btn-secondary px-3" id="btnSearchQrAddress" title="Locate on map" style="border-radius: 0 12px 12px 0;">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+        <small class="text-muted mt-1 d-block" style="font-size: 0.78rem;">
+          <i class="fas fa-info-circle text-primary"></i> Press Enter or click <i class="fas fa-search"></i> to locate. You can also drag the pin on the map.
+        </small>
+      </div>
+
+      <!-- Google Map Container -->
+      <div id="qrDeliveryMap" style="height: 260px; width: 100%; border-radius: 14px; border: 1.5px solid var(--border); box-shadow: 0 4px 14px rgba(0,0,0,0.06); margin-bottom: 12px;"></div>
+
+      <div class="row g-2">
+        <div class="col-md-6">
+          <label class="small text-muted fw-bold mb-1">House / Flat / Street Details</label>
+          <input type="text" id="qr_address_details" class="form-control form-control-sm" placeholder="e.g. Flat 3B, Sunshine Tower, MG Road" style="border-radius: 8px;">
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="small text-muted fw-bold mb-1">Latitude</label>
+          <input type="text" id="qr_delivery_lat" class="form-control form-control-sm font-monospace bg-light" readonly style="border-radius: 8px;">
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="small text-muted fw-bold mb-1">Longitude</label>
+          <input type="text" id="qr_delivery_lng" class="form-control form-control-sm font-monospace bg-light" readonly style="border-radius: 8px;">
         </div>
       </div>
     </div>
@@ -4888,6 +4970,17 @@ $(document).on('click', '#placeOrderBtn', function() {
         return;
     }
 
+    if (currentQrOrderType === 'DELIVERY') {
+        let addr = $('#qr_address_input').val().trim();
+        let details = $('#qr_address_details').val().trim();
+        if (!addr && !details) {
+            alert('Please enter your delivery address or pinpoint it on the map.');
+            $('html, body').animate({ scrollTop: $('#qrDeliverySection').offset().top - 100 }, 400);
+            $('#qr_address_input').focus();
+            return;
+        }
+    }
+
     let orderItems = cart.map(item => ({
         id: item.id,
         name: item.name,
@@ -4910,11 +5003,22 @@ $(document).on('click', '#placeOrderBtn', function() {
     $btn.html(isAddOrder ? '<i class="fas fa-spinner fa-spin"></i> Saving &amp; Ordering...' : '<i class="fas fa-spinner fa-spin"></i> Processing Order...').prop('disabled', true);
 
     let submitUrl = isAddOrder ? "{{ route('temp.order.add_items') }}" : "{{ route('temp.order.store') }}";
+    let finalDeliveryAddress = '';
+    if (currentQrOrderType === 'DELIVERY') {
+        let part1 = $('#qr_address_details').val().trim();
+        let part2 = $('#qr_address_input').val().trim();
+        finalDeliveryAddress = [part1, part2].filter(Boolean).join(', ');
+    }
+
     let postData = {
         _token:          "{{ csrf_token() }}",
         customer_name:   name,
         customer_phone:  phone,
-        table_id:        $('#table_id').val(),
+        table_id:        currentQrOrderType === 'DELIVERY' ? '' : $('#table_id').val(),
+        order_type:      currentQrOrderType,
+        delivery_address: finalDeliveryAddress,
+        delivery_latitude: $('#qr_delivery_lat').val() || null,
+        delivery_longitude: $('#qr_delivery_lng').val() || null,
         restaurant_id:   $('#restaurant_id').val(),
         order_items:     orderItems
     };
@@ -5018,6 +5122,353 @@ $(document).ready(function() {
     updateEmptyState();
     applyFilters();
 });
+
+/* =========================================================
+ * QR Order Mode: DINE IN vs HOME DELIVERY + GOOGLE MAPS
+ * ========================================================= */
+let currentQrOrderType = 'DINE_IN';
+let qrGoogleMap = null;
+let qrMarker = null;
+let qrGeocoder = null;
+let qrAutocomplete = null;
+let isGoogleMapsLoaded = false;
+
+function selectQrOrderType(type) {
+    currentQrOrderType = type;
+    if (type === 'DELIVERY') {
+        $('#qrOptDelivery').css({
+            'border-color': 'var(--primary)',
+            'background': 'rgba(255, 94, 20, 0.06)'
+        }).addClass('active');
+        $('#qrDeliveryIconWrap').css('background', 'var(--gradient-primary)');
+        $('#qrOptDelivery .qr-type-check').removeClass('text-muted').addClass('text-primary').css('opacity', '1');
+
+        $('#qrOptDineIn').css({
+            'border-color': 'var(--border)',
+            'background': '#ffffff'
+        }).removeClass('active');
+        $('#qrOptDineIn .qr-type-check').removeClass('text-primary').addClass('text-muted').css('opacity', '0.3');
+
+        $('#orderTypeBadgeText').text('Home Delivery');
+        $('#qrDeliverySection').slideDown(220, function() {
+            initQrDeliveryMap();
+        });
+    } else {
+        $('#qrOptDineIn').css({
+            'border-color': 'var(--primary)',
+            'background': 'rgba(255, 94, 20, 0.06)'
+        }).addClass('active');
+        $('#qrOptDineIn .qr-type-check').removeClass('text-muted').addClass('text-primary').css('opacity', '1');
+
+        $('#qrOptDelivery').css({
+            'border-color': 'var(--border)',
+            'background': '#ffffff'
+        }).removeClass('active');
+        $('#qrDeliveryIconWrap').css('background', '#64748b');
+        $('#qrOptDelivery .qr-type-check').removeClass('text-primary').addClass('text-muted').css('opacity', '0.3');
+
+        $('#orderTypeBadgeText').text('Dine In Table');
+        $('#qrDeliverySection').slideUp(200);
+    }
+}
+
+function initQrDeliveryMap() {
+    if (!window.google || !window.google.maps) {
+        loadGoogleMapsScript(function() {
+            setupQrGoogleMap();
+        });
+    } else {
+        setupQrGoogleMap();
+    }
+}
+
+function loadGoogleMapsScript(callback) {
+    if (isGoogleMapsLoaded || window.googleMapsScriptLoading) {
+        if (callback) {
+            let checkTimer = setInterval(function() {
+                if (window.google && window.google.maps) {
+                    clearInterval(checkTimer);
+                    callback();
+                }
+            }, 100);
+        }
+        return;
+    }
+    window.googleMapsScriptLoading = true;
+    let script = document.createElement('script');
+    script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyBZjbObdj2LqX-_hIE6Y6NJB5e5CBD-e8w&libraries=places";
+    script.async = true;
+    script.defer = true;
+    script.onload = function() {
+        isGoogleMapsLoaded = true;
+        window.googleMapsScriptLoading = false;
+        if (callback) callback();
+    };
+    script.onerror = function() {
+        window.googleMapsScriptLoading = false;
+        console.warn("Google Maps script failed to load. Initializing Leaflet map fallback.");
+        setupQrLeafletMap();
+    };
+    document.head.appendChild(script);
+}
+
+function setupQrGoogleMap() {
+    let mapEl = document.getElementById('qrDeliveryMap');
+    if (!mapEl) return;
+
+    let defaultLat = parseFloat("{{ $restaurant_details->latitude ?? 22.5726 }}") || 22.5726;
+    let defaultLng = parseFloat("{{ $restaurant_details->longitude ?? 88.3639 }}") || 88.3639;
+
+    let initialPos = { lat: defaultLat, lng: defaultLng };
+
+    if (!qrGoogleMap) {
+        qrGeocoder = new google.maps.Geocoder();
+        qrGoogleMap = new google.maps.Map(mapEl, {
+            center: initialPos,
+            zoom: 16,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: true
+        });
+
+        qrMarker = new google.maps.Marker({
+            position: initialPos,
+            map: qrGoogleMap,
+            draggable: true,
+            title: "Your Delivery Location",
+            animation: google.maps.Animation.DROP
+        });
+
+        // Set initial coordinates
+        updateQrCoordinates(defaultLat, defaultLng, true);
+
+        // Marker drag end event: automatically update address via reverse geocode
+        qrMarker.addListener('dragend', function(e) {
+            let lat = e.latLng.lat();
+            let lng = e.latLng.lng();
+            updateQrCoordinates(lat, lng, true);
+        });
+
+        // Map click event: reposition marker and update address
+        qrGoogleMap.addListener('click', function(e) {
+            let lat = e.latLng.lat();
+            let lng = e.latLng.lng();
+            qrMarker.setPosition(e.latLng);
+            updateQrCoordinates(lat, lng, true);
+        });
+
+        // Places autocomplete on address input
+        let inputEl = document.getElementById('qr_address_input');
+        if (inputEl) {
+            qrAutocomplete = new google.maps.places.Autocomplete(inputEl);
+            qrAutocomplete.bindTo('bounds', qrGoogleMap);
+            qrAutocomplete.addListener('place_changed', function() {
+                let place = qrAutocomplete.getPlace();
+                if (place && place.geometry && place.geometry.location) {
+                    qrGoogleMap.setCenter(place.geometry.location);
+                    qrGoogleMap.setZoom(17);
+                    qrMarker.setPosition(place.geometry.location);
+                    updateQrCoordinates(place.geometry.location.lat(), place.geometry.location.lng(), false);
+                } else {
+                    geocodeQrAddress();
+                }
+            });
+        }
+    } else {
+        google.maps.event.trigger(qrGoogleMap, 'resize');
+        if (qrMarker) {
+            qrGoogleMap.setCenter(qrMarker.getPosition());
+        }
+    }
+}
+
+function geocodeQrAddress(query) {
+    query = (query || $('#qr_address_input').val() || '').trim();
+    if (!query || query.length < 2) return;
+
+    let $btn = $('#btnSearchQrAddress');
+    let orig = $btn.html();
+    $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
+
+    function applyQrLocation(lat, lng, formattedAddr) {
+        let nLat = parseFloat(lat);
+        let nLng = parseFloat(lng);
+
+        if (qrGoogleMap && qrMarker) {
+            let latLng = new google.maps.LatLng(nLat, nLng);
+            qrGoogleMap.setCenter(latLng);
+            qrGoogleMap.setZoom(17);
+            qrMarker.setPosition(latLng);
+        } else if (qrLeafletMap && qrLeafletMarker) {
+            qrLeafletMap.setView([nLat, nLng], 17);
+            qrLeafletMarker.setLatLng([nLat, nLng]);
+        }
+
+        $('#qr_delivery_lat').val(nLat.toFixed(6));
+        $('#qr_delivery_lng').val(nLng.toFixed(6));
+        if (formattedAddr) {
+            $('#qr_address_input').val(formattedAddr);
+        }
+        $btn.html(orig).prop('disabled', false);
+    }
+
+    if (qrGeocoder && window.google) {
+        qrGeocoder.geocode({ address: query }, function(results, status) {
+            if (status === 'OK' && results[0] && results[0].geometry) {
+                let loc = results[0].geometry.location;
+                applyQrLocation(loc.lat(), loc.lng(), results[0].formatted_address);
+            } else {
+                $.getJSON('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query), function(data) {
+                    if (data && data.length > 0) {
+                        applyQrLocation(data[0].lat, data[0].lon, data[0].display_name);
+                    } else {
+                        $btn.html(orig).prop('disabled', false);
+                        alert('Location not found. Please try entering a different landmark or area, or drag the map pin.');
+                    }
+                }).fail(function() {
+                    $btn.html(orig).prop('disabled', false);
+                    alert('Location search failed. Please drag the pin on the map.');
+                });
+            }
+        });
+    } else {
+        $.getJSON('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query), function(data) {
+            if (data && data.length > 0) {
+                applyQrLocation(data[0].lat, data[0].lon, data[0].display_name);
+            } else {
+                $btn.html(orig).prop('disabled', false);
+                alert('Location not found. Please try entering a different landmark or area, or drag the map pin.');
+            }
+        }).fail(function() {
+            $btn.html(orig).prop('disabled', false);
+            alert('Location search failed. Please drag the pin on the map.');
+        });
+    }
+}
+
+// Enter key on address input
+$(document).on('keydown', '#qr_address_input', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        geocodeQrAddress();
+    }
+});
+
+// Search button click
+$(document).on('click', '#btnSearchQrAddress', function(e) {
+    e.preventDefault();
+    geocodeQrAddress();
+});
+
+// Change event fallback
+$(document).on('change', '#qr_address_input', function() {
+    if (!$('#qr_delivery_lat').val() || !$('#qr_delivery_lng').val()) {
+        geocodeQrAddress();
+    }
+});
+
+function updateQrCoordinates(lat, lng, shouldReverseGeocode) {
+    $('#qr_delivery_lat').val(parseFloat(lat).toFixed(6));
+    $('#qr_delivery_lng').val(parseFloat(lng).toFixed(6));
+
+    if (shouldReverseGeocode) {
+        if (qrGeocoder) {
+            qrGeocoder.geocode({ location: { lat: lat, lng: lng } }, function(results, status) {
+                if (status === 'OK' && results[0]) {
+                    $('#qr_address_input').val(results[0].formatted_address);
+                }
+            });
+        } else {
+            // Leaflet Nominatim reverse geocode fallback
+            $.getJSON('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng, function(data) {
+                if (data && data.display_name && !$('#qr_address_input').is(':focus')) {
+                    $('#qr_address_input').val(data.display_name);
+                }
+            });
+        }
+    }
+}
+
+// Locate Me button handler
+$(document).on('click', '#btnDetectQrLocation', function(e) {
+    e.preventDefault();
+    if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser.');
+        return;
+    }
+    let $b = $(this);
+    let origText = $b.html();
+    $b.html('<i class="fas fa-spinner fa-spin me-1"></i> Locating...').prop('disabled', true);
+
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        let lat = pos.coords.latitude;
+        let lng = pos.coords.longitude;
+        if (qrGoogleMap && qrMarker) {
+            let latLng = new google.maps.LatLng(lat, lng);
+            qrGoogleMap.setCenter(latLng);
+            qrGoogleMap.setZoom(17);
+            qrMarker.setPosition(latLng);
+            updateQrCoordinates(lat, lng, true);
+        } else if (qrLeafletMap && qrLeafletMarker) {
+            qrLeafletMap.setView([lat, lng], 17);
+            qrLeafletMarker.setLatLng([lat, lng]);
+            updateQrCoordinates(lat, lng, true);
+        }
+        $b.html(origText).prop('disabled', false);
+    }, function(err) {
+        $b.html(origText).prop('disabled', false);
+        alert('Could not retrieve your GPS location: ' + err.message);
+    }, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+    });
+});
+</script>
+<!-- Leaflet Map JS Fallback -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+let qrLeafletMap = null;
+let qrLeafletMarker = null;
+
+function setupQrLeafletMap() {
+    let mapEl = document.getElementById('qrDeliveryMap');
+    if (!mapEl) return;
+
+    let defaultLat = parseFloat("{{ $restaurant_details->latitude ?? 22.5726 }}") || 22.5726;
+    let defaultLng = parseFloat("{{ $restaurant_details->longitude ?? 88.3639 }}") || 88.3639;
+
+    let pinIcon = L.divIcon({
+        className: 'custom-map-pin',
+        html: '<div style="color: #ef4444; font-size: 28px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));"><i class="fas fa-map-marker-alt"></i></div>',
+        iconSize: [28, 28],
+        iconAnchor: [14, 28],
+        popupAnchor: [0, -28]
+    });
+
+    if (!qrLeafletMap) {
+        qrLeafletMap = L.map('qrDeliveryMap').setView([defaultLat, defaultLng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(qrLeafletMap);
+
+        qrLeafletMarker = L.marker([defaultLat, defaultLng], { draggable: true, icon: pinIcon }).addTo(qrLeafletMap);
+
+        qrLeafletMarker.on('dragend', function() {
+            let pos = qrLeafletMarker.getLatLng();
+            updateQrCoordinates(pos.lat, pos.lng, true);
+        });
+
+        qrLeafletMap.on('click', function(e) {
+            qrLeafletMarker.setLatLng(e.latlng);
+            updateQrCoordinates(e.latlng.lat, e.latlng.lng, true);
+        });
+    } else {
+        setTimeout(function() { qrLeafletMap.invalidateSize(); }, 120);
+    }
+}
 </script>
 </body>
 </html>

@@ -2,7 +2,6 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\FcmController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryApiController; 
 use App\Http\Controllers\Api\DishApiController;
@@ -131,4 +130,11 @@ Route::prefix('support')->group(function () {
     });
 
 });
+
+// WhatsApp Cloud API Webhooks
+Route::prefix('webhooks/whatsapp')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Api\WhatsAppWebhookController::class, 'verify'])->name('whatsapp.webhook.verify');
+    Route::post('/', [\App\Http\Controllers\Api\WhatsAppWebhookController::class, 'handle'])->name('whatsapp.webhook.handle');
+});
+
 

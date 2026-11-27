@@ -17,6 +17,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="{{ asset('admin_template/css/order-terminal.css') }}?v={{ time() }}">
 
+  <!-- Leaflet Map CSS for Delivery Location Picking -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
   <style>
     :root {
       --rp-primary: #ff5e14;
@@ -630,7 +633,27 @@
       min-width: 0;
       width: 100%;
       box-sizing: border-box;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    .bill-checkout-panel::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .bill-checkout-panel::-webkit-scrollbar-track {
+      background: #f8fafc;
+      border-radius: 4px;
+    }
+
+    .bill-checkout-panel::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    .bill-checkout-panel::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
     }
 
     .checkout-header {
@@ -641,6 +664,9 @@
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
     .checkout-title {
@@ -708,8 +734,19 @@
 
     .dining-type-selector {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 6px;
+    }
+
+    .pac-container {
+      z-index: 99999999 !important;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .custom-map-pin {
+      background: transparent !important;
+      border: none !important;
     }
 
     .dining-btn {
@@ -1424,6 +1461,11 @@
       padding: 10px 14px;
       background: #ffffff;
       flex-shrink: 0;
+      position: sticky;
+      bottom: 0;
+      z-index: 10;
+      border-top: 1.5px solid var(--rp-border);
+      box-shadow: 0 -4px 14px rgba(15, 23, 42, 0.08);
     }
 
     .print-toggle-wrap {
@@ -2128,10 +2170,13 @@
 
           <div class="dining-type-selector">
             <button type="button" class="dining-btn active" data-type="takeaway" id="btnTakeaway">
-              <i class="fa-solid fa-bag-shopping"></i> Takeaway / Express
+              <i class="fa-solid fa-bag-shopping"></i> Takeaway
+            </button>
+            <button type="button" class="dining-btn" data-type="delivery" id="btnDelivery">
+              <i class="fa-solid fa-motorcycle"></i> Delivery
             </button>
             <button type="button" class="dining-btn" data-type="dine_in" id="btnDineIn">
-              <i class="fa-solid fa-chair"></i> Dine-In Table
+              <i class="fa-solid fa-chair"></i> Dine-In
             </button>
           </div>
 
@@ -2142,6 +2187,36 @@
                 <option value="{{ $t->id }}">Table {{ $t->name }} ({{ $t->seating_capacity ?? '4' }} seats)</option>
               @endforeach
             </select>
+          </div>
+
+          <div id="rapidDeliveryWrap" style="display: none; margin-top: 8px; background: #fff; border: 1.5px solid var(--rp-border); border-radius: 10px; padding: 10px;">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <span class="small fw-bold text-dark"><i class="fa-solid fa-motorcycle text-success me-1"></i> Delivery Location</span>
+              <button type="button" class="btn btn-xs btn-outline-primary" id="btnDetectRapidGps" style="border-radius: 999px; font-size: 0.7rem; padding: 2px 8px;">
+                <i class="fa-solid fa-crosshairs me-1"></i> Current GPS
+              </button>
+            </div>
+            <div class="mb-2">
+              <div class="input-group input-group-sm">
+                <input type="text" id="rapidDeliveryAddress" class="c-input form-control" placeholder="Enter address, locality or landmark..." style="font-size: 0.82rem; height: 34px;" autocomplete="off">
+                <button type="button" class="btn btn-secondary px-2" id="btnSearchRapidAddress" title="Locate address on map">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+              </div>
+              <small class="text-muted d-block mt-1" style="font-size: 0.70rem;">
+                <i class="fa-solid fa-circle-info text-primary me-1"></i> Type address &amp; press Enter or <i class="fa-solid fa-magnifying-glass"></i> to locate. You can also drag the red pin.
+              </small>
+            </div>
+            <!-- Map Container -->
+            <div id="rapidDeliveryMap" style="height: 165px; width: 100%; border-radius: 8px; border: 1.5px solid var(--rp-border); margin-bottom: 6px; background: #e2e8f0; position: relative;"></div>
+            <div class="row g-1">
+              <div class="col-6">
+                <input type="text" id="rapid_delivery_lat" class="c-input font-monospace bg-light" readonly placeholder="Latitude" style="font-size: 0.72rem; height: 28px;">
+              </div>
+              <div class="col-6">
+                <input type="text" id="rapid_delivery_lng" class="c-input font-monospace bg-light" readonly placeholder="Longitude" style="font-size: 0.72rem; height: 28px;">
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2668,8 +2743,23 @@ $(document).ready(function() {
     orderType = $(this).data('type');
     if (orderType === 'dine_in') {
       $('#tableSelectWrap').slideDown(150);
+      $('#rapidDeliveryWrap').slideUp(150);
+    } else if (orderType === 'delivery') {
+      $('#tableSelectWrap').slideUp(150);
+      $('#tableIdSelect').val('');
+      $('#rapidDeliveryWrap').slideDown(200, function() {
+        if (typeof initRapidDeliveryMap === 'function') {
+          initRapidDeliveryMap();
+        }
+      });
+      setTimeout(function() {
+        if (typeof initRapidDeliveryMap === 'function') {
+          initRapidDeliveryMap();
+        }
+      }, 250);
     } else {
       $('#tableSelectWrap').slideUp(150);
+      $('#rapidDeliveryWrap').slideUp(150);
       $('#tableIdSelect').val('');
     }
   });
@@ -4274,6 +4364,9 @@ $(document).ready(function() {
       customer_name: $('#custName').val().trim(),
       customer_phone: $('#custPhone').val().trim(),
       order_type: orderType,
+      delivery_address: $('#rapidDeliveryAddress').val() ? $('#rapidDeliveryAddress').val().trim() : null,
+      delivery_latitude: $('#rapid_delivery_lat').val() || null,
+      delivery_longitude: $('#rapid_delivery_lng').val() || null,
       table_id: $('#tableIdSelect').val() || null,
       order_discount: parseFloat($('#txtOrderDiscount').val()) || 0,
       order_discount_type: $('#selOrderDiscountType').val() || 'FIXED',
@@ -4373,6 +4466,339 @@ $(document).ready(function() {
   });
 
 });
+</script>
+
+<!-- Google Maps SDK with Places library -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBZjbObdj2LqX-_hIE6Y6NJB5e5CBD-e8w&libraries=places"></script>
+<!-- Leaflet Map JS Fallback -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script>
+let rapidCurrentLat = parseFloat("{{ $restaurant->latitude ?? 22.5726 }}") || 22.5726;
+let rapidCurrentLng = parseFloat("{{ $restaurant->longitude ?? 88.3639 }}") || 88.3639;
+let rapidGoogleMap = null;
+let rapidGoogleMarker = null;
+let rapidGoogleGeocoder = null;
+let rapidGoogleAutocomplete = null;
+let rapidLeafletMap = null;
+let rapidLeafletMarker = null;
+let rapidActiveMapType = null;
+
+function initRapidDeliveryMap() {
+  let mapEl = document.getElementById('rapidDeliveryMap');
+  if (!mapEl) return;
+
+  if (window.google && window.google.maps && typeof google.maps.Map === 'function') {
+    setupRapidGoogleMap();
+  } else {
+    setupRapidLeafletMap();
+  }
+}
+
+function setupRapidGoogleMap() {
+  let mapEl = document.getElementById('rapidDeliveryMap');
+  if (!mapEl) return;
+  rapidActiveMapType = 'google';
+
+  let initialPos = { lat: rapidCurrentLat, lng: rapidCurrentLng };
+
+  if (!rapidGoogleMap) {
+    try {
+      rapidGoogleGeocoder = new google.maps.Geocoder();
+      rapidGoogleMap = new google.maps.Map(mapEl, {
+        center: initialPos,
+        zoom: 16,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false
+      });
+
+      rapidGoogleMarker = new google.maps.Marker({
+        position: initialPos,
+        map: rapidGoogleMap,
+        draggable: true,
+        title: "Delivery Pin"
+      });
+
+      updateRapidCoords(rapidCurrentLat, rapidCurrentLng, false);
+
+      // Drag listener: updates coordinates and reverse geocodes address
+      rapidGoogleMarker.addListener('dragend', function(e) {
+        rapidCurrentLat = e.latLng.lat();
+        rapidCurrentLng = e.latLng.lng();
+        updateRapidCoords(rapidCurrentLat, rapidCurrentLng, true);
+      });
+
+      // Click listener: moves pin and reverse geocodes
+      rapidGoogleMap.addListener('click', function(e) {
+        rapidCurrentLat = e.latLng.lat();
+        rapidCurrentLng = e.latLng.lng();
+        rapidGoogleMarker.setPosition(e.latLng);
+        updateRapidCoords(rapidCurrentLat, rapidCurrentLng, true);
+      });
+
+      // Google Places Autocomplete
+      let inputEl = document.getElementById('rapidDeliveryAddress');
+      if (inputEl) {
+        rapidGoogleAutocomplete = new google.maps.places.Autocomplete(inputEl);
+        rapidGoogleAutocomplete.bindTo('bounds', rapidGoogleMap);
+        rapidGoogleAutocomplete.addListener('place_changed', function() {
+          let place = rapidGoogleAutocomplete.getPlace();
+          if (place && place.geometry && place.geometry.location) {
+            rapidCurrentLat = place.geometry.location.lat();
+            rapidCurrentLng = place.geometry.location.lng();
+            rapidGoogleMap.setCenter(place.geometry.location);
+            rapidGoogleMap.setZoom(17);
+            rapidGoogleMarker.setPosition(place.geometry.location);
+            updateRapidCoords(rapidCurrentLat, rapidCurrentLng, false);
+          } else {
+            geocodeRapidAddress();
+          }
+        });
+      }
+    } catch(err) {
+      console.warn("Google Maps init error, falling back to Leaflet:", err);
+      setupRapidLeafletMap();
+      return;
+    }
+  }
+
+  setTimeout(function() {
+    if (rapidGoogleMap) {
+      google.maps.event.trigger(rapidGoogleMap, 'resize');
+      rapidGoogleMap.setCenter({ lat: rapidCurrentLat, lng: rapidCurrentLng });
+    }
+  }, 120);
+}
+
+function setupRapidLeafletMap() {
+  let mapEl = document.getElementById('rapidDeliveryMap');
+  if (!mapEl) return;
+  rapidActiveMapType = 'leaflet';
+
+  let pinIcon = L.divIcon({
+    className: 'custom-map-pin',
+    html: '<div style="color: #ef4444; font-size: 28px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));"><i class="fa-solid fa-location-dot"></i></div>',
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+    popupAnchor: [0, -28]
+  });
+
+  if (!rapidLeafletMap) {
+    rapidLeafletMap = L.map('rapidDeliveryMap').setView([rapidCurrentLat, rapidCurrentLng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(rapidLeafletMap);
+
+    rapidLeafletMarker = L.marker([rapidCurrentLat, rapidCurrentLng], {
+      draggable: true,
+      icon: pinIcon
+    }).addTo(rapidLeafletMap);
+
+    updateRapidCoords(rapidCurrentLat, rapidCurrentLng, false);
+
+    rapidLeafletMarker.on('dragend', function() {
+      let pos = rapidLeafletMarker.getLatLng();
+      rapidCurrentLat = pos.lat;
+      rapidCurrentLng = pos.lng;
+      updateRapidCoords(rapidCurrentLat, rapidCurrentLng, true);
+    });
+
+    rapidLeafletMap.on('click', function(e) {
+      rapidCurrentLat = e.latlng.lat;
+      rapidCurrentLng = e.latlng.lng;
+      rapidLeafletMarker.setLatLng(e.latlng);
+      updateRapidCoords(rapidCurrentLat, rapidCurrentLng, true);
+    });
+  }
+
+  setTimeout(function() {
+    if (rapidLeafletMap) {
+      rapidLeafletMap.invalidateSize();
+      rapidLeafletMap.setView([rapidCurrentLat, rapidCurrentLng], 15);
+    }
+  }, 120);
+}
+
+function geocodeRapidAddress(query) {
+  query = (query || $('#rapidDeliveryAddress').val() || '').trim();
+  if (!query || query.length < 2) return;
+
+  let $btn = $('#btnSearchRapidAddress');
+  let origBtn = $btn.html();
+  $btn.html('<i class="fa-solid fa-spinner fa-spin"></i>').prop('disabled', true);
+
+  function applyPos(lat, lng, formattedAddr) {
+    rapidCurrentLat = parseFloat(lat);
+    rapidCurrentLng = parseFloat(lng);
+
+    if (rapidActiveMapType === 'google' && rapidGoogleMap && rapidGoogleMarker) {
+      let latLng = new google.maps.LatLng(rapidCurrentLat, rapidCurrentLng);
+      rapidGoogleMap.setCenter(latLng);
+      rapidGoogleMap.setZoom(17);
+      rapidGoogleMarker.setPosition(latLng);
+    } else if (rapidLeafletMap && rapidLeafletMarker) {
+      rapidLeafletMap.setView([rapidCurrentLat, rapidCurrentLng], 17);
+      rapidLeafletMarker.setLatLng([rapidCurrentLat, rapidCurrentLng]);
+    }
+
+    $('#rapid_delivery_lat').val(rapidCurrentLat.toFixed(6));
+    $('#rapid_delivery_lng').val(rapidCurrentLng.toFixed(6));
+    if (formattedAddr) {
+      $('#rapidDeliveryAddress').val(formattedAddr);
+    }
+    $btn.html(origBtn).prop('disabled', false);
+  }
+
+  if (rapidGoogleGeocoder && window.google) {
+    rapidGoogleGeocoder.geocode({ address: query }, function(results, status) {
+      if (status === 'OK' && results[0] && results[0].geometry) {
+        let loc = results[0].geometry.location;
+        applyPos(loc.lat(), loc.lng(), results[0].formatted_address);
+      } else {
+        searchNominatim(query, function(lat, lng, displayName) {
+          if (lat && lng) {
+            applyPos(lat, lng, displayName);
+          } else {
+            $btn.html(origBtn).prop('disabled', false);
+            alert('Location could not be found. Please check spelling or drag the map pin.');
+          }
+        });
+      }
+    });
+  } else {
+    searchNominatim(query, function(lat, lng, displayName) {
+      if (lat && lng) {
+        applyPos(lat, lng, displayName);
+      } else {
+        $btn.html(origBtn).prop('disabled', false);
+        alert('Location could not be found. Please check spelling or drag the map pin.');
+      }
+    });
+  }
+}
+
+function updateRapidCoords(lat, lng, reverse) {
+  $('#rapid_delivery_lat').val(parseFloat(lat).toFixed(6));
+  $('#rapid_delivery_lng').val(parseFloat(lng).toFixed(6));
+  if (reverse) {
+    if (rapidGoogleGeocoder && window.google) {
+      rapidGoogleGeocoder.geocode({ location: { lat: parseFloat(lat), lng: parseFloat(lng) } }, function(results, status) {
+        if (status === 'OK' && results[0]) {
+          $('#rapidDeliveryAddress').val(results[0].formatted_address);
+        } else {
+          reverseGeocodeNominatim(lat, lng, function(addr) {
+            if (addr && !$('#rapidDeliveryAddress').is(':focus')) {
+              $('#rapidDeliveryAddress').val(addr);
+            }
+          });
+        }
+      });
+    } else {
+      reverseGeocodeNominatim(lat, lng, function(addr) {
+        if (addr && !$('#rapidDeliveryAddress').is(':focus')) {
+          $('#rapidDeliveryAddress').val(addr);
+        }
+      });
+    }
+  }
+}
+
+function searchNominatim(query, cb) {
+  $.ajax({
+    url: 'https://nominatim.openstreetmap.org/search',
+    data: { format: 'json', limit: 1, q: query },
+    dataType: 'json',
+    timeout: 8000
+  }).done(function(data) {
+    if (data && data.length > 0) {
+      cb(data[0].lat, data[0].lon, data[0].display_name);
+    } else {
+      cb(null, null, null);
+    }
+  }).fail(function() {
+    cb(null, null, null);
+  });
+}
+
+function reverseGeocodeNominatim(lat, lng, cb) {
+  $.ajax({
+    url: 'https://nominatim.openstreetmap.org/reverse',
+    data: { format: 'json', lat: lat, lon: lng },
+    dataType: 'json',
+    timeout: 8000
+  }).done(function(data) {
+    if (data && data.display_name) {
+      cb(data.display_name);
+    } else {
+      cb(null);
+    }
+  }).fail(function() {
+    cb(null);
+  });
+}
+
+// Enter key in address input -> geocode immediately
+$(document).on('keydown', '#rapidDeliveryAddress', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    e.stopPropagation();
+    geocodeRapidAddress();
+  }
+});
+
+// Search button click
+$(document).on('click', '#btnSearchRapidAddress', function(e) {
+  e.preventDefault();
+  geocodeRapidAddress();
+});
+
+// Change event fallback
+$(document).on('change', '#rapidDeliveryAddress', function() {
+  if (!$('#rapid_delivery_lat').val() || !$('#rapid_delivery_lng').val()) {
+    geocodeRapidAddress();
+  }
+});
+
+// GPS Locate Me
+$(document).on('click', '#btnDetectRapidGps', function(e) {
+  e.preventDefault();
+  if (!navigator.geolocation) {
+    alert('Geolocation not supported by browser.');
+    return;
+  }
+  let $b = $(this);
+  let orig = $b.html();
+  $b.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i>');
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    let lat = pos.coords.latitude;
+    let lng = pos.coords.longitude;
+    rapidCurrentLat = lat;
+    rapidCurrentLng = lng;
+    if (rapidActiveMapType === 'google' && rapidGoogleMap && rapidGoogleMarker) {
+      let latLng = new google.maps.LatLng(lat, lng);
+      rapidGoogleMap.setCenter(latLng);
+      rapidGoogleMap.setZoom(17);
+      rapidGoogleMarker.setPosition(latLng);
+      updateRapidCoords(lat, lng, true);
+    } else if (rapidLeafletMap && rapidLeafletMarker) {
+      rapidLeafletMap.setView([lat, lng], 17);
+      rapidLeafletMarker.setLatLng([lat, lng]);
+      updateRapidCoords(lat, lng, true);
+    }
+    $b.prop('disabled', false).html(orig);
+  }, function(err) {
+    $b.prop('disabled', false).html(orig);
+    alert('GPS Error: ' + err.message);
+  }, { enableHighAccuracy: true, timeout: 8000 });
+});
+
+// Fallback if Google Maps fails auth
+window.gm_authFailure = function() {
+  console.warn("Google Maps auth error. Switching to Leaflet map fallback.");
+  setupRapidLeafletMap();
+};
 </script>
 
 @include('includes.script')

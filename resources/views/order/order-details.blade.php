@@ -167,6 +167,7 @@
         .badge-pending { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
         .badge-misc { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
         .badge-dinein { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+        .badge-delivery { background: linear-gradient(135deg, #f97316, #ea580c); color: white; }
         .badge-takeaway { background: linear-gradient(135deg, #10b981, #059669); color: white; }
         .badge-gst { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
         .badge-non-gst { background: #64748b; color: white; }
@@ -581,10 +582,22 @@
                             <div class="info-content">
                                 <div class="info-label">Order Type</div>
                                 <div class="info-value">
-                                    <span class="badge-status {{ $order->order_type == 'DINE_IN' ? 'badge-dinein' : 'badge-takeaway' }}" style="padding: 3px 10px; font-size: 0.7rem;">
-                                        <i class="fas {{ $order->order_type == 'DINE_IN' ? 'fa-table' : 'fa-box' }}"></i>
-                                        {{ $order->order_type == 'DINE_IN' ? 'Dine In' : 'Takeaway' }}
-                                    </span>
+                                    @php
+                                        $normType = strtoupper($order->order_type ?? 'DINE_IN');
+                                    @endphp
+                                    @if($normType === 'DELIVERY')
+                                        <span class="badge-status badge-delivery" style="padding: 3px 10px; font-size: 0.7rem;">
+                                            <i class="fas fa-motorcycle"></i> Home Delivery
+                                        </span>
+                                    @elseif($normType === 'DINE_IN')
+                                        <span class="badge-status badge-dinein" style="padding: 3px 10px; font-size: 0.7rem;">
+                                            <i class="fas fa-chair"></i> Dine In
+                                        </span>
+                                    @else
+                                        <span class="badge-status badge-takeaway" style="padding: 3px 10px; font-size: 0.7rem;">
+                                            <i class="fas fa-box"></i> Takeaway
+                                        </span>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -637,6 +650,50 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Delivery Address & Map Pin Card (Zero API Key Cost) -->
+                @if(strtoupper($order->order_type ?? '') === 'DELIVERY' || !empty($order->delivery_address) || (!empty($order->delivery_latitude) && !empty($order->delivery_longitude)))
+                <div class="card-modern">
+                    <div class="card-header-modern d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-motorcycle text-primary"></i> Delivery Location</h5>
+                        <span class="badge badge-delivery" style="padding: 3px 8px; font-size: 0.68rem;">HOME DELIVERY</span>
+                    </div>
+                    <div class="p-3">
+                        <div class="d-flex align-items-start gap-2 mb-2">
+                            <i class="fas fa-map-marker-alt text-danger mt-1"></i>
+                            <div>
+                                <div class="small fw-bold text-dark">{{ $order->delivery_address ?: 'Address not specified' }}</div>
+                                @if($order->delivery_latitude && $order->delivery_longitude)
+                                    <div class="small text-muted font-monospace mt-1">
+                                        GPS: {{ number_format($order->delivery_latitude, 6) }}, {{ number_format($order->delivery_longitude, 6) }}
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        @if($order->delivery_latitude && $order->delivery_longitude)
+                            <!-- Zero API Cost Interactive Map (OpenStreetMap / Leaflet tiles) -->
+                            <div class="delivery-map-embed mt-2" style="border-radius: 12px; overflow: hidden; border: 1.5px solid #e2e8f0;">
+                                <iframe 
+                                    width="100%" 
+                                    height="200" 
+                                    frameborder="0" 
+                                    scrolling="no" 
+                                    marginheight="0" 
+                                    marginwidth="0" 
+                                    src="https://www.openstreetmap.org/export/embed.html?bbox={{ $order->delivery_longitude - 0.005 }}%2C{{ $order->delivery_latitude - 0.003 }}%2C{{ $order->delivery_longitude + 0.005 }}%2C{{ $order->delivery_latitude + 0.003 }}&amp;layer=mapnik&amp;marker={{ $order->delivery_latitude }}%2C{{ $order->delivery_longitude }}"
+                                    style="display: block;">
+                                </iframe>
+                            </div>
+                            <div class="mt-2 text-end">
+                                <a href="https://maps.google.com/?q={{ $order->delivery_latitude }},{{ $order->delivery_longitude }}" target="_blank" class="btn btn-sm btn-outline-primary" style="border-radius: 8px; font-size: 0.76rem; font-weight: 700;">
+                                    <i class="fas fa-external-link-alt me-1"></i> Open Google Maps Direction
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+                @endif
 
                 <!-- Remarks Card -->
                 @if($order->remarks)

@@ -20,3 +20,6 @@ public/*
 !public/admin_template/**
 
 public/firebase/firebase-credentials.json
+storage/app/firebase/*.json
+storage/firebase/*.json
+storage/firebase/service-account.json

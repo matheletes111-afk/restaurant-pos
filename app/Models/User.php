@@ -313,4 +313,9 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(\App\Models\FranchiseRestaurantMapping::class, 'user_id');
     }
+
+    public function fcmTokens()
+    {
+        return $this->hasMany(\App\Models\UserFcmToken::class);
+    }
 }

@@ -92,6 +92,28 @@
               </div>
               <input type="hidden" id="table_id" value="{{ $table ? $table->id : '' }}">
             </div>
+
+            @if(strtoupper($order->order_type ?? '') === 'DELIVERY' || !empty($order->delivery_address))
+            <!-- Delivery Info Banner -->
+            <div class="mt-3 p-3 bg-light rounded-3 border">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="badge bg-success text-white"><i class="fa-solid fa-motorcycle me-1"></i> Home Delivery</span>
+                @if($order->delivery_latitude && $order->delivery_longitude)
+                  <a href="https://maps.google.com/?q={{ $order->delivery_latitude }},{{ $order->delivery_longitude }}" target="_blank" class="btn btn-xs btn-outline-primary" style="font-size: 0.72rem; padding: 2px 8px; border-radius: 6px;">
+                    <i class="fa-solid fa-location-arrow me-1"></i> View in Maps
+                  </a>
+                @endif
+              </div>
+              <div class="small text-dark fw-bold mt-1">
+                <i class="fa-solid fa-map-pin text-danger me-1"></i> {{ $order->delivery_address ?: 'Address not specified' }}
+              </div>
+              @if($order->delivery_latitude && $order->delivery_longitude)
+                <div class="small text-muted font-monospace mt-1">
+                  GPS: {{ number_format($order->delivery_latitude, 6) }}, {{ number_format($order->delivery_longitude, 6) }}
+                </div>
+              @endif
+            </div>
+            @endif
           </div>
         </div>
 

@@ -15,7 +15,6 @@ use App\Models\DishAddon;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Services\FirebasePushService;
 use App\Services\CashDrawerService;
 
 class OrderManagementController extends Controller
@@ -451,7 +450,20 @@ class OrderManagementController extends Controller
             'discount_type' => 'nullable|string|in:FIXED,PERCENT,fixed,percent',
         ]);
 
-        $isTakeaway = empty($request->table_id);
+        $requestedOrderType = strtoupper(trim($request->order_type ?? ''));
+        if (in_array($requestedOrderType, ['DELIVERY', 'HOME_DELIVERY', 'HOMEDELIVERY'])) {
+            $orderType = 'DELIVERY';
+            $isTakeaway = true;
+        } elseif ($requestedOrderType === 'TAKEAWAY') {
+            $orderType = 'TAKEAWAY';
+            $isTakeaway = true;
+        } elseif ($requestedOrderType === 'DINE_IN' || !empty($request->table_id)) {
+            $orderType = 'DINE_IN';
+            $isTakeaway = false;
+        } else {
+            $isTakeaway = empty($request->table_id);
+            $orderType = $isTakeaway ? 'TAKEAWAY' : 'DINE_IN';
+        }
         
         // Get restaurant GST info
         $restaurant = RestaurantMaster::find(auth()->user()->restaurant_id);
@@ -579,8 +591,11 @@ class OrderManagementController extends Controller
             $order->customer_name = $request->customer_name;
             $order->customer_phone = $request->customer_phone;
             $order->order_id = $orderNo;
-            $order->table_id = $request->table_id;
-            $order->order_type = $isTakeaway ? 'TAKEAWAY' : 'DINE_IN';
+            $order->table_id = $orderType === 'DELIVERY' ? null : $request->table_id;
+            $order->order_type = $orderType;
+            $order->delivery_address = $request->delivery_address ?? null;
+            $order->delivery_latitude = !empty($request->delivery_latitude) ? floatval($request->delivery_latitude) : null;
+            $order->delivery_longitude = !empty($request->delivery_longitude) ? floatval($request->delivery_longitude) : null;
             
             // Store amounts
             $order->total_amount = $totals['original_subtotal'];
@@ -795,6 +810,23 @@ class OrderManagementController extends Controller
             $order->remarks = $request->remarks ?? $order->remarks;
             $order->payment_method = $request->payment_method ?? $order->payment_method;
             $order->payment_status = $request->payment_status ?? $order->payment_status;
+            if ($request->filled('delivery_address')) {
+                $order->delivery_address = $request->delivery_address;
+            }
+            if ($request->filled('delivery_latitude')) {
+                $order->delivery_latitude = floatval($request->delivery_latitude);
+            }
+            if ($request->filled('delivery_longitude')) {
+                $order->delivery_longitude = floatval($request->delivery_longitude);
+            }
+            if ($request->filled('order_type')) {
+                $upOrderType = strtoupper(trim($request->order_type));
+                if (in_array($upOrderType, ['DELIVERY', 'HOME_DELIVERY', 'HOMEDELIVERY'])) {
+                    $order->order_type = 'DELIVERY';
+                } elseif (in_array($upOrderType, ['DINE_IN', 'TAKEAWAY'])) {
+                    $order->order_type = $upOrderType;
+                }
+            }
             
             // Update amount paid if provided
             if ($request->has('amount_paid') && $request->amount_paid !== null) {

@@ -137,6 +137,38 @@ class QrNotificationController extends Controller
             ]);
         }
 
+        // 3. Active Customer Waiter Calls
+        $waiterCalls = \App\Models\WaiterCall::where('restaurant_id', $restaurantId)
+            ->where('is_attended', false)
+            ->where('created_at', '>=', Carbon::now()->subHours(24))
+            ->orderBy('id', 'DESC')
+            ->get();
+
+        foreach ($waiterCalls as $wc) {
+            $tableName = $wc->table_name ?: 'Table';
+            $customerName = $wc->customer_name ?: 'Customer';
+            $notifications->push([
+                'id' => 'waiter_' . $wc->id,
+                'raw_id' => $wc->id,
+                'notif_type' => 'call_waiter',
+                'order_no' => $wc->order_id ? ('#' . $wc->order_id) : '',
+                'table_name' => $tableName,
+                'customer_name' => $customerName,
+                'customer_phone' => '',
+                'notification_title' => "{$customerName} called you from {$tableName}",
+                'items_count' => 0,
+                'items_summary' => "{$customerName} called waiter from {$tableName}",
+                'grand_total' => '',
+                'order_status' => 'CALL WAITER',
+                'is_read' => false,
+                'created_at_human' => $wc->created_at ? $wc->created_at->diffForHumans() : '',
+                'created_at_time' => $wc->created_at ? $wc->created_at->format('h:i A') : '',
+                'created_at_date' => $wc->created_at ? $wc->created_at->format('M d') : '',
+                'timestamp' => $wc->created_at ? $wc->created_at->timestamp : 0,
+                'view_url' => 'javascript:void(0);',
+            ]);
+        }
+
         // Sort all notifications by newest timestamp
         $sortedNotifications = $notifications->sortByDesc('timestamp')->values();
         $unreadCount = $sortedNotifications->where('is_read', false)->count();
@@ -163,6 +195,18 @@ class QrNotificationController extends Controller
         $restaurantId = $user->restaurant_id;
         if (!$restaurantId) {
             return response()->json(['success' => false, 'message' => 'Unauthorized - No restaurant assigned'], 403);
+        }
+
+        if (str_starts_with((string)$id, 'waiter_')) {
+            $waiterCallId = (int) str_replace('waiter_', '', (string)$id);
+            \App\Models\WaiterCall::where('id', $waiterCallId)
+                ->where('restaurant_id', $restaurantId)
+                ->update([
+                    'is_attended' => true,
+                    'attended_at' => now(),
+                    'attended_by' => $user->id,
+                ]);
+            return response()->json(['success' => true]);
         }
 
         if (str_starts_with((string)$id, 'main_')) {

@@ -10,7 +10,6 @@ use App\Http\Controllers\TableManageController;
 use App\Http\Controllers\RestaurantStaffController;
 use App\Http\Controllers\AIChatController;
 use App\Http\Controllers\OrderManagementController; 
-use App\Http\Controllers\FcmController;
 use App\Http\Controllers\RestaurantAnalyticsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -96,6 +95,7 @@ Route::post('/order-customer/add-items', [App\Http\Controllers\TempOrderControll
 Route::post('/order-customer/item/delete/{id}', [App\Http\Controllers\TempOrderController::class, 'deleteActiveOrderItem'])->name('temp.order.delete_item');
 Route::post('/order-customer/item/update-qty/{id}', [App\Http\Controllers\TempOrderController::class, 'updateActiveOrderItemQty'])->name('temp.order.update_item_qty');
 Route::post('/order-customer/cancel/{id}', [App\Http\Controllers\TempOrderController::class, 'cancelPendingOrder'])->name('temp.order.cancel');
+Route::post('/order-customer/call-waiter', [App\Http\Controllers\TempOrderController::class, 'callWaiter'])->name('temp.order.call_waiter');
 Route::get('/order-customer/fresh/{table_id}/{restaurant_id}', [App\Http\Controllers\TempOrderController::class, 'startFreshOrder'])->name('temp.order.fresh');
 
 // Public Bill & Invoice Download (Outside Auth for Customer WhatsApp sharing & Direct Download)
@@ -129,33 +129,7 @@ Route::get('/dashboard/dish-monthly/{id}', [Dashboard::class, 'dishMonthly'])
     ->middleware('auth')
     ->name('dashboard.dish.monthly');
 
-Route::post('/save-fcm-token', function (Request $request) {
-    $request->validate([
-        'fcm_token' => 'required|string',
-    ]);
-
-    $user = Auth::user();
-    if (!$user) {
-        return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
-    }
-
-    $user->fcm_token = $request->fcm_token;
-    $user->save();
-
-    return response()->json(['success' => true]);
-})->middleware('auth')->name('save.fcm.token');
-
-// category-management
-
-
 Route::prefix('admin')->group(function () {
-
-    
-
-
-    Route::post('/fcm/register', [FcmController::class, 'registerToken']);
-    Route::post('/fcm/unregister', [FcmController::class, 'unregisterToken']);
-
     // Admin CRM Lead Management
     Route::get('crm/download-sample', [App\Http\Controllers\Admin\AdminCrmController::class, 'downloadSample'])->name('admin.crm.download-sample');
     Route::post('crm/bulk-upload', [App\Http\Controllers\Admin\AdminCrmController::class, 'bulkUpload'])->name('admin.crm.bulk-upload');
@@ -920,4 +894,10 @@ Route::prefix('user-hrm')->name('user.hrm.')->middleware('auth')->group(function
 Route::get('/admin/user-hrm', function() {
     return redirect()->route('user.hrm.index');
 })->middleware('auth');
+
+Route::middleware(['auth'])->group(function () {
+    Route::post('/device-token/store', [App\Http\Controllers\DeviceTokenController::class, 'store'])->name('device.token.store');
+    Route::post('/device-token/remove', [App\Http\Controllers\DeviceTokenController::class, 'destroy'])->name('device.token.remove');
+});
+
 

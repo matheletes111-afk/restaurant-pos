@@ -1081,9 +1081,16 @@
                     <div class="inv-meta-item">
                         <span class="inv-meta-label">Order Type</span>
                         <span class="inv-meta-val">
-                            @if($order->order_type == 'DINE_IN')
+                            @php
+                                $invOrderType = strtoupper($order->order_type ?? 'DINE_IN');
+                            @endphp
+                            @if($invOrderType == 'DINE_IN')
                                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
                                     <i class="fa-solid fa-chair me-1"></i> Dine In ({{ @$order->table->name ?? 'Table' }})
+                                </span>
+                            @elseif($invOrderType == 'DELIVERY')
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1" style="background: #fff7ed; color: #ea580c; border-color: #fdba74;">
+                                    <i class="fa-solid fa-motorcycle me-1"></i> Home Delivery
                                 </span>
                             @else
                                 <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">
@@ -1092,6 +1099,20 @@
                             @endif
                         </span>
                     </div>
+
+                    @if(!empty($order->delivery_address))
+                    <div class="inv-meta-item" style="grid-column: 1 / -1;">
+                        <span class="inv-meta-label">Delivery Address</span>
+                        <span class="inv-meta-val text-dark fw-bold">
+                            <i class="fa-solid fa-location-dot text-danger me-1"></i> {{ $order->delivery_address }}
+                            @if($order->delivery_latitude && $order->delivery_longitude)
+                                <a href="https://maps.google.com/?q={{ $order->delivery_latitude }},{{ $order->delivery_longitude }}" target="_blank" class="badge bg-light text-primary border ms-2" style="text-decoration: none; font-size: 0.7rem;">
+                                    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Google Maps
+                                </a>
+                            @endif
+                        </span>
+                    </div>
+                    @endif
 
                     <div class="inv-meta-item">
                         <span class="inv-meta-label">Tax Specification</span>

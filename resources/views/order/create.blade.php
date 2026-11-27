@@ -17,6 +17,20 @@
   
   <!-- External Order Terminal CSS -->
   <link rel="stylesheet" href="{{ asset('admin_template/css/order-terminal.css') }}?v={{ time() }}">
+
+  <!-- Leaflet Map CSS for Delivery Location Picking -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <style>
+    .pac-container {
+      z-index: 99999999 !important;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .custom-map-pin {
+      background: transparent !important;
+      border: none !important;
+    }
+  </style>
 </head>
 <body>
 @include('includes.sidebar')
@@ -78,6 +92,27 @@
             <span class="text-muted small">Required for bill dispatch</span>
           </div>
           <div class="pos-panel-body">
+            <!-- Order Type Selection: DINE IN vs HOME DELIVERY vs TAKEAWAY -->
+            <div class="mb-3 pb-3 border-bottom">
+              <label class="pos-form-label d-flex align-items-center justify-content-between mb-2">
+                <span><i class="fa-solid fa-list-check text-primary me-1"></i> Order Type / Service Mode <span class="text-danger">*</span></span>
+                <span class="badge bg-light text-dark border px-2 py-1" id="posOrderTypeBadge">
+                  {{ (isset($table) && $table) ? 'Dine In (' . $table->name . ')' : 'Home Delivery' }}
+                </span>
+              </label>
+              <div class="d-flex gap-2" style="flex-wrap: wrap;">
+                <button type="button" class="btn btn-outline-primary btn-sm pos-type-pill {{ (isset($table) && $table) ? 'active' : '' }}" id="btnTypeDineIn" onclick="setPosOrderType('DINE_IN')" style="border-radius: 10px; font-weight: 700; padding: 7px 16px;">
+                  <i class="fa-solid fa-chair me-1"></i> Dine In Table
+                </button>
+                <button type="button" class="btn btn-outline-success btn-sm pos-type-pill {{ (!isset($table) || !$table) ? 'active' : '' }}" id="btnTypeDelivery" onclick="setPosOrderType('DELIVERY')" style="border-radius: 10px; font-weight: 700; padding: 7px 16px;">
+                  <i class="fa-solid fa-motorcycle me-1"></i> Home Delivery
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm pos-type-pill" id="btnTypeTakeaway" onclick="setPosOrderType('TAKEAWAY')" style="border-radius: 10px; font-weight: 700; padding: 7px 16px;">
+                  <i class="fa-solid fa-bag-shopping me-1"></i> Takeaway / Parcel
+                </button>
+              </div>
+            </div>
+
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="pos-form-label">Customer Name <span class="text-danger">*</span></label>
@@ -88,6 +123,47 @@
                 <input type="tel" class="pos-form-control" id="customer_phone" placeholder="e.g. 9876543210" inputmode="numeric" onkeydown="if(['e','E','+','-','.'].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
               </div>
               <input type="hidden" id="table_id" value="{{ isset($table) && $table ? $table->id : '' }}">
+            </div>
+
+            <!-- Home Delivery Location with Interactive Google Map -->
+            <div id="posDeliverySection" style="display: {{ (!isset($table) || !$table) ? 'block' : 'none' }}; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--pos-border);">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <label class="pos-form-label mb-0"><i class="fa-solid fa-location-dot text-danger me-1"></i> Delivery Address &amp; Map Pin <span class="text-danger">*</span></label>
+                <button type="button" class="btn btn-xs btn-outline-primary" id="btnDetectPosLocation" style="border-radius: 20px; font-size: 0.75rem; font-weight: 700; padding: 3px 10px;">
+                  <i class="fa-solid fa-crosshairs me-1"></i> GPS Current Location
+                </button>
+              </div>
+
+              <div class="mb-2">
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fa-solid fa-location-dot text-danger"></i></span>
+                  <input type="text" id="pos_delivery_address_input" class="form-control pos-form-control" placeholder="Search address, landmark or customer area..." autocomplete="off">
+                  <button type="button" class="btn btn-secondary px-3" id="btnSearchPosAddress" title="Locate on map">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                  </button>
+                </div>
+                <small class="text-muted" style="font-size: 0.75rem;">
+                  <i class="fa-solid fa-circle-info text-primary"></i> Press Enter or click <i class="fa-solid fa-magnifying-glass"></i> to locate address. You can also drag the red pin.
+                </small>
+              </div>
+
+              <!-- Map Container -->
+              <div id="posDeliveryMap" style="height: 240px; width: 100%; border-radius: 12px; border: 1.5px solid var(--pos-border); margin-bottom: 10px;"></div>
+
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="small text-muted fw-bold mb-1">House / Building / Landmark</label>
+                  <input type="text" id="pos_delivery_address_details" class="form-control form-control-sm" placeholder="e.g. 2nd Floor, Royal Residency, MG Road">
+                </div>
+                <div class="col-md-3 col-6">
+                  <label class="small text-muted fw-bold mb-1">Latitude</label>
+                  <input type="text" id="pos_delivery_lat" class="form-control form-control-sm font-monospace bg-light" readonly>
+                </div>
+                <div class="col-md-3 col-6">
+                  <label class="small text-muted fw-bold mb-1">Longitude</label>
+                  <input type="text" id="pos_delivery_lng" class="form-control form-control-sm font-monospace bg-light" readonly>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2084,6 +2160,16 @@ $(document).ready(function() {
             $('#customer_name').focus();
             return;
         }
+
+        if (currentPosOrderType === 'DELIVERY') {
+            let addr = $('#pos_delivery_address_input').val().trim();
+            let details = $('#pos_delivery_address_details').val().trim();
+            if (!addr && !details) {
+                showToast('Please enter or pinpoint delivery address on the map', true);
+                $('#pos_delivery_address_input').focus();
+                return;
+            }
+        }
         
         let orderItemsData = orderItems.map(item => ({
             id: item.dish_id || item.id,
@@ -2105,6 +2191,13 @@ $(document).ready(function() {
         let btnText = (order_complete === 'DONE') ? 'Processing Checkout & Printing...' : 'Saving Order & Firing KOT...';
         $('#saveOrderBtn, #saveOrderBtnTop').prop('disabled', true).html(`<i class="fa-solid fa-spinner fa-spin me-2"></i> ${btnText}`);
         
+        let finalPosDeliveryAddress = '';
+        if (currentPosOrderType === 'DELIVERY') {
+            let p1 = $('#pos_delivery_address_details').val().trim();
+            let p2 = $('#pos_delivery_address_input').val().trim();
+            finalPosDeliveryAddress = [p1, p2].filter(Boolean).join(', ');
+        }
+
         $.ajax({
             url: "{{ route('order.save') }}",
             method: 'POST',
@@ -2112,7 +2205,11 @@ $(document).ready(function() {
                 _token: "{{ csrf_token() }}",
                 customer_name: customer_name,
                 customer_phone: customer_phone,
-                table_id: table_id,
+                table_id: currentPosOrderType === 'DINE_IN' ? table_id : null,
+                order_type: currentPosOrderType,
+                delivery_address: finalPosDeliveryAddress,
+                delivery_latitude: $('#pos_delivery_lat').val() || null,
+                delivery_longitude: $('#pos_delivery_lng').val() || null,
                 discount: orderDiscount,
                 discount_type: orderDiscountType,
                 order_items: orderItemsData,
@@ -2488,7 +2585,341 @@ $(document).ready(function() {
     renderOrderTable();
     applyFoodFilters();
     applyBarFilters();
+    
+    @if(!isset($table) || !$table)
+        initPosDeliveryMap();
+    @endif
 });
+
+/* =========================================================
+ * POS Order Type Switcher & Google Maps Interactive Pin
+ * ========================================================= */
+let currentPosOrderType = "{{ (isset($table) && $table) ? 'DINE_IN' : 'DELIVERY' }}";
+let posGoogleMap = null;
+let posMarker = null;
+let posGeocoder = null;
+let posAutocomplete = null;
+let isPosMapsLoaded = false;
+
+function setPosOrderType(type) {
+    currentPosOrderType = type;
+    $('.pos-type-pill').removeClass('active');
+
+    if (type === 'DINE_IN') {
+        $('#btnTypeDineIn').addClass('active');
+        $('#posOrderTypeBadge').text("{{ (isset($table) && $table) ? 'Dine In (' . $table->name . ')' : 'Dine In' }}");
+        $('#posDeliverySection').slideUp(200);
+        $('#checkoutPaymentSection').slideUp(200);
+        $('#saveOrderBtn, #saveOrderBtnTop').html('<i class="fa-solid fa-fire"></i> Save &amp; Fire KOT');
+    } else if (type === 'DELIVERY') {
+        $('#btnTypeDelivery').addClass('active');
+        $('#posOrderTypeBadge').text('Home Delivery');
+        $('#posDeliverySection').slideDown(220, function() {
+            initPosDeliveryMap();
+        });
+        $('#checkoutPaymentSection').slideDown(200);
+        $('#saveOrderBtn, #saveOrderBtnTop').html('<i class="fa-solid fa-circle-check"></i> Done &amp; Checkout Bill');
+    } else {
+        $('#btnTypeTakeaway').addClass('active');
+        $('#posOrderTypeBadge').text('Takeaway / Parcel');
+        $('#posDeliverySection').slideUp(200);
+        $('#checkoutPaymentSection').slideDown(200);
+        $('#saveOrderBtn, #saveOrderBtnTop').html('<i class="fa-solid fa-circle-check"></i> Done &amp; Checkout Bill');
+    }
+}
+
+function initPosDeliveryMap() {
+    if (!window.google || !window.google.maps) {
+        loadPosGoogleMapsScript(function() {
+            setupPosGoogleMap();
+        });
+    } else {
+        setupPosGoogleMap();
+    }
+}
+
+function loadPosGoogleMapsScript(callback) {
+    if (isPosMapsLoaded || window.posMapsScriptLoading) {
+        if (callback) {
+            let checkTimer = setInterval(function() {
+                if (window.google && window.google.maps) {
+                    clearInterval(checkTimer);
+                    callback();
+                }
+            }, 100);
+        }
+        return;
+    }
+    window.posMapsScriptLoading = true;
+    let script = document.createElement('script');
+    script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyBZjbObdj2LqX-_hIE6Y6NJB5e5CBD-e8w&libraries=places";
+    script.async = true;
+    script.defer = true;
+    script.onload = function() {
+        isPosMapsLoaded = true;
+        window.posMapsScriptLoading = false;
+        if (callback) callback();
+    };
+    script.onerror = function() {
+        window.posMapsScriptLoading = false;
+        console.warn("Google Maps SDK failed/blocked. Switching to Leaflet map fallback.");
+        setupPosLeafletMap(22.5726, 88.3639);
+    };
+    document.head.appendChild(script);
+}
+
+function setupPosGoogleMap() {
+    let mapEl = document.getElementById('posDeliveryMap');
+    if (!mapEl) return;
+
+    let defaultLat = 22.5726;
+    let defaultLng = 88.3639;
+
+    let initialPos = { lat: defaultLat, lng: defaultLng };
+
+    if (!posGoogleMap) {
+        posGeocoder = new google.maps.Geocoder();
+        posGoogleMap = new google.maps.Map(mapEl, {
+            center: initialPos,
+            zoom: 15,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: true
+        });
+
+        posMarker = new google.maps.Marker({
+            position: initialPos,
+            map: posGoogleMap,
+            draggable: true,
+            title: "Delivery Pin Location"
+        });
+
+        updatePosCoordinates(defaultLat, defaultLng, true);
+
+        // Marker drag listener: automatically update address via reverse geocode
+        posMarker.addListener('dragend', function(e) {
+            let lat = e.latLng.lat();
+            let lng = e.latLng.lng();
+            updatePosCoordinates(lat, lng, true);
+        });
+
+        // Map click listener: move marker and update address
+        posGoogleMap.addListener('click', function(e) {
+            let lat = e.latLng.lat();
+            let lng = e.latLng.lng();
+            posMarker.setPosition(e.latLng);
+            updatePosCoordinates(lat, lng, true);
+        });
+
+        // Places autocomplete on address input
+        let inputEl = document.getElementById('pos_delivery_address_input');
+        if (inputEl) {
+            posAutocomplete = new google.maps.places.Autocomplete(inputEl);
+            posAutocomplete.bindTo('bounds', posGoogleMap);
+            posAutocomplete.addListener('place_changed', function() {
+                let place = posAutocomplete.getPlace();
+                if (place && place.geometry && place.geometry.location) {
+                    posGoogleMap.setCenter(place.geometry.location);
+                    posGoogleMap.setZoom(17);
+                    posMarker.setPosition(place.geometry.location);
+                    updatePosCoordinates(place.geometry.location.lat(), place.geometry.location.lng(), false);
+                } else {
+                    geocodePosAddress();
+                }
+            });
+        }
+    } else {
+        google.maps.event.trigger(posGoogleMap, 'resize');
+        if (posMarker) {
+            posGoogleMap.setCenter(posMarker.getPosition());
+        }
+    }
+}
+
+function geocodePosAddress(query) {
+    query = (query || $('#pos_delivery_address_input').val() || '').trim();
+    if (!query || query.length < 2) return;
+
+    let $btn = $('#btnSearchPosAddress');
+    let orig = $btn.html();
+    $btn.html('<i class="fa-solid fa-spinner fa-spin"></i>').prop('disabled', true);
+
+    function applyPosLocation(lat, lng, formattedAddr) {
+        let nLat = parseFloat(lat);
+        let nLng = parseFloat(lng);
+
+        if (posGoogleMap && posMarker) {
+            let latLng = new google.maps.LatLng(nLat, nLng);
+            posGoogleMap.setCenter(latLng);
+            posGoogleMap.setZoom(17);
+            posMarker.setPosition(latLng);
+        } else if (posLeafletMap && posLeafletMarker) {
+            posLeafletMap.setView([nLat, nLng], 17);
+            posLeafletMarker.setLatLng([nLat, nLng]);
+        }
+
+        $('#pos_delivery_lat').val(nLat.toFixed(6));
+        $('#pos_delivery_lng').val(nLng.toFixed(6));
+        if (formattedAddr) {
+            $('#pos_delivery_address_input').val(formattedAddr);
+        }
+        $btn.html(orig).prop('disabled', false);
+    }
+
+    if (posGeocoder && window.google) {
+        posGeocoder.geocode({ address: query }, function(results, status) {
+            if (status === 'OK' && results[0] && results[0].geometry) {
+                let loc = results[0].geometry.location;
+                applyPosLocation(loc.lat(), loc.lng(), results[0].formatted_address);
+            } else {
+                $.getJSON('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query), function(data) {
+                    if (data && data.length > 0) {
+                        applyPosLocation(data[0].lat, data[0].lon, data[0].display_name);
+                    } else {
+                        $btn.html(orig).prop('disabled', false);
+                        showToast('Location not found. Please try entering a different landmark or area, or drag the map pin.', true);
+                    }
+                }).fail(function() {
+                    $btn.html(orig).prop('disabled', false);
+                    showToast('Location search failed. Please drag the pin on the map.', true);
+                });
+            }
+        });
+    } else {
+        $.getJSON('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query), function(data) {
+            if (data && data.length > 0) {
+                applyPosLocation(data[0].lat, data[0].lon, data[0].display_name);
+            } else {
+                $btn.html(orig).prop('disabled', false);
+                showToast('Location not found. Please try entering a different landmark or area, or drag the map pin.', true);
+            }
+        }).fail(function() {
+            $btn.html(orig).prop('disabled', false);
+            showToast('Location search failed. Please drag the pin on the map.', true);
+        });
+    }
+}
+
+// Enter key on address input
+$(document).on('keydown', '#pos_delivery_address_input', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        geocodePosAddress();
+    }
+});
+
+// Search button click
+$(document).on('click', '#btnSearchPosAddress', function(e) {
+    e.preventDefault();
+    geocodePosAddress();
+});
+
+// Change event fallback
+$(document).on('change', '#pos_delivery_address_input', function() {
+    if (!$('#pos_delivery_lat').val() || !$('#pos_delivery_lng').val()) {
+        geocodePosAddress();
+    }
+});
+
+function updatePosCoordinates(lat, lng, shouldReverseGeocode) {
+    $('#pos_delivery_lat').val(parseFloat(lat).toFixed(6));
+    $('#pos_delivery_lng').val(parseFloat(lng).toFixed(6));
+
+    if (shouldReverseGeocode) {
+        if (posGeocoder) {
+            posGeocoder.geocode({ location: { lat: lat, lng: lng } }, function(results, status) {
+                if (status === 'OK' && results[0]) {
+                    $('#pos_delivery_address_input').val(results[0].formatted_address);
+                }
+            });
+        } else {
+            // Leaflet Nominatim fallback
+            $.getJSON('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng, function(data) {
+                if (data && data.display_name && !$('#pos_delivery_address_input').is(':focus')) {
+                    $('#pos_delivery_address_input').val(data.display_name);
+                }
+            });
+        }
+    }
+}
+
+// GPS Locate Me button
+$(document).on('click', '#btnDetectPosLocation', function(e) {
+    e.preventDefault();
+    if (!navigator.geolocation) {
+        showToast('Geolocation not supported by this browser', true);
+        return;
+    }
+    let $b = $(this);
+    let orig = $b.html();
+    $b.html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Locating...').prop('disabled', true);
+
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        let lat = pos.coords.latitude;
+        let lng = pos.coords.longitude;
+        if (posGoogleMap && posMarker) {
+            let latLng = new google.maps.LatLng(lat, lng);
+            posGoogleMap.setCenter(latLng);
+            posGoogleMap.setZoom(17);
+            posMarker.setPosition(latLng);
+            updatePosCoordinates(lat, lng, true);
+        } else if (posLeafletMap && posLeafletMarker) {
+            posLeafletMap.setView([lat, lng], 17);
+            posLeafletMarker.setLatLng([lat, lng]);
+            updatePosCoordinates(lat, lng, true);
+        }
+        $b.html(orig).prop('disabled', false);
+    }, function(err) {
+        $b.html(orig).prop('disabled', false);
+        showToast('GPS Error: ' + err.message, true);
+    }, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+    });
+});
+</script>
+<!-- Leaflet Map JS Fallback / Native Provider -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+let posLeafletMap = null;
+let posLeafletMarker = null;
+
+function setupPosLeafletMap(defaultLat, defaultLng) {
+    let mapEl = document.getElementById('posDeliveryMap');
+    if (!mapEl) return;
+
+    let pinIcon = L.divIcon({
+        className: 'custom-map-pin',
+        html: '<div style="color: #ef4444; font-size: 28px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));"><i class="fa-solid fa-location-dot"></i></div>',
+        iconSize: [28, 28],
+        iconAnchor: [14, 28],
+        popupAnchor: [0, -28]
+    });
+
+    if (!posLeafletMap) {
+        posLeafletMap = L.map('posDeliveryMap').setView([defaultLat, defaultLng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(posLeafletMap);
+
+        posLeafletMarker = L.marker([defaultLat, defaultLng], { draggable: true, icon: pinIcon }).addTo(posLeafletMap);
+
+        posLeafletMarker.on('dragend', function() {
+            let pos = posLeafletMarker.getLatLng();
+            updatePosCoordinates(pos.lat, pos.lng, true);
+        });
+
+        posLeafletMap.on('click', function(e) {
+            posLeafletMarker.setLatLng(e.latlng);
+            updatePosCoordinates(e.latlng.lat, e.latlng.lng, true);
+        });
+    } else {
+        setTimeout(function() { posLeafletMap.invalidateSize(); }, 120);
+    }
+}
 </script>
 </body>
 </html>

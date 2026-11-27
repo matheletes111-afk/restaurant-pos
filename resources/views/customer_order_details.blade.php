@@ -697,6 +697,35 @@
             color: #ffffff;
         }
 
+        .btn-call-waiter-bar {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: #ffffff !important;
+            font-weight: 800;
+            font-size: 0.95rem;
+            padding: 14px 22px;
+            border-radius: var(--radius-full);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+            transition: all 0.25s ease;
+            white-space: nowrap;
+        }
+
+        .btn-call-waiter-bar:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.5);
+            color: #ffffff !important;
+        }
+
+        .btn-call-waiter-bar:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn-refresh-status {
             background: #ffffff;
             color: var(--primary);
@@ -781,7 +810,14 @@
             @endif
             <div>
                 <h2 class="brand-name-header">{{ $restaurant_details->name ?? 'Premium Restaurant' }}</h2>
-                @if(isset($table_details) && !empty($table_details->name))
+                @php
+                    $isCustDelivery = strtoupper($mainOrder->order_type ?? '') === 'DELIVERY' || !empty($mainOrder->delivery_address);
+                @endphp
+                @if($isCustDelivery)
+                    <div class="table-pill-small" style="background: rgba(249, 115, 22, 0.1); color: #ea580c;">
+                        <span class="table-live-dot" style="background: #f97316; box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.25);"></span> <i class="fas fa-motorcycle me-1"></i> Home Delivery
+                    </div>
+                @elseif(isset($table_details) && !empty($table_details->name))
                     <div class="table-pill-small">
                         <span class="table-live-dot"></span> Table {{ $table_details->name }}
                     </div>
@@ -834,11 +870,47 @@
 
         <div class="hero-meta-subtitle">
             <span><i class="far fa-user text-muted"></i> Guest: <strong>{{ $customerName ?? 'Table Guest' }}</strong></span>
-            @if(isset($table_details) && !empty($table_details->name))
+            @if(strtoupper($mainOrder->order_type ?? '') === 'DELIVERY' || !empty($mainOrder->delivery_address))
+                <span><i class="fas fa-motorcycle text-primary"></i> <strong>Home Delivery</strong></span>
+            @elseif(isset($table_details) && !empty($table_details->name))
                 <span><i class="fas fa-chair text-muted"></i> <strong>Table {{ $table_details->name }}</strong></span>
             @endif
             <span><i class="far fa-clock text-muted"></i> Placed at {{ $mainOrder->created_at ? $mainOrder->created_at->format('h:i A') : now()->format('h:i A') }}</span>
         </div>
+
+        @if(!empty($mainOrder->delivery_address) || (!empty($mainOrder->delivery_latitude) && !empty($mainOrder->delivery_longitude)))
+            <div style="margin-top: 16px; padding: 14px 18px; background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 14px;">
+                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                    <i class="fas fa-map-marker-alt text-danger" style="margin-top: 4px; font-size: 1.1rem;"></i>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 800; font-size: 0.88rem; color: #9a3412;">Delivery Location:</div>
+                        <div style="font-size: 0.84rem; color: #431407; margin-top: 2px;">{{ $mainOrder->delivery_address ?: 'Coordinates Selected' }}</div>
+                        @if(!empty($mainOrder->delivery_latitude) && !empty($mainOrder->delivery_longitude))
+                            <div style="font-size: 0.76rem; color: #7c2d12; font-family: monospace; margin-top: 2px;">
+                                GPS: {{ number_format($mainOrder->delivery_latitude, 6) }}, {{ number_format($mainOrder->delivery_longitude, 6) }}
+                            </div>
+                            <div style="margin-top: 10px; border-radius: 10px; overflow: hidden; border: 1px solid #fdba74;">
+                                <iframe 
+                                    width="100%" 
+                                    height="180" 
+                                    frameborder="0" 
+                                    scrolling="no" 
+                                    marginheight="0" 
+                                    marginwidth="0" 
+                                    src="https://www.openstreetmap.org/export/embed.html?bbox={{ $mainOrder->delivery_longitude - 0.005 }}%2C{{ $mainOrder->delivery_latitude - 0.003 }}%2C{{ $mainOrder->delivery_longitude + 0.005 }}%2C{{ $mainOrder->delivery_latitude + 0.003 }}&amp;layer=mapnik&amp;marker={{ $mainOrder->delivery_latitude }}%2C{{ $mainOrder->delivery_longitude }}"
+                                    style="display: block;">
+                                </iframe>
+                            </div>
+                            <div style="margin-top: 6px; text-align: right;">
+                                <a href="https://maps.google.com/?q={{ $mainOrder->delivery_latitude }},{{ $mainOrder->delivery_longitude }}" target="_blank" style="font-size: 0.78rem; font-weight: 700; color: #c2410c; text-decoration: none;">
+                                    <i class="fas fa-external-link-alt me-1"></i> Open Google Maps
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        @endif
 
         @if(!$isOrderDone)
             <!-- Progress Tracker -->
@@ -1049,11 +1121,17 @@
             <span class="floating-total-val">₹{{ number_format($grandTotal, 2) }}</span>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            @if(!$isOrderDone)
+                <button type="button" class="btn-call-waiter-bar" id="btnCallWaiterBar" onclick="callWaiterFromDetails({{ $orderRecordId }})" title="Call waiter to assist your table">
+                    <i class="fas fa-bell"></i>
+                    <span>Call Waiter</span>
+                </button>
+            @endif
             @if($tableId && $restaurantId && !$isOrderDone)
                 <a href="{{ route('temp.order.create', [$tableId, $restaurantId]) }}" class="btn-order-more-master">
                     <i class="fas fa-plus-circle"></i>
-                    <span>Order More Items</span>
+                    <span>Order More</span>
                 </a>
             @else
                 <a href="{{ route('temp.order.fresh', [$tableId, $restaurantId]) }}" class="btn-order-more-master" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
@@ -1081,6 +1159,56 @@
         toast.querySelector('i').className = isSuccess ? 'fas fa-check-circle text-success' : 'fas fa-exclamation-triangle text-danger';
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 3200);
+    }
+
+    function callWaiterFromDetails(orderId) {
+        const btn = document.getElementById('btnCallWaiterBar');
+        if (!btn || btn.disabled) return;
+
+        const origHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Calling...</span>';
+        btn.disabled = true;
+
+        fetch("{{ route('temp.order.call_waiter') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                order_id: orderId,
+                _token: '{{ csrf_token() }}'
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status) {
+                showToast(data.message || 'Waiter has been called! Someone will assist you shortly.', true);
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Called</span>';
+
+                let count = 45;
+                const timer = setInterval(() => {
+                    count--;
+                    if (count <= 0) {
+                        clearInterval(timer);
+                        btn.innerHTML = origHtml;
+                        btn.disabled = false;
+                    } else {
+                        btn.innerHTML = `<i class="fas fa-bell"></i> <span>Wait (${count}s)</span>`;
+                    }
+                }, 1000);
+            } else {
+                showToast(data.message || 'Failed to call waiter. Please try again.', false);
+                btn.innerHTML = origHtml;
+                btn.disabled = false;
+            }
+        })
+        .catch(() => {
+            showToast('Network error calling waiter. Please try again.', false);
+            btn.innerHTML = origHtml;
+            btn.disabled = false;
+        });
     }
 
     // Cancel a pending dish item

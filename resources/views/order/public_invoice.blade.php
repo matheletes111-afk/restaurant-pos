@@ -426,10 +426,27 @@
             <div class="pub-meta-item">
                 <span class="label">Order Type</span>
                 <span class="val">
-                    @if($order->order_type == 'DINE_IN')
+                    @php
+                        $pubType = strtoupper($order->order_type ?? 'DINE_IN');
+                    @endphp
+                    @if($pubType == 'DINE_IN')
                         <i class="fa-solid fa-chair text-primary me-1"></i> Dine In ({{ @$order->table->name ?? 'Table' }})
+                    @elseif($pubType == 'DELIVERY')
+                        <i class="fa-solid fa-motorcycle text-warning me-1"></i> Home Delivery
                     @else
                         <i class="fa-solid fa-bag-shopping text-info me-1"></i> Takeaway
+                    @endif
+                </span>
+            </div>
+            @if(!empty($order->delivery_address))
+            <div class="pub-meta-item" style="grid-column: 1 / -1;">
+                <span class="label">Delivery Address</span>
+                <span class="val text-dark fw-bold">
+                    <i class="fa-solid fa-location-dot text-danger me-1"></i> {{ $order->delivery_address }}
+                    @if($order->delivery_latitude && $order->delivery_longitude)
+                        <a href="https://maps.google.com/?q={{ $order->delivery_latitude }},{{ $order->delivery_longitude }}" target="_blank" class="badge bg-light text-primary border ms-1" style="text-decoration:none;">
+                            Map <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </a>
                     @endif
                 </span>
             </div>

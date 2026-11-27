@@ -426,13 +426,24 @@ public function store(Request $request)
     $dateStr = Carbon::now()->format('ymd');
     $orderNo = "{$prefix}-{$dateStr}-" . str_pad($todayCount, 3, '0', STR_PAD_LEFT);
 
+    $orderType = 'DINE_IN';
+    $rawOrderType = strtoupper(trim($request->order_type ?? ''));
+    if (in_array($rawOrderType, ['DELIVERY', 'HOME_DELIVERY', 'HOMEDELIVERY'])) {
+        $orderType = 'DELIVERY';
+    } elseif (in_array($rawOrderType, ['TAKEAWAY', 'DINE_IN'])) {
+        $orderType = $rawOrderType;
+    }
+
     $tempOrder = TempOrder::create([
-        'table_id' => $request->table_id,
+        'table_id' => $orderType === 'DELIVERY' ? null : $request->table_id,
         'order_id' => $orderNo,
         'restaurant_id' => $request->restaurant_id,
         'customer_name' => $request->customer_name,
         'customer_phone' => $request->customer_phone,
-        'order_type' => 'DINE_IN',
+        'order_type' => $orderType,
+        'delivery_address' => $request->delivery_address ?? null,
+        'delivery_latitude' => !empty($request->delivery_latitude) ? floatval($request->delivery_latitude) : null,
+        'delivery_longitude' => !empty($request->delivery_longitude) ? floatval($request->delivery_longitude) : null,
         'total_amount' => $originalSubtotal,
         'taxable_amount' => $totalTaxable,
         'gst_amount' => $totalGst,
@@ -511,6 +522,29 @@ public function store(Request $request)
             'restaurant_id' => $request->restaurant_id,
             'trace' => $e->getTraceAsString(),
         ]);
+    }
+
+    // Order notification setup
+    try {
+        $tempOrder->loadMissing(['table_details', 'items']);
+        $tableName = $tempOrder->table_details ? $tempOrder->table_details->name : ($tempOrder->table_id ? ('Table ' . $tempOrder->table_id) : 'Dining');
+        $orderType = strtoupper($tempOrder->order_type ?? 'DINE_IN');
+        if ($orderType === 'DELIVERY') {
+            $tableName = 'Delivery';
+        } elseif ($orderType === 'TAKEAWAY') {
+            $tableName = 'Takeaway';
+        }
+
+        $customerName = $tempOrder->customer_name ?: 'Customer';
+        $itemsCount = $tempOrder->items ? $tempOrder->items->count() : count($request->order_items);
+        $grandTotal = number_format((float)$tempOrder->grand_total, 2);
+        $orderNo = $tempOrder->order_id ?: ('#' . $tempOrder->id);
+
+        $notifTitle = "🔔 New Order Arrived - {$tableName}";
+        $notifBody = "A new order arrived in pending orders from {$customerName} for {$tableName} ({$itemsCount} item" . ($itemsCount > 1 ? 's' : '') . ", ₹{$grandTotal}). Tap to approve.";
+        $clickUrl = route('temp.orders.view', $tempOrder->id);
+    } catch (\Throwable $e) {
+        // notification log
     }
 
     // Save order in customer session & cookie so this customer sees their own order
@@ -1284,27 +1318,20 @@ public function store(Request $request)
 
             // Notify kitchen staff and restaurant staff of new items
             try {
-                $webNotificationService = app(\App\Services\WebNotificationService::class);
                 $tableName = $order->table->name ?? ($order->table_id ? ('Table ' . $order->table_id) : 'Table');
                 $customerName = $order->customer_name ?: 'Customer';
                 $itemCount = count($request->order_items);
-                $notifTitle = "New Items Added - {$tableName}";
-                $notifBody = "{$customerName} added new item in {$tableName}";
+                $notifTitle = "🔔 New Items Added - {$tableName}";
+                $notifBody = "{$customerName} added new items in {$tableName} ({$itemCount} item" . ($itemCount > 1 ? 's' : '') . ", KOT #{$kotNo}).";
+                $clickUrl = url('order-edit/' . $order->id);
 
-                // 1. Notify kitchen staff
+                // WebNotificationService for backward compatibility
+                $webNotificationService = app(\App\Services\WebNotificationService::class);
                 $webNotificationService->notifyKitchenStaffWeb(
                     $order->restaurant_id,
                     "New Items Added - {$tableName}",
                     "{$customerName} added new item in {$tableName}",
-                    ['order_id' => (string) $order->id, 'kot_no' => (string) $kotNo, 'type' => 'new_kot', 'click_url' => url('order-edit/' . $order->id)]
-                );
-
-                // 2. Notify restaurant staff & admin
-                $webNotificationService->notifyRestaurantStaffWeb(
-                    $order->restaurant_id,
-                    $notifTitle,
-                    $notifBody,
-                    ['order_id' => (string) $order->id, 'kot_no' => (string) $kotNo, 'table_id' => (string) $order->table_id, 'type' => 'new_order_items', 'click_url' => url('order-edit/' . $order->id)]
+                    ['order_id' => (string) $order->id, 'kot_no' => (string) $kotNo, 'type' => 'new_kot', 'click_url' => $clickUrl]
                 );
             } catch (\Throwable $e) {
                 Log::error('Staff/Kitchen notification error on adding items: ' . $e->getMessage());
@@ -1517,6 +1544,131 @@ public function store(Request $request)
     }
 
     /**
+     * Customer calls waiter from order success or details page.
+     * Notifies the staff user who accepted the order (across all their devices),
+     * and broadcasts to restaurant staff.
+     */
+    public function callWaiter(Request $request)
+    {
+        $orderId = $request->order_id;
+        if (!$orderId) {
+            return response()->json(['status' => false, 'message' => 'Order details missing.'], 400);
+        }
+
+        $tempOrder = TempOrder::find($orderId);
+        $mainOrder = null;
+        $restaurantId = null;
+        $tableName = 'Table';
+        $customerName = 'Customer';
+        $acceptedByUserId = null;
+
+        if ($tempOrder) {
+            $restaurantId = $tempOrder->restaurant_id;
+            $customerName = $tempOrder->customer_name ?: 'Guest';
+            $acceptedByUserId = $tempOrder->created_by;
+
+            if ($tempOrder->table_details) {
+                $tableName = $tempOrder->table_details->name;
+            } elseif ($tempOrder->table_id) {
+                $t = TableManage::find($tempOrder->table_id);
+                $tableName = $t ? $t->name : ('Table ' . $tempOrder->table_id);
+            } else {
+                $tableName = 'Delivery / Takeaway';
+            }
+
+            if ($tempOrder->order_id) {
+                $mainOrder = OrderManage::find($tempOrder->order_id);
+                if ($mainOrder && !$acceptedByUserId) {
+                    $acceptedByUserId = $mainOrder->created_by ?: $mainOrder->user_id;
+                }
+            }
+        } else {
+            $mainOrder = OrderManage::find($orderId);
+            if ($mainOrder) {
+                $restaurantId = $mainOrder->restaurant_id;
+                $customerName = $mainOrder->customer_name ?: 'Guest';
+                $acceptedByUserId = $mainOrder->created_by ?: $mainOrder->user_id;
+
+                if ($mainOrder->table) {
+                    $tableName = $mainOrder->table->name;
+                } elseif ($mainOrder->table_id) {
+                    $t = TableManage::find($mainOrder->table_id);
+                    $tableName = $t ? $t->name : ('Table ' . $mainOrder->table_id);
+                } else {
+                    $tableName = 'Delivery / Takeaway';
+                }
+            }
+        }
+
+        if (!$restaurantId) {
+            return response()->json(['status' => false, 'message' => 'Order not found.'], 404);
+        }
+
+        $title = "🔔 Customer Calling Waiter!";
+        $body = "{$customerName} called you from {$tableName}";
+        $data = [
+            'type' => 'call_waiter',
+            'order_id' => (string) $orderId,
+            'table_name' => (string) $tableName,
+            'customer_name' => (string) $customerName,
+            'click_action' => url('/admin/order-details/' . ($mainOrder ? $mainOrder->id : $orderId))
+        ];
+
+        // Gather unique user IDs to notify (the user who accepted order + restaurant staff & owner)
+        $targetUserIds = [];
+        if ($acceptedByUserId) {
+            $targetUserIds[] = $acceptedByUserId;
+        }
+
+        $staffUserIds = User::where('restaurant_id', $restaurantId)
+            ->whereNotIn('status', ['I', 'D', 'Inactive', 'Deleted'])
+            ->pluck('id')
+            ->toArray();
+
+        $restaurant = RestaurantMaster::find($restaurantId);
+        if ($restaurant && !empty($restaurant->owner_id)) {
+            $staffUserIds[] = $restaurant->owner_id;
+        }
+
+        $allTargetUserIds = array_unique(array_filter(array_merge($targetUserIds, $staffUserIds)));
+
+        // Record waiter call for in-app real-time notification
+        \App\Models\WaiterCall::create([
+            'restaurant_id' => $restaurantId,
+            'order_id' => $orderId,
+            'table_name' => $tableName,
+            'customer_name' => $customerName,
+            'is_attended' => false,
+        ]);
+
+        // Send Firebase push notification to all target staff/owner
+        if (!empty($allTargetUserIds)) {
+            try {
+                \App\Services\FirebaseNotificationService::sendToUsers(
+                    $allTargetUserIds,
+                    $title,
+                    $body,
+                    $data
+                );
+            } catch (\Throwable $e) {
+                Log::error('FCM Call Waiter send failed: ' . $e->getMessage());
+            }
+        }
+
+        Log::info("Call Waiter triggered for order #{$orderId}", [
+            'customer' => $customerName,
+            'table' => $tableName,
+            'accepted_by' => $acceptedByUserId,
+            'notified_users_count' => count($allTargetUserIds)
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => "Waiter called! Staff has been notified for {$tableName}."
+        ]);
+    }
+
+    /**
      * Customer updates quantity of a PENDING item
      * Disallowed once item is COOKING or DONE
      */
@@ -1694,7 +1846,10 @@ public function store(Request $request)
             $order->customer_name  = $tempOrder->customer_name;
             $order->customer_phone = $tempOrder->customer_phone;
             $order->order_id       = $orderNo;
-            $order->order_type     = $tempOrder->order_type;
+            $order->order_type     = $tempOrder->order_type ?? 'DINE_IN';
+            $order->delivery_address = $tempOrder->delivery_address;
+            $order->delivery_latitude = $tempOrder->delivery_latitude;
+            $order->delivery_longitude = $tempOrder->delivery_longitude;
             $order->total_amount   = $orderTotalAmount;
             $order->taxable_amount = $orderTaxableAmount;
             $order->gst_amount     = $orderGstAmount;
@@ -1759,14 +1914,17 @@ public function store(Request $request)
             // Update temp order status to APPROVED
             $tempOrder->order_status = 'APPROVED';
             $tempOrder->order_id = $order->id;
+            $tempOrder->created_by = auth()->id() ?: $tempOrder->created_by;
             $tempOrder->save();
 
             DB::commit();
 
             // Notify kitchen staff of new order
             try {
-                $webNotificationService = app(\App\Services\WebNotificationService::class);
                 $tableName = isset($table) && $table ? $table->name : ('Table ' . ($order->table_id ?? ''));
+                $clickUrl = url('order-edit/' . $order->id);
+
+                $webNotificationService = app(\App\Services\WebNotificationService::class);
                 $webNotificationService->notifyKitchenStaffWeb(
                     $restaurantId,
                     "New Order Approved - {$tableName}",

@@ -208,6 +208,29 @@
   .pc-sidebar .navbar-content::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
   }
+
+  /* Robust Sidebar Toggle Support */
+  @media (min-width: 1025px) {
+    .pc-sidebar.pc-sidebar-hide {
+      width: 0 !important;
+      min-width: 0 !important;
+      overflow: hidden !important;
+      transform: translateX(-260px) !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      border-right: none !important;
+    }
+    .pc-sidebar.pc-sidebar-hide ~ .pc-header {
+      left: 0 !important;
+      width: 100% !important;
+      transition: left 0.25s ease, width 0.25s ease !important;
+    }
+    .pc-sidebar.pc-sidebar-hide ~ .pc-container,
+    .pc-sidebar.pc-sidebar-hide ~ .pc-footer {
+      margin-left: 0 !important;
+      transition: margin-left 0.25s ease !important;
+    }
+  }
 </style>
 
 <nav class="pc-sidebar">
@@ -942,7 +965,7 @@
 </div>
 <!-- [Mobile Media Block end] -->
 <div class="ms-auto">
-  <ul class="list-unstyled">
+  <ul class="list-unstyled d-flex align-items-center mb-0">
     @include('includes.qr_notification_dropdown')
     @if(auth()->user()->role === 'RES' && auth()->user()->isOwner())
     @php
@@ -1029,3 +1052,23 @@
 </div>
  </div>
 </header>
+
+<script>
+(function() {
+  // Direct bulletproof sidebar toggle handler
+  document.addEventListener('click', function(e) {
+    const toggleBtn = e.target.closest('#sidebar-hide, #mobile-collapse, .pc-sidebar-collapse, .pc-sidebar-popup');
+    if (toggleBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const sidebar = document.querySelector('.pc-sidebar');
+      if (!sidebar) return;
+      if (window.innerWidth <= 1024) {
+        sidebar.classList.toggle('mob-sidebar-active');
+      } else {
+        sidebar.classList.toggle('pc-sidebar-hide');
+      }
+    }
+  });
+})();
+</script>

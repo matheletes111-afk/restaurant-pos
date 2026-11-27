@@ -143,8 +143,15 @@ class RapidBillController extends Controller
         $isGstRegistered = !empty($restaurantGstin) || (!empty($restaurant->is_gst_enable) && $restaurant->is_gst_enable != 0);
 
         $orderDiscountPercent = floatval($request->discount_percentage ?? $request->discount ?? 0);
-        $isTakeaway = empty($request->table_id) || strtolower($request->order_type ?? '') === 'takeaway';
-        $orderType = $isTakeaway ? 'takeaway' : 'dine_in';
+        $requestedOrderType = strtoupper(trim($request->order_type ?? ''));
+        if (in_array($requestedOrderType, ['DELIVERY', 'HOME_DELIVERY', 'HOMEDELIVERY'])) {
+            $orderType = 'DELIVERY';
+        } elseif ($requestedOrderType === 'DINE_IN') {
+            $orderType = 'DINE_IN';
+        } else {
+            $isTakeaway = empty($request->table_id) || strtolower($request->order_type ?? '') === 'takeaway';
+            $orderType = $isTakeaway ? 'TAKEAWAY' : 'DINE_IN';
+        }
 
         // Customer details default fallback for rapid counter billing
         $customerName = trim($request->customer_name ?: '') ?: 'Walk-in Customer';
@@ -405,8 +412,11 @@ class RapidBillController extends Controller
             $order->customer_name = $customerName;
             $order->customer_phone = $customerPhone;
             $order->order_id = $orderNo;
-            $order->table_id = $request->table_id ?: null;
+            $order->table_id = $orderType === 'DELIVERY' ? null : ($request->table_id ?: null);
             $order->order_type = $orderType;
+            $order->delivery_address = $request->delivery_address ?? null;
+            $order->delivery_latitude = !empty($request->delivery_latitude) ? floatval($request->delivery_latitude) : null;
+            $order->delivery_longitude = !empty($request->delivery_longitude) ? floatval($request->delivery_longitude) : null;
             $order->total_amount = $originalSubtotal;
             $order->taxable_amount = $netTotalTaxable;
             $order->vat_amount = $totalVat;

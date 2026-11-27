@@ -27,6 +27,9 @@
     function playNotificationChime() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            if (ctx.state === 'suspended') {
+                ctx.resume();
+            }
             const now = ctx.currentTime;
 
             // Note 1 (E5)
@@ -56,30 +59,59 @@
             // Audio context blocked or unsupported
         }
     }
+    window.playNotificationChime = playNotificationChime;
 
-    // Show floating toast alert for newly arrived order
+    // Show floating toast alert for newly arrived order or waiter call
     function showOrderToast(ord) {
-        const container = document.getElementById('qrOrderToastContainer');
-        if (!container) return;
+        let container = document.getElementById('qrOrderToastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'qrOrderToastContainer';
+            container.className = 'position-fixed top-0 end-0 p-3';
+            container.style.cssText = 'z-index: 10999; pointer-events: none; margin-top: 60px;';
+            document.body.appendChild(container);
+        }
 
+        const isWaiterCall = (ord.notif_type === 'call_waiter');
         const isAdditional = (ord.notif_type === 'additional_items');
-        const titleText = isAdditional ? 'New Items Added' : 'New QR Order Placed';
-        const msgText = isAdditional 
-            ? `${escapeHtml(ord.customer_name || 'Customer')} added new item in ${escapeHtml(ord.table_name || 'Table')}`
-            : `${escapeHtml(ord.customer_name || 'Customer')} placed a new order for ${escapeHtml(ord.table_name || 'Table')}`;
+
+        let titleText = 'New QR Order Placed';
+        let msgText = `${escapeHtml(ord.customer_name || 'Customer')} placed a new order for ${escapeHtml(ord.table_name || 'Table')}`;
+        let iconBg = 'rgba(255, 106, 0, 0.12)';
+        let iconColor = '#ff6a00';
+        let iconClass = 'fa-bell';
+
+        if (isWaiterCall) {
+            titleText = '🙋 Customer Calling Waiter!';
+            msgText = `${escapeHtml(ord.customer_name || 'Customer')} called you from ${escapeHtml(ord.table_name || 'Table')}!`;
+            iconBg = 'rgba(220, 53, 69, 0.15)';
+            iconColor = '#dc3545';
+            iconClass = 'fa-user-clock';
+        } else if (isAdditional) {
+            titleText = 'New Items Added';
+            msgText = `${escapeHtml(ord.customer_name || 'Customer')} added new item in ${escapeHtml(ord.table_name || 'Table')}`;
+            iconBg = 'rgba(13, 110, 253, 0.12)';
+            iconColor = '#0d6efd';
+            iconClass = 'fa-plus-circle';
+        }
+
         const toastId = 'toast_' + ord.id + '_' + Date.now();
+        const actionUrl = ord.view_url || "{{ route('temp.orders') }}";
+        const isClickable = !isWaiterCall && !isAdditional;
+        const clickAttr = isClickable ? `onclick="window.location.href='${actionUrl}'"` : '';
+        const cursorStyle = isClickable ? 'cursor: pointer;' : 'cursor: default;';
 
         const toastHtml = `
-            <div id="${toastId}" class="qr-toast-card p-3 mb-2" role="alert" style="pointer-events: auto; ${isAdditional ? 'cursor: default;' : 'cursor: pointer;'}" ${isAdditional ? '' : `onclick="window.location.href='${ord.view_url}'"`}>
+            <div id="${toastId}" class="qr-toast-card p-3 mb-2" role="alert" style="pointer-events: auto; ${cursorStyle} border-left: 5px solid ${iconColor}; box-shadow: 0 10px 25px rgba(0,0,0,0.2);" ${clickAttr}>
                 <div class="d-flex align-items-start justify-content-between">
                     <div class="d-flex align-items-center gap-2">
-                        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 106, 0, 0.12); display: flex; align-items: center; justify-content: center; color: #ff6a00;">
-                            <i class="fas fa-bell"></i>
+                        <div style="width: 32px; height: 32px; border-radius: 8px; background: ${iconBg}; display: flex; align-items: center; justify-content: center; color: ${iconColor};">
+                            <i class="fas ${iconClass}"></i>
                         </div>
                         <div>
                             <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.88rem;">${titleText}</h6>
                             <span class="badge bg-dark-subtle text-dark border px-2 py-0.5 rounded-pill" style="font-size: 0.68rem; font-weight: 700;">
-                                <i class="fas fa-chair me-1"></i>${escapeHtml(ord.table_name)}
+                                <i class="fas fa-chair me-1"></i>${escapeHtml(ord.table_name || 'Dine-In')}
                             </span>
                         </div>
                     </div>
@@ -88,17 +120,17 @@
                 <div class="mt-2 text-dark fw-semibold" style="font-size: 0.85rem;">
                     ${msgText}
                 </div>
-                ${!isAdditional && ord.items_summary ? `<div class="text-muted text-truncate mt-1" style="font-size: 0.74rem;">${escapeHtml(ord.items_summary)}</div>` : ''}
+                ${!isWaiterCall && !isAdditional && ord.items_summary ? `<div class="text-muted text-truncate mt-1" style="font-size: 0.74rem;">${escapeHtml(ord.items_summary)}</div>` : ''}
                 <div class="d-flex align-items-center justify-content-between mt-2 pt-1 border-top" style="font-size: 0.74rem;">
-                    ${!isAdditional && ord.grand_total ? `<span class="fw-bold text-success">₹${escapeHtml(ord.grand_total)}</span>` : '<span class="text-muted"><i class="far fa-clock me-1"></i>Just now</span>'}
-                    ${!isAdditional ? `<span class="text-primary fw-bold">View Order <i class="fas fa-arrow-right ms-1"></i></span>` : ''}
+                    ${!isWaiterCall && !isAdditional && ord.grand_total ? `<span class="fw-bold text-success">₹${escapeHtml(ord.grand_total)}</span>` : '<span class="text-muted"><i class="far fa-clock me-1"></i>Just now</span>'}
+                    ${isWaiterCall ? '<span class="text-danger fw-semibold"><i class="fas fa-bell me-1"></i>Assistance Requested</span>' : (isAdditional ? '<span class="text-primary fw-semibold"><i class="fas fa-info-circle me-1"></i>Items added</span>' : '<span class="text-primary fw-bold">View Order <i class="fas fa-arrow-right ms-1"></i></span>')}
                 </div>
             </div>
         `;
 
         container.insertAdjacentHTML('beforeend', toastHtml);
 
-        // Auto remove toast after 7 seconds
+        // Auto remove toast after 10 seconds
         setTimeout(() => {
             const el = document.getElementById(toastId);
             if (el) {
@@ -106,8 +138,9 @@
                 el.style.transition = 'opacity 0.4s ease';
                 setTimeout(() => el.remove(), 400);
             }
-        }, 7000);
+        }, 10000);
     }
+    window.showOrderToast = showOrderToast;
 
     // Update Badge
     function updateBadge(unreadCount) {
@@ -145,9 +178,12 @@
         notifications.forEach(ord => {
             const isUnread = !ord.is_read;
             const isAdditional = (ord.notif_type === 'additional_items');
+            const isWaiterCall = (ord.notif_type === 'call_waiter');
             let statusBadge = '';
 
-            if (isAdditional) {
+            if (isWaiterCall) {
+                statusBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-1.5 py-0.5 rounded" style="font-size: 0.68rem; font-weight: 700;">CALL WAITER</span>';
+            } else if (isAdditional) {
                 statusBadge = '<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-1.5 py-0.5 rounded" style="font-size: 0.68rem; font-weight: 700;">NEW ITEMS</span>';
             } else if (ord.order_status === 'PENDING') {
                 statusBadge = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-1.5 py-0.5 rounded" style="font-size: 0.68rem; font-weight: 700;">PENDING</span>';
@@ -155,7 +191,36 @@
                 statusBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5 rounded" style="font-size: 0.68rem; font-weight: 700;">APPROVED</span>';
             }
 
-            if (isAdditional) {
+            if (isWaiterCall) {
+                html += `
+                    <div
+                        class="list-group-item px-3 py-2.5 border-bottom qr-notif-item ${isUnread ? 'qr-item-unread' : ''}"
+                        data-order-id="${ord.id}"
+                        style="transition: background 0.2s; cursor: default;"
+                    >
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <div class="d-flex align-items-center gap-1.5">
+                                ${isUnread ? '<span class="qr-unread-dot me-1" title="Unread"></span>' : ''}
+                                <span class="badge bg-dark-subtle text-dark border px-2 py-0.5 rounded-pill" style="font-size: 0.72rem; font-weight: 600;">
+                                    <i class="fas fa-chair text-muted me-1"></i>${escapeHtml(ord.table_name)}
+                                </span>
+                                ${statusBadge}
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between py-1">
+                            <div class="fw-semibold text-dark text-truncate" style="font-size: 0.83rem;">
+                                <i class="fas fa-user-clock text-danger me-1"></i>${escapeHtml(ord.customer_name || 'Customer')} is calling from ${escapeHtml(ord.table_name || 'Table')}
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between mt-1 text-muted" style="font-size: 0.7rem;">
+                            <span><i class="far fa-clock me-1"></i>${escapeHtml(ord.created_at_human)}</span>
+                            <span>${escapeHtml(ord.created_at_date)}, ${escapeHtml(ord.created_at_time)}</span>
+                        </div>
+                    </div>
+                `;
+            } else if (isAdditional) {
                 html += `
                     <a
                         href="javascript:void(0);"
@@ -269,6 +334,7 @@
             // Silently ignore network disruption
         }
     }
+    window.fetchQrNotifications = fetchQrNotifications;
 
     // Handler for Mark Single Read on Click
     function handleMarkSingleRead(orderId) {

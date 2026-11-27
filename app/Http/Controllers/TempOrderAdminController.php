@@ -353,14 +353,17 @@ public function approveOrder($id)
         // Update temp order status to APPROVED
         $tempOrder->order_status = 'APPROVED';
         $tempOrder->order_id = $order->id;
+        $tempOrder->created_by = auth()->id() ?: $tempOrder->created_by;
         $tempOrder->save();
 
         DB::commit();
 
         // Notify kitchen staff of the new approved order
         try {
-            $webNotificationService = app(\App\Services\WebNotificationService::class);
             $tableName = isset($table) && $table ? $table->name : ('Table ' . ($order->table_id ?? ''));
+            $clickUrl = url('order-edit/' . $order->id);
+
+            $webNotificationService = app(\App\Services\WebNotificationService::class);
             $webNotificationService->notifyKitchenStaffWeb(
                 $restaurantId,
                 "New Order Approved - {$tableName}",

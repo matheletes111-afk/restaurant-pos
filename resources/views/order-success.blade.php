@@ -646,6 +646,37 @@
             box-shadow: 0 10px 25px rgba(255, 94, 20, 0.4);
         }
 
+        .btn-action-waiter {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: #ffffff !important;
+            border: none;
+            border-radius: var(--radius-full);
+            padding: 15px 32px;
+            font-size: 1rem;
+            font-weight: 800;
+            text-align: center;
+            text-decoration: none !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-action-waiter:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.5);
+            color: #ffffff !important;
+        }
+
+        .btn-action-waiter:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn-action-secondary {
             background: var(--surface-2);
             color: var(--text-muted) !important;
@@ -729,7 +760,14 @@
             @endif
         </div>
 
-        @if(isset($table_details) && !empty($table_details->name))
+        @php
+            $isOrderDelivery = (isset($tempOrder) && strtoupper($tempOrder->order_type ?? '') === 'DELIVERY') || (isset($mainOrder) && strtoupper($mainOrder->order_type ?? '') === 'DELIVERY');
+        @endphp
+        @if($isOrderDelivery)
+            <div class="table-pill-badge" style="background: rgba(249, 115, 22, 0.1); color: #ea580c; border: 1px solid rgba(249, 115, 22, 0.25);">
+                <i class="fas fa-motorcycle" style="color: #f97316;"></i> Home Delivery
+            </div>
+        @elseif(isset($table_details) && !empty($table_details->name))
             <div class="table-pill-badge">
                 <i class="fas fa-chair" style="color: var(--primary);"></i> Table {{ $table_details->name }}
             </div>
@@ -845,7 +883,37 @@
                 <span class="detail-val">{{ $customerName ?? 'Guest' }}</span>
             </div>
 
-            @if(isset($table_details) && !empty($table_details->name))
+            @php
+                $delivAddress = $tempOrder->delivery_address ?? ($mainOrder->delivery_address ?? null);
+                $delivLat = $tempOrder->delivery_latitude ?? ($mainOrder->delivery_latitude ?? null);
+                $delivLng = $tempOrder->delivery_longitude ?? ($mainOrder->delivery_longitude ?? null);
+            @endphp
+            @if($isOrderDelivery || !empty($delivAddress))
+                <div class="detail-row-flex">
+                    <span class="detail-lbl"><i class="fas fa-motorcycle me-1"></i> Order Type</span>
+                    <span class="detail-val" style="color: #ea580c; font-weight: 700;">Home Delivery</span>
+                </div>
+                @if(!empty($delivAddress))
+                <div class="detail-row-flex" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                    <span class="detail-lbl"><i class="fas fa-map-marker-alt me-1 text-danger"></i> Delivery Address</span>
+                    <span class="detail-val" style="text-align: left; font-size: 0.85rem; font-weight: 600;">{{ $delivAddress }}</span>
+                </div>
+                @endif
+                @if(!empty($delivLat) && !empty($delivLng))
+                <div style="margin-top: 8px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border);">
+                    <iframe 
+                        width="100%" 
+                        height="160" 
+                        frameborder="0" 
+                        scrolling="no" 
+                        marginheight="0" 
+                        marginwidth="0" 
+                        src="https://www.openstreetmap.org/export/embed.html?bbox={{ $delivLng - 0.005 }}%2C{{ $delivLat - 0.003 }}%2C{{ $delivLng + 0.005 }}%2C{{ $delivLat + 0.003 }}&amp;layer=mapnik&amp;marker={{ $delivLat }}%2C{{ $delivLng }}"
+                        style="display: block;">
+                    </iframe>
+                </div>
+                @endif
+            @elseif(isset($table_details) && !empty($table_details->name))
                 <div class="detail-row-flex">
                     <span class="detail-lbl"><i class="fas fa-chair me-1"></i> Table</span>
                     <span class="detail-val" style="color: var(--primary);">Table {{ $table_details->name }}</span>
@@ -1020,6 +1088,13 @@
                 @endif
             @endif
 
+            @if(!$isDone && !$isRejected)
+                <button type="button" class="btn-action-waiter" id="btnCallWaiter" onclick="callWaiterNow({{ $orderRecordId }})" title="Call waiter to assist your table">
+                    <i class="fas fa-bell"></i>
+                    <span>Call Waiter</span>
+                </button>
+            @endif
+
             <a href="javascript:window.location.reload();" class="btn-action-secondary">
                 <i class="fas fa-sync-alt"></i>
                 <span>Refresh Status</span>
@@ -1047,6 +1122,56 @@
         toast.querySelector('i').className = isSuccess ? 'fas fa-check-circle text-success' : 'fas fa-exclamation-triangle text-danger';
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 3200);
+    }
+
+    function callWaiterNow(orderId) {
+        const btn = document.getElementById('btnCallWaiter');
+        if (!btn || btn.disabled) return;
+
+        const origHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Calling Waiter...</span>';
+        btn.disabled = true;
+
+        fetch("{{ route('temp.order.call_waiter') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                order_id: orderId,
+                _token: '{{ csrf_token() }}'
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status) {
+                showToast(data.message || 'Waiter has been called! Someone will assist you shortly.', true);
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Waiter Called</span>';
+
+                let count = 45;
+                const timer = setInterval(() => {
+                    count--;
+                    if (count <= 0) {
+                        clearInterval(timer);
+                        btn.innerHTML = origHtml;
+                        btn.disabled = false;
+                    } else {
+                        btn.innerHTML = `<i class="fas fa-bell"></i> <span>Call Again (${count}s)</span>`;
+                    }
+                }, 1000);
+            } else {
+                showToast(data.message || 'Failed to call waiter. Please try again.', false);
+                btn.innerHTML = origHtml;
+                btn.disabled = false;
+            }
+        })
+        .catch(() => {
+            showToast('Network error calling waiter. Please try again.', false);
+            btn.innerHTML = origHtml;
+            btn.disabled = false;
+        });
     }
 
     function cancelDishItem(itemId) {
