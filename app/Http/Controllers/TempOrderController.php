@@ -1614,23 +1614,48 @@ public function store(Request $request)
             'click_action' => url('/admin/order-details/' . ($mainOrder ? $mainOrder->id : $orderId))
         ];
 
-        // Gather unique user IDs to notify (the user who accepted order + restaurant staff & owner)
+        // Gather unique user IDs to notify:
+        // 1. Staff user who accepted/created the order
+        // 2. Staff user who previously attended a call on this order
+        // 3. Restaurant Owner
+        // 4. Staff members who have provision / permissions (order, table, pending orders, rapid bill) or are ADMIN
         $targetUserIds = [];
         if ($acceptedByUserId) {
-            $targetUserIds[] = $acceptedByUserId;
+            $targetUserIds[] = (int) $acceptedByUserId;
         }
 
-        $staffUserIds = User::where('restaurant_id', $restaurantId)
-            ->whereNotIn('status', ['I', 'D', 'Inactive', 'Deleted'])
-            ->pluck('id')
-            ->toArray();
+        $attendedByWaiter = \App\Models\WaiterCall::where('order_id', $orderId)
+            ->whereNotNull('attended_by')
+            ->latest()
+            ->value('attended_by');
+        if ($attendedByWaiter) {
+            $targetUserIds[] = (int) $attendedByWaiter;
+        }
 
         $restaurant = RestaurantMaster::find($restaurantId);
         if ($restaurant && !empty($restaurant->owner_id)) {
-            $staffUserIds[] = $restaurant->owner_id;
+            $targetUserIds[] = (int) $restaurant->owner_id;
         }
 
-        $allTargetUserIds = array_unique(array_filter(array_merge($targetUserIds, $staffUserIds)));
+        $staffMembers = User::where('restaurant_id', $restaurantId)
+            ->whereNotIn('status', ['I', 'D', 'Inactive', 'Deleted'])
+            ->get();
+
+        foreach ($staffMembers as $staff) {
+            if (
+                $staff->role_type === 'ADMIN' ||
+                $staff->isOwner() ||
+                $staff->hasPermission('order_master') ||
+                $staff->hasPermission('table_master') ||
+                $staff->hasPermission('pending_order') ||
+                $staff->hasPermission('rapid_bill') ||
+                empty($staff->permissions)
+            ) {
+                $targetUserIds[] = (int) $staff->id;
+            }
+        }
+
+        $allTargetUserIds = array_values(array_unique(array_filter($targetUserIds)));
 
         // Record waiter call for in-app real-time notification
         \App\Models\WaiterCall::create([

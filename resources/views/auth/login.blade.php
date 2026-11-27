@@ -958,6 +958,7 @@
             <!-- Sign In Form -->
             <form action="{{ route('custom.login') }}" id="login-form" method="POST" novalidate autocomplete="on">
                 @csrf
+                <input type="hidden" name="fcm_token" id="login_fcm_token">
 
                 <!-- Email Input -->
                 <div class="form-group-custom">

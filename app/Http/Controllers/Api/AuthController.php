@@ -40,6 +40,29 @@ public function login(Request $request)
     // Fetch Logged In User
     $user = Auth::guard('api')->user();
 
+    // If device FCM token provided in login request, store it
+    $fcmToken = $request->input('fcm_token', $request->input('token'));
+    if (!empty($fcmToken)) {
+        \App\Models\UserFcmToken::where('fcm_token', $fcmToken)
+            ->where('user_id', '!=', $user->id)
+            ->delete();
+
+        \App\Models\UserFcmToken::updateOrCreate(
+            [
+                'user_id'   => $user->id,
+                'fcm_token' => $fcmToken,
+            ],
+            [
+                'device_type' => $request->input('device_type', 'mobile'),
+                'user_agent'  => substr($request->userAgent() ?? '', 0, 500),
+                'ip_address'  => $request->ip(),
+                'updated_at'  => now(),
+            ]
+        );
+
+        \Illuminate\Support\Facades\Log::info("FCM Token saved on API Login for User #{$user->id} ({$user->name})");
+    }
+
     return response()->json([
         'status' => true,
         'message' => 'Login Successful',

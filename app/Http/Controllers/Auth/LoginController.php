@@ -80,6 +80,11 @@ class LoginController extends Controller
                return redirect()->back()->with('error','Incorrect Password');
             }
 
+            // Capture web FCM token if supplied on login form
+            if ($request->filled('fcm_token')) {
+                session(['login_fcm_token' => $request->fcm_token]);
+            }
+
             // Generate a random 6-digit OTP
             $otp = rand(100000, 999999);
 
@@ -155,8 +160,30 @@ class LoginController extends Controller
         // Authenticate the user
         Auth::login($user);
 
+        // Save Web FCM token if captured during login form submission
+        $fcmToken = $request->input('fcm_token') ?? session('login_fcm_token');
+        if (!empty($fcmToken)) {
+            \App\Models\UserFcmToken::where('fcm_token', $fcmToken)
+                ->where('user_id', '!=', $user->id)
+                ->delete();
+
+            \App\Models\UserFcmToken::updateOrCreate(
+                [
+                    'user_id'   => $user->id,
+                    'fcm_token' => $fcmToken,
+                ],
+                [
+                    'device_type' => 'web',
+                    'user_agent'  => substr($request->userAgent() ?? '', 0, 500),
+                    'ip_address'  => $request->ip(),
+                    'updated_at'  => now(),
+                ]
+            );
+            \Illuminate\Support\Facades\Log::info("Web FCM Token saved during Login for User #{$user->id} ({$user->name})");
+        }
+
         // Clear 2FA session variables
-        session()->forget(['login_2fa_user_id', 'login_2fa_otp', 'login_2fa_otp_expires_at']);
+        session()->forget(['login_2fa_user_id', 'login_2fa_otp', 'login_2fa_otp_expires_at', 'login_fcm_token']);
 
         // Redirect logic matching respective destination
         if (method_exists($user, 'getDashboardRedirectUrl')) {

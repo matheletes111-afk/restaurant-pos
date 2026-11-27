@@ -40,6 +40,10 @@ Route::middleware('auth:api')->group(function () {
 
     Route::post('refresh', [AuthController::class, 'refresh']);
 
+    // Device Token Management for FCM Push Notifications
+    Route::post('/device-token/store', [\App\Http\Controllers\DeviceTokenController::class, 'store']);
+    Route::post('/device-token/remove', [\App\Http\Controllers\DeviceTokenController::class, 'destroy']);
+
     // Category APIs
     Route::prefix('categories')->group(function () {
         Route::get('/', [CategoryApiController::class, 'index']);

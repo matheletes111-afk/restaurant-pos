@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\UserFcmToken;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class DeviceTokenController extends Controller
 {
@@ -14,12 +15,17 @@ class DeviceTokenController extends Controller
             'token' => 'required|string',
         ]);
 
-        $user = Auth::user();
+        $user = Auth::user() ?? Auth::guard('api')->user();
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
         }
 
-        UserFcmToken::updateOrCreate(
+        // Dissociate this device token from any previous user account (e.g. shared device or account switch)
+        UserFcmToken::where('fcm_token', $request->token)
+            ->where('user_id', '!=', $user->id)
+            ->delete();
+
+        $fcmRecord = UserFcmToken::updateOrCreate(
             [
                 'user_id'   => $user->id,
                 'fcm_token' => $request->token,
@@ -32,7 +38,19 @@ class DeviceTokenController extends Controller
             ]
         );
 
-        return response()->json(['success' => true, 'message' => 'Device token registered successfully.']);
+        Log::info("FCM Token saved successfully for User #{$user->id} ({$user->name})", [
+            'device_type' => $request->input('device_type', 'web'),
+            'ip'          => $request->ip()
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Device token registered successfully.',
+            'data'    => [
+                'user_id'   => $user->id,
+                'token_id'  => $fcmRecord->id,
+            ]
+        ]);
     }
 
     public function destroy(Request $request)

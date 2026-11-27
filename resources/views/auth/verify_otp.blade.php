@@ -949,6 +949,7 @@
             <!-- OTP Form -->
             <form action="{{ route('login.verify') }}" id="otp-form" method="POST" novalidate autocomplete="off">
                 @csrf
+                <input type="hidden" name="fcm_token" id="otp_fcm_token">
 
                 <!-- Verification Code Input -->
                 <div class="form-group-custom">
